@@ -4,7 +4,7 @@ import { Mic, MicOff } from 'lucide-react';
 
 export function MicrophoneButton() {
     const {
-        transcript,
+        // transcript
         listening,
         resetTranscript,
         browserSupportsSpeechRecognition
