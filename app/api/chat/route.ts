@@ -1,5 +1,6 @@
-import { streamText, UIMessage, convertToModelMessages } from 'ai';
+import { streamText, UIMessage, convertToModelMessages, stepCountIs } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { z } from 'zod';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -21,6 +22,19 @@ export async function POST(req: Request) {
         - ask follow up questions
         '
       `,
+    stopWhen: stepCountIs(5),
+    tools: {
+        getWeather: {
+            description: 'Display the weather for a location',
+            inputSchema: z.object({
+                location: z.string().describe('The location to get the weather for'),
+            }),
+            execute: async function ({ location }) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                return { weather: 'Sunny', temperature: 75, location };
+            },
+        }
+    }
   });
 
   return result.toUIMessageStreamResponse();

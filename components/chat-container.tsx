@@ -1,21 +1,49 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
+import { UIMessage, useChat } from '@ai-sdk/react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessages } from '@/components/chat-messages';
 import { MessageInput } from '@/components/message-input';
-import { Button } from './ui/button';
 
 export function ChatContainer({ setShowWorkbench }: { setShowWorkbench: (show: boolean) => void }) {
     const [input, setInput] = useState('');
-    const { messages, sendMessage, stop, status } = useChat();
+    const { messages, sendMessage, stop, status } = useChat({
+        onFinish: async (options) => {
+            await generateSuggestions(options.message);
+        }
+    });
+    const [suggestions, setSuggestions] = useState([]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (input.trim()) {
             sendMessage({ text: input });
             setInput('');
+            setSuggestions([]);
+        }
+    };
+
+    const handleSuggestionClick = (suggestion: string) => {
+        sendMessage({ text: suggestion });
+        setInput('');
+        setSuggestions([]);
+    };
+
+    const generateSuggestions = async (message: UIMessage) => {
+        try {
+            const response = await fetch('/api/suggestions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setSuggestions(data.suggestions);
+            }
+        } catch (error) {
+            console.error('Error generating suggestions:', error);
         }
     };
 
@@ -71,10 +99,12 @@ export function ChatContainer({ setShowWorkbench }: { setShowWorkbench: (show: b
                             transition: { duration: 0.4, ease: "easeOut" }
                         }}
                     >
-                        <ChatMessages 
+                        <ChatMessages
                             messages={messages}
                             isLoading={status === 'submitted'}
                             setShowWorkbench={setShowWorkbench}
+                            handleSuggestionClick={handleSuggestionClick}
+                            suggestions={suggestions}
                         />
                         <motion.div
                             initial={{ y: 100, opacity: 0 }}
@@ -84,7 +114,7 @@ export function ChatContainer({ setShowWorkbench }: { setShowWorkbench: (show: b
                                 transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
                             }}
                         >
-                            <MessageInput 
+                            <MessageInput
                                 input={input}
                                 setInput={setInput}
                                 handleSubmit={handleSubmit}

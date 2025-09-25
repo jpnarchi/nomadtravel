@@ -5,15 +5,20 @@ import Image from "next/image";
 import { Loader } from "@/components/ai-elements/loader";
 import { UIMessage } from "ai";
 import { PreviewButton } from "./preview-button";
+import { SuggestionButtons } from "./suggestion-buttons";
 
 export function ChatMessages({
     messages,
     isLoading,
-    setShowWorkbench
+    setShowWorkbench,
+    handleSuggestionClick,
+    suggestions
 }: {
     messages: UIMessage[],
     isLoading: boolean,
-    setShowWorkbench: (show: boolean) => void
+    setShowWorkbench: (show: boolean) => void,
+    handleSuggestionClick: (suggestion: string) => void,
+    suggestions: string[]
 }) {
     return (
         <div className="flex-1 overflow-y-auto">
@@ -52,7 +57,8 @@ export function ChatMessages({
                                                 </div>
                                             </div>
 
-                                            {!isLoading && role === 'assistant' && <PreviewButton setShowWorkbench={setShowWorkbench} />}
+                                            {/* {!isLoading && role === 'assistant' && <PreviewButton setShowWorkbench={setShowWorkbench} />} */}
+                                            {!isLoading && role === 'assistant' && messageIndex === messages.length - 1 && <SuggestionButtons suggestions={suggestions} onSuggestionClick={handleSuggestionClick} />}
                                         </div>
                                     )
                                 }
