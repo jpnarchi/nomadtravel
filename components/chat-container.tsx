@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessages } from '@/components/chat-messages';
 import { MessageInput } from '@/components/message-input';
+import { Button } from './ui/button';
 
-export function ChatContainer() {
+export function ChatContainer({ setShowWorkbench }: { setShowWorkbench: (show: boolean) => void }) {
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat();
 
@@ -73,6 +74,7 @@ export function ChatContainer() {
                         <ChatMessages 
                             messages={messages}
                             isLoading={status === 'submitted'}
+                            setShowWorkbench={setShowWorkbench}
                         />
                         <motion.div
                             initial={{ y: 100, opacity: 0 }}

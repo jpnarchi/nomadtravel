@@ -4,13 +4,16 @@ import { Markdown } from "@/components/markdown";
 import Image from "next/image";
 import { Loader } from "@/components/ai-elements/loader";
 import { UIMessage } from "ai";
+import { PreviewButton } from "./preview-button";
 
 export function ChatMessages({
     messages,
-    isLoading
+    isLoading,
+    setShowWorkbench
 }: {
     messages: UIMessage[],
-    isLoading: boolean
+    isLoading: boolean,
+    setShowWorkbench: (show: boolean) => void
 }) {
     return (
         <div className="flex-1 overflow-y-auto">
@@ -31,7 +34,7 @@ export function ChatMessages({
                                             <div className="flex flex-row gap-3 items-start">
                                                 {role === 'assistant' && (
                                                     <div className="shrink-0 mt-2">
-                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} priority/>
                                                     </div>
                                                 )}
                                                 {role === 'user' && (
@@ -48,6 +51,8 @@ export function ChatMessages({
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {!isLoading && role === 'assistant' && <PreviewButton setShowWorkbench={setShowWorkbench} />}
                                         </div>
                                     )
                                 }

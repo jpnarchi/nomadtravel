@@ -13,7 +13,14 @@ export async function POST(req: Request) {
   const result = streamText({
     model: openrouter('x-ai/grok-4-fast:free'),
     messages: convertToModelMessages(messages),
-    system: 'You are a helpful assistant that can answer questions and help with tasks',
+    system: `\n
+        - you are a helpful assistant!
+        - keep your responses limited to a sentence.
+        - DO NOT output lists.
+        - today's date is ${new Date().toLocaleDateString()}.
+        - ask follow up questions
+        '
+      `,
   });
 
   return result.toUIMessageStreamResponse();
