@@ -6,6 +6,7 @@ import { Loader } from "@/components/ai-elements/loader";
 import { UIMessage } from "ai";
 import { PreviewButton } from "./preview-button";
 import { SuggestionButtons } from "./suggestion-buttons";
+import { useScrollToBottom } from "./use-scroll-to-bottom";
 
 export function ChatMessages({
     messages,
@@ -20,9 +21,11 @@ export function ChatMessages({
     handleSuggestionClick: (suggestion: string) => void,
     suggestions: string[]
 }) {
+    const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
+
     return (
         <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col gap-4 items-center p-4">
+            <div className="flex flex-col gap-4 items-center p-4" ref={messagesContainerRef}>
                 {messages.map(({ role, parts, id }, messageIndex) => (
                     <motion.div
                         key={id}
@@ -66,6 +69,11 @@ export function ChatMessages({
                         </div>
                     </motion.div>
                 ))}
+
+                <div
+                    ref={messagesEndRef}
+                    className="shrink-0 min-w-[24px] min-h-[25vh]"
+                />
             </div>
         </div>
     );
