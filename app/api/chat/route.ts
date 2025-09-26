@@ -9,10 +9,7 @@ const openrouter = createOpenRouter({
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const { id, messages }: { id: string, messages: UIMessage[]; } = await req.json();
-
-  console.log('ID: ', id);
-  console.log('Messages: ', messages);
+  const { messages }: { messages: UIMessage[]; } = await req.json();
 
   const result = streamText({
     model: openrouter('x-ai/grok-4-fast:free'),

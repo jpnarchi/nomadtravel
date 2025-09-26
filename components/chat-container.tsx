@@ -7,8 +7,10 @@ import { ChatMessages } from '@/components/chat-messages';
 import { MessageInput } from '@/components/message-input';
 import { useAuth } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
-export function ChatContainer({ 
+export function ChatContainer({
     id,
     initialMessages,
     setShowWorkbench,
@@ -18,9 +20,13 @@ export function ChatContainer({
     setShowWorkbench: (show: boolean) => void,
 }) {
     const { isSignedIn } = useAuth();
+
+    const createChat = useMutation(api.chats.create);
+    const createMessage = useMutation(api.messages.create);
+
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
-        id,
+        messages: initialMessages,
         onFinish: async (options) => {
             window.history.replaceState({}, "", `/chat/${id}`);
             await generateSuggestions(options.message);

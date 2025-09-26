@@ -33,7 +33,7 @@ export const store = mutation({
             }
             return user._id;
         }
-        
+
         return await ctx.db.insert("users", {
             email: identity.email ?? "Anonymous",
             name: identity.name ?? "Anonymous",
