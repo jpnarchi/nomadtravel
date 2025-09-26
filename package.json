@@ -25,6 +25,7 @@
     "ai": "^5.0.51",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "convex": "^1.27.3",
     "framer-motion": "^12.23.21",
     "lucide-react": "^0.544.0",
     "next": "15.5.4",
