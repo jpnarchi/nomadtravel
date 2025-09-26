@@ -2,10 +2,11 @@
 
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { AuthLayout } from "../layouts/auth-layout";
-import { SignInView } from "../views/sign-in-view";
 import { Loader } from "@/components/ai-elements/loader";
+import { useStoreUserEffect } from "@/hooks/use-store-user-effect";
 
 export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
+    const { isLoading, isAuthenticated } = useStoreUserEffect();
     return (
         <>
             <AuthLoading>
@@ -14,12 +15,14 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
                 </AuthLayout>
             </AuthLoading>
             <Authenticated>
-                {children}
+                {isLoading && (
+                    <AuthLayout>
+                        <Loader />
+                    </AuthLayout>
+                )}
+                {isAuthenticated && children}
             </Authenticated>
             <Unauthenticated>
-                {/* <AuthLayout>
-                    <SignInView />
-                </AuthLayout> */}
                 {children}
             </Unauthenticated>
         </>
