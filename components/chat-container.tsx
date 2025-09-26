@@ -5,17 +5,33 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatMessages } from '@/components/chat-messages';
 import { MessageInput } from '@/components/message-input';
+import { useAuth } from '@clerk/nextjs';
+import { redirect } from 'next/navigation';
 
-export function ChatContainer({ setShowWorkbench }: { setShowWorkbench: (show: boolean) => void }) {
+export function ChatContainer({ 
+    id,
+    initialMessages,
+    setShowWorkbench,
+}: {
+    id: string,
+    initialMessages: UIMessage[],
+    setShowWorkbench: (show: boolean) => void,
+}) {
+    const { isSignedIn } = useAuth();
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
+        id,
         onFinish: async (options) => {
+            window.history.replaceState({}, "", `/chat/${id}`);
             await generateSuggestions(options.message);
         }
     });
     const [suggestions, setSuggestions] = useState([]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        if (!isSignedIn) {
+            redirect('/sign-in');
+        }
         e.preventDefault();
         if (input.trim()) {
             sendMessage({ text: input });

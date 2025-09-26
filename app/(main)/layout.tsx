@@ -1,9 +1,9 @@
-import { AuthLayout } from "@/modules/auth/layouts/auth-layout";
+import { AuthGuard } from "@/modules/auth/components/auth-guard";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     return (
-        <AuthLayout>
+        <AuthGuard>
             {children}
-        </AuthLayout>
-    );
+        </AuthGuard>
+    )
 }
