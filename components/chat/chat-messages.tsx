@@ -6,6 +6,7 @@ import { Loader } from "@/components/ai-elements/loader";
 import { UIMessage } from "ai";
 import { useScrollToBottom } from "../global/use-scroll-to-bottom";
 import { SuggestionButtons } from "./suggestion-buttons";
+import { PreviewButton } from "./preview-button";
 
 export function ChatMessages({
     messages,
@@ -59,7 +60,7 @@ export function ChatMessages({
                                                 </div>
                                             </div>
 
-                                            {/* {!isLoading && role === 'assistant' && <PreviewButton setShowWorkbench={setShowWorkbench} />} */}
+                                            {!isLoading && role === 'assistant' && <PreviewButton setShowWorkbench={setShowWorkbench} />}
                                             {!isLoading && role === 'assistant' && messageIndex === messages.length - 1 && <SuggestionButtons suggestions={suggestions} onSuggestionClick={handleSuggestionClick} />}
                                         </div>
                                     )

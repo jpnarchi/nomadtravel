@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Workbench } from "@/components/chat/workbench"
 import { UIMessage } from "ai"
-import { Id } from "@/convex/_generated/dataModel";
+import { Id } from "@/convex/_generated/dataModel"
 
 export function Chat({
     id,

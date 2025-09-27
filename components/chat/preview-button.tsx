@@ -1,5 +1,5 @@
 import { LaptopMinimal } from "lucide-react";
-import { Card } from "./ui/card";
+import { Card } from "../ui/card";
 
 export function PreviewButton({ setShowWorkbench }: { setShowWorkbench: (show: boolean) => void }) {
     return (
