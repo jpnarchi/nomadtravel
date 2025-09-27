@@ -8,12 +8,13 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+import { Footer } from "../global/footer";
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const router = useRouter();
 
     const createChat = useMutation(api.chats.create);
@@ -34,7 +35,7 @@ export function ChatContainer() {
                     role: "user",
                     content: input,
                 });
-                
+
                 router.push(`/chat/${chatId}`);
             }
         } catch (error) {
@@ -83,6 +84,7 @@ export function ChatContainer() {
                     </motion.div>
                 </motion.div>
             </AnimatePresence>
+            <Footer />
         </div>
     )
 }
