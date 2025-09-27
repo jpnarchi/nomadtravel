@@ -40,8 +40,6 @@ export function ChatContainer() {
         } catch (error) {
             console.error(error);
             toast.error('Failed to create chat');
-        } finally {
-            setIsLoading(false);
         }
     };
 

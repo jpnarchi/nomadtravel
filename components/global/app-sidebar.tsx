@@ -196,7 +196,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="gap-2 cursor-pointer text-red-500 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
-                            <p className="text-red-500">Delete chat</p>
+                            <p className="text-red-500">Delete</p>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

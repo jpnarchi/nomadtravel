@@ -11,6 +11,7 @@ import {
 import { Workbench } from "@/components/chat/workbench"
 import { UIMessage } from "ai"
 import { Id } from "@/convex/_generated/dataModel"
+import { useAuth } from "@clerk/nextjs"
 
 export function Chat({
     id,
@@ -20,6 +21,7 @@ export function Chat({
     initialMessages: UIMessage[]
 }) {
     const [showWorkbench, setShowWorkbench] = useState(false)
+    const { isSignedIn } = useAuth()
 
     return (
         <SidebarProvider
@@ -29,7 +31,7 @@ export function Chat({
                 } as React.CSSProperties
             }
         >
-            <AppSidebar />
+            {isSignedIn && <AppSidebar />}
             <SidebarInset>
                 {!showWorkbench && <ChatHeader />}
                 {!showWorkbench && (
