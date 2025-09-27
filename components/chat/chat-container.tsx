@@ -28,7 +28,18 @@ export function ChatContainer({
     const { messages, sendMessage, stop, status } = useChat({
         messages: initialMessages,
         onFinish: async (options) => {
-            window.history.replaceState({}, "", `/chat/${id}`);
+            const content = options.message
+                .parts
+                .filter(part => part.type === 'text')
+                .map(part => part.text)
+                .join(' ');
+
+            await createMessage({
+                chatId: id,
+                role: "assistant",
+                content: content,
+            });
+
             await generateSuggestions(options.message);
         }
     });
