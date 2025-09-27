@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUpIcon, ClipIcon, StopIcon } from "./icons";
-import { MicrophoneButton } from "./microphone-button";
+import { ArrowUpIcon, ClipIcon, StopIcon } from "../global/icons";
+import { MicrophoneButton } from "../global/microphone-button";
 
 export const MessageInput = ({
     input,

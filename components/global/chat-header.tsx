@@ -1,7 +1,7 @@
 'use client'
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { UserNav } from "@/components/user-nav";
+import { UserNav } from "@/components/global/user-nav";
 import { useRouter } from "next/navigation";
 
 export function ChatHeader() {

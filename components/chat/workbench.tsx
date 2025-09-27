@@ -1,5 +1,5 @@
 import { SandpackProvider, SandpackLayout, SandpackPreview } from "@codesandbox/sandpack-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { appJsTemplate } from "@/lib/templates";
 

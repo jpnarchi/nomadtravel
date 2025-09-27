@@ -1,11 +1,15 @@
-import { Chat } from "@/components/chat";
+import { Chat } from "@/components/chat/chat";
+import { getChatById, getMessagesForChat } from "@/lib/convex-server";
+import { Id } from "@/convex/_generated/dataModel";
+import { notFound } from "next/navigation";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const messages = {
-        id: "1",
-        parts: [{ type: "text" as const, text: "Hello, how are you?" }],
-        role: "user" as "user" | "system" | "assistant",
+    const chat = await getChatById(id as Id<"chats">);
+    if (!chat) {
+        notFound();
     }
-    return <Chat id={id} initialMessages={[messages]} />
+    const initialMessages = await getMessagesForChat(id as Id<"chats">);
+
+    return <Chat id={id as Id<"chats">} initialMessages={initialMessages} />
 }

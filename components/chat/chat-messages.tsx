@@ -1,12 +1,11 @@
 import { motion } from "framer-motion";
-import { UserIcon } from "@/components/icons";
-import { Markdown } from "@/components/markdown";
+import { UserIcon } from "@/components/global/icons";
+import { Markdown } from "@/components/global/markdown";
 import Image from "next/image";
 import { Loader } from "@/components/ai-elements/loader";
 import { UIMessage } from "ai";
-import { PreviewButton } from "./preview-button";
+import { useScrollToBottom } from "../global/use-scroll-to-bottom";
 import { SuggestionButtons } from "./suggestion-buttons";
-import { useScrollToBottom } from "./use-scroll-to-bottom";
 
 export function ChatMessages({
     messages,

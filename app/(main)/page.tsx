@@ -1,6 +1,5 @@
-import { Chat } from "@/components/chat"
-import { generateUUID } from "@/lib/utils"
+import { Chat } from "@/components/hero/chat"
 
 export default function Home() {
-  return <Chat id={generateUUID()} initialMessages={[]} />
+  return <Chat />
 }

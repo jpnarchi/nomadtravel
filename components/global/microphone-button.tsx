@@ -1,5 +1,5 @@
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
-import { Button } from './ui/button';
+import { Button } from '../ui/button';
 import { Mic, MicOff } from 'lucide-react';
 
 export function MicrophoneButton() {
