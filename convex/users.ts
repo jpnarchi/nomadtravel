@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation, QueryCtx } from "./_generated/server";
+import { paginationOptsValidator } from "convex/server";
 
 // Helper function to get current user
 const getCurrentUser = async (ctx: QueryCtx) => {
@@ -31,9 +32,19 @@ export const getUserInfo = query({
 });
 
 export const getAll = query({
-    args: {},
-    handler: async (ctx) => {
-        const users = await ctx.db.query("users").collect();
+    args: {
+        paginationOpts: paginationOptsValidator,
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+        if (user.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        const users = await ctx.db
+            .query("users")
+            .order("desc")
+            .paginate(args.paginationOpts);
         return users;
     },
 });
@@ -60,12 +71,16 @@ export const store = mutation({
             if (user.email !== identity.email) {
                 await ctx.db.patch(user._id, { email: identity.email });
             }
+            if (user.pictureUrl !== identity.pictureUrl) {
+                await ctx.db.patch(user._id, { pictureUrl: identity.pictureUrl });
+            }
             return user._id;
         }
 
         return await ctx.db.insert("users", {
             email: identity.email ?? "Anonymous",
             name: identity.name ?? "Anonymous",
+            pictureUrl: identity.pictureUrl ?? undefined,
             tokenIdentifier: identity.tokenIdentifier,
             plan: "free",
         });
@@ -75,9 +90,9 @@ export const store = mutation({
 export const getUsersByPlan = query({
     args: {
         plan: v.union(
-            v.literal("free"), 
-            v.literal("basic"), 
-            v.literal("pro"), 
+            v.literal("free"),
+            v.literal("basic"),
+            v.literal("pro"),
             v.literal("admin")
         ),
     },
@@ -92,7 +107,12 @@ export const getUsersByPlan = query({
 export const isAdmin = query({
     args: {},
     handler: async (ctx) => {
-        const user = await getCurrentUser(ctx);
-        return user.plan === "admin";
+        try {
+            const user = await getCurrentUser(ctx);
+            return user.plan === "admin";
+        } catch (error) {
+            // Return false for unsigned users or any other error
+            return false;
+        }
     },
 })

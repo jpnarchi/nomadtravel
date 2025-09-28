@@ -6,6 +6,7 @@ export default defineSchema({
         tokenIdentifier: v.string(),
         name: v.string(),
         email: v.string(),
+        pictureUrl: v.optional(v.string()),
         plan: v.optional(
             v.union(
                 v.literal("free"),
