@@ -26,14 +26,12 @@ import { Input } from "@/components/ui/input"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import { useQuery } from "convex/react"
-import Image from "next/image"
 import { formatCreationTime } from "@/lib/utils"
 
 interface Chat {
   _id: string
   title?: string
   _creationTime: number
-  // Add other chat properties as needed
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -111,47 +109,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="floating" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Image
-              src="/lentes.svg"
-              alt="Logo"
-              width={32}
-              height={32}
-              priority
-              className="mt-2 ml-2"
+        {/* New Chat Button */}
+        <div className="px-1 pt-2 pb-1">
+          <Button
+            onClick={handleNewChat}
+            className="w-full justify-start gap-2 h-9 cursor-pointer"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4" />
+            New Chat
+          </Button>
+        </div>
+
+        {/* Search Input */}
+        <div className="px-1 pb-1">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search chats..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9"
             />
-          </SidebarMenuItem>
-        </SidebarMenu>
+          </div>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          {/* New Chat Button */}
-          <div className="px-1 pb-2">
-            <Button
-              onClick={handleNewChat}
-              className="w-full justify-start gap-2 h-9 cursor-pointer"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4" />
-              New Chat
-            </Button>
-          </div>
-
-          {/* Search Input */}
-          <div className="px-1 pb-4">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search chats..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
-          </div>
-
           {/* Chat List */}
           <SidebarMenu className="gap-2">
             {filteredChats?.map((item: Chat) => (
