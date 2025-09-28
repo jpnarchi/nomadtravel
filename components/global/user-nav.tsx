@@ -143,9 +143,39 @@
 "use client"
 
 import { UserButton } from "@clerk/nextjs"
+import { api } from "@/convex/_generated/api"
+import { useQuery } from "convex/react"
+import { Info, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function UserNav() {
+    const isAdmin = useQuery(api.users.isAdmin);
+    const router = useRouter();
+
     return (
-        <UserButton />
+        <UserButton
+            // appearance={{
+            //     baseTheme: BaseTheme.Dark,
+            // }}
+        >
+            <UserButton.MenuItems>
+                {isAdmin && (
+                    <UserButton.Action
+                        label="Admin"
+                        labelIcon={<Lock className="w-3.5 h-3.5 stroke-2" />}
+                        onClick={() => router.push('/admin')}
+                    />
+                )}
+                <UserButton.Action label="manageAccount" />
+                <UserButton.Action label="signOut" />
+            </UserButton.MenuItems>
+            
+            <UserButton.UserProfilePage label="Help" labelIcon={<Info className="w-3.5 h-3.5 mt-0.5" />} url="help">
+                <div>
+                    <h1>Help Page</h1>
+                    <p>This is the custom help page</p>
+                </div>
+            </UserButton.UserProfilePage>
+        </UserButton>
     )
 }

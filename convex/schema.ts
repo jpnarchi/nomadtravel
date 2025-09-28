@@ -10,7 +10,8 @@ export default defineSchema({
             v.union(
                 v.literal("free"),
                 v.literal("basic"),
-                v.literal("pro")
+                v.literal("pro"),
+                v.literal("admin")
             )
         )
     })
