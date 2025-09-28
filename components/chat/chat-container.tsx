@@ -1,7 +1,7 @@
 'use client';
 
 import { UIMessage, useChat } from '@ai-sdk/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
@@ -25,11 +25,11 @@ export function ChatContainer({
     const { isSignedIn } = useAuth();
 
     const createMessage = useMutation(api.messages.create);
-    const createSuggestions = useMutation(api.suggestions.create);
+    const patchSuggestions = useMutation(api.suggestions.patch);
 
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
-        messages: initialMessages,
+        messages: initialMessages.length === 1 ? [] : initialMessages,
         onFinish: async (options) => {
             const content = options.message
                 .parts
@@ -47,6 +47,17 @@ export function ChatContainer({
         }
     });
     const [suggestions, setSuggestions] = useState<string[]>([]);
+    const hasRun = useRef(false);
+
+    useEffect(() => {
+        if (hasRun.current) return;
+        hasRun.current = true;
+
+        if (initialMessages.length === 1) {
+            const content = initialMessages[0].parts.filter(part => part.type === 'text').map(part => part.text).join('');
+            sendMessage({ text: content });
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         if (!isSignedIn) {
@@ -86,7 +97,7 @@ export function ChatContainer({
 
             if (response.ok) {
                 const data = await response.json();
-                await createSuggestions({
+                await patchSuggestions({
                     chatId: id,
                     suggestions: data.suggestions,
                 });

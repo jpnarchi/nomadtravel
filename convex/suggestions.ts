@@ -60,7 +60,7 @@ export const getAll = query({
     },
 });
 
-export const create = mutation({
+export const patch = mutation({
     args: {
         chatId: v.optional(v.id("chats")),
         suggestions: v.optional(v.array(v.string())),
@@ -86,12 +86,26 @@ export const create = mutation({
             throw new Error("Access denied");
         }
 
-        const suggestionId = await ctx.db.insert("suggestions", {
-            chatId: args.chatId,
-            userId: user._id,
-            suggestions: args.suggestions,
-        });
+        // Check if suggestion already exists for this chat
+        const existingSuggestion = await ctx.db
+            .query("suggestions")
+            .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
+            .first();
 
-        return suggestionId;
+        if (existingSuggestion) {
+            // Update existing suggestion
+            await ctx.db.patch(existingSuggestion._id, {
+                suggestions: args.suggestions,
+            });
+            return existingSuggestion._id;
+        } else {
+            // Create new suggestion if none exists
+            const suggestionId = await ctx.db.insert("suggestions", {
+                chatId: args.chatId,
+                userId: user._id,
+                suggestions: args.suggestions,
+            });
+            return suggestionId;
+        }
     },
 });
