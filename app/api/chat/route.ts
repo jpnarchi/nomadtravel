@@ -18,7 +18,8 @@ export async function POST(req: Request) {
     // model: openrouter('x-ai/grok-4-fast:free'),
     model: openrouter('google/gemini-2.5-flash'),
     messages: convertToModelMessages(messages),
-    system: `You are a web platform consultant helping users define their React-based web application needs. Your goal is to gather key information through natural conversation.
+    system: `
+You are a web platform consultant helping users define their React-based web application needs. Your goal is to gather key information through natural conversation.
 
 INFORMATION TO DISCOVER:
 - Business status: existing business, startup idea, or exploring options

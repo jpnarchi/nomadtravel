@@ -58,7 +58,7 @@ export function MessageInput({
                                 <ClipIcon />
                             </Button>
 
-                            {true ? (
+                            {isLoading ? (
                                 <Button
                                     type="button"
                                     size="icon"
