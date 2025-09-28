@@ -15,10 +15,12 @@ import { useAuth } from "@clerk/nextjs"
 
 export function Chat({
     id,
-    initialMessages
+    initialMessages,
+    initialSuggestions
 }: {
     id: Id<"chats">,
-    initialMessages: UIMessage[]
+    initialMessages: UIMessage[],
+    initialSuggestions: string[]
 }) {
     const [showWorkbench, setShowWorkbench] = useState(false)
     const { isSignedIn } = useAuth()
@@ -39,6 +41,7 @@ export function Chat({
                         id={id}
                         initialMessages={initialMessages}
                         setShowWorkbench={setShowWorkbench}
+                        initialSuggestions={initialSuggestions}
                     />
                 )}
                 {showWorkbench && <Workbench setShowWorkbench={setShowWorkbench} />}

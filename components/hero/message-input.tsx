@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import { ArrowUpIcon, ClipIcon, StopIcon } from "../global/icons";
 import { MicrophoneButton } from "../global/microphone-button";
 import { Button } from "../ui/button";
@@ -64,7 +65,8 @@ export function MessageInput({
                                     className="h-8 w-8 rounded-full cursor-pointer"
                                     onClick={() => {}}
                                 >
-                                    <StopIcon />
+                                    {/* <StopIcon /> */}
+                                    <Loader2 className="animate-spin"/>
                                 </Button>
                             ) : (
                                 <Button

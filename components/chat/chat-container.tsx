@@ -1,7 +1,7 @@
 'use client';
 
 import { UIMessage, useChat } from '@ai-sdk/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
@@ -15,14 +15,17 @@ export function ChatContainer({
     id,
     initialMessages,
     setShowWorkbench,
+    initialSuggestions,
 }: {
     id: Id<"chats">,
     initialMessages: UIMessage[],
     setShowWorkbench: (show: boolean) => void,
+    initialSuggestions: string[],
 }) {
     const { isSignedIn } = useAuth();
 
     const createMessage = useMutation(api.messages.create);
+    const createSuggestions = useMutation(api.suggestions.create);
 
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
@@ -43,7 +46,7 @@ export function ChatContainer({
             await generateSuggestions(options.message);
         }
     });
-    const [suggestions, setSuggestions] = useState([]);
+    const [suggestions, setSuggestions] = useState<string[]>([]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         if (!isSignedIn) {
@@ -83,12 +86,20 @@ export function ChatContainer({
 
             if (response.ok) {
                 const data = await response.json();
+                await createSuggestions({
+                    chatId: id,
+                    suggestions: data.suggestions,
+                });
                 setSuggestions(data.suggestions);
             }
         } catch (error) {
             console.error('Error generating suggestions:', error);
         }
     };
+
+    useEffect(() => {
+        setSuggestions(initialSuggestions);
+    }, [initialSuggestions]);
 
     return (
         <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">

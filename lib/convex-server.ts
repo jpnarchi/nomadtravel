@@ -50,11 +50,35 @@ export async function getChatById(chatId: Id<"chats">): Promise<Doc<"chats"> | n
 
         // Set the auth token for this request
         convex.setAuth(token);
-        
+
         const chat = await convex.query(api.chats.getById, { chatId });
         return chat;
     } catch (error) {
         console.error("Error fetching chat:", error);
         return null;
+    }
+}
+
+export async function getSuggestionsForChat(chatId: Id<"chats">): Promise<string[]> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        const suggestions = await convex.query(api.suggestions.getAll, { chatId });
+
+        if (!suggestions) {
+            return [];
+        }
+
+        return suggestions.flatMap(suggestion => suggestion.suggestions);
+    } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        return [];
     }
 }

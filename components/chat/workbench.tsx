@@ -14,7 +14,7 @@ export function Workbench({ setShowWorkbench }: { setShowWorkbench: (show: boole
 
     return (
         <div 
-            className="px-4 md:px-12 pb-8 md:pb-12 pt-4" 
+            className="px-4 md:px-12 pb-12 pt-4" 
             style={{ height: 'calc(100vh - 6%)' }}
         >
             <div className="flex flex-row justify-start">

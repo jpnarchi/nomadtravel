@@ -35,7 +35,6 @@ export default defineSchema({
     suggestions: defineTable({
         chatId: v.id('chats'),
         userId: v.id('users'),
-        messageId: v.id('messages'),
         suggestions: v.array(v.string()),
     })
         .index('by_chat_id', ['chatId'])

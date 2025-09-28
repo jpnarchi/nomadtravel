@@ -51,21 +51,19 @@ export const getAll = query({
             throw new Error("Access denied");
         }
 
-        const messages = await ctx.db
-            .query("messages")
+        const suggestions = await ctx.db
+            .query("suggestions")
             .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
-            .order("asc")
             .collect();
 
-        return messages;
+        return suggestions;
     },
 });
 
 export const create = mutation({
     args: {
         chatId: v.optional(v.id("chats")),
-        role: v.optional(v.union(v.literal("user"), v.literal("assistant"))),
-        content: v.optional(v.string()),
+        suggestions: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
@@ -74,12 +72,8 @@ export const create = mutation({
             throw new Error("Chat not found");
         }
 
-        if (!args.role) {
-            throw new Error("Role not found");
-        }
-
-        if (!args.content) {
-            throw new Error("Content not found");
+        if (!args.suggestions) {
+            throw new Error("Suggestions not found");
         }
 
         const chat = await ctx.db.get(args.chatId);
@@ -92,39 +86,12 @@ export const create = mutation({
             throw new Error("Access denied");
         }
 
-        const messageId = await ctx.db.insert("messages", {
+        const suggestionId = await ctx.db.insert("suggestions", {
             chatId: args.chatId,
             userId: user._id,
-            role: args.role,
-            content: args.content,
+            suggestions: args.suggestions,
         });
 
-        return messageId;
-    },
-});
-
-export const deleteMessage = mutation({
-    args: {
-        messageId: v.optional(v.id("messages")),
-    },
-    handler: async (ctx, args) => {
-        const user = await getCurrentUser(ctx);
-
-        if (!args.messageId) {
-            throw new Error("Message not found");
-        }
-
-        const message = await ctx.db.get(args.messageId);
-
-        if (!message) {
-            throw new Error("Message not found");
-        }
-
-        if (message.userId !== user._id) {
-            throw new Error("Access denied");
-        }
-
-        await ctx.db.delete(args.messageId);
-        return { success: true };
+        return suggestionId;
     },
 });
