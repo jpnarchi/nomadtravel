@@ -8,29 +8,30 @@ import { useScrollToBottom } from "../global/use-scroll-to-bottom";
 import { SuggestionButtons } from "./suggestion-buttons";
 import { PreviewButton } from "./preview-button";
 import { ProjectSummary } from "./tools/project-summary";
-import { ProjectSummaryData, ProjectSummaryResponse } from "@/lib/interfaces";
+import { ProjectSummaryResponse } from "@/lib/interfaces";
+import { Id } from "@/convex/_generated/dataModel";
 
 export function ChatMessages({
+    id,
     messages,
     isLoading,
-    setShowWorkbench,
     handleSuggestionClick,
-    suggestions
+    suggestions,
 }: {
+    id: Id<"chats">,
     messages: UIMessage[],
     isLoading: boolean,
-    setShowWorkbench: (show: boolean) => void,
     handleSuggestionClick: (suggestion: string) => void,
-    suggestions: string[]
+    suggestions: string[],
 }) {
     const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
 
     return (
         <div className="flex-1 overflow-y-auto">
             <div className="flex flex-col gap-4 items-center p-4" ref={messagesContainerRef}>
-                {messages.map(({ role, parts, id }, messageIndex) => (
+                {messages.map(({ role, parts, id: messageId }, messageIndex) => (
                     <motion.div
-                        key={id}
+                        key={messageId}
                         className={`flex flex-row gap-4 px-4 py-1 w-full md:w-[500px] md:px-0 first-of-type:pt-2`}
                         initial={{ y: 5, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -62,7 +63,6 @@ export function ChatMessages({
                                                 </div>
                                             </div>
 
-                                            {!isLoading && role === 'assistant' && <PreviewButton setShowWorkbench={setShowWorkbench} />}
                                             {!isLoading && role === 'assistant' && messageIndex === messages.length - 1 && <SuggestionButtons suggestions={suggestions} onSuggestionClick={handleSuggestionClick} />}
                                         </div>
                                     )
@@ -74,6 +74,23 @@ export function ChatMessages({
                                     return (
                                         <div key={index}>
                                             <ProjectSummary data={response.data} />
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-generateCode") {
+                                    const version = 1;
+                                    return (
+                                        <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
+                                            {role === 'assistant' && (
+                                                <div className="shrink-0 mt-2">
+                                                    <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
+                                                </div>
+                                            )}
+                                            <PreviewButton 
+                                                id={id}
+                                                version={version}
+                                            />
                                         </div>
                                     )
                                 }

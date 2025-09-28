@@ -1,23 +1,16 @@
 import { SandpackProvider, SandpackLayout, SandpackPreview } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
 import { ArrowLeftIcon } from "lucide-react";
-import { appJsTemplate } from "@/lib/templates";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function Workbench({
-    setShowWorkbench,
     initialFiles
 }: {
-    setShowWorkbench: (show: boolean) => void,
     initialFiles: Record<string, string>
 }) {
-    // const files = initialFiles.reduce((acc, file) => ({
-    //     ...acc,
-    //     [file.path]: file.content
-    const files = initialFiles;
-    // }), {});
-    // const files = {
-    //     "App.js": appJsTemplate
-    // }
+    const [files, setFiles] = useState(initialFiles);
+    const router = useRouter();
 
     const dependencies = {
         "lucide-react": "latest"
@@ -32,7 +25,7 @@ export function Workbench({
                 <Button
                     variant="ghost"
                     className="cursor-pointer"
-                    onClick={() => setShowWorkbench(false)}
+                    onClick={() => router.back()}
                 >
                     <ArrowLeftIcon className="size-4" />
                     Back

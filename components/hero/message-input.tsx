@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { ArrowUpIcon, ClipIcon } from "../global/icons";
+import { ArrowUpIcon, ClipIcon, LoaderIcon } from "../global/icons";
 import { MicrophoneButton } from "../global/microphone-button";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
@@ -58,14 +58,14 @@ export function MessageInput({
                                 <ClipIcon />
                             </Button>
 
-                            {isLoading ? (
+                            {true ? (
                                 <Button
                                     type="button"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
                                     disabled={true}
                                 >
-                                    <Loader2 className="animate-spin"/>
+                                    <LoaderIcon />
                                 </Button>
                             ) : (
                                 <Button

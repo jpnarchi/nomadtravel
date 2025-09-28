@@ -41,3 +41,27 @@ export const ArrowUpIcon = () => {
         </svg>
     );
 };
+
+export const LoaderIcon = () => {
+    return (
+        <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="animate-spin"
+        >
+            <circle
+                cx="12"
+                cy="12"
+                r="8"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeDasharray="32"
+                strokeDashoffset="32"
+                className="animate-pulse"
+            />
+        </svg>
+    );
+};

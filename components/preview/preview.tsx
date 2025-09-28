@@ -1,26 +1,20 @@
 'use client'
 
 import { AppSidebar } from "@/components/global/app-sidebar"
-import { ChatContainer } from "@/components/chat/chat-container"
-import { ChatHeader } from "@/components/global/chat-header"
 import {
     SidebarInset,
     SidebarProvider,
 } from "@/components/ui/sidebar"
-import { UIMessage } from "ai"
+import { Workbench } from "@/components/preview/workbench"
 import { Id } from "@/convex/_generated/dataModel"
 import { useAuth } from "@clerk/nextjs"
 
-export function Chat({
+export function Preview({
     id,
-    initialMessages,
-    initialSuggestions,
-    initialTitle,
+    initialFiles,
 }: {
     id: Id<"chats">,
-    initialMessages: UIMessage[],
-    initialSuggestions: string[],
-    initialTitle: string,
+    initialFiles: Record<string, string>
 }) {
     const { isSignedIn } = useAuth()
 
@@ -34,12 +28,8 @@ export function Chat({
         >
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
-                <ChatHeader />
-                <ChatContainer
-                    id={id}
-                    initialMessages={initialMessages}
-                    initialSuggestions={initialSuggestions}
-                    initialTitle={initialTitle}
+                <Workbench
+                    initialFiles={initialFiles}
                 />
             </SidebarInset>
         </SidebarProvider>

@@ -14,13 +14,11 @@ import { Id } from '@/convex/_generated/dataModel';
 export function ChatContainer({
     id,
     initialMessages,
-    setShowWorkbench,
     initialSuggestions,
     initialTitle,
 }: {
     id: Id<"chats">,
     initialMessages: UIMessage[],
-    setShowWorkbench: (show: boolean) => void,
     initialSuggestions: string[],
     initialTitle: string,
 }) {
@@ -149,9 +147,9 @@ export function ChatContainer({
                     }}
                 >
                     <ChatMessages
+                        id={id}
                         messages={messages}
                         isLoading={status === 'submitted'}
-                        setShowWorkbench={setShowWorkbench}
                         handleSuggestionClick={handleSuggestionClick}
                         suggestions={suggestions}
                     />
