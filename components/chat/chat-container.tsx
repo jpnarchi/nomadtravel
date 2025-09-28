@@ -16,16 +16,22 @@ export function ChatContainer({
     initialMessages,
     setShowWorkbench,
     initialSuggestions,
+    initialTitle,
 }: {
     id: Id<"chats">,
     initialMessages: UIMessage[],
     setShowWorkbench: (show: boolean) => void,
     initialSuggestions: string[],
+    initialTitle: string,
 }) {
     const { isSignedIn } = useAuth();
 
     const createMessage = useMutation(api.messages.create);
+    const updateTitle = useMutation(api.chats.updateTitle);
     const patchSuggestions = useMutation(api.suggestions.patch);
+
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const hasRun = useRef(false);
 
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
@@ -43,11 +49,13 @@ export function ChatContainer({
                 content: content,
             });
 
+            if (initialTitle === 'New Chat' && initialMessages.length === 1) {
+                await generateTitle([...initialMessages, options.message]);
+            }
+
             await generateSuggestions(options.message);
         }
     });
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const hasRun = useRef(false);
 
     useEffect(() => {
         if (hasRun.current) return;
@@ -105,6 +113,26 @@ export function ChatContainer({
             }
         } catch (error) {
             console.error('Error generating suggestions:', error);
+        }
+    };
+
+    const generateTitle = async (messages: UIMessage[]) => {
+        try {
+            const response = await fetch('/api/title', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: messages }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                await updateTitle({
+                    chatId: id,
+                    title: data.title,
+                });
+            }
+        } catch (error) {
+            console.error('Error generating title:', error);
         }
     };
 

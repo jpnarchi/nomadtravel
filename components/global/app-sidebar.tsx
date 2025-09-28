@@ -27,10 +27,12 @@ import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import { useQuery } from "convex/react"
 import Image from "next/image"
+import { formatCreationTime } from "@/lib/utils"
 
 interface Chat {
   _id: string
   title?: string
+  _creationTime: number
   // Add other chat properties as needed
 }
 
@@ -67,6 +69,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const handleDeleteChat = async (chatId: string) => {
     try {
       await deleteChat({ chatId: chatId as Id<"chats"> })
+      handleNewChat()
     } catch (error) {
       console.error('Failed to delete chat:', error)
     }
@@ -184,6 +187,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                            {formatCreationTime(item._creationTime)}
+                          </div>
                           <DropdownMenuItem
                             onClick={() => handleEditStart(item._id, item.title || "")}
                             className="gap-2 cursor-pointer"

@@ -17,6 +17,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             id={id as Id<"chats">} 
             initialMessages={initialMessages} 
             initialSuggestions={initialSuggestions}
+            initialTitle={chat.title || 'New Chat'}
         />
     )
 }
