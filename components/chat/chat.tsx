@@ -18,11 +18,13 @@ export function Chat({
     initialMessages,
     initialSuggestions,
     initialTitle,
+    initialFiles,
 }: {
     id: Id<"chats">,
     initialMessages: UIMessage[],
     initialSuggestions: string[],
-    initialTitle: string
+    initialTitle: string,
+    initialFiles: Record<string, string>
 }) {
     const [showWorkbench, setShowWorkbench] = useState(false)
     const { isSignedIn } = useAuth()
@@ -47,7 +49,12 @@ export function Chat({
                         initialTitle={initialTitle}
                     />
                 )}
-                {showWorkbench && <Workbench setShowWorkbench={setShowWorkbench} />}
+                {showWorkbench && (
+                    <Workbench 
+                        setShowWorkbench={setShowWorkbench} 
+                        initialFiles={initialFiles}
+                    />
+                )}
             </SidebarInset>
         </SidebarProvider>
     )

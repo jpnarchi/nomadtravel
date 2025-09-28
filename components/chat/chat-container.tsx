@@ -35,6 +35,7 @@ export function ChatContainer({
 
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
+        id,
         messages: initialMessages.length === 1 ? [] : initialMessages,
         onFinish: async (options) => {
             await createMessage({

@@ -3,28 +3,39 @@ import { Button } from "../ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { appJsTemplate } from "@/lib/templates";
 
-export function Workbench({ setShowWorkbench }: { setShowWorkbench: (show: boolean) => void }) {
-    const files = {
-        "App.js": appJsTemplate
-    }
+export function Workbench({
+    setShowWorkbench,
+    initialFiles
+}: {
+    setShowWorkbench: (show: boolean) => void,
+    initialFiles: Record<string, string>
+}) {
+    // const files = initialFiles.reduce((acc, file) => ({
+    //     ...acc,
+    //     [file.path]: file.content
+    const files = initialFiles;
+    // }), {});
+    // const files = {
+    //     "App.js": appJsTemplate
+    // }
 
     const dependencies = {
         "lucide-react": "latest"
     }
 
     return (
-        <div 
-            className="px-4 md:px-12 pb-12 pt-4" 
+        <div
+            className="px-4 md:px-12 pb-12 pt-4"
             style={{ height: 'calc(100vh - 6%)' }}
         >
             <div className="flex flex-row justify-start">
-                <Button 
-                    variant="ghost" 
+                <Button
+                    variant="ghost"
                     className="cursor-pointer"
                     onClick={() => setShowWorkbench(false)}
                 >
                     <ArrowLeftIcon className="size-4" />
-                    Volver
+                    Back
                 </Button>
             </div>
             <div className="h-full border rounded-lg overflow-hidden mt-4">

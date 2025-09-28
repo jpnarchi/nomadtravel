@@ -1,5 +1,5 @@
 import { Chat } from "@/components/chat/chat";
-import { getChatById, getMessagesForChat, getSuggestionsForChat } from "@/lib/convex-server";
+import { getChatById, getFilesForChat, getMessagesForChat, getSuggestionsForChat } from "@/lib/convex-server";
 import { Id } from "@/convex/_generated/dataModel";
 import { notFound } from "next/navigation";
 
@@ -11,6 +11,9 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     }
     const initialMessages = await getMessagesForChat(id as Id<"chats">);
     const initialSuggestions = await getSuggestionsForChat(id as Id<"chats">);
+    const initialFiles = await getFilesForChat(id as Id<"chats">);
+
+    console.log(initialFiles);
 
     return (
         <Chat 
@@ -18,6 +21,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             initialMessages={initialMessages} 
             initialSuggestions={initialSuggestions}
             initialTitle={chat.title || 'New Chat'}
+            initialFiles={initialFiles}
         />
     )
 }

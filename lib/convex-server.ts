@@ -32,36 +32,6 @@ export async function getMessagesForChat(chatId: Id<"chats">): Promise<UIMessage
         }));
 
         return formattedMessages;
-
-        // return messages.map((message) => ({
-        //     id: message._id,
-        //     role: message.role,
-        //     parts: message.parts.map((part): UIMessagePart<any, any> => {
-        //         // Handle tool parts that need specific type formatting
-        //         if (part.type.startsWith('tool-') && 'toolCallId' in part) {
-        //             return {
-        //                 ...part,
-        //                 type: part.type as `tool-${string}`, // Type assertion for tool parts
-        //             } as UIMessagePart<any, any>;
-        //         }
-
-        //         // Handle dynamic tool parts
-        //         if (part.type === 'dynamic-tool') {
-        //             return part as UIMessagePart<any, any>;
-        //         }
-
-        //         // Handle data parts
-        //         if (part.type.startsWith('data-')) {
-        //             return {
-        //                 ...part,
-        //                 type: part.type as `data-${string}`,
-        //             } as UIMessagePart<any, any>;
-        //         }
-
-        //         // Handle all other standard parts (text, reasoning, file, source-url, source-document, step-start)
-        //         return part as UIMessagePart<any, any>;
-        //     }),
-        // }));
     } catch (error) {
         console.error("Error fetching messages:", error);
         return [];
@@ -111,5 +81,54 @@ export async function getSuggestionsForChat(chatId: Id<"chats">): Promise<string
     } catch (error) {
         console.error("Error fetching suggestions:", error);
         return [];
+    }
+}
+
+export async function getFilesForChat(chatId: Id<"chats">): Promise<Record<string, string>> {
+    try {
+        // Get the user's session token from Clerk
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        // Set the auth token for this request
+        convex.setAuth(token);
+
+        const files = await convex.query(api.files.getAll, { chatId });
+
+        if (!files) {
+            return {};
+        }
+
+        return files.reduce((acc, file) => ({
+            ...acc,
+            [file.path]: file.content
+        }), {});
+    } catch (error) {
+        console.error("Error fetching files:", error);
+        return {};
+    }
+}
+
+export async function createFileForChat(chatId: Id<"chats">, path: string, content: string): Promise<Id<"files"> | undefined> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        const file = await convex.mutation(api.files.create, { chatId, path, content });
+
+        return file;
+    } catch (error) {
+        console.error("Error creating file:", error);
+        return undefined;
     }
 }

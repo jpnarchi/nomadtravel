@@ -30,7 +30,7 @@ export default defineSchema({
         chatId: v.id('chats'),
         userId: v.id('users'),
         role: v.union(
-            v.literal("user"), 
+            v.literal("user"),
             v.literal("assistant")
         ),
         parts: v.array(v.any()),
@@ -43,4 +43,13 @@ export default defineSchema({
         suggestions: v.array(v.string()),
     })
         .index('by_chat_id', ['chatId'])
+    ,
+    files: defineTable({
+        chatId: v.id('chats'),
+        userId: v.id('users'),
+        path: v.string(),
+        content: v.string(),
+    })
+        .index('by_chat_id', ['chatId'])
+    ,
 });
