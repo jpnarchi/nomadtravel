@@ -63,9 +63,12 @@ export const getAll = query({
 
 export const create = mutation({
     args: {
-        chatId: v.optional(v.id("chats")),
-        role: v.optional(v.union(v.literal("user"), v.literal("assistant"))),
-        content: v.optional(v.string()),
+        chatId: v.optional(v.id('chats')),
+        role: v.optional(v.union(
+            v.literal("user"), 
+            v.literal("assistant")
+        )),
+        parts: v.optional(v.array(v.any())),
     },
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
@@ -78,8 +81,8 @@ export const create = mutation({
             throw new Error("Role not found");
         }
 
-        if (!args.content) {
-            throw new Error("Content not found");
+        if (!args.parts) {
+            throw new Error("Message parts not found");
         }
 
         const chat = await ctx.db.get(args.chatId);
@@ -96,7 +99,7 @@ export const create = mutation({
             chatId: args.chatId,
             userId: user._id,
             role: args.role,
-            content: args.content,
+            parts: args.parts,
         });
 
         return messageId;

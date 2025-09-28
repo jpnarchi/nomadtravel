@@ -7,6 +7,8 @@ import { UIMessage } from "ai";
 import { useScrollToBottom } from "../global/use-scroll-to-bottom";
 import { SuggestionButtons } from "./suggestion-buttons";
 import { PreviewButton } from "./preview-button";
+import { ProjectSummary } from "./tools/project-summary";
+import { ProjectSummaryData, ProjectSummaryResponse } from "@/lib/interfaces";
 
 export function ChatMessages({
     messages,
@@ -42,7 +44,7 @@ export function ChatMessages({
                                             <div className="flex flex-row gap-3 items-start">
                                                 {role === 'assistant' && (
                                                     <div className="shrink-0 mt-2">
-                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} priority/>
+                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
                                                     </div>
                                                 )}
                                                 {role === 'user' && (
@@ -65,10 +67,41 @@ export function ChatMessages({
                                         </div>
                                     )
                                 }
+
+                                if (part.type === "tool-displayProjectSummary") {
+                                    if (!part.output) return null;
+                                    const response = part.output as ProjectSummaryResponse;
+                                    return (
+                                        <div key={index}>
+                                            <ProjectSummary data={response.data} />
+                                        </div>
+                                    )
+                                }
                             })}
                         </div>
                     </motion.div>
                 ))}
+
+                {isLoading && (
+                    <motion.div
+                        initial={{ y: 5, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 1 }}
+                        className={`flex flex-row gap-4 px-4 py-1 w-full md:w-[500px] md:px-0 first-of-type:pt-2`}
+                    >
+                        <div className="flex flex-row gap-3 items-start w-full md:w-[500px] md:px-0">
+                            <div className="shrink-0 mt-2">
+                                <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-row gap-2 items-center">
+                                <Loader className="size-4" />
+                                <div className="text-zinc-500 italic">
+                                    Thinking...
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
                 <div
                     ref={messagesEndRef}

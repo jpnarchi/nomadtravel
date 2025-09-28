@@ -33,7 +33,7 @@ export function ChatContainer() {
                 await createMessage({
                     chatId,
                     role: "user",
-                    content: input,
+                    parts: [{ type: "text", text: input }],
                 });
 
                 router.push(`/chat/${chatId}`);

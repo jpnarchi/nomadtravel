@@ -27,8 +27,11 @@ export default defineSchema({
     messages: defineTable({
         chatId: v.id('chats'),
         userId: v.id('users'),
-        role: v.union(v.literal("user"), v.literal("assistant")),
-        content: v.string(),
+        role: v.union(
+            v.literal("user"), 
+            v.literal("assistant")
+        ),
+        parts: v.array(v.any()),
     })
         .index('by_chat_id', ['chatId'])
     ,

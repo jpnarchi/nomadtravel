@@ -37,23 +37,17 @@ export function ChatContainer({
     const { messages, sendMessage, stop, status } = useChat({
         messages: initialMessages.length === 1 ? [] : initialMessages,
         onFinish: async (options) => {
-            const content = options.message
-                .parts
-                .filter(part => part.type === 'text')
-                .map(part => part.text)
-                .join(' ');
-
             await createMessage({
                 chatId: id,
                 role: "assistant",
-                content: content,
+                parts: options.message.parts,
             });
+
+            await generateSuggestions(options.message);
 
             if (initialTitle === 'New Chat' && initialMessages.length === 1) {
                 await generateTitle([...initialMessages, options.message]);
             }
-
-            await generateSuggestions(options.message);
         }
     });
 
@@ -77,7 +71,7 @@ export function ChatContainer({
             await createMessage({
                 chatId: id,
                 role: "user",
-                content: input,
+                parts: [{ type: "text", text: input }],
             });
             setInput('');
             setSuggestions([]);
@@ -89,7 +83,7 @@ export function ChatContainer({
         await createMessage({
             chatId: id,
             role: "user",
-            content: suggestion,
+            parts: [{ type: "text", text: suggestion }],
         });
         setInput('');
         setSuggestions([]);

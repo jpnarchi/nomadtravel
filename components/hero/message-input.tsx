@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { ArrowUpIcon, ClipIcon, StopIcon } from "../global/icons";
+import { ArrowUpIcon, ClipIcon } from "../global/icons";
 import { MicrophoneButton } from "../global/microphone-button";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
@@ -63,9 +63,8 @@ export function MessageInput({
                                     type="button"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
-                                    onClick={() => {}}
+                                    disabled={true}
                                 >
-                                    {/* <StopIcon /> */}
                                     <Loader2 className="animate-spin"/>
                                 </Button>
                             ) : (
@@ -73,7 +72,7 @@ export function MessageInput({
                                     type="submit"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={!input.trim()}
+                                    disabled={!input.trim() || isLoading}
                                 >
                                     <ArrowUpIcon />
                                 </Button>

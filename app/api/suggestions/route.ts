@@ -16,7 +16,8 @@ export async function POST(request: Request) {
       .map(part => part.text)
     
     const { object } = await generateObject({
-      model: openrouter('x-ai/grok-4-fast:free'),
+      // model: openrouter('x-ai/grok-4-fast:free'),
+      model: openrouter('google/gemini-2.5-flash'),
       prompt: `Generate 3 contextual quick replies (1-12 chars each) based on this conversation:
 
 Last message from Assistant: "${context}"

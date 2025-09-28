@@ -18,7 +18,8 @@ export async function POST(request: Request) {
             )
 
         const { object } = await generateObject({
-            model: openrouter('x-ai/grok-4-fast:free'),
+            // model: openrouter('x-ai/grok-4-fast:free'),
+            model: openrouter('google/gemini-2.5-flash'),
             prompt: `Generate a title for this conversation, it should be 1 to 3 words:
 
 messages: "${context}"
