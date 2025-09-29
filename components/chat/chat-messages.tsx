@@ -69,28 +69,57 @@ export function ChatMessages({
                                 }
 
                                 if (part.type === "tool-displayProjectSummary") {
-                                    if (!part.output) return null;
-                                    const response = part.output as ProjectSummaryResponse;
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as ProjectSummaryResponse;
+                                        return (
+                                            <div key={index}>
+                                                <ProjectSummary data={response.data} />
+                                            </div>
+                                        )
+                                    }
                                     return (
-                                        <div key={index}>
-                                            <ProjectSummary data={response.data} />
+                                        <div key={index} className="flex flex-row gap-4 items-center">
+                                            {role === 'assistant' && (
+                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                            )}
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Loader />
+                                                <div className="text-zinc-500 italic">
+                                                    Generating summary...
+                                                </div>
+                                            </div>
                                         </div>
                                     )
                                 }
 
                                 if (part.type === "tool-generateCode") {
-                                    const version = 1;
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const version = 1;
+                                        return (
+                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
+                                                {role === 'assistant' && (
+                                                    <div className="shrink-0 mt-2">
+                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
+                                                    </div>
+                                                )}
+                                                <PreviewButton
+                                                    id={id}
+                                                    version={version}
+                                                />
+                                            </div>
+                                        )
+                                    }
                                     return (
-                                        <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
+                                        <div key={index} className="flex flex-row gap-4 items-center">
                                             {role === 'assistant' && (
-                                                <div className="shrink-0 mt-2">
-                                                    <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
-                                                </div>
+                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
                                             )}
-                                            <PreviewButton 
-                                                id={id}
-                                                version={version}
-                                            />
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Loader />
+                                                <div className="text-zinc-500 italic">
+                                                    Generating code...
+                                                </div>
+                                            </div>
                                         </div>
                                     )
                                 }
