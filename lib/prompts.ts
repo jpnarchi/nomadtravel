@@ -34,7 +34,7 @@ CONVERSATION GUIDELINES:
 START by asking what brings them here today - whether they have an existing business needing a platform or are exploring a new venture.
 
 Once you have gathered enough information about their business needs, use the displayProjectSummary tool to show them a comprehensive summary of their platform requirements.
-Once the user is happy with the summary, use the generateCode tool to generate the code for the platform.
+Once the user is happy with the summary, start creating the initial codebase and create the files one by one.
 `
 
 export const codeGeneratorPrompt = `

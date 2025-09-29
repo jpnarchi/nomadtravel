@@ -6,10 +6,12 @@ import { Loader } from "@/components/ai-elements/loader";
 import { UIMessage } from "ai";
 import { useScrollToBottom } from "../global/use-scroll-to-bottom";
 import { SuggestionButtons } from "./suggestion-buttons";
-import { PreviewButton } from "./preview-button";
+import { PreviewButton } from "./tools/preview-button";
 import { ProjectSummary } from "./tools/project-summary";
 import { ProjectSummaryResponse } from "@/lib/interfaces";
 import { Id } from "@/convex/_generated/dataModel";
+import { CreatedFile } from "./tools/created-file";
+import { UpdatedFile } from "./tools/updated-file";
 
 export function ChatMessages({
     id,
@@ -41,7 +43,7 @@ export function ChatMessages({
                                 //console.log(part)
                                 if (part.type === "text") {
                                     return (
-                                        <div key={index} className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4">
+                                        <div key={index} className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4 mb-2">
                                             <div className="flex flex-row gap-3 items-start">
                                                 {role === 'assistant' && (
                                                     <div className="shrink-0 mt-2">
@@ -97,15 +99,20 @@ export function ChatMessages({
                                         const response = part.output as any;
                                         const message = response.message as string;
                                         return (
-                                            <div key={index} className="bg-background border rounded-md p-4 mb-2">
-                                                {message}
+                                            <div key={index}>
+                                                <CreatedFile
+                                                    message={message}
+                                                    isLoading={false}
+                                                />
                                             </div>
                                         )
                                     }
                                     return (
-                                        <div key={index} className="flex gap-4 items-center bg-background border rounded-md p-4 mb-2">
-                                            <Loader />
-                                            Creating file...
+                                        <div key={index}>
+                                            <CreatedFile
+                                                message={'Creating file...'}
+                                                isLoading={true}
+                                            />
                                         </div>
                                     )
                                 }
@@ -115,15 +122,20 @@ export function ChatMessages({
                                         const response = part.output as any;
                                         const message = response.message as string;
                                         return (
-                                            <div key={index} className="bg-background border rounded-md p-4 mb-2">
-                                                {message}
+                                            <div key={index}>
+                                                <UpdatedFile
+                                                    message={message}
+                                                    isLoading={false}
+                                                />
                                             </div>
                                         )
                                     }
                                     return (
-                                        <div key={index} className="flex gap-4 items-center bg-background border rounded-md p-4 mb-2">
-                                            <Loader />
-                                            Updating file...
+                                        <div key={index}>
+                                            <UpdatedFile
+                                                message={'Updating file...'}
+                                                isLoading={true}
+                                            />
                                         </div>
                                     )
                                 }
@@ -189,12 +201,12 @@ export function ChatMessages({
                                     if (part.output && part.state && part.state === 'output-available') {
                                         const version = 1;
                                         return (
-                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
-                                                {role === 'assistant' && (
+                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
+                                                {/* {role === 'assistant' && (
                                                     <div className="shrink-0 mt-2">
                                                         <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
                                                     </div>
-                                                )}
+                                                )} */}
                                                 <PreviewButton
                                                     id={id}
                                                     version={version}

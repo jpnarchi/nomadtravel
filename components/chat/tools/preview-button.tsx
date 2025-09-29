@@ -1,18 +1,18 @@
 import { LaptopMinimal } from "lucide-react";
-import { Card } from "../ui/card";
+import { Card } from "../../ui/card";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 
-export function PreviewButton({ 
+export function PreviewButton({
     id,
     version
-}: { 
+}: {
     id: Id<"chats">,
     version: number
 }) {
     const router = useRouter();
     return (
-        <Card 
+        <Card
             className="w-full flex flex-row justify-between items-center px-4 py-2 rounded-lg cursor-pointer hover:bg-accent transition-colors"
             onClick={() => {
                 router.push(`/chat/${id}/preview/${version}`);
