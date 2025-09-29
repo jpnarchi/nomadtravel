@@ -43,6 +43,27 @@ export const getAll = query({
     },
 });
 
+export const getById = query({
+    args: {
+        id: v.id('templates'),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (user.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        const template = await ctx.db.get(args.id);
+
+        if (!template) {
+            throw new Error("Template not found");
+        }
+
+        return template;
+    },
+});
+
 export const getFiles = query({
     args: {
         name: v.optional(v.string()),
@@ -91,8 +112,13 @@ export const createTemplate = mutation({
             throw new Error("Description is required");
         }
 
-        const template = await ctx.db.insert("templates", { name: args.name!, description: args.description! });
-        return template;
+        const template = await ctx.db.query("templates").withIndex("by_name", (q) => q.eq("name", args.name!)).unique();
+        if (template) {
+            throw new Error("Template already exists");
+        }
+
+        const templateId = await ctx.db.insert("templates", { name: args.name!, description: args.description! });
+        return templateId;
     },
 });
 
@@ -123,6 +149,36 @@ export const createTemplateFile = mutation({
 
         const templateFile = await ctx.db.insert("templateFiles", { templateId: args.templateId, path: args.path, content: args.content });
         return templateFile;
+    },
+});
+
+export const updateTemplate = mutation({
+    args: {
+        id: v.id('templates'),
+        name: v.optional(v.string()),
+        description: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (user.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        if (!args.name) {
+            throw new Error("Name is required");
+        }
+
+        if (!args.description) {
+            throw new Error("Description is required");
+        }
+
+        await ctx.db.patch(args.id, {
+            name: args.name!,
+            description: args.description!,
+        });
+
+        return { success: true };
     },
 });
 

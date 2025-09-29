@@ -275,3 +275,22 @@ export async function getTemplateFiles(name: string): Promise<Doc<"templateFiles
         return [];
     }
 }
+
+export async function getTemplateById(id: Id<"templates">): Promise<Doc<"templates"> | null> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        const template = await convex.query(api.templates.getById, { id });
+        return template;
+    } catch (error) {
+        console.error("Error fetching template:", error);
+        return null;
+    }
+}

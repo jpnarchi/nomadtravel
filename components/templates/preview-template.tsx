@@ -1,85 +1,46 @@
+'use client'
+
+import { Id } from "@/convex/_generated/dataModel"
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 
-import { ArrowLeftIcon, Loader2, PlusIcon } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
-import { toast } from "sonner";
-import { CreateTemplateDialog } from "./create-template-dialog";
+const dependencies = {
+    "lucide-react": "latest",
+    "framer-motion": "latest"
+}
 
-export function Workbench({
+export function PreviewTemplate({
     id,
     initialFiles
 }: {
-    id: Id<"chats">,
+    id: Id<"templates">,
     initialFiles: Record<string, string>
 }) {
-    const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
-    const [showCode, setShowCode] = useState(false);
-    const [files, setFiles] = useState(initialFiles);
+    const [showCode, setShowCode] = useState(true);
     const [isDesktop, setIsDesktop] = useState(false);
-    const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
-    const [templateName, setTemplateName] = useState("");
-    const [templateDescription, setTemplateDescription] = useState("");
-    const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
-    const router = useRouter();
-
-    // Convex mutations
-    const createTemplate = useMutation(api.templates.createTemplate);
-    const createTemplateFile = useMutation(api.templates.createTemplateFile);
 
     useEffect(() => {
         const checkScreenSize = () => {
-            setIsDesktop(window.innerWidth >= 1024); // lg breakpoint
+            setIsDesktop(window.innerWidth >= 1024);
         };
-
         checkScreenSize();
         window.addEventListener('resize', checkScreenSize);
-
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
-
-    const dependencies = {
-        "lucide-react": "latest",
-        "framer-motion": "latest"
-    }
 
     return (
         <div
             className="px-4 md:px-12 pb-12 pt-4"
             style={{ height: 'calc(100vh - 6%)' }}
         >
-            <div className="flex flex-row justify-between items-center">
-                <Button
-                    variant="ghost"
-                    className="cursor-pointer"
-                    onClick={() => {
-                        setIsBackButtonLoading(true);
-                        router.push(`/chat/${id}`);
-                        router.refresh();
-                    }}
-                >
-                    {isBackButtonLoading ? (<Loader2 className="size-4 animate-spin" />) : (<ArrowLeftIcon className="size-4" />)}
-                    Atrás
-                </Button>
-
-                <div className="flex gap-2">
-                    <CreateTemplateDialog files={files} />
-                    <Button
-                        variant="outline"
-                        className="cursor-pointer"
-                        onClick={() => setShowCode(!showCode)}
-                    >
-                        {showCode ? "Vista previa" : "Código"}
-                    </Button>
-                </div>
-            </div>
+            <h1>Template {id}</h1>
+            <Button variant="default" className="cursor-pointer" onClick={() => setShowCode(!showCode)}>
+                {showCode ? "Vista previa" : "Código"}
+            </Button>
             <div className="h-full border rounded-lg overflow-hidden mt-4">
                 <SandpackProvider
-                    files={files}
+                    files={initialFiles}
                     theme="dark"
                     template="react"
                     options={{
@@ -97,7 +58,7 @@ export function Workbench({
                                 showOpenInCodeSandbox={false}
                                 showRefreshButton={false}
                                 showNavigator={true}
-                                style={{ height: '100%', width: '100%' }}
+                                style={{ height: '80vh', width: '100%' }}
                             />
                         )}
                         {showCode && (
@@ -125,5 +86,5 @@ export function Workbench({
                 </SandpackProvider>
             </div>
         </div>
-    );
+    )
 }

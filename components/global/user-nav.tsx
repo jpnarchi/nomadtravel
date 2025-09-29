@@ -145,7 +145,7 @@
 import { UserButton } from "@clerk/nextjs"
 import { api } from "@/convex/_generated/api"
 import { useQuery } from "convex/react"
-import { Info, Lock } from "lucide-react";
+import { Info, Lock, Laptop2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function UserNav() {
@@ -153,17 +153,20 @@ export function UserNav() {
     const router = useRouter();
 
     return (
-        <UserButton
-            // appearance={{
-            //     baseTheme: BaseTheme.Dark,
-            // }}
-        >
+        <UserButton>
             <UserButton.MenuItems>
                 {isAdmin && (
                     <UserButton.Action
                         label="Admin"
                         labelIcon={<Lock className="w-3.5 h-3.5 stroke-2" />}
                         onClick={() => router.push('/admin')}
+                    />
+                )}
+                {isAdmin && (
+                    <UserButton.Action
+                        label="Plantillas"
+                        labelIcon={<Laptop2 className="w-3.5 h-3.5 stroke-2" />}
+                        onClick={() => router.push('/templates')}
                     />
                 )}
                 <UserButton.Action label="manageAccount" />
