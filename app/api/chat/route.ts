@@ -32,6 +32,10 @@ export async function POST(req: Request) {
     Always show preview when you finish what the user asked you to do.
     Don't create a tailwind.config.js file.
     Don't mention anything technical to the user.
+    Always create components in the /components folder.
+    Never output lists.
+    Never output emojis.
+    Keep your responses short and concise. 1 sentence maximum.
     `,
     stopWhen: stepCountIs(50),
     maxOutputTokens: 64_000,
@@ -91,13 +95,14 @@ export async function POST(req: Request) {
         inputSchema: z.object({
           path: z.string().describe('File path (e.g., "/components/Header.js", "/App.js")'),
           content: z.string().describe('Complete file content with React and TailwindCSS code'),
+          explanation: z.string().describe('Explanation in 1 to 3 words of the changes you are making for non-technical users'),
         }),
-        execute: async function ({ path, content }) {
+        execute: async function ({ path, content, explanation }) {
           try {
             await createFileForChat(id, path, content);
             return {
               success: true,
-              message: `Created ${path}`
+              message: `${explanation}`
             };
           } catch (error) {
             console.error('Error creating file:', error);
@@ -114,13 +119,14 @@ export async function POST(req: Request) {
         inputSchema: z.object({
           path: z.string().describe('Path of the file to update'),
           content: z.string().describe('Updated complete file content'),
+          explanation: z.string().describe('Explanation in 1 to 3 words of the changes you are making for non-technical users'),
         }),
-        execute: async function ({ path, content }) {
+        execute: async function ({ path, content, explanation }) {
           try {
             await updateFileForChat(id, path, content);
             return {
               success: true,
-              message: `Updated ${path}`
+              message: `${explanation}`
             };
           } catch (error) {
             console.error('Error updating file:', error);
@@ -136,13 +142,14 @@ export async function POST(req: Request) {
         description: 'Delete a file that is no longer needed.',
         inputSchema: z.object({
           path: z.string().describe('Path of the file to delete'),
+          explanation: z.string().describe('Explanation in 1 to 3 words of the changes you are making for non-technical users'),
         }),
-        execute: async function ({ path }) {
+        execute: async function ({ path, explanation }) {
           try {
             await deleteFileForChat(id, path);
             return {
               success: true,
-              message: `Deleted ${path}`
+              message: `${explanation}`
             };
           } catch (error) {
             console.error('Error deleting file:', error);

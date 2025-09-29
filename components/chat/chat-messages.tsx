@@ -10,8 +10,7 @@ import { PreviewButton } from "./tools/preview-button";
 import { ProjectSummary } from "./tools/project-summary";
 import { ProjectSummaryResponse } from "@/lib/interfaces";
 import { Id } from "@/convex/_generated/dataModel";
-import { CreatedFile } from "./tools/created-file";
-import { UpdatedFile } from "./tools/updated-file";
+import { FileTool } from "./tools/file-tool";
 
 export function ChatMessages({
     id,
@@ -100,7 +99,7 @@ export function ChatMessages({
                                         const message = response.message as string;
                                         return (
                                             <div key={index}>
-                                                <CreatedFile
+                                                <FileTool
                                                     message={message}
                                                     isLoading={false}
                                                 />
@@ -109,8 +108,8 @@ export function ChatMessages({
                                     }
                                     return (
                                         <div key={index}>
-                                            <CreatedFile
-                                                message={'Creating file...'}
+                                            <FileTool
+                                                message={"Creating..."}
                                                 isLoading={true}
                                             />
                                         </div>
@@ -123,7 +122,7 @@ export function ChatMessages({
                                         const message = response.message as string;
                                         return (
                                             <div key={index}>
-                                                <UpdatedFile
+                                                <FileTool
                                                     message={message}
                                                     isLoading={false}
                                                 />
@@ -132,8 +131,8 @@ export function ChatMessages({
                                     }
                                     return (
                                         <div key={index}>
-                                            <UpdatedFile
-                                                message={'Updating file...'}
+                                            <FileTool
+                                                message={"Updating..."}
                                                 isLoading={true}
                                             />
                                         </div>
@@ -145,22 +144,20 @@ export function ChatMessages({
                                         const response = part.output as any;
                                         const message = response.message as string;
                                         return (
-                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4 bg-background border rounded-md p-2">
-                                                {message}
+                                            <div key={index}>
+                                                <FileTool
+                                                    message={message}
+                                                    isLoading={false}
+                                                />
                                             </div>
                                         )
                                     }
                                     return (
-                                        <div key={index} className="flex flex-row gap-4 items-center">
-                                            {role === 'assistant' && (
-                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
-                                            )}
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <Loader />
-                                                <div className="text-zinc-500 italic">
-                                                    Deleting file...
-                                                </div>
-                                            </div>
+                                        <div key={index}>
+                                            <FileTool
+                                                message={"Deleting..."}
+                                                isLoading={true}
+                                            />
                                         </div>
                                     )
                                 }
