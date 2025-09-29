@@ -117,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             variant="outline"
           >
             <Plus className="h-4 w-4" />
-            New Chat
+            Nuevo Chat
           </Button>
         </div>
 
@@ -126,7 +126,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search chats..."
+              placeholder="Buscar chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 h-9"
@@ -168,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                           >
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
+                            <span className="sr-only">Abrir menú</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
@@ -180,14 +180,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="gap-2 cursor-pointer"
                           >
                             <Edit2 className="h-4 w-4 text-white" />
-                            Edit title
+                            Editar título
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDeleteChat(item._id)}
                             className="gap-2 cursor-pointer text-red-500 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
-                            <p className="text-red-500">Delete</p>
+                            <p className="text-red-500">Eliminar</p>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -200,14 +200,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {/* No results message */}
             {searchQuery && filteredChats?.length === 0 && (
               <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                No chats found matching "{searchQuery}"
+                No chats encontrados que coincidan con "{searchQuery}"
               </div>
             )}
 
             {/* No chats message */}
             {!searchQuery && (!getAllChats || getAllChats.length === 0) && (
               <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                No chats yet. Create your first chat!
+                No hay chats. Crea tu primer chat!
               </div>
             )}
           </SidebarMenu>

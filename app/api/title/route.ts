@@ -1,7 +1,6 @@
 import { generateObject, UIMessage } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
-import { titleGeneratorPrompt } from '@/lib/prompts';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -21,7 +20,13 @@ export async function POST(request: Request) {
         const { object } = await generateObject({
             // model: openrouter('x-ai/grok-4-fast'),
             model: openrouter('google/gemini-2.5-flash'),
-            prompt: titleGeneratorPrompt.replace('${context}', context.join(' ')),
+            prompt: `
+Genera un título para esta conversación, debe ser de 1 a 3 palabras:
+
+Mensajes: "${context}"
+
+Haz el título relevante a la conversación.
+`,
             schema: z.object({
                 title: z.string()
             }),

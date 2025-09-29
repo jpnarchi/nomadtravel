@@ -40,7 +40,7 @@ export function ChatContainer() {
             }
         } catch (error) {
             console.error(error);
-            toast.error('Failed to create chat');
+            toast.error('Error al crear el chat');
         }
     };
 
@@ -65,7 +65,7 @@ export function ChatContainer() {
                             transition: { duration: 0.2, ease: "easeInOut" }
                         }}
                     >
-                        Ready to build?
+                        Crea tu página
                     </motion.p>
                     <motion.div
                         className="w-full"

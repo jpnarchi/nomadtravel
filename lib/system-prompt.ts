@@ -151,19 +151,3 @@ Icons:
     - For example, you can import an icon as import { Heart } from "lucide-react" and use it in JSX as <Heart className="" />.
     - For unavailable icons, create a custom SVG component with the same style and structure.
 `
-
-export const titleGeneratorPrompt = `
-Generate a title for this conversation, it should be 1 to 3 words:
-
-messages: "\${context}"
-
-Make the title relevant to the conversation.
-`
-
-export const suggestionGeneratorPrompt = `
-Generate 3 contextual quick replies (1-12 chars each) based on this conversation:
-
-Last message from Assistant: "\${context}"
-
-Make suggestions relevant to what was just said - natural responses a user would actually send.
-`

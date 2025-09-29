@@ -1,10 +1,9 @@
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
-import { createFileForChat, getPromptForAgent, getFilesForChat, updateFileForChat, deleteFileForChat } from '@/lib/convex-server';
+import { createFileForChat, getFilesForChat, updateFileForChat, deleteFileForChat } from '@/lib/convex-server';
 import { Id } from '@/convex/_generated/dataModel';
 import { defaultFiles } from '@/lib/default-files';
-import { mainAgentPrompt } from '@/lib/prompts';
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -15,27 +14,24 @@ export const maxDuration = 300;
 export async function POST(req: Request) {
   const { id, messages }: { id: Id<"chats">; messages: UIMessage[]; } = await req.json();
 
-  // const mainAgentPrompt = await getPromptForAgent("main_agent");
-  // const codeGeneratorPrompt = await getPromptForAgent("code_generator");
-
   const result = streamText({
     // model: openrouter('x-ai/grok-4-fast:free'),
     // model: openrouter('google/gemini-2.5-flash'),
     model: openrouter('anthropic/claude-sonnet-4'),
     messages: convertToModelMessages(messages),
     system: `
-    You are Nerd, a helpful assistant that knows ONLY knows React and TailwindCSS. 
-    Don't ever use the /src folder. 
-    /App.js is the root component. 
-    Don't ever mention something technical to the user. 
-    Always generate initial codebase before you start working on the project.
-    Always show preview when you finish what the user asked you to do.
-    Don't create a tailwind.config.js file.
-    Don't mention anything technical to the user.
-    Always create components in the /components folder.
-    Never output lists.
-    Never output emojis.
-    Keep your responses short and concise. 1 sentence maximum.
+    Eres Nerd, un asistente útil que solo conoce React y TailwindCSS. 
+    Nunca usas la carpeta /src. 
+    /App.js es el componente raíz. 
+    Nunca menciones algo técnico al usuario. 
+    Genera siempre el código inicial antes de empezar a trabajar en el proyecto.
+    Muestra siempre la vista previa cuando termines lo que el usuario te pidió.
+    No crees un archivo tailwind.config.js.
+    Nunca menciones algo técnico al usuario.
+    Crea siempre componentes en la carpeta /components.
+    Nunca muestras listas.
+    Nunca muestras emojis.
+    Mantén tus respuestas cortas y concisas. 1 frase máxima.
     `,
     stopWhen: stepCountIs(50),
     maxOutputTokens: 64_000,
@@ -91,11 +87,11 @@ export async function POST(req: Request) {
       // },
 
       createFile: {
-        description: 'Create a new React component or file with TailwindCSS styling. Use this for new files only.',
+        description: 'Crea un nuevo componente React o archivo con estilo TailwindCSS. Usa esto solo para nuevos archivos.',
         inputSchema: z.object({
-          path: z.string().describe('File path (e.g., "/components/Header.js", "/App.js")'),
-          content: z.string().describe('Complete file content with React and TailwindCSS code'),
-          explanation: z.string().describe('Explanation in 1 to 3 words of the changes you are making for non-technical users'),
+          path: z.string().describe('Ruta del archivo (por ejemplo, "/components/Header.js", "/App.js")'),
+          content: z.string().describe('Contenido completo del archivo con código React y TailwindCSS'),
+          explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
         }),
         execute: async function ({ path, content, explanation }) {
           try {
@@ -108,18 +104,18 @@ export async function POST(req: Request) {
             console.error('Error creating file:', error);
             return {
               success: false,
-              error: `Failed to create ${path}`
+              error: `Error al crear ${path}`
             };
           }
         },
       },
 
       updateFile: {
-        description: 'Update an existing file. Use this to modify React components or fix issues in existing files.',
+        description: 'Actualiza un archivo existente. Usa esto para modificar componentes React o corregir problemas en archivos existentes.',
         inputSchema: z.object({
-          path: z.string().describe('Path of the file to update'),
-          content: z.string().describe('Updated complete file content'),
-          explanation: z.string().describe('Explanation in 1 to 3 words of the changes you are making for non-technical users'),
+          path: z.string().describe('Ruta del archivo a actualizar'),
+          content: z.string().describe('Contenido completo del archivo actualizado'),
+          explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
         }),
         execute: async function ({ path, content, explanation }) {
           try {
@@ -132,17 +128,17 @@ export async function POST(req: Request) {
             console.error('Error updating file:', error);
             return {
               success: false,
-              error: `Failed to update ${path}`
+              error: `Error al actualizar ${path}`
             };
           }
         },
       },
 
       deleteFile: {
-        description: 'Delete a file that is no longer needed.',
+        description: 'Elimina un archivo que ya no es necesario.',
         inputSchema: z.object({
-          path: z.string().describe('Path of the file to delete'),
-          explanation: z.string().describe('Explanation in 1 to 3 words of the changes you are making for non-technical users'),
+          path: z.string().describe('Ruta del archivo a eliminar'),
+          explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
         }),
         execute: async function ({ path, explanation }) {
           try {
@@ -155,21 +151,21 @@ export async function POST(req: Request) {
             console.error('Error deleting file:', error);
             return {
               success: false,
-              error: `Failed to delete ${path}`
+              error: `Error al eliminar ${path}`
             };
           }
         },
       },
 
       generateInitialCodebase: {
-        description: 'Generate the initial codebase structure.',
+        description: 'Genera el proyecto con los archivos iniciales.',
         inputSchema: z.object({}),
         execute: async function () {
           const files = defaultFiles;
           for (const [path, content] of Object.entries(files)) {
             await createFileForChat(id, path, content);
           }
-          const message = `Initial codebase generated with ${Object.keys(files).length} files`;
+          const message = `Proyecto creado con éxito`;
           const filesCreated = Object.keys(files).length;
           return {
             success: true,
@@ -181,7 +177,7 @@ export async function POST(req: Request) {
       },
 
       showPreview: {
-        description: 'Show the preview of the codebase.',
+        description: 'Muestra la vista previa del proyecto.',
         inputSchema: z.object({}),
         execute: async function () {
           return {

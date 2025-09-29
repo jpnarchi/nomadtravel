@@ -53,14 +53,4 @@ export default defineSchema({
         .index('by_chat_id', ['chatId'])
         .index('by_chat_path', ['chatId', 'path'])
     ,
-    prompts: defineTable({
-        agent: v.union(
-            v.literal("main_agent"),
-            v.literal("code_generator"),
-            v.literal("title_generator"),
-            v.literal("suggestion_generator")
-        ),
-        prompt: v.string(),
-    })
-        .index('by_agent', ['agent'])
 });

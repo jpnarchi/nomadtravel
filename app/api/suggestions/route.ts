@@ -1,7 +1,6 @@
 import { generateObject, UIMessage } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
-import { suggestionGeneratorPrompt } from '@/lib/prompts';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -20,7 +19,13 @@ export async function POST(request: Request) {
     const { object } = await generateObject({
       // model: openrouter('x-ai/grok-4-fast'),
       model: openrouter('google/gemini-2.5-flash'),
-      prompt: suggestionGeneratorPrompt.replace('${context}', context),
+      prompt: `
+Genera 3 sugerencias contextuales (1-12 chars cada una) basadas en esta conversación:
+
+Último mensaje del Asistente: "${context}"
+
+Haz sugerencias relevantes a lo que se acaba de decir - respuestas naturales que un usuario enviaría realmente.
+`,
       schema: z.object({
         suggestions: z.array(z.string()).length(3)
       }),
