@@ -1,4 +1,4 @@
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from 'ai';
+import { streamText, UIMessage, convertToModelMessages, stepCountIs, generateObject } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
 import { appJsTemplate, buttonComponent } from '@/lib/templates';
@@ -10,6 +10,114 @@ const openrouter = createOpenRouter({
 });
 
 export const maxDuration = 300;
+
+const defaultFilesPrompt = `
+    The default files are already provided in the environment:
+    - /styles.css: 
+        body {
+            font-family: sans-serif;
+            -webkit-font-smoothing: auto;
+            -moz-font-smoothing: auto;
+            -moz-osx-font-smoothing: grayscale;
+            font-smoothing: auto;
+            text-rendering: optimizeLegibility;
+            font-smooth: always;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+        h1 {
+            font-size: 1.5rem;
+        }
+
+    - /package.json:
+        {
+            "dependencies": {
+                "react": "^19.0.0",
+                "react-dom": "^19.0.0",
+                "react-scripts": "^5.0.0"
+            },
+            "main": "/index.js",
+            "devDependencies": {}
+        }
+
+    - /index.js:
+        import React, { StrictMode } from "react";
+        import { createRoot } from "react-dom/client";
+        import "./styles.css";
+
+        import App from "./App";
+
+        const root = createRoot(document.getElementById("root"));
+        root.render(
+            <StrictMode>
+                <App />
+            </StrictMode>
+        );
+
+    - /App.js:
+        export default function App() {
+            return <h1>Hello world</h1>
+        }
+
+    - /public/index.html:
+        <!DOCTYPE html>
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Document</title>
+            </head>
+            <body>
+                <div id="root"></div>
+            </body>
+        </html>
+    `.trim()
+
+const iconsPrompt = `
+    Icons:
+    - You can ONLY use icons from the lucide-react library from this specific list:
+      
+      • AlertCircle
+      • AlertTriangle  
+      • ArrowDown
+      • ArrowLeft
+      • ArrowRight
+      • ArrowUp
+      • Bell
+      • Calendar
+      • Camera
+      • Check
+      • CheckCircle2
+      • Circle
+      • Clock
+      • Download
+      • Edit
+      • Heart
+      • Home
+      • Image
+      • LayoutDashboard
+      • Mail
+      • Menu
+      • Minus
+      • Play
+      • Plus
+      • Rocket
+      • Search
+      • Settings
+      • Shield
+      • Smile
+      • Star
+      • Trash
+      • Upload
+      • User
+      • Users
+      • X
+
+    - NEVER use other lucide-react icons that are not in this list.
+    - If you need an icon that is not in this list, you must design it as a custom SVG.
+    - For example, you can import an icon as import { Heart } from "lucide-react" and use it in JSX as <Heart className="" />.
+    - For unavailable icons, create a custom SVG component with the same style and structure.
+    `.trim()
 
 export async function POST(req: Request) {
   const { id, messages }: { id: Id<"chats">; messages: UIMessage[]; } = await req.json();
@@ -56,7 +164,7 @@ START by asking what brings them here today - whether they have an existing busi
 Once you have gathered enough information about their business needs, use the displayProjectSummary tool to show them a comprehensive summary of their platform requirements.
 Once the user is happy with the summary, use the generateCode tool to generate the code for the platform.
 `
-,
+    ,
     stopWhen: stepCountIs(5),
     tools: {
       displayProjectSummary: {
@@ -120,20 +228,46 @@ Once the user is happy with the summary, use the generateCode tool to generate t
         execute: async function ({
           prompt,
         }) {
-          const code = appJsTemplate
-          const path1 = '/App.js'; 
-          const buttonComponentCode = buttonComponent;
-          const path2 = '/components/Button.js';
 
-          await createFileForChat(id, path1, code);
-          await createFileForChat(id, path2, buttonComponentCode);
+          // TODO: Get all the current files in the chat and pass them to the model as context
 
-          const files = {
-            path1: code,
-            path2: buttonComponentCode
+          try {
+            const { object } = await generateObject({
+              model: openrouter('x-ai/grok-4-fast'),
+              // model: openrouter('google/gemini-2.5-flash'),
+              system:
+                `
+You are a web developer. You can only generate code in React and tailwindcss.
+
+Never consider the /src folder under the root folder.
+
+Create components in the /components folder.
+
+The root component is /App.js.
+
+${defaultFilesPrompt}
+
+${iconsPrompt}
+            `,
+              prompt: prompt,
+              schema: z.object({
+                files: z.record(
+                  z.string().describe('Path of the file'),
+                  z.string().describe('Content of the file')
+                )
+              }),
+            });
+
+            const files = object.files;
+            for (const [path, content] of Object.entries(files)) {
+              await createFileForChat(id, path, content);
+            }
+
+            return { success: true }
+          } catch (error) {
+            console.error('Error generating code:', error);
+            return { success: false }
           }
-
-          return { success: true }
         },
       }
     }
