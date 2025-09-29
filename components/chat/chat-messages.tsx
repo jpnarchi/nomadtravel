@@ -63,8 +63,6 @@ export function ChatMessages({
                                                     )}
                                                 </div>
                                             </div>
-
-                                            {!isLoading && role === 'assistant' && messageIndex === messages.length - 1 && <SuggestionButtons suggestions={suggestions} onSuggestionClick={handleSuggestionClick} />}
                                         </div>
                                     )
                                 }
@@ -169,18 +167,18 @@ export function ChatMessages({
                                         const filesCreated = response.filesCreated as number;
                                         const files = response.files as string[];
                                         return (
-                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
+                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-2">
                                                 {role === 'assistant' && (
                                                     <div className="shrink-0 mt-2">
                                                         <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
                                                     </div>
                                                 )}
-                                                {message}
+                                                <Markdown>{message}</Markdown>
                                             </div>
                                         )
                                     }
                                     return (
-                                        <div key={index} className="flex flex-row gap-4 items-center">
+                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
                                             {role === 'assistant' && (
                                                 <Image src="/lentes.svg" alt="logo" width={24} height={24} />
                                             )}
@@ -247,6 +245,19 @@ export function ChatMessages({
                                     Thinking...
                                 </div>
                             </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {!isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
+                    <motion.div
+                        initial={{ y: 5, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 1 }}
+                        className={`-mt-4 flex flex-row gap-4 px-4 py-1 w-full md:w-[500px] md:px-0 first-of-type:pt-0`}
+                    >
+                        <div className="flex flex-row gap-3 items-start w-full md:w-[500px] md:px-0">
+                            <SuggestionButtons suggestions={suggestions} onSuggestionClick={handleSuggestionClick} />
                         </div>
                     </motion.div>
                 )}

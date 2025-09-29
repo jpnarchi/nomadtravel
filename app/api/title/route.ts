@@ -1,7 +1,7 @@
 import { generateObject, UIMessage } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
-import { getPromptForAgent } from '@/lib/convex-server';
+import { titleGeneratorPrompt } from '@/lib/prompts';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -10,8 +10,6 @@ const openrouter = createOpenRouter({
 export async function POST(request: Request) {
     try {
         const { messages }: { messages: UIMessage[] } = await request.json();
-
-        const titleGeneratorPrompt = await getPromptForAgent("title_generator");
 
         const context = messages
             .map(message => message.parts

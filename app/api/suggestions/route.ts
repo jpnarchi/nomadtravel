@@ -1,7 +1,7 @@
 import { generateObject, UIMessage } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
-import { getPromptForAgent } from '@/lib/convex-server';
+import { suggestionGeneratorPrompt } from '@/lib/prompts';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -10,8 +10,6 @@ const openrouter = createOpenRouter({
 export async function POST(request: Request) {
   try {
     const { message }: { message: UIMessage } = await request.json();
-
-    const suggestionGeneratorPrompt = await getPromptForAgent("suggestion_generator");
     
     const context = message
       .parts
