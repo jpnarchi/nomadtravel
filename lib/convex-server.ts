@@ -227,3 +227,51 @@ export async function getCurrentVersion(chatId: Id<"chats">): Promise<number> {
         return 0;
     }
 }
+
+export async function getAllTemplates(): Promise<Doc<"templates">[]> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        const templates = await convex.query(api.templates.getAll);
+
+        if (!templates) {
+            return [];
+        }
+
+        return templates;
+    } catch (error) {
+        console.error("Error fetching templates:", error);
+        return [];
+    }
+}
+
+export async function getTemplateFiles(name: string): Promise<Doc<"templateFiles">[]> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        const templateFiles = await convex.query(api.templates.getFiles, { name: name });
+
+        if (!templateFiles) {
+            return [];
+        }
+
+        return templateFiles;
+    } catch (error) {
+        console.error("Error fetching templates:", error);
+        return [];
+    }
+}

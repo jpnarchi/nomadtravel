@@ -1,12 +1,14 @@
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
-import { 
-  createFileForVersion, 
-  updateFileForVersion, 
-  deleteFileForVersion, 
+import {
+  createFileForVersion,
+  updateFileForVersion,
+  deleteFileForVersion,
   createNewVersion,
-  getCurrentVersion 
+  getCurrentVersion,
+  getTemplateFiles,
+  getAllTemplates
 } from '@/lib/convex-server';
 import { Id } from '@/convex/_generated/dataModel';
 import { defaultFiles } from '@/lib/default-files';
@@ -20,6 +22,8 @@ export const maxDuration = 300;
 export async function POST(req: Request) {
   const { id, messages }: { id: Id<"chats">; messages: UIMessage[]; } = await req.json();
 
+  const templates = await getAllTemplates();
+
   const result = streamText({
     // model: openrouter('x-ai/grok-4-fast:free'),
     // model: openrouter('google/gemini-2.5-flash'),
@@ -27,7 +31,10 @@ export async function POST(req: Request) {
     messages: convertToModelMessages(messages),
     system: `
     Eres Nerd, un asistente útil que solo conoce React y TailwindCSS. 
+    Pregunta al usuario que quiere crear, una vez que te diga, elige el template y llama a la herramienta generateInitialCodebase con el nombre del template.
     Nunca usas la carpeta /src. 
+    No hace falta agregar tailwind en /styles.css
+    No modifiques el archivo /styles.css
     /App.js es el componente raíz. 
     Nunca menciones algo técnico al usuario. 
     Genera siempre el código inicial antes de empezar a trabajar en el proyecto.
@@ -38,6 +45,7 @@ export async function POST(req: Request) {
     Nunca muestras listas.
     Nunca muestras emojis.
     Mantén tus respuestas cortas y concisas. 1 frase máxima.
+    Librerías permitidas: lucide-react, framer-motion.
     `,
     stopWhen: stepCountIs(50),
     maxOutputTokens: 64_000,
@@ -168,20 +176,31 @@ export async function POST(req: Request) {
 
       generateInitialCodebase: {
         description: 'Genera el proyecto con los archivos iniciales.',
-        inputSchema: z.object({}),
-        execute: async function () {
-          const files = defaultFiles;
+        inputSchema: z.object({
+          templateName: z.union(
+            templates.map(template =>
+              z.literal(template.name).describe(template.description)
+            )
+          ),
+        }),
+        execute: async function ({ templateName }) {
+          // const files = defaultFiles;
+          const templateFiles = await getTemplateFiles(templateName);
+          const files = templateFiles.reduce((acc, file) => ({
+            ...acc,
+            [file.path]: file.content
+          }), {});
           const currentVersion = await getCurrentVersion(id);
-          for (const [path, content] of Object.entries(files)) {
+          for (const [path, content] of Object.entries(files) as [string, string][]) {
             await createFileForVersion(id, path, content, currentVersion);
           }
-          const message = `Base del proyecto creada con éxito`;
+          const message = `Base del template "${templateName}" creada con éxito`;
           const filesCreated = Object.keys(files).length;
           return {
             success: true,
             message: message,
             filesCreated: filesCreated,
-            files: files
+            files: files,
           };
         },
       },

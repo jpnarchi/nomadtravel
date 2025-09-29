@@ -56,4 +56,15 @@ export default defineSchema({
         .index('by_chat_version', ['chatId', 'version'])
         .index('by_chat_path_version', ['chatId', 'path', 'version'])
     ,
+    templates: defineTable({
+        name: v.string(),
+        description: v.string(),
+    })
+        .index('by_name', ['name'])
+    ,
+    templateFiles: defineTable({
+        templateId: v.id('templates'),
+        path: v.string(),
+        content: v.string(),
+    })
 });
