@@ -38,6 +38,32 @@ export async function getMessagesForChat(chatId: Id<"chats">): Promise<UIMessage
     }
 }
 
+export async function getPromptForAgent(agent: "main_agent" | "code_generator"): Promise<string> {
+    try {
+        // Get the user's session token from Clerk
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        // Set the auth token for this request
+        convex.setAuth(token);
+
+        const prompt = await convex.query(api.prompts.get, { agent });
+
+        if (!prompt) {
+            return '';
+        }
+
+        return prompt.prompt;
+    } catch (error) {
+        console.error("Error fetching prompt:", error);
+        return '';
+    }
+}
+
 
 export async function getChatById(chatId: Id<"chats">): Promise<Doc<"chats"> | null> {
     try {

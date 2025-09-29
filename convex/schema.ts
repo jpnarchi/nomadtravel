@@ -52,4 +52,12 @@ export default defineSchema({
     })
         .index('by_chat_id', ['chatId'])
     ,
+    prompts: defineTable({
+        agent: v.union(
+            v.literal("main_agent"),
+            v.literal("code_generator"),
+        ),
+        prompt: v.string(),
+    })
+        .index('by_agent', ['agent'])
 });
