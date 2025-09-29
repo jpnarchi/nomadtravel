@@ -158,3 +158,55 @@ export async function createFileForChat(chatId: Id<"chats">, path: string, conte
         return undefined;
     }
 }
+
+export async function deleteFileForChat(chatId: Id<"chats">, path: string): Promise<boolean> {
+    try {
+        // Get the user's session token from Clerk
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        // Set the auth token for this request
+        convex.setAuth(token);
+
+        const file = await convex.mutation(api.files.deleteByPath, { chatId, path });
+
+        if (!file) {
+            return false;
+        }
+
+        return file.success;
+    } catch (error) {
+        console.error("Error fetching files:", error);
+        return false;
+    }
+}
+
+export async function updateFileForChat(chatId: Id<"chats">, path: string, content: string): Promise<boolean> {
+    try {
+        // Get the user's session token from Clerk
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        // Set the auth token for this request
+        convex.setAuth(token);
+
+        const file = await convex.mutation(api.files.updateByPath, { chatId, path, content });
+
+        if (!file) {
+            return false;
+        }
+
+        return file.success;
+    } catch (error) {
+        console.error("Error fetching files:", error);
+        return false;
+    }
+}

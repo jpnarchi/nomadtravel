@@ -92,7 +92,100 @@ export function ChatMessages({
                                     )
                                 }
 
-                                if (part.type === "tool-generateCode") {
+                                if (part.type === "tool-createFile") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        return (
+                                            <div key={index} className="bg-background border rounded-md p-4 mb-2">
+                                                {message}
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className="flex gap-4 items-center bg-background border rounded-md p-4 mb-2">
+                                            <Loader />
+                                            Creating file...
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-updateFile") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        return (
+                                            <div key={index} className="bg-background border rounded-md p-4 mb-2">
+                                                {message}
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className="flex gap-4 items-center bg-background border rounded-md p-4 mb-2">
+                                            <Loader />
+                                            Updating file...
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-deleteFile") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        return (
+                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4 bg-background border rounded-md p-2">
+                                                {message}
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className="flex flex-row gap-4 items-center">
+                                            {role === 'assistant' && (
+                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                            )}
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Loader />
+                                                <div className="text-zinc-500 italic">
+                                                    Deleting file...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-generateInitialCodebase") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        const filesCreated = response.filesCreated as number;
+                                        const files = response.files as string[];
+                                        return (
+                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
+                                                {role === 'assistant' && (
+                                                    <div className="shrink-0 mt-2">
+                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
+                                                    </div>
+                                                )}
+                                                {message}
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className="flex flex-row gap-4 items-center">
+                                            {role === 'assistant' && (
+                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                            )}
+                                            <div className="flex flex-row gap-2 items-center">
+                                                <Loader />
+                                                <div className="text-zinc-500 italic">
+                                                    Generating codebase...
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-showPreview") {
                                     if (part.output && part.state && part.state === 'output-available') {
                                         const version = 1;
                                         return (
@@ -117,7 +210,7 @@ export function ChatMessages({
                                             <div className="flex flex-row gap-2 items-center">
                                                 <Loader />
                                                 <div className="text-zinc-500 italic">
-                                                    Generating code...
+                                                    Loading preview...
                                                 </div>
                                             </div>
                                         </div>

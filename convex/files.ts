@@ -167,3 +167,75 @@ export const deleteFile = mutation({
         return { success: true };
     },
 });
+
+export const deleteByPath = mutation({
+    args: {
+        chatId: v.optional(v.id("chats")),
+        path: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.chatId) {
+            throw new Error("Chat not found");
+        }
+
+        if (!args.path) {
+            throw new Error("Path not found");
+        }
+
+        const file = await ctx.db.query("files")
+            .withIndex("by_chat_path", (q) => q.eq("chatId", args.chatId!).eq("path", args.path!)).unique();
+
+        if (!file) {
+            throw new Error("File not found");
+        }
+
+        if (file.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.delete(file._id);
+        return { success: true };
+    },
+});
+
+export const updateByPath = mutation({
+    args: {
+        chatId: v.optional(v.id("chats")),
+        path: v.optional(v.string()),
+        content: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.chatId) {
+            throw new Error("Chat not found");
+        }
+
+        if (!args.path) {
+            throw new Error("Path not found");
+        }
+
+        if (!args.content) {
+            throw new Error("Content not found");
+        }
+
+        const file = await ctx.db.query("files")
+            .withIndex("by_chat_path", (q) => q.eq("chatId", args.chatId!).eq("path", args.path!)).unique();
+
+        if (!file) {
+            throw new Error("File not found");
+        }
+
+        if (file.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.patch(file._id, {
+            content: args.content,
+        });
+
+        return { success: true };
+    },
+});

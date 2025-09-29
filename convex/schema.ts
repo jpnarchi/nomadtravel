@@ -51,6 +51,7 @@ export default defineSchema({
         content: v.string(),
     })
         .index('by_chat_id', ['chatId'])
+        .index('by_chat_path', ['chatId', 'path'])
     ,
     prompts: defineTable({
         agent: v.union(

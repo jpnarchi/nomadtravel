@@ -42,11 +42,11 @@ export function ChatContainer({
                 parts: options.message.parts,
             });
 
-            await generateSuggestions(options.message);
+            // await generateSuggestions(options.message);
 
-            if (initialTitle === 'New Chat' && initialMessages.length === 1) {
-                await generateTitle([...initialMessages, options.message]);
-            }
+            // if (initialTitle === 'New Chat' && initialMessages.length === 1) {
+            //     await generateTitle([...initialMessages, options.message]);
+            // }
         }
     });
 
