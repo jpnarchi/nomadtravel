@@ -35,6 +35,8 @@ export const get = query({
         agent: v.union(
             v.literal("main_agent"),
             v.literal("code_generator"),
+            v.literal("title_generator"),
+            v.literal("suggestion_generator")
         ),
     },
     handler: async (ctx, args) => {
@@ -61,6 +63,8 @@ export const update = mutation({
         agent: v.optional(v.union(
             v.literal("main_agent"),
             v.literal("code_generator"),
+            v.literal("title_generator"),
+            v.literal("suggestion_generator")
         )),
         prompt: v.optional(v.string()),
     },

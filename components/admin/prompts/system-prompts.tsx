@@ -24,6 +24,16 @@ const agentInfo = {
         description: "Specialized agent for generating and analyzing code in chat conversations",
         color: "secondary"
     },
+    title_generator: {
+        title: "Title Generator",
+        description: "Agent responsible for generating meaningful titles for chat conversations",
+        color: "secondary"
+    },
+    suggestion_generator: {
+        title: "Suggestion Generator",
+        description: "Agent that creates contextual suggestions to help users continue conversations",
+        color: "secondary"
+    }
 } as const
 
 export function SystemPrompts() {
@@ -33,12 +43,16 @@ export function SystemPrompts() {
     // Fetch all prompts for each agent
     const mainAgentPrompt = useQuery(api.prompts.get, { agent: "main_agent" })
     const codeGeneratorPrompt = useQuery(api.prompts.get, { agent: "code_generator" })
+    const titleGeneratorPrompt = useQuery(api.prompts.get, { agent: "title_generator" })
+    const suggestionGeneratorPrompt = useQuery(api.prompts.get, { agent: "suggestion_generator" })
 
     const updatePrompt = useMutation(api.prompts.update)
 
     const prompts = {
         main_agent: mainAgentPrompt,
-        code_generator: codeGeneratorPrompt
+        code_generator: codeGeneratorPrompt,
+        title_generator: titleGeneratorPrompt,
+        suggestion_generator: suggestionGeneratorPrompt
     }
 
     const isLoading = Object.values(prompts).some(prompt => prompt === undefined)

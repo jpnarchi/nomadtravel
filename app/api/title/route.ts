@@ -1,6 +1,7 @@
 import { generateObject, UIMessage } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
+import { getPromptForAgent } from '@/lib/convex-server';
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
@@ -9,6 +10,8 @@ const openrouter = createOpenRouter({
 export async function POST(request: Request) {
     try {
         const { messages }: { messages: UIMessage[] } = await request.json();
+
+        const titleGeneratorPrompt = await getPromptForAgent("title_generator");
 
         const context = messages
             .map(message => message.parts
@@ -20,11 +23,7 @@ export async function POST(request: Request) {
         const { object } = await generateObject({
             // model: openrouter('x-ai/grok-4-fast'),
             model: openrouter('google/gemini-2.5-flash'),
-            prompt: `Generate a title for this conversation, it should be 1 to 3 words:
-
-messages: "${context}"
-
-Make the title relevant to the conversation.`,
+            prompt: titleGeneratorPrompt.replace('${context}', context.join(' ')),
             schema: z.object({
                 title: z.string()
             }),

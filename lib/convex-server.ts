@@ -38,7 +38,7 @@ export async function getMessagesForChat(chatId: Id<"chats">): Promise<UIMessage
     }
 }
 
-export async function getPromptForAgent(agent: "main_agent" | "code_generator"): Promise<string> {
+export async function getPromptForAgent(agent: "main_agent" | "code_generator" | "title_generator" | "suggestion_generator"): Promise<string> {
     try {
         // Get the user's session token from Clerk
         const { getToken } = await auth();
