@@ -3,10 +3,13 @@ import { Button } from "../ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Id } from "@/convex/_generated/dataModel";
 
 export function Workbench({
+    id,
     initialFiles
 }: {
+    id: Id<"chats">,
     initialFiles: Record<string, string>
 }) {
     const [showCode, setShowCode] = useState(false);
@@ -40,7 +43,7 @@ export function Workbench({
                     variant="ghost"
                     className="cursor-pointer"
                     onClick={() => {
-                        router.back();
+                        router.push(`/chat/${id}`);
                         router.refresh();
                     }}
                 >

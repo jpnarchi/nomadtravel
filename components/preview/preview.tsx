@@ -29,6 +29,7 @@ export function Preview({
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
                 <Workbench
+                    id={id}
                     initialFiles={initialFiles}
                 />
             </SidebarInset>
