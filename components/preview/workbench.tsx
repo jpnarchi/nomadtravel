@@ -50,7 +50,7 @@ export function Workbench({
                     }}
                 >
                     {isBackButtonLoading ? (<Loader2 className="size-4 animate-spin" />) : (<ArrowLeftIcon className="size-4" />)}
-                    Back
+                    Atrás
                 </Button>
 
                 <Button
@@ -58,7 +58,7 @@ export function Workbench({
                     className="cursor-pointer"
                     onClick={() => setShowCode(!showCode)}
                 >
-                    {showCode ? "Preview" : "Code"}
+                    {showCode ? "Vista previa" : "Código"}
                 </Button>
             </div>
             <div className="h-full border rounded-lg overflow-hidden mt-4">
