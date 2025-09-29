@@ -67,4 +67,5 @@ export default defineSchema({
         path: v.string(),
         content: v.string(),
     })
+        .index('by_templateId', ['templateId'])
 });

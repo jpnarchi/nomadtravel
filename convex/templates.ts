@@ -86,6 +86,7 @@ export const getFiles = query({
 
         const templateFiles = await ctx.db
             .query("templateFiles")
+            .withIndex("by_templateId", (q) => q.eq("templateId", template._id))
             .collect();
 
         return templateFiles;
