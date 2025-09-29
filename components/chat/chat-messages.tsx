@@ -84,7 +84,7 @@ export function ChatMessages({
                                             <div className="flex flex-row gap-2 items-center">
                                                 <Loader />
                                                 <div className="text-zinc-500 italic">
-                                                    Generating summary...
+                                                    Generando resumen...
                                                 </div>
                                             </div>
                                         </div>
@@ -107,7 +107,7 @@ export function ChatMessages({
                                     return (
                                         <div key={index}>
                                             <FileTool
-                                                message={"Creating..."}
+                                                message={"Creando..."}
                                                 isLoading={true}
                                             />
                                         </div>
@@ -130,7 +130,7 @@ export function ChatMessages({
                                     return (
                                         <div key={index}>
                                             <FileTool
-                                                message={"Updating..."}
+                                                message={"Actualizando..."}
                                                 isLoading={true}
                                             />
                                         </div>
@@ -153,7 +153,7 @@ export function ChatMessages({
                                     return (
                                         <div key={index}>
                                             <FileTool
-                                                message={"Deleting..."}
+                                                message={"Eliminando..."}
                                                 isLoading={true}
                                             />
                                         </div>
@@ -167,7 +167,7 @@ export function ChatMessages({
                                         const filesCreated = response.filesCreated as number;
                                         const files = response.files as string[];
                                         return (
-                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-2">
+                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
                                                 {role === 'assistant' && (
                                                     <div className="shrink-0 mt-2">
                                                         <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
@@ -185,7 +185,7 @@ export function ChatMessages({
                                             <div className="flex flex-row gap-2 items-center">
                                                 <Loader />
                                                 <div className="text-zinc-500 italic">
-                                                    Generating codebase...
+                                                    Generando base del proyecto...
                                                 </div>
                                             </div>
                                         </div>
@@ -194,30 +194,26 @@ export function ChatMessages({
 
                                 if (part.type === "tool-showPreview") {
                                     if (part.output && part.state && part.state === 'output-available') {
-                                        const version = 1;
+                                        const response = part.output as any;
+                                        const version = response.version as number;
                                         return (
                                             <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
-                                                {/* {role === 'assistant' && (
-                                                    <div className="shrink-0 mt-2">
-                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
-                                                    </div>
-                                                )} */}
                                                 <PreviewButton
                                                     id={id}
-                                                    version={version}
+                                                    version={version || 1}
                                                 />
                                             </div>
                                         )
                                     }
                                     return (
-                                        <div key={index} className="flex flex-row gap-4 items-center">
+                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
                                             {role === 'assistant' && (
                                                 <Image src="/lentes.svg" alt="logo" width={24} height={24} />
                                             )}
                                             <div className="flex flex-row gap-2 items-center">
                                                 <Loader />
                                                 <div className="text-zinc-500 italic">
-                                                    Loading preview...
+                                                    Cargando vista previa...
                                                 </div>
                                             </div>
                                         </div>
@@ -242,7 +238,7 @@ export function ChatMessages({
                             <div className="flex-1 min-w-0 flex flex-row gap-2 items-center">
                                 <Loader className="size-4" />
                                 <div className="text-zinc-500 italic">
-                                    Thinking...
+                                    Pensando...
                                 </div>
                             </div>
                         </div>

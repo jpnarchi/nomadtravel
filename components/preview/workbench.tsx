@@ -1,6 +1,6 @@
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
@@ -12,6 +12,7 @@ export function Workbench({
     id: Id<"chats">,
     initialFiles: Record<string, string>
 }) {
+    const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
     const [files, setFiles] = useState(initialFiles);
     const [isDesktop, setIsDesktop] = useState(false);
@@ -43,11 +44,12 @@ export function Workbench({
                     variant="ghost"
                     className="cursor-pointer"
                     onClick={() => {
+                        setIsBackButtonLoading(true);
                         router.push(`/chat/${id}`);
                         router.refresh();
                     }}
                 >
-                    <ArrowLeftIcon className="size-4" />
+                    {isBackButtonLoading ? (<Loader2 className="size-4 animate-spin" />) : (<ArrowLeftIcon className="size-4" />)}
                     Back
                 </Button>
 

@@ -23,6 +23,7 @@ export default defineSchema({
     chats: defineTable({
         userId: v.id('users'),
         title: v.optional(v.string()),
+        currentVersion: v.optional(v.number()),
     })
         .index('by_user_id', ['userId'])
     ,
@@ -49,8 +50,10 @@ export default defineSchema({
         userId: v.id('users'),
         path: v.string(),
         content: v.string(),
+        version: v.number(),
     })
         .index('by_chat_id', ['chatId'])
-        .index('by_chat_path', ['chatId', 'path'])
+        .index('by_chat_version', ['chatId', 'version'])
+        .index('by_chat_path_version', ['chatId', 'path', 'version'])
     ,
 });

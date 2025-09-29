@@ -1,4 +1,4 @@
-import { getChatById, getFilesForChat } from "@/lib/convex-server";
+import { getChatById, getFilesForVersion } from "@/lib/convex-server";
 import { Id } from "@/convex/_generated/dataModel";
 import { notFound } from "next/navigation";
 import { Preview } from "@/components/preview/preview";
@@ -10,7 +10,7 @@ export default async function Page({ params }: { params: Promise<{ id: string, v
         notFound();
     }
 
-    const files = await getFilesForChat(id as Id<"chats">);
+    const files = await getFilesForVersion(id as Id<"chats">, parseInt(version));
 
     return <Preview id={id as Id<"chats">} initialFiles={files} />
 }

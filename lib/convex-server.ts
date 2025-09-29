@@ -83,7 +83,7 @@ export async function getSuggestionsForChat(chatId: Id<"chats">): Promise<string
     }
 }
 
-export async function getFilesForChat(chatId: Id<"chats">): Promise<Record<string, string>> {
+export async function getFilesForVersion(chatId: Id<"chats">, version: number): Promise<Record<string, string>> {
     try {
         // Get the user's session token from Clerk
         const { getToken } = await auth();
@@ -96,7 +96,7 @@ export async function getFilesForChat(chatId: Id<"chats">): Promise<Record<strin
         // Set the auth token for this request
         convex.setAuth(token);
 
-        const files = await convex.query(api.files.getAll, { chatId });
+        const files = await convex.query(api.files.getAll, { chatId, version });
 
         if (!files) {
             return {};
@@ -112,7 +112,7 @@ export async function getFilesForChat(chatId: Id<"chats">): Promise<Record<strin
     }
 }
 
-export async function createFileForChat(chatId: Id<"chats">, path: string, content: string): Promise<Id<"files"> | undefined> {
+export async function createFileForVersion(chatId: Id<"chats">, path: string, content: string, version: number): Promise<Id<"files"> | undefined> {
     try {
         const { getToken } = await auth();
         const token = await getToken({ template: "convex" });
@@ -123,7 +123,7 @@ export async function createFileForChat(chatId: Id<"chats">, path: string, conte
 
         convex.setAuth(token);
 
-        const file = await convex.mutation(api.files.create, { chatId, path, content });
+        const file = await convex.mutation(api.files.create, { chatId, path, content, version });
 
         return file;
     } catch (error) {
@@ -132,7 +132,7 @@ export async function createFileForChat(chatId: Id<"chats">, path: string, conte
     }
 }
 
-export async function deleteFileForChat(chatId: Id<"chats">, path: string): Promise<boolean> {
+export async function deleteFileForVersion(chatId: Id<"chats">, path: string, version: number): Promise<boolean> {
     try {
         // Get the user's session token from Clerk
         const { getToken } = await auth();
@@ -145,7 +145,7 @@ export async function deleteFileForChat(chatId: Id<"chats">, path: string): Prom
         // Set the auth token for this request
         convex.setAuth(token);
 
-        const file = await convex.mutation(api.files.deleteByPath, { chatId, path });
+        const file = await convex.mutation(api.files.deleteByPath, { chatId, path, version });
 
         if (!file) {
             return false;
@@ -158,7 +158,7 @@ export async function deleteFileForChat(chatId: Id<"chats">, path: string): Prom
     }
 }
 
-export async function updateFileForChat(chatId: Id<"chats">, path: string, content: string): Promise<boolean> {
+export async function updateFileForVersion(chatId: Id<"chats">, path: string, content: string, version: number): Promise<boolean> {
     try {
         // Get the user's session token from Clerk
         const { getToken } = await auth();
@@ -171,7 +171,7 @@ export async function updateFileForChat(chatId: Id<"chats">, path: string, conte
         // Set the auth token for this request
         convex.setAuth(token);
 
-        const file = await convex.mutation(api.files.updateByPath, { chatId, path, content });
+        const file = await convex.mutation(api.files.updateByPath, { chatId, path, content, version });
 
         if (!file) {
             return false;
@@ -181,5 +181,49 @@ export async function updateFileForChat(chatId: Id<"chats">, path: string, conte
     } catch (error) {
         console.error("Error fetching files:", error);
         return false;
+    }
+}
+
+export async function createNewVersion(chatId: Id<"chats">, previousVersion: number): Promise<boolean> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        await convex.mutation(api.files.createNewVersion, { chatId, previousVersion });
+
+        return true;
+    } catch (error) {
+        console.error("Error creating new version:", error);
+        return false;
+    }
+}
+
+export async function getCurrentVersion(chatId: Id<"chats">): Promise<number> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        const version = await convex.query(api.chats.getCurrentVersion, { chatId });
+
+        if (!version) {
+            return 0;
+        }
+
+        return version;
+    } catch (error) {
+        console.error("Error fetching current version:", error);
+        return 0;
     }
 }

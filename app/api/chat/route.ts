@@ -1,7 +1,13 @@
 import { streamText, UIMessage, convertToModelMessages, stepCountIs } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
-import { createFileForChat, getFilesForChat, updateFileForChat, deleteFileForChat } from '@/lib/convex-server';
+import { 
+  createFileForVersion, 
+  updateFileForVersion, 
+  deleteFileForVersion, 
+  createNewVersion,
+  getCurrentVersion 
+} from '@/lib/convex-server';
 import { Id } from '@/convex/_generated/dataModel';
 import { defaultFiles } from '@/lib/default-files';
 
@@ -95,7 +101,8 @@ export async function POST(req: Request) {
         }),
         execute: async function ({ path, content, explanation }) {
           try {
-            await createFileForChat(id, path, content);
+            const currentVersion = await getCurrentVersion(id);
+            await createFileForVersion(id, path, content, currentVersion);
             return {
               success: true,
               message: `${explanation}`
@@ -119,7 +126,8 @@ export async function POST(req: Request) {
         }),
         execute: async function ({ path, content, explanation }) {
           try {
-            await updateFileForChat(id, path, content);
+            const currentVersion = await getCurrentVersion(id);
+            await updateFileForVersion(id, path, content, currentVersion);
             return {
               success: true,
               message: `${explanation}`
@@ -142,7 +150,8 @@ export async function POST(req: Request) {
         }),
         execute: async function ({ path, explanation }) {
           try {
-            await deleteFileForChat(id, path);
+            const currentVersion = await getCurrentVersion(id);
+            await deleteFileForVersion(id, path, currentVersion);
             return {
               success: true,
               message: `${explanation}`
@@ -162,10 +171,11 @@ export async function POST(req: Request) {
         inputSchema: z.object({}),
         execute: async function () {
           const files = defaultFiles;
+          const currentVersion = await getCurrentVersion(id);
           for (const [path, content] of Object.entries(files)) {
-            await createFileForChat(id, path, content);
+            await createFileForVersion(id, path, content, currentVersion);
           }
-          const message = `Proyecto creado con éxito`;
+          const message = `Base del proyecto creada con éxito`;
           const filesCreated = Object.keys(files).length;
           return {
             success: true,
@@ -180,8 +190,11 @@ export async function POST(req: Request) {
         description: 'Muestra la vista previa del proyecto.',
         inputSchema: z.object({}),
         execute: async function () {
+          const currentVersion = await getCurrentVersion(id);
+          await createNewVersion(id, currentVersion);
           return {
             success: true,
+            version: currentVersion
           };
         },
       }
