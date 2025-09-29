@@ -76,7 +76,7 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return (
+                                    return ( 
                                         <div key={index} className="flex flex-row gap-4 items-center">
                                             {role === 'assistant' && (
                                                 <Image src="/lentes.svg" alt="logo" width={24} height={24} />
