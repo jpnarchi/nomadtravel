@@ -295,3 +295,40 @@ export async function getTemplateById(id: Id<"templates">): Promise<Doc<"templat
         return null;
     }
 }
+
+export async function uploadImageToStorage(imageData: Uint8Array, mimeType: string): Promise<string | null> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        // Generate upload URL
+        const uploadUrl = await convex.mutation(api.messages.generateUploadUrl);
+
+        // Upload the image
+        const result = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": mimeType },
+            body: imageData,
+        });
+
+        const { storageId } = await result.json();
+
+        // Get the public URL from storage
+        const url = await convex.mutation(api.messages.getStorageUrl, { storageId });
+
+        if (!url) {
+            throw new Error("Failed to get storage URL");
+        }
+
+        return url;
+    } catch (error) {
+        console.error("Error uploading image to storage:", error);
+        return null;
+    }
+}

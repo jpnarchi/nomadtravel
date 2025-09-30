@@ -36,6 +36,16 @@ export const generateUploadUrl = mutation({
     },
 });
 
+export const getStorageUrl = mutation({
+    args: {
+        storageId: v.id("_storage"),
+    },
+    handler: async (ctx, args) => {
+        const url = await ctx.storage.getUrl(args.storageId);
+        return url;
+    },
+});
+
 export const updateParts = mutation({
     args: {
         messageId: v.id("messages"),
@@ -71,8 +81,8 @@ export const updateParts = mutation({
 })
 
 export const saveFile = mutation({
-    args: { 
-        storageId: v.id("_storage"), 
+    args: {
+        storageId: v.id("_storage"),
         messageId: v.id("messages"),
         type: v.string(),
     },
@@ -151,7 +161,7 @@ export const create = mutation({
     args: {
         chatId: v.optional(v.id('chats')),
         role: v.optional(v.union(
-            v.literal("user"), 
+            v.literal("user"),
             v.literal("assistant")
         )),
         parts: v.optional(v.array(v.any())),

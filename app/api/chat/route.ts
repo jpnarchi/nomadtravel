@@ -1,6 +1,13 @@
-import { streamText, UIMessage, convertToModelMessages, stepCountIs, generateText } from 'ai';
+import {
+  streamText,
+  UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+  generateText,
+  experimental_generateImage as generateImage
+} from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { z } from 'zod';
+import { size, z } from 'zod';
 import {
   createFileForVersion,
   updateFileForVersion,
@@ -8,10 +15,12 @@ import {
   createNewVersion,
   getCurrentVersion,
   getTemplateFiles,
-  getAllTemplates
+  getAllTemplates,
+  uploadImageToStorage
 } from '@/lib/convex-server';
 import { Id } from '@/convex/_generated/dataModel';
 import { anthropic } from '@ai-sdk/anthropic';
+import { openai } from '@ai-sdk/openai';
 
 const webSearchTool = anthropic.tools.webSearch_20250305({
   maxUses: 5,
@@ -54,6 +63,7 @@ export async function POST(req: Request) {
     Antes de usar la herramienta webSearch explica que lo que vas a hacer es buscar en internet.
     Cuando termines de buscar en internet, muestra el resultado.
     Cuando el usuario te pide que leas un archivo, usa la herramienta readFile.
+    Cuando el usuario te pide que genere una imagen, usa la herramienta generateImageTool.
     `,
     stopWhen: stepCountIs(50),
     maxOutputTokens: 64_000,
@@ -253,6 +263,7 @@ export async function POST(req: Request) {
           }
         },
       },
+
       readFile: {
         description: 'Lee un archivo para obtener información relevante.',
         inputSchema: z.object({
@@ -304,6 +315,57 @@ export async function POST(req: Request) {
             return {
               success: false,
               message: `Error al leer el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`
+            };
+          }
+        },
+      },
+
+      generateImageTool: {
+        description: 'Genera una imagen con IA.',
+        inputSchema: z.object({
+          prompt: z.string().describe('Prompt para generar la imagen'),
+          size: z.union([
+            z.literal('1024x1024'),
+            z.literal('1024x1792'),
+            z.literal('1792x1024'),
+          ]).describe('El tamaño de la imagen a generar'),
+          n: z.number().describe('El número de imágenes a generar. dall-e-3: 1 (1 max), dall-e-2: 1-5 (5 max)'),
+          model: z.union([
+            z.literal('dall-e-3'),
+            z.literal('dall-e-2'),
+          ]).describe('El modelo a usar'),
+        }),
+        execute: async function ({ prompt, size, n, model }) {
+          try {
+            const { images } = await generateImage({
+              model: openai.image(model),
+              prompt: prompt,
+              size: size,
+              n: n,
+            });
+
+            // Upload all images to Convex storage
+            const imageUrls = [];
+            for (const image of images) {
+              const imageUrl = await uploadImageToStorage(image.uint8Array, 'image/png');
+
+              if (!imageUrl) {
+                throw new Error('Failed to upload image to storage');
+              }
+
+              imageUrls.push(imageUrl);
+            }
+
+            return {
+              success: true,
+              message: `${imageUrls.length} imagen${imageUrls.length > 1 ? 'es' : ''} generada${imageUrls.length > 1 ? 's' : ''} exitosamente`,
+              imageUrls: imageUrls
+            };
+          } catch (error) {
+            console.error('Error generating image:', error);
+            return {
+              success: false,
+              message: `Error al generar la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`
             };
           }
         },

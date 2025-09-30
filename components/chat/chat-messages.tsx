@@ -15,6 +15,7 @@ import { WebSearch } from "./tools/web-search";
 import { Attachments } from "./attachments";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import { ReadFile } from "./tools/read-file";
+import { Skeleton } from "../ui/skeleton";
 
 export function ChatMessages({
     id,
@@ -269,6 +270,42 @@ export function ChatMessages({
                                                 message={"Leyendo archivo..."}
                                                 isLoading={true}
                                             />
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-generateImageTool") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        const imageUrls = response.imageUrls as string[];
+                                        return (
+                                            <div key={index} className="flex flex-row gap-4 items-start py-2">
+                                                {role === 'assistant' && (
+                                                    <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                                )}
+                                                {imageUrls.map((imageUrl: string, index: number) => (
+                                                    <a key={index} href={imageUrl} target="_blank" rel="noopener noreferrer">
+                                                        <Image 
+                                                            src={imageUrl} 
+                                                            alt="imagen generada" 
+                                                            width={250} 
+                                                            height={125}
+                                                            className="rounded-xl"
+                                                        />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className="flex flex-row gap-4 items-start py-2">
+                                            {role === 'assistant' && (
+                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                            )}
+                                            <div className="flex flex-col space-y-3">
+                                                <Skeleton className="h-[250px] w-[250px] rounded-xl" />
+                                            </div>
                                         </div>
                                     )
                                 }
