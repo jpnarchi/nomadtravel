@@ -14,6 +14,7 @@ import { FileTool } from "./tools/file-tool";
 import { WebSearch } from "./tools/web-search";
 import { Attachments } from "./attachments";
 import { parseAttachmentsFromText } from "@/lib/utils";
+import { ReadFile } from "./tools/read-file";
 
 export function ChatMessages({
     id,
@@ -243,6 +244,29 @@ export function ChatMessages({
                                         <div key={index} className="flex flex-row gap-4 items-center pt-2">
                                             <WebSearch
                                                 message={"Buscando en internet..."}
+                                                isLoading={true}
+                                            />
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-readFile") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        return (
+                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                                <ReadFile
+                                                    message={"Archivo leído"}
+                                                    isLoading={false}
+                                                />
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                            <ReadFile
+                                                message={"Leyendo archivo..."}
                                                 isLoading={true}
                                             />
                                         </div>

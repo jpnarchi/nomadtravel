@@ -71,7 +71,7 @@ export function MessageInput({
                             ref={fileInputRef}
                             type="file"
                             onChange={handleFileChange}
-                            accept="image/*,application/pdf,.doc,.docx,.txt"
+                            accept="image/*,application/pdf,.doc,.docx,.txt,.xls,.xlsx,.csv,.heic,.heif"
                             multiple
                             className="hidden"
                         />

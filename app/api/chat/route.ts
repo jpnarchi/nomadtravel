@@ -53,6 +53,7 @@ export async function POST(req: Request) {
     Cuando el usuario te pide que busques en internet, usa la herramienta webSearch.
     Antes de usar la herramienta webSearch explica que lo que vas a hacer es buscar en internet.
     Cuando termines de buscar en internet, muestra el resultado.
+    Cuando el usuario te pide que leas un archivo, usa la herramienta readFile.
     `,
     stopWhen: stepCountIs(50),
     maxOutputTokens: 64_000,
@@ -236,7 +237,7 @@ export async function POST(req: Request) {
               model: anthropic('claude-sonnet-4-20250514'),
               prompt: `Busca en internet: ${query}`,
               tools: {
-                webSearch: webSearchTool,
+                web_search: webSearchTool,
               },
             });
             return {
@@ -251,7 +252,63 @@ export async function POST(req: Request) {
             };
           }
         },
+      },
+      readFile: {
+        description: 'Lee un archivo para obtener información relevante.',
+        inputSchema: z.object({
+          question: z.string().describe('Pregunta que necesitas responder del archivo'),
+          url: z.string().describe('URL del archivo a leer'),
+          mimeType: z.union([
+            z.literal('application/pdf'),
+            z.literal('image/png'),
+            z.literal('image/jpeg'),
+            z.literal('image/jpg'),
+            z.literal('image/heic'),
+            z.literal('image/heif'),
+            z.literal('application/vnd.openxmlformats-officedocument.wordprocessingml.document'), // .docx
+            z.literal('application/msword'), // .doc
+            z.literal('text/plain'), // .txt
+            z.literal('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), // .xlsx
+            z.literal('application/vnd.ms-excel'), // .xls
+            z.literal('text/csv') // .csv
+          ]).describe('Tipo de archivo'),
+        }),
+        execute: async function ({ question, url, mimeType }) {
+          try {
+            const { text } = await generateText({
+              model: anthropic('claude-sonnet-4-20250514'),
+              messages: [
+                {
+                  role: 'user',
+                  content: [
+                    {
+                      type: 'text',
+                      text: question,
+                    },
+                    {
+                      type: 'file',
+                      data: new URL(url),
+                      mediaType: mimeType,
+                    },
+                  ],
+                },
+              ],
+            });
+            return {
+              success: true,
+              message: text
+            };
+
+          } catch (error) {
+            console.error('Error reading file:', error);
+            return {
+              success: false,
+              message: `Error al leer el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`
+            };
+          }
+        },
       }
+
     }
   });
 
