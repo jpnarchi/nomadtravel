@@ -16,6 +16,7 @@ import { Attachments } from "./attachments";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import { ReadFile } from "./tools/read-file";
 import { Skeleton } from "../ui/skeleton";
+import { Brochure } from "./tools/brochure";
 
 export function ChatMessages({
     id,
@@ -306,6 +307,32 @@ export function ChatMessages({
                                             <div className="flex flex-col space-y-3">
                                                 <Skeleton className="h-[250px] w-[250px] rounded-xl" />
                                             </div>
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-generateBrochure") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        const pdfUrl = response.pdfUrl as string;
+                                        return (
+                                            <div key={index}>
+                                                <Brochure 
+                                                    message={"Brochure generado exitosamente!"} 
+                                                    isLoading={false} 
+                                                    pdfUrl={pdfUrl}
+                                                />
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index}>
+                                            <Brochure
+                                                message={"Generando brochure..."}
+                                                isLoading={true}
+                                                pdfUrl={"https://www.google.com"}
+                                            />
                                         </div>
                                     )
                                 }

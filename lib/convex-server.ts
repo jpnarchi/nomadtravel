@@ -332,3 +332,40 @@ export async function uploadImageToStorage(imageData: Uint8Array, mimeType: stri
         return null;
     }
 }
+
+export async function uploadPdfToStorage(pdfData: Uint8Array): Promise<string | null> {
+    try {
+        const { getToken } = await auth();
+        const token = await getToken({ template: "convex" });
+
+        if (!token) {
+            throw new Error("No authentication token available");
+        }
+
+        convex.setAuth(token);
+
+        // Generate upload URL
+        const uploadUrl = await convex.mutation(api.messages.generateUploadUrl);
+
+        // Upload the PDF
+        const result = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/pdf" },
+            body: new Blob([new Uint8Array(pdfData)], { type: "application/pdf" }),
+        });
+
+        const { storageId } = await result.json();
+
+        // Get the public URL from storage
+        const url = await convex.mutation(api.messages.getStorageUrl, { storageId });
+
+        if (!url) {
+            throw new Error("Failed to get storage URL");
+        }
+
+        return url;
+    } catch (error) {
+        console.error("Error uploading PDF to storage:", error);
+        return null;
+    }
+}

@@ -7,7 +7,7 @@ import {
   experimental_generateImage as generateImage
 } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { size, z } from 'zod';
+import { z } from 'zod';
 import {
   createFileForVersion,
   updateFileForVersion,
@@ -16,11 +16,13 @@ import {
   getCurrentVersion,
   getTemplateFiles,
   getAllTemplates,
-  uploadImageToStorage
+  uploadImageToStorage,
+  uploadPdfToStorage
 } from '@/lib/convex-server';
 import { Id } from '@/convex/_generated/dataModel';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
+import puppeteer from 'puppeteer';
 
 const webSearchTool = anthropic.tools.webSearch_20250305({
   maxUses: 5,
@@ -64,6 +66,7 @@ export async function POST(req: Request) {
     Cuando termines de buscar en internet, muestra el resultado.
     Cuando el usuario te pide que leas un archivo, usa la herramienta readFile.
     Cuando el usuario te pide que genere una imagen, usa la herramienta generateImageTool.
+    Cuando el usuario te pide que genere un brochure, usa la herramienta generateBrochure. Si no sabes suficiente sobre el negocio, pregúntale al usuario más detalles.
     `,
     stopWhen: stepCountIs(50),
     maxOutputTokens: 64_000,
@@ -369,7 +372,109 @@ export async function POST(req: Request) {
             };
           }
         },
-      }
+      },
+
+      generateBrochure: {
+        description: 'Genera un brochure en PDF con IA.',
+        inputSchema: z.object({
+          prompt: z.string().describe('Prompt para generar el brochure en html'),
+          pdf: z.object({
+            format: z.union([
+              z.literal('A4'),
+              z.literal('Letter'),
+              z.literal('Legal'),
+              z.literal('Tabloid')
+            ]).default('A4').describe('Formato del PDF'),
+            printBackground: z.boolean().default(true).describe('Imprimir fondos'),
+            marginTop: z.string().default('0mm').describe('Margen superior, e.g. "0mm"'),
+            marginRight: z.string().default('0mm').describe('Margen derecho, e.g. "0mm"'),
+            marginBottom: z.string().default('0mm').describe('Margen inferior, e.g. "0mm"'),
+            marginLeft: z.string().default('0mm').describe('Margen izquierdo, e.g. "0mm"'),
+          }).default({
+            format: 'A4',
+            printBackground: true,
+            marginTop: '0mm',
+            marginRight: '0mm',
+            marginBottom: '0mm',
+            marginLeft: '0mm',
+          }).describe('Opciones de exportación a PDF'),
+        }),
+        execute: async function ({ prompt, pdf }) {
+          try {
+            // Generate HTML content using Claude
+            const { text: htmlContent } = await generateText({
+              model: anthropic('claude-sonnet-4-20250514'),
+              system: `Eres un experto en diseño de brochures en formato HTML. 
+              Solamente puedes generar HTML. Nunca incluyes \`\`\`html\`\`\` o \`\`\`html\`\`\` en tu respuesta. 
+              No puedes contestar nada más que HTML.
+              El html debe incluir estilos CSS inline o en una etiqueta <style> para que se vea profesional.
+              Usa un diseño moderno y atractivo. NO incluyas referencias a archivos externos.
+              Nunca incluyas comentarios en tu respuesta.
+              `,
+              prompt: prompt,
+              maxOutputTokens: 64_000,
+            });
+
+            // Launch puppeteer browser
+            const browser = await puppeteer.launch({
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+
+            const page = await browser.newPage();
+
+            // Set the HTML content
+            await page.setContent(htmlContent, {
+              waitUntil: 'networkidle0'
+            });
+
+            // Generate PDF in A4 format
+            const {
+              format = 'A4',
+              printBackground = true,
+              marginTop = '20mm',
+              marginRight = '20mm',
+              marginBottom = '20mm',
+              marginLeft = '20mm',
+            } = pdf ?? {};
+
+            const pdfBuffer = await page.pdf({
+              format,
+              printBackground,
+              margin: {
+                top: marginTop,
+                right: marginRight,
+                bottom: marginBottom,
+                left: marginLeft,
+              },
+            });
+
+            // Close the browser
+            await browser.close();
+
+            // Upload PDF to storage
+            const pdfUrl = await uploadPdfToStorage(new Uint8Array(pdfBuffer));
+
+            if (!pdfUrl) {
+              throw new Error('Failed to upload PDF to storage');
+            }
+
+            return {
+              success: true,
+              message: 'Brochure generado exitosamente',
+              pdfUrl: pdfUrl,
+              htmlContent: htmlContent,
+            };
+
+          } catch (error) {
+            console.error('Error generating brochure:', error);
+            return {
+              success: false,
+              message: `Error al generar el brochure: ${error instanceof Error ? error.message : 'Error desconocido'}`
+            };
+          }
+        },
+      },
 
     }
   });
