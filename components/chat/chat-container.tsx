@@ -10,6 +10,7 @@ import { api } from '@/convex/_generated/api';
 import { ChatMessages } from './chat-messages';
 import { MessageInput } from './message-input';
 import { Id } from '@/convex/_generated/dataModel';
+import { createPromptWithAttachments } from '@/lib/utils';
 
 export function ChatContainer({
     id,
@@ -37,6 +38,7 @@ export function ChatContainer({
     const hasRun = useRef(false);
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
         id,
@@ -73,7 +75,7 @@ export function ChatContainer({
         if (!isSignedIn) {
             redirect('/sign-in');
         }
-        setIsLoading(true);
+        setIsUploading(true);
         e.preventDefault();
         if (input.trim()) {
 
@@ -105,10 +107,8 @@ export function ChatContainer({
                     fileUrls.push({ url: url, type: file.type });
                 }
 
-                prompt = input + "\n\n" + fileUrls.map(file =>
-                    `<attachment>\n<url>${file.url}</url>\n<type>${file.type}</type>\n</attachment>`
-                ).join("\n");
-            } 
+                prompt = createPromptWithAttachments(input, fileUrls);
+            }
 
             sendMessage({ text: prompt });
 
@@ -122,8 +122,10 @@ export function ChatContainer({
                 fileInputRef.current.value = '';
             }
 
+            setIsUploading(false);
             setInput('');
             setSuggestions([]);
+            setIsLoading(true);
         }
     };
 
@@ -223,6 +225,7 @@ export function ChatContainer({
                             handleSubmit={handleSubmit}
                             stop={stop}
                             isLoading={isLoading}
+                            isUploading={isUploading}
                             files={files}
                             setFiles={setFiles}
                             fileInputRef={fileInputRef}

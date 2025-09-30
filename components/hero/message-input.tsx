@@ -95,6 +95,7 @@ export function MessageInput({
                                             )}
                                         </div>
                                         <button
+                                            disabled={isLoading}
                                             type="button"
                                             onClick={() => removeFile(index)}
                                             className="cursor-pointer absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -113,17 +114,18 @@ export function MessageInput({
                             placeholder="Envía un mensaje..."
                             className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[28px] max-h-[120px] placeholder:text-muted-foreground rounded-md flex-1 overflow-y-auto"
                             rows={1}
+                            disabled={isLoading}
                         />
                         <div className="flex gap-2 justify-end items-center mt-2 flex-shrink-0">
 
-                            <MicrophoneButton />
+                            <MicrophoneButton isDisabled={isLoading} />
 
                             <Button
                                 type="button"
                                 size="icon"
                                 variant="ghost"
                                 onClick={handleFileClick}
-                                disabled={files.length >= MAX_FILES}
+                                disabled={files.length >= MAX_FILES || isLoading}
                                 className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ClipIcon />
@@ -143,7 +145,7 @@ export function MessageInput({
                                     type="submit"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={!input.trim() || isLoading}
+                                    disabled={(!input.trim() && files.length === 0) || isLoading}
                                 >
                                     <ArrowUpIcon />
                                 </Button>

@@ -33,3 +33,18 @@ export function parseAttachmentsFromText(text: string): ParsedTextWithAttachment
 
   return { files, displayText };
 }
+
+export function formatAttachmentsForPrompt(attachments: ParsedAttachment[]): string {
+  return attachments.map(file =>
+    `<attachment>\n<url>${file.url}</url>\n<type>${file.type}</type>\n</attachment>`
+  ).join("\n");
+}
+
+export function createPromptWithAttachments(input: string, attachments: ParsedAttachment[]): string {
+  if (attachments.length === 0) {
+    return input;
+  }
+
+  const attachmentText = formatAttachmentsForPrompt(attachments);
+  return input + "\n\n" + attachmentText;
+}

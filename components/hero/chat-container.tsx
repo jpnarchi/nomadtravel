@@ -9,6 +9,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Footer } from "../global/footer";
+import { createPromptWithAttachments } from "@/lib/utils";
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
@@ -66,9 +67,7 @@ export function ChatContainer() {
                         fileUrls.push({ url: url, type: file.type });
                     }
 
-                    prompt = input + "\n\n" + fileUrls.map(file =>
-                        `<attachment>\n<url>${file.url}</url>\n<type>${file.type}</type>\n</attachment>`
-                    ).join("\n");
+                    prompt = createPromptWithAttachments(input, fileUrls);
                 }
 
                 await updateParts({

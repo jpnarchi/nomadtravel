@@ -2,7 +2,7 @@ import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognitio
 import { Button } from '../ui/button';
 import { Mic, MicOff } from 'lucide-react';
 
-export function MicrophoneButton() {
+export function MicrophoneButton({ isDisabled }: { isDisabled: boolean }) {
     const {
         // transcript
         listening,
@@ -43,6 +43,7 @@ export function MicrophoneButton() {
             size="icon"
             variant="ghost"
             className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+            disabled={isDisabled}
         >
             {listening ? (
                 <MicOff className="w-5 h-5 text-red-500" />

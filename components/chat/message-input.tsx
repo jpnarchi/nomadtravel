@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUpIcon, CancelIcon, ClipIcon, StopIcon } from "../global/icons";
+import { ArrowUpIcon, CancelIcon, ClipIcon, LoaderIcon, StopIcon } from "../global/icons";
 import { MicrophoneButton } from "../global/microphone-button";
 
 const MAX_FILES = 3;
@@ -11,6 +11,7 @@ export const MessageInput = ({
     handleSubmit,
     stop,
     isLoading,
+    isUploading,
     files,
     setFiles,
     fileInputRef,
@@ -20,9 +21,10 @@ export const MessageInput = ({
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
     stop: () => void;
     isLoading: boolean;
-        files: File[],
-        setFiles: React.Dispatch<React.SetStateAction<File[]>>,
-        fileInputRef: React.RefObject<HTMLInputElement | null>,
+    isUploading: boolean;
+    files: File[],
+    setFiles: React.Dispatch<React.SetStateAction<File[]>>,
+    fileInputRef: React.RefObject<HTMLInputElement | null>,
 }) => {
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -97,6 +99,7 @@ export const MessageInput = ({
                                             )}
                                         </div>
                                         <button
+                                            disabled={isLoading || isUploading}
                                             type="button"
                                             onClick={() => removeFile(index)}
                                             className="cursor-pointer absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -115,10 +118,11 @@ export const MessageInput = ({
                             placeholder="Envía un mensaje..."
                             className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[28px] max-h-[120px] placeholder:text-muted-foreground rounded-md flex-1 overflow-y-auto"
                             rows={1}
+                            disabled={isLoading || isUploading}
                         />
                         <div className="flex gap-2 justify-end items-center mt-2 flex-shrink-0">
 
-                            <MicrophoneButton />
+                            <MicrophoneButton isDisabled={isLoading || isUploading} />
 
                             <Button
                                 type="button"
@@ -126,12 +130,23 @@ export const MessageInput = ({
                                 variant="ghost"
                                 className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
                                 onClick={handleFileClick}
-                                disabled={files.length >= MAX_FILES}
+                                disabled={files.length >= MAX_FILES || isLoading || isUploading}
                             >
                                 <ClipIcon />
                             </Button>
 
-                            {isLoading ? (
+                            {isUploading && (
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    className="h-8 w-8 rounded-full cursor-pointer"
+                                    disabled={true}
+                                >
+                                    <LoaderIcon />
+                                </Button>
+                            )}
+
+                            {isLoading && (
                                 <Button
                                     type="button"
                                     size="icon"
@@ -140,12 +155,14 @@ export const MessageInput = ({
                                 >
                                     <StopIcon />
                                 </Button>
-                            ) : (
+                            )}
+
+                            {!isLoading && !isUploading && (
                                 <Button
                                     type="submit"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={!input.trim()}
+                                    disabled={!input.trim() && files.length === 0}
                                 >
                                     <ArrowUpIcon />
                                 </Button>
