@@ -1,10 +1,9 @@
-import { useRef } from "react";
 import { ArrowUpIcon, ClipIcon, LoaderIcon, CancelIcon } from "../global/icons";
 import { MicrophoneButton } from "../global/microphone-button";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 
-const MAX_FILES = 5;
+const MAX_FILES = 3;
 
 export function MessageInput({
     input,

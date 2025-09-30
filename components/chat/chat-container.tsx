@@ -24,9 +24,14 @@ export function ChatContainer({
 }) {
     const { isSignedIn } = useAuth();
 
+    const [files, setFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const createMessage = useMutation(api.messages.create);
     const updateTitle = useMutation(api.chats.updateTitle);
     const patchSuggestions = useMutation(api.suggestions.patch);
+    const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
+    const saveFile = useMutation(api.messages.saveFile);
 
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const hasRun = useRef(false);
@@ -67,11 +72,36 @@ export function ChatContainer({
         e.preventDefault();
         if (input.trim()) {
             sendMessage({ text: input });
-            await createMessage({
+            const messageId =await createMessage({
                 chatId: id,
                 role: "user",
                 parts: [{ type: "text", text: input }],
             });
+
+            // check if files are present 
+            if (files.length > 0) {
+                for (const file of files) {
+                    const postUrl = await generateUploadUrl();
+                    const result = await fetch(postUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": file.type },
+                        body: file,
+                    });
+                    const { storageId } = await result.json();
+
+                    await saveFile({
+                        storageId,
+                        messageId: messageId,
+                        type: file.type,
+                    });
+                }
+            }
+
+            setFiles([]);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+
             setInput('');
             setSuggestions([]);
         }
@@ -167,6 +197,9 @@ export function ChatContainer({
                             handleSubmit={handleSubmit}
                             stop={stop}
                             isLoading={status === 'submitted'}
+                            files={files}
+                            setFiles={setFiles}
+                            fileInputRef={fileInputRef}
                         />
                     </motion.div>
                 </motion.div>
