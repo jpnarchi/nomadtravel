@@ -1,13 +1,10 @@
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
 
-import { ArrowLeftIcon, Loader2, PlusIcon } from "lucide-react";
+import { ArrowLeftIcon, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { toast } from "sonner";
 import { CreateTemplateDialog } from "./create-template-dialog";
 
 export function Workbench({
@@ -21,15 +18,7 @@ export function Workbench({
     const [showCode, setShowCode] = useState(false);
     const [files, setFiles] = useState(initialFiles);
     const [isDesktop, setIsDesktop] = useState(false);
-    const [isCreateTemplateOpen, setIsCreateTemplateOpen] = useState(false);
-    const [templateName, setTemplateName] = useState("");
-    const [templateDescription, setTemplateDescription] = useState("");
-    const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
     const router = useRouter();
-
-    // Convex mutations
-    const createTemplate = useMutation(api.templates.createTemplate);
-    const createTemplateFile = useMutation(api.templates.createTemplateFile);
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -79,6 +68,7 @@ export function Workbench({
             </div>
             <div className="h-full border rounded-lg overflow-hidden mt-4">
                 <SandpackProvider
+                    key={showCode ? 'code' : 'preview'}
                     files={files}
                     theme="dark"
                     template="react"
@@ -115,6 +105,7 @@ export function Workbench({
                                 <SandpackCodeEditor
                                     showLineNumbers={true}
                                     showTabs={true}
+                                    showRunButton={false}
                                     style={{
                                         height: '85.25vh'
                                     }}
