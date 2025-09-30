@@ -1,15 +1,55 @@
-import { convertToModelMessages, generateObject, streamText, UIMessage } from "ai";
+import {
+    convertToModelMessages,
+    generateObject,
+    generateText,
+    stepCountIs,
+    streamText,
+    UIMessage,
+    experimental_generateImage as generateImage
+} from "ai";
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { Id } from "./_generated/dataModel";
+import { api } from "./_generated/api";
+
+const webSearchTool = anthropic.tools.webSearch_20250305({
+    maxUses: 5,
+});
 
 const openrouter = createOpenRouter({
     apiKey: process.env.OPENROUTER_API_KEY,
 });
 
 const http = httpRouter();
+
+// Helper function to upload image to storage within HTTP action context
+async function uploadFileToStorageFromHttpAction(
+    ctx: any,
+    fileData: Uint8Array,
+    mimeType: string
+): Promise<string | null> {
+    try {
+        // Step 1: Store the file directly using ctx.storage.store()
+        const blob = new Blob([new Uint8Array(fileData)], { type: mimeType });
+        const storageId = await ctx.storage.store(blob);
+
+        // Step 2: Get the public URL from storage
+        const url = await ctx.storage.getUrl(storageId);
+
+        if (!url) {
+            throw new Error("Failed to get storage URL");
+        }
+
+        return url;
+    } catch (error) {
+        console.error("Error uploading image to storage:", error);
+        return null;
+    }
+}
 
 http.route({
     path: "/api/chat",
@@ -23,19 +63,403 @@ http.route({
 
         const { id, messages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
 
-        const lastMessages = messages.slice(-10);
-
-        console.log('id', id);
-        console.log('messages', messages);
+        const templates = await ctx.runQuery(api.templates.getAll, {});
 
         const result = streamText({
             model: openrouter('anthropic/claude-sonnet-4'),
+            messages: convertToModelMessages(messages),
             system: `
-      You are a helpful assistant 
-      `,
-            messages: convertToModelMessages(lastMessages),
+    Eres Nerd, un asistente útil que solo conoce React y TailwindCSS. 
+    Pregunta al usuario que quiere crear, una vez que te diga, elige el template y llama a la herramienta generateInitialCodebase con el nombre del template.
+    Nunca usas la carpeta /src. 
+    No hace falta agregar tailwind en /styles.css
+    No modifiques el archivo /styles.css
+    /App.js es el componente raíz. 
+    Nunca menciones algo técnico al usuario. 
+    Genera siempre el código inicial antes de empezar a trabajar en el proyecto.
+    Muestra siempre la vista previa cuando termines lo que el usuario te pidió.
+    No crees un archivo tailwind.config.js.
+    Nunca menciones algo técnico al usuario.
+    Crea siempre componentes en la carpeta /components.
+    Nunca muestras listas.
+    Nunca muestras emojis.
+    Mantén tus respuestas cortas y concisas. 1 frase máxima.
+    Librerías permitidas: lucide-react, framer-motion.
+    Cuando el usuario te pide que busques en internet, usa la herramienta webSearch.
+    Antes de usar la herramienta webSearch explica que lo que vas a hacer es buscar en internet.
+    Cuando termines de buscar en internet, muestra el resultado.
+    Cuando el usuario te pide que leas un archivo, usa la herramienta readFile.
+    Cuando el usuario te pide que genere una imagen, usa la herramienta generateImageTool.
+    `.trim(),
+            //     Cuando el usuario te pide que genere un brochure, usa la herramienta generateBrochure. Si no sabes suficiente sobre el negocio, pregúntale al usuario más detalles.
+            stopWhen: stepCountIs(50),
+            maxOutputTokens: 64_000,
+            tools: {
+                createFile: {
+                    description: 'Crea un nuevo componente React o archivo con estilo TailwindCSS. Usa esto solo para nuevos archivos.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Ruta del archivo (por ejemplo, "/components/Header.js", "/App.js")'),
+                        content: z.string().describe('Contenido completo del archivo con código React y TailwindCSS'),
+                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
+                    }),
+                    execute: async function ({ path, content, explanation }) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            await ctx.runMutation(api.files.create, { chatId: id, path, content, version: currentVersion ?? 0 });
+                            return {
+                                success: true,
+                                message: `${explanation}`
+                            };
+                        } catch (error) {
+                            console.error('Error creating file:', error);
+                            return {
+                                success: false,
+                                error: `Error al crear ${path}`
+                            };
+                        }
+                    },
+                },
+
+                updateFile: {
+                    description: 'Actualiza un archivo existente. Usa esto para modificar componentes React o corregir problemas en archivos existentes.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Ruta del archivo a actualizar'),
+                        content: z.string().describe('Contenido completo del archivo actualizado'),
+                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
+                    }),
+                    execute: async function ({ path, content, explanation }) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            await ctx.runMutation(api.files.updateByPath, { chatId: id, path, content, version: currentVersion ?? 0 });
+                            return {
+                                success: true,
+                                message: `${explanation}`
+                            };
+                        } catch (error) {
+                            console.error('Error updating file:', error);
+                            return {
+                                success: false,
+                                error: `Error al actualizar ${path}`
+                            };
+                        }
+                    },
+                },
+
+                deleteFile: {
+                    description: 'Elimina un archivo que ya no es necesario.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Ruta del archivo a eliminar'),
+                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
+                    }),
+                    execute: async function ({ path, explanation }) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            await ctx.runMutation(api.files.deleteByPath, { chatId: id, path, version: currentVersion ?? 0 });
+                            return {
+                                success: true,
+                                message: `${explanation}`
+                            };
+                        } catch (error) {
+                            console.error('Error deleting file:', error);
+                            return {
+                                success: false,
+                                error: `Error al eliminar ${path}`
+                            };
+                        }
+                    },
+                },
+
+                generateInitialCodebase: {
+                    description: 'Genera el proyecto con los archivos iniciales.',
+                    inputSchema: z.object({
+                        templateName: z.union(
+                            templates.map(template =>
+                                z.literal(template.name).describe(template.description)
+                            )
+                        ),
+                    }),
+                    execute: async function ({ templateName }) {
+                        const templateFiles = await ctx.runQuery(api.templates.getFiles, { name: templateName });
+                        const files = templateFiles.reduce((acc, file) => ({
+                            ...acc,
+                            [file.path]: file.content
+                        }), {});
+                        const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                        for (const [path, content] of Object.entries(files) as [string, string][]) {
+                            await ctx.runMutation(api.files.create, { chatId: id, path, content, version: currentVersion ?? 0 });
+                        }
+                        const message = `Base del template "${templateName}" creada con éxito`;
+                        const filesCreated = Object.keys(files).length;
+                        return {
+                            success: true,
+                            message: message,
+                            filesCreated: filesCreated,
+                            files: files,
+                        };
+                    },
+                },
+
+                showPreview: {
+                    description: 'Muestra la vista previa del proyecto.',
+                    inputSchema: z.object({}),
+                    execute: async function () {
+                        const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                        await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
+                        return {
+                            success: true,
+                            version: currentVersion
+                        };
+                    },
+                },
+
+                webSearch: {
+                    description: 'Busca en internet para obtener información relevante.',
+                    inputSchema: z.object({
+                        query: z.string().describe('La consulta a realizar en internet'),
+                    }),
+                    execute: async function ({ query }) {
+                        try {
+                            const { text } = await generateText({
+                                model: anthropic('claude-sonnet-4-20250514'),
+                                prompt: `Busca en internet: ${query}`,
+                                tools: {
+                                    web_search: webSearchTool,
+                                },
+                            });
+                            return {
+                                success: true,
+                                message: text
+                            };
+                        } catch (error) {
+                            console.error('Error searching in internet:', error);
+                            return {
+                                success: false,
+                                message: `Error al buscar en internet: ${query}`
+                            };
+                        }
+                    },
+                },
+
+                readFile: {
+                    description: 'Lee un archivo para obtener información relevante.',
+                    inputSchema: z.object({
+                        question: z.string().describe('Pregunta que necesitas responder del archivo'),
+                        url: z.string().describe('URL del archivo a leer'),
+                        mimeType: z.union([
+                            z.literal('application/pdf'),
+                            z.literal('image/png'),
+                            z.literal('image/jpeg'),
+                            z.literal('image/jpg'),
+                            z.literal('image/heic'),
+                            z.literal('image/heif'),
+                            z.literal('application/vnd.openxmlformats-officedocument.wordprocessingml.document'), // .docx
+                            z.literal('application/msword'), // .doc
+                            z.literal('text/plain'), // .txt
+                            z.literal('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), // .xlsx
+                            z.literal('application/vnd.ms-excel'), // .xls
+                            z.literal('text/csv') // .csv
+                        ]).describe('Tipo de archivo'),
+                    }),
+                    execute: async function ({ question, url, mimeType }) {
+                        try {
+                            const { text } = await generateText({
+                                model: anthropic('claude-sonnet-4-20250514'),
+                                messages: [
+                                    {
+                                        role: 'user',
+                                        content: [
+                                            {
+                                                type: 'text',
+                                                text: question,
+                                            },
+                                            {
+                                                type: 'file',
+                                                data: new URL(url),
+                                                mediaType: mimeType,
+                                            },
+                                        ],
+                                    },
+                                ],
+                            });
+                            return {
+                                success: true,
+                                message: text
+                            };
+
+                        } catch (error) {
+                            console.error('Error reading file:', error);
+                            return {
+                                success: false,
+                                message: `Error al leer el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                            };
+                        }
+                    },
+                },
+
+                generateImageTool: {
+                    description: 'Genera una imagen con IA.',
+                    inputSchema: z.object({
+                        prompt: z.string().describe('Prompt para generar la imagen'),
+                        size: z.union([
+                            z.literal('1024x1024'),
+                            z.literal('1024x1792'),
+                            z.literal('1792x1024'),
+                        ]).describe('El tamaño de la imagen a generar'),
+                        n: z.number().describe('El número de imágenes a generar. dall-e-3: 1 (1 max), dall-e-2: 1-5 (5 max)'),
+                        model: z.union([
+                            z.literal('dall-e-3'),
+                            z.literal('dall-e-2'),
+                        ]).describe('El modelo a usar'),
+                    }),
+                    execute: async function ({ prompt, size, n, model }) {
+                        try {
+                            const { images } = await generateImage({
+                                model: openai.image(model),
+                                prompt: prompt,
+                                size: size,
+                                n: n,
+                            });
+
+                            // Upload all images to Convex storage
+                            const imageUrls = [];
+                            for (const image of images) {
+                                const imageUrl = await uploadFileToStorageFromHttpAction(ctx, image.uint8Array, 'image/png');
+
+                                if (!imageUrl) {
+                                    throw new Error('Failed to upload image to storage');
+                                }
+
+                                imageUrls.push(imageUrl);
+                            }
+
+                            return {
+                                success: true,
+                                message: `${imageUrls.length} imagen${imageUrls.length > 1 ? 'es' : ''} generada${imageUrls.length > 1 ? 's' : ''} exitosamente`,
+                                imageUrls: imageUrls
+                            };
+                        } catch (error) {
+                            console.error('Error generating image:', error);
+                            return {
+                                success: false,
+                                message: `Error al generar la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                            };
+                        }
+                    },
+                },
+
+                //     generateBrochure: {
+                //         description: 'Genera un brochure en PDF con IA.',
+                //         inputSchema: z.object({
+                //             prompt: z.string().describe('Prompt para generar el brochure en html'),
+                //             pdf: z.object({
+                //                 format: z.union([
+                //                     z.literal('A4'),
+                //                     z.literal('Letter'),
+                //                     z.literal('Legal'),
+                //                     z.literal('Tabloid')
+                //                 ]).default('A4').describe('Formato del PDF'),
+                //                 printBackground: z.boolean().default(true).describe('Imprimir fondos'),
+                //                 marginTop: z.string().default('0mm').describe('Margen superior, e.g. "0mm"'),
+                //                 marginRight: z.string().default('0mm').describe('Margen derecho, e.g. "0mm"'),
+                //                 marginBottom: z.string().default('0mm').describe('Margen inferior, e.g. "0mm"'),
+                //                 marginLeft: z.string().default('0mm').describe('Margen izquierdo, e.g. "0mm"'),
+                //             }).default({
+                //                 format: 'A4',
+                //                 printBackground: true,
+                //                 marginTop: '0mm',
+                //                 marginRight: '0mm',
+                //                 marginBottom: '0mm',
+                //                 marginLeft: '0mm',
+                //             }).describe('Opciones de exportación a PDF'),
+                //         }),
+                //         execute: async function ({ prompt, pdf }) {
+                //             try {
+                //                 // Generate HTML content using Claude
+                //                 const { text: htmlContent } = await generateText({
+                //                     model: anthropic('claude-sonnet-4-20250514'),
+                //                     system: `Eres un experto en diseño de brochures en formato HTML. 
+                //   Solamente puedes generar HTML. Nunca incluyes \`\`\`html\`\`\` o \`\`\`html\`\`\` en tu respuesta. 
+                //   No puedes contestar nada más que HTML.
+                //   El html debe incluir estilos CSS inline o en una etiqueta <style> para que se vea profesional.
+                //   Usa un diseño moderno y atractivo. NO incluyas referencias a archivos externos.
+                //   Nunca incluyas comentarios en tu respuesta.
+                //   `,
+                //                     prompt: prompt,
+                //                     maxOutputTokens: 64_000,
+                //                 });
+
+                //                 // Launch puppeteer browser
+                //                 const browser = await puppeteer.launch({
+                //                     headless: true,
+                //                     args: ['--no-sandbox', '--disable-setuid-sandbox']
+                //                 });
+
+                //                 const page = await browser.newPage();
+
+                //                 // Set the HTML content
+                //                 await page.setContent(htmlContent, {
+                //                     waitUntil: 'networkidle0'
+                //                 });
+
+                //                 // Generate PDF in A4 format
+                //                 const {
+                //                     format = 'A4',
+                //                     printBackground = true,
+                //                     marginTop = '20mm',
+                //                     marginRight = '20mm',
+                //                     marginBottom = '20mm',
+                //                     marginLeft = '20mm',
+                //                 } = pdf ?? {};
+
+                //                 const pdfBuffer = await page.pdf({
+                //                     format,
+                //                     printBackground,
+                //                     margin: {
+                //                         top: marginTop,
+                //                         right: marginRight,
+                //                         bottom: marginBottom,
+                //                         left: marginLeft,
+                //                     },
+                //                 });
+
+                //                 // Close the browser
+                //                 await browser.close();
+
+                //                 // Upload PDF to storage
+                //                 const pdfUrl = await uploadPdfToStorage(new Uint8Array(pdfBuffer));
+
+                //                 if (!pdfUrl) {
+                //                     throw new Error('Failed to upload PDF to storage');
+                //                 }
+
+                //                 return {
+                //                     success: true,
+                //                     message: 'Brochure generado exitosamente',
+                //                     pdfUrl: pdfUrl,
+                //                     htmlContent: htmlContent,
+                //                 };
+
+                //             } catch (error) {
+                //                 console.error('Error generating brochure:', error);
+                //                 return {
+                //                     success: false,
+                //                     message: `Error al generar el brochure: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                //                 };
+                //             }
+                //         },
+                //     },
+
+            },
             onError(error) {
                 console.error("streamText error:", error);
+            },
+            async onFinish(result) {
+                // Create message
+                // await ctx.runMutation(api.messages.create, {
+                //     chatId: id,
+                //     role: 'assistant',
+                //     parts: result.steps.map(step => step.content)
+                // });
             },
         });
 
@@ -222,6 +646,65 @@ http.route({
                 headers: new Headers({
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "POST",
+                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization",
+                    "Access-Control-Max-Age": "86400",
+                }),
+            });
+        } else {
+            return new Response();
+        }
+    }),
+});
+
+http.route({
+    path: "/api/templates",
+    method: "GET",
+    handler: httpAction(async (ctx, req) => {
+        const identity = await ctx.auth.getUserIdentity();
+
+        if (identity === null) {
+            throw new Error("Unauthorized");
+        }
+
+        try {
+            // Call the existing getAll query from templates.ts
+            const templates = await ctx.runQuery(api.templates.getAll, {});
+
+            return new Response(JSON.stringify({ templates }), {
+                headers: new Headers({
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    Vary: "origin",
+                }),
+            });
+        } catch (error) {
+            console.error('Error fetching templates:', error);
+            return new Response(JSON.stringify({ error: 'Failed to fetch templates' }), {
+                status: 500,
+                headers: new Headers({
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    Vary: "origin",
+                }),
+            });
+        }
+    }),
+});
+
+http.route({
+    path: "/api/templates",
+    method: "OPTIONS",
+    handler: httpAction(async (_, request) => {
+        const headers = request.headers;
+        if (
+            headers.get("Origin") !== null &&
+            headers.get("Access-Control-Request-Method") !== null &&
+            headers.get("Access-Control-Request-Headers") !== null
+        ) {
+            return new Response(null, {
+                headers: new Headers({
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET",
                     "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization",
                     "Access-Control-Max-Age": "86400",
                 }),
