@@ -23,6 +23,7 @@ export function ChatContainer() {
     const createMessage = useMutation(api.messages.create);
     const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
     const saveFile = useMutation(api.messages.saveFile);
+    const updateParts = useMutation(api.messages.updateParts);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         if (!isSignedIn) {
@@ -39,8 +40,11 @@ export function ChatContainer() {
                 const messageId = await createMessage({
                     chatId,
                     role: "user",
-                    parts: [{ type: "text", text: input }],
+                    parts: [{ type: "text", text: '' }],
                 });
+
+                const fileUrls = [];
+                let prompt = input
 
                 // check if files are present 
                 if (files.length > 0) {
@@ -53,13 +57,24 @@ export function ChatContainer() {
                         });
                         const { storageId } = await result.json();
 
-                        await saveFile({
+                        const { url } = await saveFile({
                             storageId,
                             messageId: messageId,
                             type: file.type,
                         });
+
+                        fileUrls.push({ url: url, type: file.type });
                     }
+
+                    prompt = input + "\n\n" + fileUrls.map(file =>
+                        `<attachment>\n<url>${file.url}</url>\n<type>${file.type}</type>\n</attachment>`
+                    ).join("\n");
                 }
+
+                await updateParts({
+                    messageId: messageId,
+                    parts: [{ type: "text", text: prompt }],
+                });
 
                 // setFiles([]);
                 // if (fileInputRef.current) {

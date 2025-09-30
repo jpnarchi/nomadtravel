@@ -36,6 +36,40 @@ export const generateUploadUrl = mutation({
     },
 });
 
+export const updateParts = mutation({
+    args: {
+        messageId: v.id("messages"),
+        parts: v.array(v.any()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.messageId) {
+            throw new Error("Message ID not found");
+        }
+
+        if (!args.parts) {
+            throw new Error("Parts not found");
+        }
+
+        const message = await ctx.db.get(args.messageId);
+
+        if (!message) {
+            throw new Error("Message not found");
+        }
+
+        if (message.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.patch(args.messageId, {
+            parts: args.parts,
+        });
+
+        return { success: true };
+    },
+})
+
 export const saveFile = mutation({
     args: { 
         storageId: v.id("_storage"), 
@@ -78,7 +112,7 @@ export const saveFile = mutation({
             files: files,
         });
 
-        return { success: true };
+        return { url: url };
     },
 });
 

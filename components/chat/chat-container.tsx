@@ -32,10 +32,11 @@ export function ChatContainer({
     const patchSuggestions = useMutation(api.suggestions.patch);
     const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
     const saveFile = useMutation(api.messages.saveFile);
-
+    const updateParts = useMutation(api.messages.updateParts);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const hasRun = useRef(false);
 
+    const [isLoading, setIsLoading] = useState(false);
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
         id,
@@ -52,6 +53,8 @@ export function ChatContainer({
             if (initialTitle === 'New Chat' && initialMessages.length === 1) {
                 await generateTitle([...initialMessages, options.message]);
             }
+
+            setIsLoading(false);
         }
     });
 
@@ -60,6 +63,7 @@ export function ChatContainer({
         hasRun.current = true;
 
         if (initialMessages.length === 1) {
+            setIsLoading(true);
             const content = initialMessages[0].parts.filter(part => part.type === 'text').map(part => part.text).join('');
             sendMessage({ text: content });
         }
@@ -69,14 +73,18 @@ export function ChatContainer({
         if (!isSignedIn) {
             redirect('/sign-in');
         }
+        setIsLoading(true);
         e.preventDefault();
         if (input.trim()) {
-            sendMessage({ text: input });
-            const messageId =await createMessage({
+
+            const messageId = await createMessage({
                 chatId: id,
                 role: "user",
-                parts: [{ type: "text", text: input }],
+                parts: [{ type: "text", text: '' }],
             });
+
+            const fileUrls = [];
+            let prompt = input
 
             // check if files are present 
             if (files.length > 0) {
@@ -89,13 +97,25 @@ export function ChatContainer({
                     });
                     const { storageId } = await result.json();
 
-                    await saveFile({
+                    const { url } = await saveFile({
                         storageId,
                         messageId: messageId,
                         type: file.type,
                     });
+                    fileUrls.push({ url: url, type: file.type });
                 }
-            }
+
+                prompt = input + "\n\n" + fileUrls.map(file =>
+                    `<attachment>\n<url>${file.url}</url>\n<type>${file.type}</type>\n</attachment>`
+                ).join("\n");
+            } 
+
+            sendMessage({ text: prompt });
+
+            await updateParts({
+                messageId: messageId,
+                parts: [{ type: "text", text: prompt }],
+            });
 
             setFiles([]);
             if (fileInputRef.current) {
@@ -108,6 +128,7 @@ export function ChatContainer({
     };
 
     const handleSuggestionClick = async (suggestion: string) => {
+        setIsLoading(true);
         sendMessage({ text: suggestion });
         await createMessage({
             chatId: id,
@@ -116,6 +137,10 @@ export function ChatContainer({
         });
         setInput('');
         setSuggestions([]);
+        setFiles([]);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const generateSuggestions = async (message: UIMessage) => {
@@ -179,7 +204,8 @@ export function ChatContainer({
                     <ChatMessages
                         id={id}
                         messages={messages}
-                        isLoading={status === 'submitted'}
+                        isLoading={isLoading}
+                        displayThinking={status === 'submitted'}
                         handleSuggestionClick={handleSuggestionClick}
                         suggestions={suggestions}
                     />
@@ -196,7 +222,7 @@ export function ChatContainer({
                             setInput={setInput}
                             handleSubmit={handleSubmit}
                             stop={stop}
-                            isLoading={status === 'submitted'}
+                            isLoading={isLoading}
                             files={files}
                             setFiles={setFiles}
                             fileInputRef={fileInputRef}

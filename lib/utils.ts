@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { ParsedAttachment, ParsedTextWithAttachments } from "./interfaces";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -14,4 +15,21 @@ export function formatCreationTime(creationTime: number) {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+export function parseAttachmentsFromText(text: string): ParsedTextWithAttachments {
+  const files = text.match(/<attachment>[\s\S]*?<\/attachment>/g)?.map(attachment => {
+    const url = attachment.match(/<url>(.*?)<\/url>/)?.[1];
+    const type = attachment.match(/<type>(.*?)<\/type>/)?.[1];
+    return { url, type };
+  }).filter((file): file is ParsedAttachment =>
+    file.url !== undefined && file.type !== undefined
+  ) || [];
+
+  // Remove attachment tags from the text if files exist
+  const displayText = files.length > 0
+    ? text.replace(/<attachment>[\s\S]*?<\/attachment>/g, '').trim()
+    : text;
+
+  return { files, displayText };
 }
