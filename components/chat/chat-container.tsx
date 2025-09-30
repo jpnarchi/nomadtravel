@@ -11,6 +11,7 @@ import { ChatMessages } from './chat-messages';
 import { MessageInput } from './message-input';
 import { Id } from '@/convex/_generated/dataModel';
 import { createPromptWithAttachments } from '@/lib/utils';
+import { DefaultChatTransport } from 'ai';
 
 export function ChatContainer({
     id,
@@ -23,7 +24,7 @@ export function ChatContainer({
     initialSuggestions: string[],
     initialTitle: string,
 }) {
-    const { isSignedIn } = useAuth();
+    const { isSignedIn, getToken } = useAuth();
 
     const [files, setFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +42,12 @@ export function ChatContainer({
     const [isUploading, setIsUploading] = useState(false);
     const [input, setInput] = useState('');
     const { messages, sendMessage, stop, status } = useChat({
+        transport: new DefaultChatTransport({
+            api: `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`,
+            headers: async () => ({
+                Authorization: `Bearer ${await getToken({ template: "convex" })}`,
+            }),
+        }),
         id,
         messages: initialMessages.length === 1 ? [] : initialMessages,
         onFinish: async (options) => {
@@ -147,9 +154,13 @@ export function ChatContainer({
 
     const generateSuggestions = async (message: UIMessage) => {
         try {
-            const response = await fetch('/api/suggestions', {
+            const token = await getToken({ template: "convex" });
+            const response = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/suggestions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
                 body: JSON.stringify({ message: message }),
             });
 
@@ -168,9 +179,13 @@ export function ChatContainer({
 
     const generateTitle = async (messages: UIMessage[]) => {
         try {
-            const response = await fetch('/api/title', {
+            const token = await getToken({ template: "convex" });
+            const response = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/title`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
                 body: JSON.stringify({ messages: messages }),
             });
 
