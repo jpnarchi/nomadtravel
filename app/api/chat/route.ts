@@ -1,4 +1,4 @@
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from 'ai';
+import { streamText, UIMessage, convertToModelMessages, stepCountIs, generateText } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
 import {
@@ -11,7 +11,11 @@ import {
   getAllTemplates
 } from '@/lib/convex-server';
 import { Id } from '@/convex/_generated/dataModel';
-import { defaultFiles } from '@/lib/default-files';
+import { anthropic } from '@ai-sdk/anthropic';
+
+const webSearchTool = anthropic.tools.webSearch_20250305({
+  maxUses: 5,
+});
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -46,6 +50,9 @@ export async function POST(req: Request) {
     Nunca muestras emojis.
     Mantén tus respuestas cortas y concisas. 1 frase máxima.
     Librerías permitidas: lucide-react, framer-motion.
+    Cuando el usuario te pide que busques en internet, usa la herramienta webSearch.
+    Antes de usar la herramienta webSearch explica que lo que vas a hacer es buscar en internet.
+    Cuando termines de buscar en internet, muestra el resultado.
     `,
     stopWhen: stepCountIs(50),
     maxOutputTokens: 64_000,
@@ -215,6 +222,34 @@ export async function POST(req: Request) {
             success: true,
             version: currentVersion
           };
+        },
+      },
+
+      webSearch: {
+        description: 'Busca en internet para obtener información relevante.',
+        inputSchema: z.object({
+          query: z.string().describe('La consulta a realizar en internet'),
+        }),
+        execute: async function ({ query }) {
+          try {
+            const { text } = await generateText({
+              model: anthropic('claude-sonnet-4-20250514'),
+              prompt: `Busca en internet: ${query}`,
+              tools: {
+                webSearch: webSearchTool,
+              },
+            });
+            return {
+              success: true,
+              message: text
+            };
+          } catch (error) {
+            console.error('Error searching in internet:', error);
+            return {
+              success: false,
+              message: `Error al buscar en internet: ${query}`
+            };
+          }
         },
       }
     }

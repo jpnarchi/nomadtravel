@@ -11,6 +11,7 @@ import { ProjectSummary } from "./tools/project-summary";
 import { ProjectSummaryResponse } from "@/lib/interfaces";
 import { Id } from "@/convex/_generated/dataModel";
 import { FileTool } from "./tools/file-tool";
+import { WebSearch } from "./tools/web-search";
 
 export function ChatMessages({
     id,
@@ -216,6 +217,29 @@ export function ChatMessages({
                                                     Cargando vista previa...
                                                 </div>
                                             </div>
+                                        </div>
+                                    )
+                                }
+
+                                if (part.type === "tool-webSearch") {
+                                    if (part.output && part.state && part.state === 'output-available') {
+                                        const response = part.output as any;
+                                        const message = response.message as string;
+                                        return (
+                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                                <WebSearch
+                                                    message={"Buscando en internet..."}
+                                                    isLoading={false}
+                                                />
+                                            </div>
+                                        )
+                                    }
+                                    return (
+                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                            <WebSearch
+                                                message={"Buscando en internet..."}
+                                                isLoading={true}
+                                            />
                                         </div>
                                     )
                                 }
