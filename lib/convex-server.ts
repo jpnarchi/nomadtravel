@@ -29,6 +29,7 @@ export async function getMessagesForChat(chatId: Id<"chats">): Promise<UIMessage
             id: message._id,
             role: message.role,
             parts: message.parts,
+            files: message.files,
         }));
 
         return formattedMessages;

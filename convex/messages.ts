@@ -30,6 +30,58 @@ export const getUserInfo = query({
     },
 });
 
+export const generateUploadUrl = mutation({
+    handler: async (ctx) => {
+        return await ctx.storage.generateUploadUrl();
+    },
+});
+
+export const saveFile = mutation({
+    args: { 
+        storageId: v.id("_storage"), 
+        messageId: v.id("messages"),
+        type: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.storageId) {
+            throw new Error("Storage ID not found");
+        }
+
+        if (!args.messageId) {
+            throw new Error("Message ID not found");
+        }
+
+        if (!args.type) {
+            throw new Error("Type not found");
+        }
+
+        const message = await ctx.db.get(args.messageId);
+
+        if (!message) {
+            throw new Error("Message not found");
+        }
+
+        if (message.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        const files = message.files || [];
+        const url = await ctx.storage.getUrl(args.storageId);
+        if (!url) {
+            throw new Error("URL not found");
+        }
+        files.push({ storageId: args.storageId, type: args.type, url: url });
+
+        await ctx.db.patch(args.messageId, {
+            files: files,
+        });
+
+        return { success: true };
+    },
+});
+
 export const getAll = query({
     args: {
         chatId: v.optional(v.id("chats")),

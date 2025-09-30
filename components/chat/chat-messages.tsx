@@ -13,6 +13,14 @@ import { Id } from "@/convex/_generated/dataModel";
 import { FileTool } from "./tools/file-tool";
 import { WebSearch } from "./tools/web-search";
 
+interface MessageWithFiles extends UIMessage {
+    files?: Array<{
+        storageId: string;
+        type: string;
+        url: string;
+    }>;
+}
+
 export function ChatMessages({
     id,
     messages,
@@ -31,7 +39,7 @@ export function ChatMessages({
     return (
         <div className="flex-1 overflow-y-auto">
             <div className="flex flex-col gap-4 items-center p-4" ref={messagesContainerRef}>
-                {messages.map(({ role, parts, id: messageId }, messageIndex) => (
+                {messages.map(({ role, parts, id: messageId, ...message }: MessageWithFiles, messageIndex) => (
                     <motion.div
                         key={messageId}
                         className={`flex flex-row gap-4 px-4 py-1 w-full md:w-[500px] md:px-0 first-of-type:pt-2`}
@@ -77,7 +85,7 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return ( 
+                                    return (
                                         <div key={index} className="flex flex-row gap-4 items-center">
                                             {role === 'assistant' && (
                                                 <Image src="/lentes.svg" alt="logo" width={24} height={24} />
@@ -244,6 +252,42 @@ export function ChatMessages({
                                     )
                                 }
                             })}
+
+                            {/* Render attached files if any */}
+                            {message.files && message.files.length > 0 && (
+                                <div className="flex flex-row gap-3 items-start mt-2 pl-8">
+                                    <div className="flex flex-wrap gap-2">
+                                        {message.files.map((file, fileIndex) => {
+                                            const isImage = file.type.startsWith('image/');
+                                            return (
+                                                <div key={fileIndex} className="relative group">
+                                                    {isImage ? (
+                                                        <a href={file.url} target="_blank" rel="noopener noreferrer">
+                                                            <div className="w-28 h-28 rounded-md border border-border bg-muted overflow-hidden cursor-pointer hover:opacity-90 transition-opacity">
+                                                                <Image
+                                                                    src={file.url}
+                                                                    alt="Attached file"
+                                                                    width={128}
+                                                                    height={128}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                        </a>
+                                                    ) : (
+                                                        <a href={file.url} target="_blank" rel="noopener noreferrer">
+                                                            <div className="w-32 h-32 rounded-md border border-border bg-muted flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors">
+                                                                <div className="text-sm text-center px-2 truncate w-full">
+                                                                    {file.type.split('/').pop()?.toUpperCase()}
+                                                                </div>
+                                                            </div>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 ))}

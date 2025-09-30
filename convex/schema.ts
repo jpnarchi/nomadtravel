@@ -35,6 +35,11 @@ export default defineSchema({
             v.literal("assistant")
         ),
         parts: v.array(v.any()),
+        files: v.optional(v.array(v.object({
+            storageId: v.string(),
+            type: v.string(),
+            url: v.string()
+        }))),
     })
         .index('by_chat_id', ['chatId'])
     ,

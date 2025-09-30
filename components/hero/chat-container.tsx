@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MessageInput } from "./message-input"
 import { useAuth } from "@clerk/nextjs";
@@ -14,11 +14,15 @@ export function ChatContainer() {
     const { isSignedIn } = useAuth();
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false);
+    const [files, setFiles] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const router = useRouter();
 
     const createChat = useMutation(api.chats.create);
     const createMessage = useMutation(api.messages.create);
+    const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
+    const saveFile = useMutation(api.messages.saveFile);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         if (!isSignedIn) {
@@ -30,11 +34,37 @@ export function ChatContainer() {
         try {
             if (input.trim()) {
                 const chatId = await createChat();
-                await createMessage({
+
+                // create message 
+                const messageId = await createMessage({
                     chatId,
                     role: "user",
                     parts: [{ type: "text", text: input }],
                 });
+
+                // check if files are present 
+                if (files.length > 0) {
+                    for (const file of files) {
+                        const postUrl = await generateUploadUrl();
+                        const result = await fetch(postUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": file.type },
+                            body: file,
+                        });
+                        const { storageId } = await result.json();
+
+                        await saveFile({
+                            storageId,
+                            messageId: messageId,
+                            type: file.type,
+                        });
+                    }
+                }
+
+                // setFiles([]);
+                // if (fileInputRef.current) {
+                //     fileInputRef.current.value = '';
+                // }
 
                 router.push(`/chat/${chatId}`);
             }
@@ -80,6 +110,9 @@ export function ChatContainer() {
                             setInput={setInput}
                             handleSubmit={handleSubmit}
                             isLoading={isLoading}
+                            files={files}
+                            setFiles={setFiles}
+                            fileInputRef={fileInputRef}
                         />
                     </motion.div>
                 </motion.div>
