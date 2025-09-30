@@ -314,7 +314,7 @@ export async function uploadImageToStorage(imageData: Uint8Array, mimeType: stri
         const result = await fetch(uploadUrl, {
             method: "POST",
             headers: { "Content-Type": mimeType },
-            body: imageData,
+            body: new Blob([new Uint8Array(imageData)], { type: mimeType }),
         });
 
         const { storageId } = await result.json();
