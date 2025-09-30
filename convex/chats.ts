@@ -1,34 +1,6 @@
 import { v } from "convex/values";
-import { query, mutation, QueryCtx } from "./_generated/server";
-
-// Helper function to get current user
-const getCurrentUser = async (ctx: QueryCtx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (identity === null) {
-        throw new Error("Unauthorized");
-    }
-
-    const user = await ctx.db
-        .query("users")
-        .withIndex("by_token_identifier", (q) =>
-            q.eq("tokenIdentifier", identity.tokenIdentifier)
-        )
-        .unique();
-
-    if (!user) {
-        throw new Error("User not found");
-    }
-
-    return user;
-};
-
-// Exported function to get current user
-export const getUserInfo = query({
-    args: {},
-    handler: async (ctx) => {
-        return await getCurrentUser(ctx);
-    },
-});
+import { query, mutation } from "./_generated/server";
+import { getCurrentUser } from "./users";
 
 export const getAll = query({
     args: {},
@@ -194,13 +166,13 @@ export const deleteChat = mutation({
         for (const message of messages) {
             await ctx.db.delete(message._id);
         }
-        
+
         const suggestions = await ctx.db.query("suggestions").withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!)).collect();
 
         for (const suggestion of suggestions) {
             await ctx.db.delete(suggestion._id);
         }
-        
+
         const files = await ctx.db.query("files").withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!)).collect();
 
         for (const file of files) {

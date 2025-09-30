@@ -2,8 +2,8 @@ import { v } from "convex/values";
 import { query, mutation, QueryCtx } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
-// Helper function to get current user
-const getCurrentUser = async (ctx: QueryCtx) => {
+// Helper function to get current user (exported for reuse in other files)
+export const getCurrentUser = async (ctx: QueryCtx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (identity === null) {
         throw new Error("Unauthorized");
