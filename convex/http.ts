@@ -219,15 +219,32 @@ http.route({
                         ),
                     }),
                     execute: async function ({ templateName }) {
+                        // get current version
+                        const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+
+                        // delete files in version if any
+                        await ctx.runMutation(api.files.deleteFilesInVersion, { chatId: id, version: currentVersion ?? 0 });
+
+                        // get template files
                         const templateFiles = await ctx.runQuery(api.templates.getFiles, { name: templateName });
                         const files = templateFiles.reduce((acc, file) => ({
                             ...acc,
                             [file.path]: file.content
                         }), {});
-                        const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                        for (const [path, content] of Object.entries(files) as [string, string][]) {
-                            await ctx.runMutation(api.files.create, { chatId: id, path, content, version: currentVersion ?? 0 });
-                        }
+
+                        // create files in batch
+                        const filesToCreate = templateFiles.map(file => ({
+                            path: file.path,
+                            content: file.content
+                        }));
+
+                        await ctx.runMutation(api.files.createBatch, {
+                            chatId: id,
+                            files: filesToCreate,
+                            version: currentVersion ?? 0
+                        });
+
+                        // return message and files created
                         const message = `Base del template "${templateName}" creada con éxito`;
                         const filesCreated = Object.keys(files).length;
                         return {

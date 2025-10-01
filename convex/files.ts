@@ -216,7 +216,7 @@ export const createNewVersion = mutation({
     },
 });
 
-export const deleteVersion = mutation({
+export const deleteFilesInVersion = mutation({
     args: {
         chatId: v.optional(v.id("chats")),
         version: v.optional(v.number()),
@@ -243,12 +243,61 @@ export const deleteVersion = mutation({
         }
 
         const files = await ctx.db.query("files")
-            .withIndex("by_chat_version", (q) => q.eq("chatId", args.chatId!).eq("version", args.version!)).collect();
+            .withIndex("by_chat_version", (q) => q.eq("chatId", args.chatId!).eq("version", args.version!))
+            .collect();
 
-        for (const file of files) {
-            await ctx.db.delete(file._id);
+        if (files.length > 0) {
+            for (const file of files) {
+                await ctx.db.delete(file._id);
+            }
         }
 
         return { success: true };
+    },
+});
+
+export const createBatch = mutation({
+    args: {
+        chatId: v.optional(v.id('chats')),
+        files: v.array(v.object({
+            path: v.string(),
+            content: v.string(),
+        })),
+        version: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.chatId) {
+            throw new Error("Chat not found");
+        }
+
+        if (!args.version) {
+            throw new Error("Version not found");
+        }
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        const fileIds = [];
+        for (const file of args.files) {
+            const fileId = await ctx.db.insert("files", {
+                chatId: args.chatId,
+                userId: user._id,
+                path: file.path,
+                content: file.content,
+                version: args.version,
+            });
+            fileIds.push(fileId);
+        }
+
+        return { success: true, fileIds };
     },
 });
