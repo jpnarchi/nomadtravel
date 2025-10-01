@@ -454,13 +454,34 @@ http.route({
                 console.error("streamText error:", error);
             },
             async onFinish(result) {
-                // Create message
-                // await ctx.runMutation(api.messages.create, {
-                //     chatId: id,
-                //     role: 'assistant',
-                //     parts: result.steps.map(step => step.content)
-                // });
-            },
+                const assistantParts = [];
+
+                for (const step of result.steps) {
+                    for (const part of step.content) {
+                        if (part.type === 'text') {
+                            assistantParts.push({
+                                type: 'text',
+                                text: part.text
+                            });
+                        } else if (part.type === 'tool-result') {
+                            assistantParts.push({
+                                type: `tool-${part.toolName}`,
+                                toolCallId: part.toolCallId,
+                                toolName: part.toolName,
+                                input: (part as any).input,
+                                output: (part as any).output,
+                                state: 'output-available'
+                            });
+                        }
+                    }
+                }
+
+                await ctx.runMutation(api.messages.create, {
+                    chatId: id,
+                    role: 'assistant',
+                    parts: assistantParts,
+                });
+            }
         });
 
         return result.toUIMessageStreamResponse({

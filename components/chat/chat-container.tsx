@@ -51,12 +51,6 @@ export function ChatContainer({
         id,
         messages: initialMessages.length === 1 ? [] : initialMessages,
         onFinish: async (options) => {
-            await createMessage({
-                chatId: id,
-                role: "assistant",
-                parts: options.message.parts,
-            });
-
             await generateSuggestions(options.message);
 
             if (initialTitle === 'New Chat' && initialMessages.length === 1) {
