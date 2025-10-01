@@ -345,7 +345,7 @@ export function ChatMessages({
     suggestions: string[],
     showSuggestions: boolean,
 }) {
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null); 
 
     useEffect(() => {
         setTimeout(() => {
