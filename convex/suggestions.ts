@@ -10,17 +10,17 @@ export const getAll = query({
         const user = await getCurrentUser(ctx);
 
         if (!args.chatId) {
-            return null;
+            return [];
         }
 
         const chat = await ctx.db.get(args.chatId);
 
         if (!chat) {
-            throw new Error("Chat not found");
+            return [];
         }
 
         if (chat.userId !== user._id) {
-            throw new Error("Access denied");
+            return [];
         }
 
         const suggestions = await ctx.db
@@ -28,11 +28,11 @@ export const getAll = query({
             .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
             .collect();
 
-        return suggestions;
+        return suggestions.flatMap(suggestion => suggestion.suggestions);
     },
 });
 
-export const patch = mutation({
+export const upsert = mutation({
     args: {
         chatId: v.optional(v.id("chats")),
         suggestions: v.optional(v.array(v.string())),

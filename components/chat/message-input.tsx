@@ -11,6 +11,8 @@ export const MessageInput = ({
     handleSubmit,
     stop,
     isLoading,
+    setIsLoading,
+    setShowSuggestions,
     isUploading,
     files,
     setFiles,
@@ -21,6 +23,8 @@ export const MessageInput = ({
     handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
     stop: () => void;
     isLoading: boolean;
+    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+    setShowSuggestions: React.Dispatch<React.SetStateAction<boolean>>;
     isUploading: boolean;
     files: File[],
     setFiles: React.Dispatch<React.SetStateAction<File[]>>,
@@ -151,7 +155,11 @@ export const MessageInput = ({
                                     type="button"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
-                                    onClick={stop}
+                                    onClick={() => {
+                                        stop();
+                                        setIsLoading(false);
+                                        setShowSuggestions(false);
+                                    }}
                                 >
                                     <StopIcon />
                                 </Button>

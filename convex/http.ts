@@ -51,6 +51,54 @@ async function uploadFileToStorageFromHttpAction(
     }
 }
 
+async function generateSuggestions(messages: string[]) {
+    try {
+        const { object } = await generateObject({
+            model: openrouter('google/gemini-2.5-flash'),
+            prompt: `
+Genera 3 sugerencias contextuales (1-12 chars cada una) basadas en esta conversación:
+
+Últimos mensajes: "${messages.join('\n\n')}"
+
+Haz sugerencias relevantes a lo que se acaba de decir - respuestas naturales que un usuario enviaría realmente.
+`.trim(),
+            schema: z.object({
+                suggestions: z.array(z.string()).length(3)
+            }),
+            temperature: 0.9,
+        });
+
+        return object.suggestions;
+    } catch (error) {
+        console.error('Error generating suggestions:', error);
+        return [];
+    }
+}
+
+async function generateTitle(messages: string[]) {
+    try {
+        const { object } = await generateObject({
+            model: openrouter('google/gemini-2.5-flash'),
+            prompt: `
+Genera un título para esta conversación, debe ser de 1 a 3 palabras:
+
+Mensajes: "${messages.join('\n\n')}"
+
+Haz el título relevante a la conversación.
+`.trim(),
+            schema: z.object({
+                title: z.string().describe('El título de la conversación en 1 a 3 palabras')
+            }),
+            temperature: 0.9,
+        });
+
+        return object.title;
+    } catch (error) {
+        console.error('Error generating title:', error);
+        return '';
+    }
+}
+
 http.route({
     path: "/api/chat",
     method: "POST",
@@ -338,109 +386,6 @@ http.route({
                         }
                     },
                 },
-
-                //     generateBrochure: {
-                //         description: 'Genera un brochure en PDF con IA.',
-                //         inputSchema: z.object({
-                //             prompt: z.string().describe('Prompt para generar el brochure en html'),
-                //             pdf: z.object({
-                //                 format: z.union([
-                //                     z.literal('A4'),
-                //                     z.literal('Letter'),
-                //                     z.literal('Legal'),
-                //                     z.literal('Tabloid')
-                //                 ]).default('A4').describe('Formato del PDF'),
-                //                 printBackground: z.boolean().default(true).describe('Imprimir fondos'),
-                //                 marginTop: z.string().default('0mm').describe('Margen superior, e.g. "0mm"'),
-                //                 marginRight: z.string().default('0mm').describe('Margen derecho, e.g. "0mm"'),
-                //                 marginBottom: z.string().default('0mm').describe('Margen inferior, e.g. "0mm"'),
-                //                 marginLeft: z.string().default('0mm').describe('Margen izquierdo, e.g. "0mm"'),
-                //             }).default({
-                //                 format: 'A4',
-                //                 printBackground: true,
-                //                 marginTop: '0mm',
-                //                 marginRight: '0mm',
-                //                 marginBottom: '0mm',
-                //                 marginLeft: '0mm',
-                //             }).describe('Opciones de exportación a PDF'),
-                //         }),
-                //         execute: async function ({ prompt, pdf }) {
-                //             try {
-                //                 // Generate HTML content using Claude
-                //                 const { text: htmlContent } = await generateText({
-                //                     model: anthropic('claude-sonnet-4-20250514'),
-                //                     system: `Eres un experto en diseño de brochures en formato HTML. 
-                //   Solamente puedes generar HTML. Nunca incluyes \`\`\`html\`\`\` o \`\`\`html\`\`\` en tu respuesta. 
-                //   No puedes contestar nada más que HTML.
-                //   El html debe incluir estilos CSS inline o en una etiqueta <style> para que se vea profesional.
-                //   Usa un diseño moderno y atractivo. NO incluyas referencias a archivos externos.
-                //   Nunca incluyas comentarios en tu respuesta.
-                //   `,
-                //                     prompt: prompt,
-                //                     maxOutputTokens: 64_000,
-                //                 });
-
-                //                 // Launch puppeteer browser
-                //                 const browser = await puppeteer.launch({
-                //                     headless: true,
-                //                     args: ['--no-sandbox', '--disable-setuid-sandbox']
-                //                 });
-
-                //                 const page = await browser.newPage();
-
-                //                 // Set the HTML content
-                //                 await page.setContent(htmlContent, {
-                //                     waitUntil: 'networkidle0'
-                //                 });
-
-                //                 // Generate PDF in A4 format
-                //                 const {
-                //                     format = 'A4',
-                //                     printBackground = true,
-                //                     marginTop = '20mm',
-                //                     marginRight = '20mm',
-                //                     marginBottom = '20mm',
-                //                     marginLeft = '20mm',
-                //                 } = pdf ?? {};
-
-                //                 const pdfBuffer = await page.pdf({
-                //                     format,
-                //                     printBackground,
-                //                     margin: {
-                //                         top: marginTop,
-                //                         right: marginRight,
-                //                         bottom: marginBottom,
-                //                         left: marginLeft,
-                //                     },
-                //                 });
-
-                //                 // Close the browser
-                //                 await browser.close();
-
-                //                 // Upload PDF to storage
-                //                 const pdfUrl = await uploadPdfToStorage(new Uint8Array(pdfBuffer));
-
-                //                 if (!pdfUrl) {
-                //                     throw new Error('Failed to upload PDF to storage');
-                //                 }
-
-                //                 return {
-                //                     success: true,
-                //                     message: 'Brochure generado exitosamente',
-                //                     pdfUrl: pdfUrl,
-                //                     htmlContent: htmlContent,
-                //                 };
-
-                //             } catch (error) {
-                //                 console.error('Error generating brochure:', error);
-                //                 return {
-                //                     success: false,
-                //                     message: `Error al generar el brochure: ${error instanceof Error ? error.message : 'Error desconocido'}`
-                //                 };
-                //             }
-                //         },
-                //     },
-
             },
             onError(error) {
                 console.error("streamText error:", error);
@@ -448,6 +393,7 @@ http.route({
             async onFinish(result) {
                 const assistantParts = [];
 
+                // Save relevant parts
                 for (const step of result.steps) {
                     for (const part of step.content) {
                         if (part.type === 'text') {
@@ -468,11 +414,37 @@ http.route({
                     }
                 }
 
+                // Save message to database
                 await ctx.runMutation(api.messages.create, {
                     chatId: id,
                     role: 'assistant',
                     parts: assistantParts,
                 });
+
+                // Get messages text 
+                let messagesTexts = [];
+                for (const message of messages) {
+                    const messageText = message.parts.filter(part => part.type === 'text').map(part => part.text).join(' ');
+                    messagesTexts.push(messageText);
+                }
+                const lastMessage = assistantParts.filter(part => part.type === 'text').map(part => part.text).join(' ');
+                messagesTexts.push(lastMessage);
+
+                // Generate suggestions
+                const suggestions = await generateSuggestions(messagesTexts.slice(-3));
+                await ctx.runMutation(api.suggestions.upsert, {
+                    chatId: id,
+                    suggestions: suggestions,
+                });
+
+                // Generate title
+                if (messagesTexts.length < 15) {
+                    const title = await generateTitle(messagesTexts);
+                    await ctx.runMutation(api.chats.updateTitle, {
+                        chatId: id,
+                        title: title,
+                    });
+                }
             }
         });
 
@@ -499,225 +471,6 @@ http.route({
                 headers: new Headers({
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "POST",
-                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent",
-                    "Access-Control-Max-Age": "86400",
-                }),
-            });
-        } else {
-            return new Response();
-        }
-    }),
-});
-
-http.route({
-    path: "/api/suggestions",
-    method: "POST",
-    handler: httpAction(async (ctx, req) => {
-        const identity = await ctx.auth.getUserIdentity();
-
-        if (identity === null) {
-            throw new Error("Unauthorized");
-        }
-
-        try {
-            const { message }: { message: UIMessage } = await req.json();
-
-            const context = message
-                .parts
-                .filter(part => part.type === 'text')
-                .map(part => part.text)
-                .join(' ');
-
-            const { object } = await generateObject({
-                model: openrouter('google/gemini-2.5-flash'),
-                prompt: `
-Genera 3 sugerencias contextuales (1-12 chars cada una) basadas en esta conversación:
-
-Último mensaje del Asistente: "${context}"
-
-Haz sugerencias relevantes a lo que se acaba de decir - respuestas naturales que un usuario enviaría realmente.
-`,
-                schema: z.object({
-                    suggestions: z.array(z.string()).length(3)
-                }),
-                temperature: 0.9,
-            });
-
-            return new Response(JSON.stringify({ suggestions: object.suggestions }), {
-                headers: new Headers({
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    Vary: "origin",
-                }),
-            });
-        } catch (error) {
-            console.error('Error generating suggestions:', error);
-            return new Response(JSON.stringify({ error: 'Failed to generate suggestions' }), {
-                status: 500,
-                headers: new Headers({
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    Vary: "origin",
-                }),
-            });
-        }
-    }),
-});
-
-http.route({
-    path: "/api/suggestions",
-    method: "OPTIONS",
-    handler: httpAction(async (_, request) => {
-        const headers = request.headers;
-        if (
-            headers.get("Origin") !== null &&
-            headers.get("Access-Control-Request-Method") !== null &&
-            headers.get("Access-Control-Request-Headers") !== null
-        ) {
-            return new Response(null, {
-                headers: new Headers({
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST",
-                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent",
-                    "Access-Control-Max-Age": "86400",
-                }),
-            });
-        } else {
-            return new Response();
-        }
-    }),
-});
-
-http.route({
-    path: "/api/title",
-    method: "POST",
-    handler: httpAction(async (ctx, req) => {
-        const identity = await ctx.auth.getUserIdentity();
-
-        if (identity === null) {
-            throw new Error("Unauthorized");
-        }
-
-        try {
-            const { messages }: { messages: UIMessage[] } = await req.json();
-
-            const context = messages
-                .map(message => message.parts
-                    .filter(part => part.type === 'text')
-                    .map(part => part.text)
-                    .join(' ')
-                )
-                .join(' ');
-
-            const { object } = await generateObject({
-                model: openrouter('google/gemini-2.5-flash'),
-                prompt: `
-Genera un título para esta conversación, debe ser de 1 a 3 palabras:
-
-Mensajes: "${context}"
-
-Haz el título relevante a la conversación.
-`,
-                schema: z.object({
-                    title: z.string()
-                }),
-                temperature: 0.9,
-            });
-
-            return new Response(JSON.stringify({ title: object.title }), {
-                headers: new Headers({
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    Vary: "origin",
-                }),
-            });
-        } catch (error) {
-            console.error('Error generating title:', error);
-            return new Response(JSON.stringify({ error: 'Failed to generate title' }), {
-                status: 500,
-                headers: new Headers({
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    Vary: "origin",
-                }),
-            });
-        }
-    }),
-});
-
-http.route({
-    path: "/api/title",
-    method: "OPTIONS",
-    handler: httpAction(async (_, request) => {
-        const headers = request.headers;
-        if (
-            headers.get("Origin") !== null &&
-            headers.get("Access-Control-Request-Method") !== null &&
-            headers.get("Access-Control-Request-Headers") !== null
-        ) {
-            return new Response(null, {
-                headers: new Headers({
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "POST",
-                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent",
-                    "Access-Control-Max-Age": "86400",
-                }),
-            });
-        } else {
-            return new Response();
-        }
-    }),
-});
-
-http.route({
-    path: "/api/templates",
-    method: "GET",
-    handler: httpAction(async (ctx, req) => {
-        const identity = await ctx.auth.getUserIdentity();
-
-        if (identity === null) {
-            throw new Error("Unauthorized");
-        }
-
-        try {
-            // Call the existing getAll query from templates.ts
-            const templates = await ctx.runQuery(api.templates.getAll, {});
-
-            return new Response(JSON.stringify({ templates }), {
-                headers: new Headers({
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    Vary: "origin",
-                }),
-            });
-        } catch (error) {
-            console.error('Error fetching templates:', error);
-            return new Response(JSON.stringify({ error: 'Failed to fetch templates' }), {
-                status: 500,
-                headers: new Headers({
-                    "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    Vary: "origin",
-                }),
-            });
-        }
-    }),
-});
-
-http.route({
-    path: "/api/templates",
-    method: "OPTIONS",
-    handler: httpAction(async (_, request) => {
-        const headers = request.headers;
-        if (
-            headers.get("Origin") !== null &&
-            headers.get("Access-Control-Request-Method") !== null &&
-            headers.get("Access-Control-Request-Headers") !== null
-        ) {
-            return new Response(null, {
-                headers: new Headers({
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET",
                     "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent",
                     "Access-Control-Max-Age": "86400",
                 }),

@@ -159,8 +159,6 @@ export const deleteChat = mutation({
             throw new Error("Access denied")
         }
 
-        await ctx.db.delete(args.chatId);
-
         const messages = await ctx.db.query("messages").withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!)).collect();
 
         for (const message of messages) {
@@ -178,6 +176,8 @@ export const deleteChat = mutation({
         for (const file of files) {
             await ctx.db.delete(file._id);
         }
+
+        await ctx.db.delete(args.chatId);
 
         return { success: true };
     },

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ChatMessages } from './chat-messages';
 import { MessageInput } from './message-input';
@@ -16,13 +16,9 @@ import { DefaultChatTransport } from 'ai';
 export function ChatContainer({
     id,
     initialMessages,
-    initialSuggestions,
-    initialTitle,
 }: {
     id: Id<"chats">,
     initialMessages: UIMessage[],
-    initialSuggestions: string[],
-    initialTitle: string,
 }) {
     const { isSignedIn, getToken } = useAuth();
 
@@ -30,14 +26,13 @@ export function ChatContainer({
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const createMessage = useMutation(api.messages.create);
-    const updateTitle = useMutation(api.chats.updateTitle);
-    const patchSuggestions = useMutation(api.suggestions.patch);
     const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const hasRun = useRef(false);
+    const suggestions = useQuery(api.suggestions.getAll, { chatId: id });
 
+    const hasRun = useRef(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [input, setInput] = useState('');
@@ -51,13 +46,8 @@ export function ChatContainer({
         id,
         messages: initialMessages.length === 1 ? [] : initialMessages,
         onFinish: async (options) => {
-            await generateSuggestions(options.message);
-
-            if (initialTitle === 'New Chat' && initialMessages.length === 1) {
-                await generateTitle([...initialMessages, options.message]);
-            }
-
             setIsLoading(false);
+            setShowSuggestions(true);
         }
     });
 
@@ -125,7 +115,7 @@ export function ChatContainer({
 
             setIsUploading(false);
             setInput('');
-            setSuggestions([]);
+            setShowSuggestions(false);
             setIsLoading(true);
         }
     };
@@ -139,65 +129,18 @@ export function ChatContainer({
             parts: [{ type: "text", text: suggestion }],
         });
         setInput('');
-        setSuggestions([]);
+        setShowSuggestions(false);
         setFiles([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
 
-    const generateSuggestions = async (message: UIMessage) => {
-        try {
-            const token = await getToken({ template: "convex" });
-            const response = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/suggestions`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ message: message }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                await patchSuggestions({
-                    chatId: id,
-                    suggestions: data.suggestions,
-                });
-                setSuggestions(data.suggestions);
-            }
-        } catch (error) {
-            console.error('Error generating suggestions:', error);
-        }
-    };
-
-    const generateTitle = async (messages: UIMessage[]) => {
-        try {
-            const token = await getToken({ template: "convex" });
-            const response = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/title`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ messages: messages }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                await updateTitle({
-                    chatId: id,
-                    title: data.title,
-                });
-            }
-        } catch (error) {
-            console.error('Error generating title:', error);
-        }
-    };
-
     useEffect(() => {
-        setSuggestions(initialSuggestions);
-    }, [initialSuggestions]);
+        if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+            setShowSuggestions(true);
+        }
+    }, [suggestions]);
 
     return (
         <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
@@ -218,7 +161,8 @@ export function ChatContainer({
                         isLoading={isLoading}
                         displayThinking={status === 'submitted'}
                         handleSuggestionClick={handleSuggestionClick}
-                        suggestions={suggestions}
+                        suggestions={suggestions || []}
+                        showSuggestions={showSuggestions}
                     />
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
@@ -234,6 +178,8 @@ export function ChatContainer({
                             handleSubmit={handleSubmit}
                             stop={stop}
                             isLoading={isLoading}
+                            setIsLoading={setIsLoading}
+                            setShowSuggestions={setShowSuggestions}
                             isUploading={isUploading}
                             files={files}
                             setFiles={setFiles}

@@ -7,8 +7,6 @@ import { UIMessage } from "ai";
 import { useScrollToBottom } from "../global/use-scroll-to-bottom";
 import { SuggestionButtons } from "./suggestion-buttons";
 import { PreviewButton } from "./tools/preview-button";
-import { ProjectSummary } from "./tools/project-summary";
-import { ProjectSummaryResponse } from "@/lib/interfaces";
 import { Id } from "@/convex/_generated/dataModel";
 import { FileTool } from "./tools/file-tool";
 import { WebSearch } from "./tools/web-search";
@@ -16,7 +14,6 @@ import { Attachments } from "./attachments";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import { ReadFile } from "./tools/read-file";
 import { Skeleton } from "../ui/skeleton";
-import { Brochure } from "./tools/brochure";
 
 export function ChatMessages({
     id,
@@ -25,6 +22,7 @@ export function ChatMessages({
     displayThinking,
     handleSuggestionClick,
     suggestions,
+    showSuggestions,
 }: {
     id: Id<"chats">,
     messages: UIMessage[],
@@ -32,6 +30,7 @@ export function ChatMessages({
     displayThinking: boolean,
     handleSuggestionClick: (suggestion: string) => void,
     suggestions: string[],
+    showSuggestions: boolean,
 }) {
     const [messagesContainerRef, messagesEndRef] = useScrollToBottom<HTMLDivElement>();
 
@@ -76,30 +75,6 @@ export function ChatMessages({
                                     )
                                 }
 
-                                if (part.type === "tool-displayProjectSummary") {
-                                    if (part.output && part.state && part.state === 'output-available') {
-                                        const response = part.output as ProjectSummaryResponse;
-                                        return (
-                                            <div key={index}>
-                                                <ProjectSummary data={response.data} />
-                                            </div>
-                                        )
-                                    }
-                                    return (
-                                        <div key={index} className="flex flex-row gap-4 items-center">
-                                            {role === 'assistant' && (
-                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
-                                            )}
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <Loader />
-                                                <div className="text-zinc-500 italic">
-                                                    Generando resumen...
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
-                                }
-
                                 if (part.type === "tool-manageFile") {
                                     if (part.output && part.state && part.state === 'output-available') {
                                         const response = part.output as any;
@@ -113,14 +88,16 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return (
-                                        <div key={index}>
-                                            <FileTool
-                                                message={"Cargando..."}
-                                                isLoading={true}
-                                            />
-                                        </div>
-                                    )
+                                    if (isLoading) {
+                                        return (
+                                            <div key={index}>
+                                                <FileTool
+                                                    message={"Cargando..."}
+                                                    isLoading={true}
+                                                />
+                                            </div>
+                                        )
+                                    }
                                 }
 
                                 if (part.type === "tool-generateInitialCodebase") {
@@ -140,19 +117,21 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return (
-                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                            {role === 'assistant' && (
-                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
-                                            )}
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <Loader />
-                                                <div className="text-zinc-500 italic">
-                                                    Generando base del proyecto...
+                                    if (isLoading) {
+                                        return (
+                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                                {role === 'assistant' && (
+                                                    <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                                )}
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Loader />
+                                                    <div className="text-zinc-500 italic">
+                                                        Generando base del proyecto...
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )
+                                        )
+                                    }
                                 }
 
                                 if (part.type === "tool-showPreview") {
@@ -168,19 +147,21 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return (
-                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                            {role === 'assistant' && (
-                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
-                                            )}
-                                            <div className="flex flex-row gap-2 items-center">
-                                                <Loader />
-                                                <div className="text-zinc-500 italic">
-                                                    Cargando vista previa...
+                                    if (isLoading) {
+                                        return (
+                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                                {role === 'assistant' && (
+                                                    <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                                )}
+                                                <div className="flex flex-row gap-2 items-center">
+                                                    <Loader />
+                                                    <div className="text-zinc-500 italic">
+                                                        Cargando vista previa...
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )
+                                        )
+                                    }
                                 }
 
                                 if (part.type === "tool-webSearch") {
@@ -196,14 +177,16 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return (
-                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                            <WebSearch
-                                                message={"Buscando en internet..."}
-                                                isLoading={true}
-                                            />
-                                        </div>
-                                    )
+                                    if (isLoading) {
+                                        return (
+                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                                <WebSearch
+                                                    message={"Buscando en internet..."}
+                                                    isLoading={true}
+                                                />
+                                            </div>
+                                        )
+                                    }
                                 }
 
                                 if (part.type === "tool-readFile") {
@@ -219,14 +202,16 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return (
-                                        <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                            <ReadFile
-                                                message={"Leyendo archivo..."}
-                                                isLoading={true}
-                                            />
-                                        </div>
-                                    )
+                                    if (isLoading) {
+                                        return (
+                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
+                                                <ReadFile
+                                                    message={"Leyendo archivo..."}
+                                                    isLoading={true}
+                                                />
+                                            </div>
+                                        )
+                                    }
                                 }
 
                                 if (part.type === "tool-generateImageTool") {
@@ -253,42 +238,18 @@ export function ChatMessages({
                                             </div>
                                         )
                                     }
-                                    return (
-                                        <div key={index} className="flex flex-row gap-4 items-start py-2">
-                                            {role === 'assistant' && (
-                                                <Image src="/lentes.svg" alt="logo" width={24} height={24} />
-                                            )}
-                                            <div className="flex flex-col space-y-3">
-                                                <Skeleton className="h-[250px] w-[250px] rounded-xl" />
-                                            </div>
-                                        </div>
-                                    )
-                                }
-
-                                if (part.type === "tool-generateBrochure") {
-                                    if (part.output && part.state && part.state === 'output-available') {
-                                        const response = part.output as any;
-                                        const message = response.message as string;
-                                        const pdfUrl = response.pdfUrl as string;
+                                    if (isLoading) {
                                         return (
-                                            <div key={index}>
-                                                <Brochure 
-                                                    message={"Brochure generado exitosamente!"} 
-                                                    isLoading={false} 
-                                                    pdfUrl={pdfUrl}
-                                                />
+                                            <div key={index} className="flex flex-row gap-4 items-start py-2">
+                                                {role === 'assistant' && (
+                                                    <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                                )}
+                                                <div className="flex flex-col space-y-3">
+                                                    <Skeleton className="h-[250px] w-[250px] rounded-xl" />
+                                                </div>
                                             </div>
                                         )
                                     }
-                                    return (
-                                        <div key={index}>
-                                            <Brochure
-                                                message={"Generando brochure..."}
-                                                isLoading={true}
-                                                pdfUrl={"https://www.google.com"}
-                                            />
-                                        </div>
-                                    )
                                 }
                             })}
                         </div>
@@ -316,7 +277,7 @@ export function ChatMessages({
                     </motion.div>
                 )}
 
-                {!isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
+                {!isLoading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && showSuggestions && (
                     <motion.div
                         initial={{ y: 5, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}

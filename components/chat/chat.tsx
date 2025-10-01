@@ -14,13 +14,9 @@ import { useAuth } from "@clerk/nextjs"
 export function Chat({
     id,
     initialMessages,
-    initialSuggestions,
-    initialTitle,
 }: {
     id: Id<"chats">,
     initialMessages: UIMessage[],
-    initialSuggestions: string[],
-    initialTitle: string,
 }) {
     const { isSignedIn } = useAuth()
 
@@ -38,8 +34,6 @@ export function Chat({
                 <ChatContainer
                     id={id}
                     initialMessages={initialMessages}
-                    initialSuggestions={initialSuggestions}
-                    initialTitle={initialTitle}
                 />
             </SidebarInset>
         </SidebarProvider>
