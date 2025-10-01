@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@clerk/nextjs"
 import { PricingContainer } from "./pricing-container"
 import { Footer } from "../global/footer"
+import { ScrollArea } from "../ui/scroll-area"
 
 export function Pricing() {
     const { isSignedIn } = useAuth()
@@ -24,8 +25,10 @@ export function Pricing() {
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
                 <ChatHeader />
-                <PricingContainer />
-                <Footer />
+                <ScrollArea className="max-h-[calc(100%-130px)] h-full w-full flex-1">
+                    <PricingContainer />
+                    <Footer />
+                </ScrollArea>
             </SidebarInset>
         </SidebarProvider>
     )
