@@ -95,75 +95,67 @@ http.route({
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
             tools: {
-                createFile: {
-                    description: 'Crea un nuevo componente React o archivo con estilo TailwindCSS. Usa esto solo para nuevos archivos.',
+                manageFile: {
+                    description: 'Gestiona archivos del proyecto React con TailwindCSS. Permite crear, actualizar o eliminar archivos.',
                     inputSchema: z.object({
-                        path: z.string().describe('Ruta del archivo (por ejemplo, "/components/Header.js", "/App.js")'),
-                        content: z.string().describe('Contenido completo del archivo con código React y TailwindCSS'),
-                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
+                        operation: z.enum(['create', 'update', 'delete']).describe('Tipo de operación: create (nuevo archivo), update (modificar existente), delete (eliminar)'),
+                        path: z.string().describe('Ruta del archivo (ejemplo: "/components/Header.js", "/App.js")'),
+                        content: z.string().optional().describe('Contenido completo del archivo (requerido para create y update)'),
+                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios para usuarios no técnicos'),
                     }),
-                    execute: async function ({ path, content, explanation }) {
+                    execute: async function ({ operation, path, content, explanation }) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                            await ctx.runMutation(api.files.create, { chatId: id, path, content, version: currentVersion ?? 0 });
-                            return {
-                                success: true,
-                                message: `${explanation}`
-                            };
-                        } catch (error) {
-                            console.error('Error creating file:', error);
-                            return {
-                                success: false,
-                                error: `Error al crear ${path}`
-                            };
-                        }
-                    },
-                },
 
-                updateFile: {
-                    description: 'Actualiza un archivo existente. Usa esto para modificar componentes React o corregir problemas en archivos existentes.',
-                    inputSchema: z.object({
-                        path: z.string().describe('Ruta del archivo a actualizar'),
-                        content: z.string().describe('Contenido completo del archivo actualizado'),
-                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
-                    }),
-                    execute: async function ({ path, content, explanation }) {
-                        try {
-                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                            await ctx.runMutation(api.files.updateByPath, { chatId: id, path, content, version: currentVersion ?? 0 });
-                            return {
-                                success: true,
-                                message: `${explanation}`
-                            };
-                        } catch (error) {
-                            console.error('Error updating file:', error);
-                            return {
-                                success: false,
-                                error: `Error al actualizar ${path}`
-                            };
-                        }
-                    },
-                },
+                            switch (operation) {
+                                case 'create':
+                                    if (!content) {
+                                        return {
+                                            success: false,
+                                            error: 'El contenido es requerido para crear un archivo'
+                                        };
+                                    }
+                                    await ctx.runMutation(api.files.create, {
+                                        chatId: id,
+                                        path,
+                                        content,
+                                        version: currentVersion ?? 0
+                                    });
+                                    break;
 
-                deleteFile: {
-                    description: 'Elimina un archivo que ya no es necesario.',
-                    inputSchema: z.object({
-                        path: z.string().describe('Ruta del archivo a eliminar'),
-                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios que estás haciendo para usuarios no técnicos'),
-                    }),
-                    execute: async function ({ path, explanation }) {
-                        try {
-                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                            await ctx.runMutation(api.files.deleteByPath, { chatId: id, path, version: currentVersion ?? 0 });
+                                case 'update':
+                                    if (!content) {
+                                        return {
+                                            success: false,
+                                            error: 'El contenido es requerido para actualizar un archivo'
+                                        };
+                                    }
+                                    await ctx.runMutation(api.files.updateByPath, {
+                                        chatId: id,
+                                        path,
+                                        content,
+                                        version: currentVersion ?? 0
+                                    });
+                                    break;
+
+                                case 'delete':
+                                    await ctx.runMutation(api.files.deleteByPath, {
+                                        chatId: id,
+                                        path,
+                                        version: currentVersion ?? 0
+                                    });
+                                    break;
+                            }
+
                             return {
                                 success: true,
-                                message: `${explanation}`
+                                message: explanation
                             };
                         } catch (error) {
-                            console.error('Error deleting file:', error);
+                            console.error(`Error en operación ${operation}:`, error);
                             return {
                                 success: false,
-                                error: `Error al eliminar ${path}`
+                                error: `Error al ${operation === 'create' ? 'crear' : operation === 'update' ? 'actualizar' : 'eliminar'} ${path}`
                             };
                         }
                     },

@@ -47,7 +47,7 @@ export function ChatMessages({
                     >
                         <div className="flex flex-col gap-2 w-full">
                             {parts.map((part, index) => {
-                                //console.log(part)
+                                console.log(part)
                                 if (part.type === "text") {
                                     const { files, displayText } = parseAttachmentsFromText(part.text);
 
@@ -100,7 +100,7 @@ export function ChatMessages({
                                     )
                                 }
 
-                                if (part.type === "tool-createFile") {
+                                if (part.type === "tool-manageFile") {
                                     if (part.output && part.state && part.state === 'output-available') {
                                         const response = part.output as any;
                                         const message = response.message as string;
@@ -116,53 +116,7 @@ export function ChatMessages({
                                     return (
                                         <div key={index}>
                                             <FileTool
-                                                message={"Creando..."}
-                                                isLoading={true}
-                                            />
-                                        </div>
-                                    )
-                                }
-
-                                if (part.type === "tool-updateFile") {
-                                    if (part.output && part.state && part.state === 'output-available') {
-                                        const response = part.output as any;
-                                        const message = response.message as string;
-                                        return (
-                                            <div key={index}>
-                                                <FileTool
-                                                    message={message}
-                                                    isLoading={false}
-                                                />
-                                            </div>
-                                        )
-                                    }
-                                    return (
-                                        <div key={index}>
-                                            <FileTool
-                                                message={"Actualizando..."}
-                                                isLoading={true}
-                                            />
-                                        </div>
-                                    )
-                                }
-
-                                if (part.type === "tool-deleteFile") {
-                                    if (part.output && part.state && part.state === 'output-available') {
-                                        const response = part.output as any;
-                                        const message = response.message as string;
-                                        return (
-                                            <div key={index}>
-                                                <FileTool
-                                                    message={message}
-                                                    isLoading={false}
-                                                />
-                                            </div>
-                                        )
-                                    }
-                                    return (
-                                        <div key={index}>
-                                            <FileTool
-                                                message={"Eliminando..."}
+                                                message={"Cargando..."}
                                                 isLoading={true}
                                             />
                                         </div>

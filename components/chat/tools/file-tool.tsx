@@ -1,5 +1,5 @@
 import { Loader } from "@/components/ai-elements/loader";
-import { CircleCheckBig } from "lucide-react";
+import { CircleCheckBig, FileIcon } from "lucide-react";
 
 export function FileTool({
     message,
@@ -10,7 +10,10 @@ export function FileTool({
 }) {
     return (
         <div className="flex gap-4 items-center bg-background border rounded-md px-4 py-3 mb-1 ml-8 justify-between text-sm">
-            {message}
+            <div className="flex gap-3 items-center">
+                <FileIcon className="size-4" />
+                {message}
+            </div>
             {isLoading && (<Loader />)}
             {!isLoading && (<CircleCheckBig className="size-4" />)}
         </div>
