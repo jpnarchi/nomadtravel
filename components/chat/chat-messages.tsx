@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { UserIcon } from "@/components/global/icons";
+import { ClipIcon, GoogleIcon, UserIcon } from "@/components/global/icons";
 import { Markdown } from "@/components/global/markdown";
 import Image from "next/image";
 import { Loader } from "@/components/ai-elements/loader";
@@ -8,12 +8,11 @@ import { useScrollToBottom } from "../global/use-scroll-to-bottom";
 import { SuggestionButtons } from "./suggestion-buttons";
 import { PreviewButton } from "./tools/preview-button";
 import { Id } from "@/convex/_generated/dataModel";
-import { FileTool } from "./tools/file-tool";
-import { WebSearch } from "./tools/web-search";
 import { Attachments } from "./attachments";
 import { parseAttachmentsFromText } from "@/lib/utils";
-import { ReadFile } from "./tools/read-file";
 import { Skeleton } from "../ui/skeleton";
+import { ToolMessage } from "./tools/tool-message";
+import { File, Folders } from "lucide-react";
 
 export function ChatMessages({
     id,
@@ -81,8 +80,9 @@ export function ChatMessages({
                                         const message = response.message as string;
                                         return (
                                             <div key={index}>
-                                                <FileTool
-                                                    message={message}
+                                                <ToolMessage
+                                                    icon={<File className="size-4" />}
+                                                    message={message || "Actualizado"}
                                                     isLoading={false}
                                                 />
                                             </div>
@@ -91,7 +91,8 @@ export function ChatMessages({
                                     if (isLoading) {
                                         return (
                                             <div key={index}>
-                                                <FileTool
+                                                <ToolMessage
+                                                    icon={<File className="size-4" />}
                                                     message={"Cargando..."}
                                                     isLoading={true}
                                                 />
@@ -107,28 +108,23 @@ export function ChatMessages({
                                         const filesCreated = response.filesCreated as number;
                                         const files = response.files as string[];
                                         return (
-                                            <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
-                                                {role === 'assistant' && (
-                                                    <div className="shrink-0 mt-2">
-                                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
-                                                    </div>
-                                                )}
-                                                <Markdown>{message}</Markdown>
+                                            <div key={index}>
+                                                <ToolMessage
+                                                    icon={<Folders className="size-4" />}
+                                                    message={message}
+                                                    isLoading={false}
+                                                />
                                             </div>
                                         )
                                     }
                                     if (isLoading) {
                                         return (
-                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                                {role === 'assistant' && (
-                                                    <Image src="/lentes.svg" alt="logo" width={24} height={24} />
-                                                )}
-                                                <div className="flex flex-row gap-2 items-center">
-                                                    <Loader />
-                                                    <div className="text-zinc-500 italic">
-                                                        Generando base del proyecto...
-                                                    </div>
-                                                </div>
+                                            <div key={index}>
+                                                <ToolMessage
+                                                    icon={<Folders className="size-4" />}
+                                                    message={"Obteniendo plantilla..."}
+                                                    isLoading={true}
+                                                />
                                             </div>
                                         )
                                     }
@@ -169,9 +165,10 @@ export function ChatMessages({
                                         const response = part.output as any;
                                         const message = response.message as string;
                                         return (
-                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                                <WebSearch
-                                                    message={"Buscando en internet..."}
+                                            <div key={index}>
+                                                <ToolMessage 
+                                                    icon={<GoogleIcon />}
+                                                    message={"Buscado en internet"}
                                                     isLoading={false}
                                                 />
                                             </div>
@@ -179,9 +176,10 @@ export function ChatMessages({
                                     }
                                     if (isLoading) {
                                         return (
-                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                                <WebSearch
-                                                    message={"Buscando en internet..."}
+                                            <div key={index}>
+                                                <ToolMessage
+                                                    icon={<GoogleIcon />}
+                                                    message={"Buscado en internet..."}
                                                     isLoading={true}
                                                 />
                                             </div>
@@ -194,8 +192,9 @@ export function ChatMessages({
                                         const response = part.output as any;
                                         const message = response.message as string;
                                         return (
-                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                                <ReadFile
+                                            <div key={index}>
+                                                <ToolMessage
+                                                    icon={<ClipIcon />}
                                                     message={"Archivo leído"}
                                                     isLoading={false}
                                                 />
@@ -204,8 +203,9 @@ export function ChatMessages({
                                     }
                                     if (isLoading) {
                                         return (
-                                            <div key={index} className="flex flex-row gap-4 items-center pt-2">
-                                                <ReadFile
+                                            <div key={index}>
+                                                <ToolMessage
+                                                    icon={<ClipIcon />}
                                                     message={"Leyendo archivo..."}
                                                     isLoading={true}
                                                 />
@@ -226,10 +226,10 @@ export function ChatMessages({
                                                 )}
                                                 {imageUrls.map((imageUrl: string, index: number) => (
                                                     <a key={index} href={imageUrl} target="_blank" rel="noopener noreferrer">
-                                                        <Image 
-                                                            src={imageUrl} 
-                                                            alt="imagen generada" 
-                                                            width={250} 
+                                                        <Image
+                                                            src={imageUrl}
+                                                            alt="imagen generada"
+                                                            width={250}
                                                             height={125}
                                                             className="rounded-xl"
                                                         />

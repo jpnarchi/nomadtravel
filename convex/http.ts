@@ -119,6 +119,8 @@ http.route({
             system: `
     Eres Nerd, un asistente útil que solo conoce React y TailwindCSS. 
     Pregunta al usuario que quiere crear, una vez que te diga, elige el template y llama a la herramienta generateInitialCodebase con el nombre del template.
+    Antes de usar cualquier template, pregunta al usuario qué datos reales quiere usar antes de mostrarle la página.
+    No mostrar datos mock. Siempre preguntar al usuario más detalles.
     Nunca usas la carpeta /src. 
     No hace falta agregar tailwind en /styles.css
     No modifiques el archivo /styles.css
@@ -138,8 +140,8 @@ http.route({
     Cuando termines de buscar en internet, muestra el resultado.
     Cuando el usuario te pide que leas un archivo, usa la herramienta readFile.
     Cuando el usuario te pide que genere una imagen, usa la herramienta generateImageTool.
+    Siempre que uses la herramienta generateImageTool, confirma con el usuario que la imagen es la que quiere.
     `.trim(),
-            //     Cuando el usuario te pide que genere un brochure, usa la herramienta generateBrochure. Si no sabes suficiente sobre el negocio, pregúntale al usuario más detalles.
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
             tools: {
@@ -245,7 +247,7 @@ http.route({
                         });
 
                         // return message and files created
-                        const message = `Base del template "${templateName}" creada con éxito`;
+                        const message = `Plantilla "${templateName}" creada con éxito`;
                         const filesCreated = Object.keys(files).length;
                         return {
                             success: true,
