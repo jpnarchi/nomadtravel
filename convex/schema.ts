@@ -28,6 +28,8 @@ export default defineSchema({
         isGenerating: v.optional(v.boolean()),
     })
         .index('by_user_id', ['userId'])
+        .index('by_title', ['title'])
+        .index('by_user_id_title', ['userId', 'title'])
     ,
     messages: defineTable({
         chatId: v.id('chats'),

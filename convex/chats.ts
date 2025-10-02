@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
+import { paginationOptsValidator } from "convex/server";
 import { getCurrentUser } from "./users";
 
 export const getAll = query({
@@ -39,7 +40,7 @@ export const duplicateChat = mutation({
     },
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
-        
+
         if (!args.chatId) {
             throw new Error("Chat not found");
         }
@@ -50,7 +51,7 @@ export const duplicateChat = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -66,7 +67,7 @@ export const duplicateChat = mutation({
             .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
             .order("asc")
             .collect();
-        
+
         for (const message of messages) {
             await ctx.db.insert("messages", {
                 chatId: newChatId,
@@ -81,14 +82,14 @@ export const duplicateChat = mutation({
             .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
             .order("asc")
             .collect();
-        
+
         for (const file of files) {
             await ctx.db.insert("files", {
                 chatId: newChatId,
                 userId: user._id,
                 path: file.path,
                 content: file.content,
-                version: chat.currentVersion ?? 1, 
+                version: chat.currentVersion ?? 1,
             });
         }
 
@@ -97,7 +98,7 @@ export const duplicateChat = mutation({
             .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
             .order("asc")
             .collect();
-        
+
         for (const suggestion of suggestions) {
             await ctx.db.insert("suggestions", {
                 chatId: newChatId,
@@ -124,7 +125,7 @@ export const updateIsGenerating = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -147,7 +148,7 @@ export const getIsGenerating = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -172,7 +173,7 @@ export const getCurrentVersion = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -198,7 +199,7 @@ export const updateCurrentVersion = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -228,7 +229,7 @@ export const updateTitle = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -278,7 +279,7 @@ export const deleteChat = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied")
         }
 
@@ -323,7 +324,7 @@ export const getById = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -344,10 +345,91 @@ export const getTitle = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
         return chat.title;
+    },
+});
+
+export const getUserChatsAsAdmin = query({
+    args: {
+        userId: v.id("users"),
+    },
+    handler: async (ctx, args) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        // Only admins can view other users' chats
+        if (currentUser.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        const chats = await ctx.db
+            .query("chats")
+            .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+            .order("desc")
+            .collect();
+
+        return chats;
+    },
+});
+
+export const searchUserChatsAsAdmin = query({
+    args: {
+        userId: v.id("users"),
+        searchTerm: v.string(),
+        paginationOpts: paginationOptsValidator,
+    },
+    handler: async (ctx, args) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        // Only admins can view other users' chats
+        if (currentUser.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        // If search term is empty, return all chats for the user
+        if (!args.searchTerm.trim()) {
+            return await ctx.db
+                .query("chats")
+                .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+                .order("desc")
+                .paginate(args.paginationOpts);
+        }
+
+        // Search for chats by title using the composite index by_user_id_title
+        const chats = await ctx.db
+            .query("chats")
+            .withIndex("by_user_id_title", (q) =>
+                q.eq("userId", args.userId)
+                    .gte("title", args.searchTerm)
+                    .lt("title", args.searchTerm + "\uffff")
+            )
+            .order("desc")
+            .paginate(args.paginationOpts);
+
+        return chats;
+    },
+});
+
+export const getUserChatsCountAsAdmin = query({
+    args: {
+        userId: v.id("users"),
+    },
+    handler: async (ctx, args) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        // Only admins can view other users' chats
+        if (currentUser.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        const chats = await ctx.db
+            .query("chats")
+            .withIndex("by_user_id", (q) => q.eq("userId", args.userId))
+            .collect();
+
+        return chats.length;
     },
 });

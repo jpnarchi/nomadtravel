@@ -19,7 +19,7 @@ export const getAll = query({
             return [];
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             return [];
         }
 
@@ -54,7 +54,7 @@ export const upsert = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 

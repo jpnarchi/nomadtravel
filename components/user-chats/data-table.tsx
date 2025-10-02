@@ -10,7 +10,7 @@ import {
     VisibilityState,
 } from "@tanstack/react-table"
 import { ChevronDown } from "lucide-react"
-import { usePaginatedQuery } from "convex/react"
+import { usePaginatedQuery, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 
 import { Button } from "@/components/ui/button"
@@ -31,24 +31,35 @@ import {
 } from "@/components/ui/table"
 import { columns } from "./columns"
 
-export function UsersTable() {
+interface ChatsTableProps {
+    userId: string
+}
+
+export function ChatsTable({ userId }: ChatsTableProps) {
     const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnVisibility, setColumnVisibility] =
-        React.useState<VisibilityState>({})
+    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
     const [rowSelection, setRowSelection] = React.useState({})
     const [searchTerm, setSearchTerm] = React.useState("")
 
     // Use Convex paginated query with search functionality
     const { results, status, loadMore } = usePaginatedQuery(
-        api.users.searchByEmailAsAdmin,
-        { searchTerm: searchTerm.toLowerCase() },
+        api.chats.searchUserChatsAsAdmin,
+        {
+            userId: userId as any,
+            searchTerm: searchTerm
+        },
         { initialNumItems: 10 }
     )
 
-    const users = results ?? []
+    // Get total chats count
+    const totalChatsCount = useQuery(api.chats.getUserChatsCountAsAdmin, {
+        userId: userId as any
+    })
+
+    const chats = results ?? []
 
     const table = useReactTable({
-        data: users,
+        data: chats,
         columns,
         onSortingChange: setSorting,
         onColumnVisibilityChange: setColumnVisibility,
@@ -67,7 +78,7 @@ export function UsersTable() {
         <div className="w-full">
             <div className="flex items-center justify-between py-4">
                 <Input
-                    placeholder="Buscar email..."
+                    placeholder="Buscar por título..."
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     className="max-w-sm"
@@ -128,7 +139,7 @@ export function UsersTable() {
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    Cargando usuarios...
+                                    Cargando chats...
                                 </TableCell>
                             </TableRow>
                         ) : table.getRowModel().rows?.length ? (
@@ -162,7 +173,15 @@ export function UsersTable() {
             </div>
             <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                    {users.length} usuario{users.length !== 1 ? "s" : ""} cargado{users.length !== 1 ? "s" : ""}
+                    {totalChatsCount !== undefined ? (
+                        <>
+                            {chats.length} de {totalChatsCount} chat{totalChatsCount !== 1 ? "s" : ""} cargado{chats.length !== 1 ? "s" : ""}
+                        </>
+                    ) : (
+                        <>
+                            {chats.length} chat{chats.length !== 1 ? "s" : ""} cargado{chats.length !== 1 ? "s" : ""}
+                        </>
+                    )}
                 </div>
                 <div className="space-x-2">
                     <Button

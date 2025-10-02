@@ -144,7 +144,7 @@ export const isAdmin = query({
     },
 })
 
-export const searchByEmail = query({
+export const searchByEmailAsAdmin = query({
     args: {
         searchTerm: v.string(),
         paginationOpts: paginationOptsValidator,
@@ -174,5 +174,53 @@ export const searchByEmail = query({
             .paginate(args.paginationOpts);
 
         return users;
+    },
+})
+
+export const getUserByIdAsAdmin = query({
+    args: {
+        userId: v.id("users"),
+    },
+    handler: async (ctx, args) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        if (currentUser.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        const user = await ctx.db.get(args.userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        return user;
+    },
+})
+
+export const updatePlanAsAdmin = mutation({
+    args: {
+        userId: v.id("users"),
+        plan: v.union(
+            v.literal("free"),
+            v.literal("basic"),
+            v.literal("pro"),
+            v.literal("admin")
+        ),
+    },
+    handler: async (ctx, args) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        if (currentUser.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        // Verify the target user exists
+        const targetUser = await ctx.db.get(args.userId);
+        if (!targetUser) {
+            throw new Error("User not found");
+        }
+
+        await ctx.db.patch(args.userId, { plan: args.plan });
+        return { success: true };
     },
 })

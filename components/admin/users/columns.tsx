@@ -2,6 +2,10 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useMutation } from "convex/react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,8 +19,64 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Doc } from "@/convex/_generated/dataModel"
+import { UpdatePlanDialog } from "./update-plan-dialog"
 
 export type User = Doc<"users">
+
+// Create a component for the actions cell to properly use hooks
+function ActionsCell({ user }: { user: User }) {
+    const router = useRouter()
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+    const handleCopyId = async () => {
+        try {
+            await navigator.clipboard.writeText(user._id)
+            toast.success("ID copiado al portapapeles")
+        } catch (error) {
+            toast.error("Error al copiar el ID")
+        }
+    }
+
+    const handleViewDetails = () => {
+        router.push(`/user-chats/${user._id}`)
+    }
+
+    const handleOpenDialog = () => {
+        setIsDialogOpen(true)
+    }
+
+    return (
+        <div className="flex items-center gap-2">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menú</span>
+                        <MoreHorizontal />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={handleCopyId}>
+                        Copiar ID de usuario
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleViewDetails}>
+                        Ver detalles
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleOpenDialog}>
+                        Cambiar plan
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <UpdatePlanDialog
+                user={user}
+                isOpen={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+            />
+        </div>
+    )
+}
 
 export const columns: ColumnDef<User>[] = [
     {
@@ -102,28 +162,7 @@ export const columns: ColumnDef<User>[] = [
         enableHiding: false,
         cell: ({ row }) => {
             const user = row.original
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Abrir menú</span>
-                            <MoreHorizontal />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem
-                            onClick={() => navigator.clipboard.writeText(user._id)}
-                        >
-                            Copiar ID de usuario
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                        <DropdownMenuItem>Cambiar plan</DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
+            return <ActionsCell user={user} />
         },
     },
 ]

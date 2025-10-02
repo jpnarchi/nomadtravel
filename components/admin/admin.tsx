@@ -10,13 +10,12 @@ import {
 import { AppSidebar } from "../global/app-sidebar";
 import { ChatHeader } from "../global/chat-header";
 import { AdminContainer } from "./admin-container";
-import { ScrollArea } from "../ui/scroll-area";
 
 export function Admin() {
-    // const isAdmin = useQuery(api.users.isAdmin);
-    // if (!isAdmin) {
-    //     notFound();
-    // }
+    const isAdmin = useQuery(api.users.isAdmin);
+    if (!isAdmin) {
+        notFound();
+    }
 
     return (
         <SidebarProvider

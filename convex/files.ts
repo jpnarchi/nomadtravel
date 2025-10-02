@@ -24,7 +24,7 @@ export const getAll = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -69,7 +69,7 @@ export const create = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -189,7 +189,7 @@ export const createNewVersion = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -242,7 +242,7 @@ export const deleteFilesInVersion = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -286,7 +286,7 @@ export const createBatch = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id) {
+        if (chat.userId !== user._id && user.plan !== "admin") {
             throw new Error("Access denied");
         }
 
