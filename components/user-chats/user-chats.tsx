@@ -6,8 +6,6 @@ import {
     SidebarInset,
     SidebarProvider,
 } from "@/components/ui/sidebar"
-import { Footer } from "@/components/global/footer"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { UserChatsContainer } from "./user-chats-container"
 import { Id } from "@/convex/_generated/dataModel"
 import { notFound } from "next/navigation"
@@ -35,10 +33,9 @@ export function UserChats({ userId }: UserChatsProps) {
             <AppSidebar />
             <SidebarInset>
                 <ChatHeader />
-                <ScrollArea className="max-h-[calc(100%-130px)] h-full w-full flex-1">
+                <div className="h-[calc(100vh-4rem)] w-full overflow-auto">
                     <UserChatsContainer userId={userId} />
-                    <Footer />
-                </ScrollArea>
+                </div>
             </SidebarInset>
         </SidebarProvider>
     )
