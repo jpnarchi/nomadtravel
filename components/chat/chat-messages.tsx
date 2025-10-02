@@ -462,11 +462,13 @@ export function ChatMessages({
                                     if (part.output && part.state && part.state === 'output-available') {
                                         const response = part.output as any;
                                         const version = response.version as number;
+                                        const creationTime = response.creationTime as string;
                                         return (
                                             <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
                                                 <PreviewButton
                                                     id={id}
                                                     version={version || 1}
+                                                    creationTime={creationTime}
                                                 />
                                             </div>
                                         )

@@ -273,10 +273,11 @@ http.route({
                     inputSchema: z.object({}),
                     execute: async function () {
                         const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                        await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
+                        const result = await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
                         return {
                             success: true,
-                            version: currentVersion
+                            version: currentVersion,
+                            creationTime: result.creationTime,
                         };
                     },
                 },

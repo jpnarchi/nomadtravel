@@ -1,11 +1,12 @@
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
 
-import { ArrowLeftIcon, Loader2 } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
+import { Loader } from "../ai-elements/loader";
 
 export function Workbench({
     id,
@@ -51,8 +52,8 @@ export function Workbench({
                         router.refresh();
                     }}
                 >
-                    {isBackButtonLoading ? (<Loader2 className="size-4 animate-spin" />) : (<ArrowLeftIcon className="size-4" />)}
-                    Atrás
+                    {isBackButtonLoading ? (<Loader />) : (<ArrowLeftIcon className="size-4" />)}
+                    {isBackButtonLoading ? "Cargando" : "Volver a Chat"}
                 </Button>
 
                 <div className="flex gap-2">

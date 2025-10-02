@@ -200,7 +200,8 @@ export const createNewVersion = mutation({
         });
 
         const files = await ctx.db.query("files")
-            .withIndex("by_chat_version", (q) => q.eq("chatId", args.chatId!).eq("version", args.previousVersion!)).collect();
+            .withIndex("by_chat_version", (q) => q.eq("chatId", args.chatId!).eq("version", args.previousVersion!))
+            .collect();
 
         for (const file of files) {
             await ctx.db.insert("files", {
@@ -212,7 +213,10 @@ export const createNewVersion = mutation({
             });
         }
 
-        return { success: true };
+        return { 
+            success: true,
+            creationTime: new Date().toISOString(),
+        };
     },
 });
 

@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCreationTime(creationTime: number) {
+export function formatCreationTime(creationTime: string | number) {
   const date = new Date(creationTime)
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
