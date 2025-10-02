@@ -12,6 +12,7 @@ import { MessageInput } from './message-input';
 import { Id } from '@/convex/_generated/dataModel';
 import { createPromptWithAttachments } from '@/lib/utils';
 import { DefaultChatTransport } from 'ai';
+import { Loader } from '../ai-elements/loader';
 
 export function ChatContainer({
     id,
@@ -30,12 +31,15 @@ export function ChatContainer({
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
     const suggestions = useQuery(api.suggestions.getAll, { chatId: id });
+    const isGenerating = useQuery(api.chats.getIsGenerating, { chatId: id });
 
     const hasRun = useRef(false);
+    const wasShowingGenerando = useRef(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [input, setInput] = useState('');
+    const [isGeneratingSync, setIsGeneratingSync] = useState(false);
     const { messages, sendMessage, stop, status } = useChat({
         transport: new DefaultChatTransport({
             api: `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`,
@@ -48,6 +52,7 @@ export function ChatContainer({
         onFinish: async (options) => {
             setIsLoading(false);
             setShowSuggestions(true);
+            setIsGeneratingSync(true);
         }
     });
 
@@ -117,11 +122,13 @@ export function ChatContainer({
             setInput('');
             setShowSuggestions(false);
             setIsLoading(true);
+            setIsGeneratingSync(false);
         }
     };
 
     const handleSuggestionClick = async (suggestion: string) => {
         setIsLoading(true);
+        setIsGeneratingSync(false);
         sendMessage({ text: suggestion });
         await createMessage({
             chatId: id,
@@ -141,6 +148,34 @@ export function ChatContainer({
             setShowSuggestions(true);
         }
     }, [suggestions]);
+
+    useEffect(() => {
+        if (isGeneratingSync && !isGenerating) {
+            setIsGeneratingSync(false);
+        }
+    }, [isGenerating, isGeneratingSync]);
+
+    useEffect(() => {
+        const isCurrentlyShowingGenerando = !isLoading && isGenerating && !isGeneratingSync;
+
+        if (isCurrentlyShowingGenerando) {
+            wasShowingGenerando.current = true;
+        } else if (wasShowingGenerando.current && !isGenerating) {
+            wasShowingGenerando.current = false;
+            window.location.reload();
+        }
+    }, [isLoading, isGenerating, isGeneratingSync]);
+
+    if (!isLoading && isGenerating && !isGeneratingSync) {
+        return (
+            <div className="flex flex-col h-full bg-background items-center justify-center">
+                <div className="flex items-center gap-3">
+                    <Loader />
+                    <p>Generando...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">

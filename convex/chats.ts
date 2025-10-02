@@ -110,6 +110,51 @@ export const duplicateChat = mutation({
     },
 })
 
+export const updateIsGenerating = mutation({
+    args: {
+        chatId: v.id("chats"),
+        isGenerating: v.optional(v.boolean()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.patch(args.chatId, {
+            isGenerating: args.isGenerating,
+        });
+    },
+});
+
+export const getIsGenerating = query({
+    args: {
+        chatId: v.id("chats"),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        return chat.isGenerating;
+    },
+});
+
 export const getCurrentVersion = query({
     args: {
         chatId: v.optional(v.id("chats")),
@@ -283,5 +328,26 @@ export const getById = query({
         }
 
         return chat;
+    },
+});
+
+export const getTitle = query({
+    args: {
+        chatId: v.id("chats"),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        return chat.title;
     },
 });

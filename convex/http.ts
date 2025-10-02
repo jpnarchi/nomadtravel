@@ -111,6 +111,12 @@ http.route({
 
         const { id, messages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
 
+        // update is generating
+        await ctx.runMutation(api.chats.updateIsGenerating, {
+            chatId: id,
+            isGenerating: true,
+        });
+
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
         const result = streamText({
@@ -460,14 +466,27 @@ http.route({
                     suggestions: suggestions,
                 });
 
+                // Get last title
+                const title = await ctx.runQuery(api.chats.getTitle, { chatId: id });
+
+                if (!title) {
+                    throw new Error("Title not found");
+                }
+
                 // Generate title
-                if (messagesTexts.length < 15) {
+                if (messagesTexts.length < 15 && !title.includes("(Copia)")) {
                     const title = await generateTitle(messagesTexts);
                     await ctx.runMutation(api.chats.updateTitle, {
                         chatId: id,
                         title: title,
                     });
                 }
+
+                // update is generating
+                await ctx.runMutation(api.chats.updateIsGenerating, {
+                    chatId: id,
+                    isGenerating: false,
+                });
             }
         });
 
