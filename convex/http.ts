@@ -121,6 +121,7 @@ http.route({
     Pregunta al usuario que quiere crear, una vez que te diga, elige el template y llama a la herramienta generateInitialCodebase con el nombre del template.
     Antes de usar cualquier template, pregunta al usuario qué datos reales quiere usar antes de mostrarle la página.
     No mostrar datos mock. Siempre preguntar al usuario más detalles.
+    Nunca hagas más de 1 pregunta a la vez. Siempre espera a que el usuario te responda antes de hacer otra pregunta.
     Nunca usas la carpeta /src. 
     No hace falta agregar tailwind en /styles.css
     No modifiques el archivo /styles.css
@@ -131,14 +132,17 @@ http.route({
     No crees un archivo tailwind.config.js.
     Nunca menciones algo técnico al usuario.
     Crea siempre componentes en la carpeta /components.
+    Todo lo que crees, siempre debe de ser responsivo a cualquier dispositivo (desktop, tablet, mobile).
     Nunca muestras listas.
     Nunca muestras emojis.
     Mantén tus respuestas cortas y concisas. 1 frase máxima.
+    No escribas - en tus respuestas.
     Librerías permitidas: lucide-react, framer-motion.
+    Usa la herramienta manageFile para crear, actualizar o eliminar archivos del proyecto.
     Cuando el usuario te pide que busques en internet, usa la herramienta webSearch.
     Antes de usar la herramienta webSearch explica que lo que vas a hacer es buscar en internet.
     Cuando termines de buscar en internet, muestra el resultado.
-    Cuando el usuario te pide que leas un archivo, usa la herramienta readFile.
+    Cuando el usuario te pide que leas un archivo, usa la herramienta readAttachment.
     Cuando el usuario te pide que genere una imagen, usa la herramienta generateImageTool.
     Siempre que uses la herramienta generateImageTool, confirma con el usuario que la imagen es la que quiere.
     `.trim(),
@@ -299,11 +303,11 @@ http.route({
                     },
                 },
 
-                readFile: {
-                    description: 'Lee un archivo para obtener información relevante.',
+                readAttachment: {
+                    description: 'Lee un archivo adjunto para obtener información relevante.',
                     inputSchema: z.object({
-                        question: z.string().describe('Pregunta que necesitas responder del archivo'),
-                        url: z.string().describe('URL del archivo a leer'),
+                        question: z.string().describe('Pregunta que necesitas responder del archivo adjunto'),
+                        url: z.string().describe('URL del archivo adjunto a leer'),
                         mimeType: z.union([
                             z.literal('application/pdf'),
                             z.literal('image/png'),
@@ -346,10 +350,10 @@ http.route({
                             };
 
                         } catch (error) {
-                            console.error('Error reading file:', error);
+                            console.error('Error reading attachment:', error);
                             return {
                                 success: false,
-                                message: `Error al leer el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                                message: `Error al leer el archivo adjunto: ${error instanceof Error ? error.message : 'Error desconocido'}`
                             };
                         }
                     },

@@ -515,7 +515,7 @@ export function ChatMessages({
                                     }
                                 }
 
-                                if (part.type === "tool-readFile") {
+                                if (part.type === "tool-readAttachment") {
                                     if (part.output && part.state && part.state === 'output-available') {
                                         const response = part.output as any;
                                         const message = response.message as string;
