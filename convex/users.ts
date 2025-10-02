@@ -85,7 +85,32 @@ export const store = mutation({
             pictureUrl: identity.pictureUrl ?? undefined,
             tokenIdentifier: identity.tokenIdentifier,
             plan: "free",
+            lastLogin: Date.now(),
         });
+    },
+})
+
+export const updateLastLogin = mutation({
+    args: {},
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (identity === null) {
+            throw new Error("Unauthorized");
+        }
+
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_token_identifier", (q) =>
+                q.eq("tokenIdentifier", identity.tokenIdentifier),
+            )
+            .unique();
+
+        if (user === null) {
+            throw new Error("User not found");
+        }
+
+        await ctx.db.patch(user._id, { lastLogin: Date.now() });
+        return user._id;
     },
 })
 

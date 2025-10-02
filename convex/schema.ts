@@ -14,7 +14,8 @@ export default defineSchema({
                 v.literal("pro"),
                 v.literal("admin")
             )
-        )
+        ),
+        lastLogin: v.optional(v.number())
     })
         .index('by_token_identifier', ['tokenIdentifier'])
         .index('by_email', ['email'])

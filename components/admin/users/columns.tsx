@@ -78,6 +78,26 @@ export const columns: ColumnDef<User>[] = [
         },
     },
     {
+        accessorKey: "lastLogin",
+        header: "Último acceso",
+        cell: ({ row }) => {
+            const timestamp = row.getValue("lastLogin") as number | undefined
+            if (!timestamp) {
+                return (
+                    <div className="text-sm text-muted-foreground">
+                        Nunca
+                    </div>
+                )
+            }
+            const date = new Date(timestamp)
+            return (
+                <div className="text-sm text-muted-foreground">
+                    {date.toLocaleDateString("es-ES")}
+                </div>
+            )
+        },
+    },
+    {
         id: "actions",
         enableHiding: false,
         cell: ({ row }) => {
