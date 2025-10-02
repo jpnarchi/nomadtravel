@@ -41,7 +41,7 @@ export function UsersTable() {
     // Use Convex paginated query with search functionality
     const { results, status, loadMore } = usePaginatedQuery(
         api.users.searchByEmail,
-        { searchTerm },
+        { searchTerm: searchTerm.toLowerCase() },
         { initialNumItems: 10 }
     )
 
