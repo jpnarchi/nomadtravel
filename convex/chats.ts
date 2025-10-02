@@ -26,11 +26,89 @@ export const create = mutation({
             userId: user._id,
             title: "New Chat",
             currentVersion: 1,
+            isGenerating: false,
         });
 
         return chatId;
     },
 });
+
+export const duplicateChat = mutation({
+    args: {
+        chatId: v.optional(v.id("chats")),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+        
+        if (!args.chatId) {
+            throw new Error("Chat not found");
+        }
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id) {
+            throw new Error("Access denied");
+        }
+
+        const newChatId = await ctx.db.insert("chats", {
+            userId: user._id,
+            title: chat.title + " (Copia)",
+            currentVersion: chat.currentVersion,
+            isGenerating: false,
+        });
+
+        const messages = await ctx.db
+            .query("messages")
+            .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
+            .order("asc")
+            .collect();
+        
+        for (const message of messages) {
+            await ctx.db.insert("messages", {
+                chatId: newChatId,
+                userId: user._id,
+                role: message.role,
+                parts: message.parts,
+            });
+        }
+
+        const files = await ctx.db
+            .query("files")
+            .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
+            .order("asc")
+            .collect();
+        
+        for (const file of files) {
+            await ctx.db.insert("files", {
+                chatId: newChatId,
+                userId: user._id,
+                path: file.path,
+                content: file.content,
+                version: chat.currentVersion ?? 1, 
+            });
+        }
+
+        const suggestions = await ctx.db
+            .query("suggestions")
+            .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
+            .order("asc")
+            .collect();
+        
+        for (const suggestion of suggestions) {
+            await ctx.db.insert("suggestions", {
+                chatId: newChatId,
+                userId: user._id,
+                suggestions: suggestion.suggestions,
+            });
+        }
+
+        return newChatId;
+    },
+})
 
 export const getCurrentVersion = query({
     args: {

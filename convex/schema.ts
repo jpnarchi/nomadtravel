@@ -24,6 +24,7 @@ export default defineSchema({
         userId: v.id('users'),
         title: v.optional(v.string()),
         currentVersion: v.optional(v.number()),
+        isGenerating: v.optional(v.boolean()),
     })
         .index('by_user_id', ['userId'])
     ,

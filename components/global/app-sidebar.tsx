@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { Plus, Search, MoreHorizontal, Trash2, Edit2 } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Trash2, Edit2, Copy } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMutation } from "convex/react"
 
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import { useQuery } from "convex/react"
@@ -40,9 +41,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const getAllChats = useQuery(api.chats.getAll)
   const deleteChat = useMutation(api.chats.deleteChat)
   const updateTitle = useMutation(api.chats.updateTitle)
+  const duplicateChat = useMutation(api.chats.duplicateChat)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [editingChatId, setEditingChatId] = React.useState<string | null>(null)
   const [editTitle, setEditTitle] = React.useState("")
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
+  const [chatToDelete, setChatToDelete] = React.useState<{ id: string; title: string } | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
 
   // Filter chats based on search query
   const filteredChats = React.useMemo(() => {
@@ -64,12 +69,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }
   }
 
-  const handleDeleteChat = async (chatId: string) => {
+  const handleDeleteClick = (chatId: string, chatTitle: string) => {
+    setChatToDelete({ id: chatId, title: chatTitle })
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!chatToDelete) return
+
+    setIsDeleting(true)
     try {
-      await deleteChat({ chatId: chatId as Id<"chats"> })
+      await deleteChat({ chatId: chatToDelete.id as Id<"chats"> })
+      setIsDeleteDialogOpen(false)
+      setChatToDelete(null)
       handleNewChat()
     } catch (error) {
       console.error('Failed to delete chat:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setIsDeleteDialogOpen(false)
+    setChatToDelete(null)
+  }
+
+  const handleDuplicateChat = async (chatId: string) => {
+    try {
+      const newChatId = await duplicateChat({ chatId: chatId as Id<"chats"> })
+      router.push(`/chat/${newChatId}`)
+      // Collapse the sidebar after navigation
+      if (isMobile) {
+        setOpenMobile(false)
+      } else {
+        setOpen(false)
+      }
+    } catch (error) {
+      console.error('Failed to duplicate chat:', error)
     }
   }
 
@@ -183,7 +220,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             Editar título
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDeleteChat(item._id)}
+                            onClick={() => handleDuplicateChat(item._id)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Copy className="h-4 w-4 text-white" />
+                            Duplicar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(item._id, item.title || "Untitled Chat")}
                             className="gap-2 cursor-pointer text-red-500 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
@@ -213,6 +257,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar Chat</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que quieres eliminar "{chatToDelete?.title}"? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+              className="cursor-pointer"
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-red-500 hover:bg-red-500 text-white cursor-pointer"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Eliminando" : "Eliminar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   )
 }

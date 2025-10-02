@@ -373,7 +373,7 @@ export function ChatMessages({
                     >
                         <div className="flex flex-col gap-2 w-full">
                             {parts.map((part, index) => {
-                                console.log(part)
+                                // console.log(part)
                                 if (part.type === "text") {
                                     const { files, displayText } = parseAttachmentsFromText(part.text);
 
