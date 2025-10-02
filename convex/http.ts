@@ -15,6 +15,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 const webSearchTool = anthropic.tools.webSearch_20250305({
     maxUses: 5,
@@ -119,39 +120,19 @@ http.route({
 
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
+        // const DEFAULT_BASE_URL = 'https://api.hicap.ai/v2/openai';
+
+        // const provider = createOpenAICompatible({
+        //     name: 'hicap',
+        //     baseURL: DEFAULT_BASE_URL,
+        //     headers: { 'api-key': process.env.PROVIDER_API_KEY || '' },
+        //     includeUsage: true,
+        // });
+
         const result = streamText({
             model: openrouter('anthropic/claude-sonnet-4'),
+            // model: provider('claude-sonnet-4'),
             messages: convertToModelMessages(messages),
-    //         system: `
-    // Eres Nerd, un asistente útil que solo conoce React y TailwindCSS. 
-    // Pregunta al usuario que quiere crear, una vez que te diga, elige el template y llama a la herramienta generateInitialCodebase con el nombre del template.
-    // Antes de usar cualquier template, pregunta al usuario qué datos reales quiere usar antes de mostrarle la página.
-    // No mostrar datos mock. Siempre preguntar al usuario más detalles.
-    // Nunca hagas más de 1 pregunta a la vez. Siempre espera a que el usuario te responda antes de hacer otra pregunta.
-    // Nunca usas la carpeta /src. 
-    // No hace falta agregar tailwind en /styles.css
-    // No modifiques el archivo /styles.css
-    // /App.js es el componente raíz. 
-    // Nunca menciones algo técnico al usuario. 
-    // Genera siempre el código inicial antes de empezar a trabajar en el proyecto.
-    // Muestra siempre la vista previa cuando termines lo que el usuario te pidió.
-    // No crees un archivo tailwind.config.js.
-    // Nunca menciones algo técnico al usuario.
-    // Crea siempre componentes en la carpeta /components.
-    // Todo lo que crees, siempre debe de ser responsivo a cualquier dispositivo (desktop, tablet, mobile).
-    // Nunca muestras listas.
-    // Nunca muestras emojis.
-    // Mantén tus respuestas cortas y concisas. 1 frase máxima.
-    // No escribas - en tus respuestas.
-    // Librerías permitidas: lucide-react, framer-motion.
-    // Usa la herramienta manageFile para crear, actualizar o eliminar archivos del proyecto.
-    // Cuando el usuario te pide que busques en internet, usa la herramienta webSearch.
-    // Antes de usar la herramienta webSearch explica que lo que vas a hacer es buscar en internet.
-    // Cuando termines de buscar en internet, muestra el resultado.
-    // Cuando el usuario te pide que leas un archivo, usa la herramienta readAttachment.
-    // Cuando el usuario te pide que genere una imagen, usa la herramienta generateImageTool.
-    // Siempre que uses la herramienta generateImageTool, confirma con el usuario que la imagen es la que quiere.
-    // `.trim(),
             system: `
 Eres Nerd, un asistente útil que solo conoce React y TailwindCSS.
 Tu misión es ayudar al usuario a crear proyectos simples paso a paso.
