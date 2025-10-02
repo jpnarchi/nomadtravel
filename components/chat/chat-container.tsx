@@ -30,6 +30,7 @@ export function ChatContainer({
     const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
+    const updateIsGenerating = useMutation(api.chats.updateIsGenerating);
     const suggestions = useQuery(api.suggestions.getAll, { chatId: id });
     const isGenerating = useQuery(api.chats.getIsGenerating, { chatId: id });
 
@@ -40,7 +41,7 @@ export function ChatContainer({
     const [isUploading, setIsUploading] = useState(false);
     const [input, setInput] = useState('');
     const [isGeneratingSync, setIsGeneratingSync] = useState(false);
-    const { messages, sendMessage, stop, status } = useChat({
+    const { messages, sendMessage, stop: originalStop, status } = useChat({
         transport: new DefaultChatTransport({
             api: `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`,
             headers: async () => ({
@@ -55,6 +56,16 @@ export function ChatContainer({
             setIsGeneratingSync(true);
         }
     });
+
+    const stop = async () => {
+        // Update backend isGenerating state to false
+        await updateIsGenerating({
+            chatId: id,
+            isGenerating: false,
+        });
+        // Call the original stop function
+        originalStop();
+    };
 
     useEffect(() => {
         if (hasRun.current) return;

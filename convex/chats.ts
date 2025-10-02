@@ -145,7 +145,7 @@ export const getIsGenerating = query({
         const chat = await ctx.db.get(args.chatId);
 
         if (!chat) {
-            throw new Error("Chat not found");
+            return false;
         }
 
         if (chat.userId !== user._id && user.plan !== "admin") {
