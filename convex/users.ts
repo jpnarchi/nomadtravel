@@ -27,7 +27,12 @@ export const getCurrentUser = async (ctx: QueryCtx) => {
 export const getUserInfo = query({
     args: {},
     handler: async (ctx) => {
-        return await getCurrentUser(ctx);
+        try {
+            return await getCurrentUser(ctx);
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
     },
 });
 
