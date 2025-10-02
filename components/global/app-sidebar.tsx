@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from "react"
-import { Plus, Search, MoreHorizontal, Trash2, Edit2, Copy } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Trash2, Edit2, Copy, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMutation } from "convex/react"
 
@@ -48,6 +48,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
   const [chatToDelete, setChatToDelete] = React.useState<{ id: string; title: string } | null>(null)
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [isDuplicating, setIsDuplicating] = React.useState(false)
 
   // Filter chats based on search query
   const filteredChats = React.useMemo(() => {
@@ -96,6 +97,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   const handleDuplicateChat = async (chatId: string) => {
+    setIsDuplicating(true)
     try {
       const newChatId = await duplicateChat({ chatId: chatId as Id<"chats"> })
       router.push(`/chat/${newChatId}`)
@@ -107,6 +109,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
     } catch (error) {
       console.error('Failed to duplicate chat:', error)
+    } finally {
+      setIsDuplicating(false)
     }
   }
 
@@ -222,9 +226,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           <DropdownMenuItem
                             onClick={() => handleDuplicateChat(item._id)}
                             className="gap-2 cursor-pointer"
+                            disabled={isDuplicating}
                           >
-                            <Copy className="h-4 w-4 text-white" />
-                            Duplicar
+                            {isDuplicating ? (
+                              <Loader2 className="h-4 w-4 text-white animate-spin" />
+                            ) : (
+                              <Copy className="h-4 w-4 text-white" />
+                            )}
+                            {isDuplicating ? "Duplicando" : "Duplicar"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDeleteClick(item._id, item.title || "Untitled Chat")}
