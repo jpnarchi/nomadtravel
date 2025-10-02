@@ -37,6 +37,7 @@ export const getAll = query({
     },
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
+
         if (user.plan !== "admin") {
             throw new Error("Unauthorized");
         }
@@ -45,6 +46,7 @@ export const getAll = query({
             .query("users")
             .order("desc")
             .paginate(args.paginationOpts);
+
         return users;
     },
 });
@@ -114,5 +116,38 @@ export const isAdmin = query({
             // Return false for unsigned users or any other error
             return false;
         }
+    },
+})
+
+export const searchByEmail = query({
+    args: {
+        searchTerm: v.string(),
+        paginationOpts: paginationOptsValidator,
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (user.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        // If search term is empty, return all users
+        if (!args.searchTerm.trim()) {
+            return await ctx.db
+                .query("users")
+                .order("desc")
+                .paginate(args.paginationOpts);
+        }
+
+        // Search for users by email using the by_email index
+        const users = await ctx.db
+            .query("users")
+            .withIndex("by_email", (q) =>
+                q.gte("email", args.searchTerm).lt("email", args.searchTerm + "\uffff")
+            )
+            .order("desc")
+            .paginate(args.paginationOpts);
+
+        return users;
     },
 })
