@@ -33,6 +33,7 @@ export function ChatContainer({
     const updateIsGenerating = useMutation(api.chats.updateIsGenerating);
     const suggestions = useQuery(api.suggestions.getAll, { chatId: id });
     const isGenerating = useQuery(api.chats.getIsGenerating, { chatId: id });
+    const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId: id });
 
     const hasRun = useRef(false);
     const wasShowingGenerando = useRef(false);
@@ -209,6 +210,7 @@ export function ChatContainer({
                         handleSuggestionClick={handleSuggestionClick}
                         suggestions={suggestions || []}
                         showSuggestions={showSuggestions}
+                        currentVersion={currentVersion}
                     />
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}

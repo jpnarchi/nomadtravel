@@ -44,8 +44,10 @@ export default defineSchema({
             type: v.string(),
             url: v.string()
         }))),
+        version: v.optional(v.number()),
     })
         .index('by_chat_id', ['chatId'])
+        .index('by_chat_role_version', ['chatId', 'role', 'version'])
     ,
     suggestions: defineTable({
         chatId: v.id('chats'),

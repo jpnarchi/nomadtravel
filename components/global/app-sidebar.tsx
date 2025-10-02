@@ -286,7 +286,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               Cancelar
             </Button>
             <Button
-              className="bg-red-500 hover:bg-red-500 text-white cursor-pointer"
+              className="bg-red-500/70 hover:bg-red-500 text-white cursor-pointer"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
             >

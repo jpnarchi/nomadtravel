@@ -49,7 +49,7 @@ export function RestoreDialog({
                         Cancelar
                     </Button>
                     <Button
-                        className="bg-red-500 hover:bg-red-500 text-white cursor-pointer"
+                        className="bg-red-500/70 hover:bg-red-500 text-white cursor-pointer"
                         onClick={handleRestore}
                         disabled={isRestoring}
                     >

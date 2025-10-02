@@ -336,6 +336,7 @@ export function ChatMessages({
     handleSuggestionClick,
     suggestions,
     showSuggestions,
+    currentVersion,
 }: {
     id: Id<"chats">,
     messages: UIMessage[],
@@ -344,8 +345,9 @@ export function ChatMessages({
     handleSuggestionClick: (suggestion: string) => void,
     suggestions: string[],
     showSuggestions: boolean,
+    currentVersion: number | null | undefined,
 }) {
-    const scrollRef = useRef<HTMLDivElement>(null); 
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setTimeout(() => {
@@ -469,6 +471,7 @@ export function ChatMessages({
                                                     id={id}
                                                     version={version || 1}
                                                     creationTime={creationTime}
+                                                    currentVersion={currentVersion}
                                                 />
                                             </div>
                                         )
