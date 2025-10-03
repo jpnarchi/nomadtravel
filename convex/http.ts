@@ -421,45 +421,34 @@ Pregunta primero si quiere subir su foto o generarla con IA.
                 },
 
                 generateImageTool: {
-                    description: 'Genera una imagen con IA.',
+                    description: 'Genera una imagen con IA (gpt-image-1)',
                     inputSchema: z.object({
                         prompt: z.string().describe('Prompt para generar la imagen'),
                         size: z.union([
-                            z.literal('1024x1024'),
-                            z.literal('1024x1792'),
-                            z.literal('1792x1024'),
+                            z.literal("256x256"),
+                            z.literal("512x512"),
+                            z.literal("1024x1024"),
+                            z.literal("1024x1792"),
+                            z.literal("1792x1024"),
                         ]).describe('El tamaño de la imagen a generar'),
-                        n: z.number().describe('El número de imágenes a generar. dall-e-3: 1 (1 max), dall-e-2: 1-5 (5 max)'),
-                        model: z.union([
-                            z.literal('dall-e-3'),
-                            z.literal('dall-e-2'),
-                        ]).describe('El modelo a usar'),
                     }),
-                    execute: async function ({ prompt, size, n, model }) {
+                    execute: async function ({ prompt, size }) {
                         try {
-                            const { images } = await generateImage({
-                                model: openai.image(model),
+                            const { image } = await generateImage({
+                                // model: openai.imageModel('gpt-image-1'),
+                                model: openai.image('gpt-image-1'),
                                 prompt: prompt,
                                 size: size,
-                                n: n,
+                                n: 1,
                             });
 
-                            // Upload all images to Convex storage
-                            const imageUrls = [];
-                            for (const image of images) {
-                                const imageUrl = await uploadFileToStorageFromHttpAction(ctx, image.uint8Array, 'image/png');
-
-                                if (!imageUrl) {
-                                    throw new Error('Failed to upload image to storage');
-                                }
-
-                                imageUrls.push(imageUrl);
-                            }
+                            // Upload image to Convex storage
+                            const imageUrl = await uploadFileToStorageFromHttpAction(ctx, image.uint8Array, 'image/png');
 
                             return {
                                 success: true,
-                                message: `${imageUrls.length} imagen${imageUrls.length > 1 ? 'es' : ''} generada${imageUrls.length > 1 ? 's' : ''} exitosamente`,
-                                imageUrls: imageUrls
+                                message: `Imagen generada exitosamente`,
+                                imageUrl: imageUrl
                             };
                         } catch (error) {
                             console.error('Error generating image:', error);

@@ -312,7 +312,7 @@
 
 
 import { motion } from "framer-motion";
-import { ClipIcon, GoogleIcon, UserIcon } from "@/components/global/icons";
+import { ClipIcon, ErrorIcon, GoogleIcon, UserIcon } from "@/components/global/icons";
 import { Markdown } from "@/components/global/markdown";
 import Image from "next/image";
 import { Loader } from "@/components/ai-elements/loader";
@@ -561,14 +561,14 @@ export function ChatMessages({
                                     if (part.output && part.state && part.state === 'output-available') {
                                         const response = part.output as any;
                                         const message = response.message as string;
-                                        const imageUrls = response.imageUrls as string[];
+                                        const imageUrl = response.imageUrl as string;
                                         return (
                                             <div key={index} className="flex flex-row gap-4 items-start py-2">
                                                 {role === 'assistant' && (
                                                     <Image src="/lentes.svg" alt="logo" width={24} height={24} />
                                                 )}
-                                                {imageUrls.map((imageUrl: string, index: number) => (
-                                                    <a key={index} href={imageUrl} target="_blank" rel="noopener noreferrer">
+                                                {imageUrl && (
+                                                    <a href={imageUrl} target="_blank" rel="noopener noreferrer">
                                                         <Image
                                                             src={imageUrl}
                                                             alt="imagen generada"
@@ -577,7 +577,15 @@ export function ChatMessages({
                                                             className="rounded-xl"
                                                         />
                                                     </a>
-                                                ))}
+                                                )}
+                                                {!imageUrl && (
+                                                    <div className="flex items-center justify-center h-[125px] w-[250px] rounded-xl border border-destructive/50 text-destructive bg-destructive/5">
+                                                        <div className="flex items-center gap-2 text-sm font-medium">
+                                                            <ErrorIcon />
+                                                            <span>Error al generar la imagen</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         )
                                     }
