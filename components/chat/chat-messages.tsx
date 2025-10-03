@@ -369,7 +369,7 @@ export function ChatMessages({
                 {messages.map(({ role, parts, id: messageId, ...message }: UIMessage, messageIndex: number) => (
                     <motion.div
                         key={messageId}
-                        className={`flex flex-row gap-4 px-4 py-1 w-full md:w-[500px] md:px-0 first-of-type:pt-2`}
+                        className={`flex flex-row gap-4 px-4 py-1 w-full md:w-[500px] md:px-0 first-of-type:pt-2 overflow-hidden`}
                         initial={{ y: 5, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                     >
@@ -392,7 +392,7 @@ export function ChatMessages({
                                                         <UserIcon />
                                                     </div>
                                                 )}
-                                                <div className="flex-1 min-w-0">
+                                                <div className="flex-1 min-w-0 break-words overflow-wrap-anywhere">
                                                     {displayText && <Markdown>{displayText}</Markdown>}
                                                 </div>
                                             </div>
