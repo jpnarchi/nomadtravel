@@ -164,13 +164,13 @@ export const getCurrentVersion = query({
         const user = await getCurrentUser(ctx);
 
         if (!args.chatId) {
-            throw new Error("Chat not found");
+            return 1;
         }
 
         const chat = await ctx.db.get(args.chatId);
 
         if (!chat) {
-            throw new Error("Chat not found");
+            return 1;
         }
 
         if (chat.userId !== user._id && user.plan !== "admin") {

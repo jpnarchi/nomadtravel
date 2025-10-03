@@ -57,16 +57,55 @@ async function generateSuggestions(messages: string[]) {
         const { object } = await generateObject({
             model: openrouter('google/gemini-2.5-flash'),
             prompt: `
-Genera 3 sugerencias contextuales (1-12 chars cada una) basadas en esta conversación:
+Eres un experto en generar respuestas rápidas contextuales para un chat con Nerd, un asistente que ayuda a crear páginas web paso a paso.
 
-Últimos mensajes: "${messages.join('\n\n')}"
+CONTEXTO DE LA CONVERSACIÓN:
+${messages.join('\n\n')}
 
-Haz sugerencias relevantes a lo que se acaba de decir - respuestas naturales que un usuario enviaría realmente.
+CAPACIDADES DE NERD:
+- Crear páginas web y diseños responsivos
+- Buscar información en internet (negocios, referencias, datos)
+- Leer archivos que el usuario suba
+- Generar imágenes con IA
+- Hacer cambios y mejoras visuales
+
+TU TAREA:
+Genera exactamente 3 sugerencias (máximo 12 caracteres cada una) que sean:
+
+1. **Respuestas naturales** que un usuario real escribiría
+2. **Próximos pasos lógicos** en la conversación actual
+3. **Acciones concretas** relacionadas con lo que Nerd puede hacer
+4. **Variadas** - mezcla diferentes tipos (confirmar, preguntar, pedir acción)
+
+REGLAS ESTRICTAS:
+❌ NO sugieras "Gracias" ni cortesías innecesarias
+❌ NO sugieras acciones imposibles (enviar emails, conectar bases de datos, integraciones)
+❌ NO sugieras "Ver página" o "Abrir enlace"
+❌ NO menciones nada técnico (código, archivos, nombres técnicos)
+✅ SÍ sugiere pasos siguientes del proyecto
+✅ SÍ sugiere búsquedas web si es relevante
+✅ SÍ sugiere cambios visuales o de diseño
+✅ SÍ sugiere agregar secciones o elementos nuevos
+
+EJEMPLOS BUENOS:
+- Si Nerd preguntó algo → "Sí", "No", "Claro"
+- Si mostró una vista previa → "Cambia color", "Más grande", "Agrega logo"
+- Si terminó algo → "Agrega menú", "Qué sigue?", "Búscalo"
+- Si mencionó un negocio → "Búscalo", "Tengo logo", "Dame ideas"
+
+EJEMPLOS MALOS:
+- "Gracias" (muy genérico)
+- "Ver email" (no puede hacerlo)
+- "Conectar DB" (fuera de alcance)
+- "Editar código" (muy técnico)
+
+Genera las 3 sugerencias más útiles y naturales para ESTE momento específico de la conversación.
+Usa lenguaje simple y conversacional, como si fueras el usuario respondiendo.
 `.trim(),
             schema: z.object({
-                suggestions: z.array(z.string()).length(3)
+                suggestions: z.array(z.string().max(20)).length(3)
             }),
-            temperature: 0.9,
+            temperature: 0.8,
         });
 
         return object.suggestions;
@@ -476,7 +515,7 @@ Pregunta primero si quiere subir su foto o generarla con IA.
                 messagesTexts.push(lastMessage);
 
                 // Generate suggestions
-                const suggestions = await generateSuggestions(messagesTexts.slice(-3));
+                const suggestions = await generateSuggestions(messagesTexts.slice(-6));
                 await ctx.runMutation(api.suggestions.upsert, {
                     chatId: id,
                     suggestions: suggestions,
