@@ -4,6 +4,7 @@ import { Id } from "@/convex/_generated/dataModel"
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
+import { useMobileViewport } from "@/hooks/use-mobile-viewport";
 
 const dependencies = {
     "lucide-react": "latest",
@@ -19,6 +20,7 @@ export function PreviewTemplate({
 }) {
     const [showCode, setShowCode] = useState(true);
     const [isDesktop, setIsDesktop] = useState(false);
+    const viewportHeight = useMobileViewport();
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -32,7 +34,10 @@ export function PreviewTemplate({
     return (
         <div
             className="px-4 md:px-12 pb-12 pt-4"
-            style={{ height: 'calc(100dvh - 6%)', minHeight: 'calc(100vh - 6%)' }}
+            style={{
+                height: `calc(${viewportHeight} - 6%)`,
+                minHeight: 'calc(100vh - 6%)'
+            }}
         >
             <h1>Template {id}</h1>
             <Button variant="default" className="cursor-pointer" onClick={() => setShowCode(!showCode)}>

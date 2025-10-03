@@ -9,9 +9,11 @@ import {
 import { useAuth } from "@clerk/nextjs"
 import { PricingContainer } from "./pricing-container"
 import { Footer } from "../global/footer"
+import { useMobileViewport } from "@/hooks/use-mobile-viewport"
 
 export function Pricing() {
     const { isSignedIn } = useAuth()
+    const viewportHeight = useMobileViewport()
 
     return (
         <SidebarProvider
@@ -24,7 +26,13 @@ export function Pricing() {
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
                 <ChatHeader />
-                <div className="h-[calc(100dvh-4rem)] w-full overflow-auto" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+                <div
+                    className="w-full overflow-auto"
+                    style={{
+                        height: `calc(${viewportHeight} - 4rem)`,
+                        minHeight: 'calc(100vh - 4rem)'
+                    }}
+                >
                     <PricingContainer />
                     <Footer />
                 </div>

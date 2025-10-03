@@ -10,9 +10,11 @@ import {
 import { AppSidebar } from "../global/app-sidebar";
 import { ChatHeader } from "../global/chat-header";
 import { AdminContainer } from "./admin-container";
+import { useMobileViewport } from "@/hooks/use-mobile-viewport";
 
 export function Admin() {
     const isAdmin = useQuery(api.users.isAdmin);
+    const viewportHeight = useMobileViewport();
     if (!isAdmin) {
         notFound();
     }
@@ -28,7 +30,13 @@ export function Admin() {
             <AppSidebar />
             <SidebarInset>
                 <ChatHeader />
-                <div className="h-[calc(100dvh-4rem)] w-full overflow-auto" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+                <div
+                    className="w-full overflow-auto"
+                    style={{
+                        height: `calc(${viewportHeight} - 4rem)`,
+                        minHeight: 'calc(100vh - 4rem)'
+                    }}
+                >
                     <AdminContainer />
                 </div>
             </SidebarInset>

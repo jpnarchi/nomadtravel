@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
+import { useMobileViewport } from "@/hooks/use-mobile-viewport";
 
 export function Workbench({
     id,
@@ -20,6 +21,7 @@ export function Workbench({
     const [files, setFiles] = useState(initialFiles);
     const [isDesktop, setIsDesktop] = useState(false);
     const router = useRouter();
+    const viewportHeight = useMobileViewport();
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -40,7 +42,10 @@ export function Workbench({
     return (
         <div
             className="px-4 md:px-12 pb-12 pt-4"
-            style={{ height: 'calc(100dvh - 6%)', minHeight: 'calc(100vh - 6%)' }}
+            style={{
+                height: `calc(${viewportHeight} - 6%)`,
+                minHeight: 'calc(100vh - 6%)'
+            }}
         >
             <div className="flex flex-row justify-between items-center">
                 <Button
