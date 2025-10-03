@@ -2,8 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowUpIcon, CancelIcon, ClipIcon, LoaderIcon, StopIcon } from "../global/icons";
 import { MicrophoneButton } from "../global/microphone-button";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const MAX_FILES = 3;
+const MAX_FILES = 6;
 
 export const MessageInput = ({
     input,
@@ -54,6 +56,18 @@ export const MessageInput = ({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = Array.from(e.target.files || []);
         const remainingSlots = MAX_FILES - files.length;
+        if (remainingSlots <= 0) {
+            toast.error(`Máximo ${MAX_FILES} archivos.`);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+            return;
+        }
+
+        if (selectedFiles.length > remainingSlots) {
+            toast.error(`Solo puedes adjuntar ${MAX_FILES} archivos.`);
+        }
+
         const filesToAdd = selectedFiles.slice(0, remainingSlots);
         setFiles(prev => [...prev, ...filesToAdd]);
         if (fileInputRef.current) {
@@ -106,7 +120,7 @@ export const MessageInput = ({
                                             disabled={isLoading || isUploading}
                                             type="button"
                                             onClick={() => removeFile(index)}
-                                            className="cursor-pointer absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="cursor-pointer absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity"
                                         >
                                             <CancelIcon />
                                         </button>
@@ -128,16 +142,38 @@ export const MessageInput = ({
 
                             <MicrophoneButton isDisabled={isLoading || isUploading} />
 
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
-                                onClick={handleFileClick}
-                                disabled={files.length >= MAX_FILES || isLoading || isUploading}
-                            >
-                                <ClipIcon />
-                            </Button>
+                            {files.length >= MAX_FILES ? (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="inline-flex">
+                                            <Button
+                                                type="button"
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+                                                onClick={handleFileClick}
+                                                disabled
+                                            >
+                                                <ClipIcon />
+                                            </Button>
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                        Máximo {MAX_FILES} archivos
+                                    </TooltipContent>
+                                </Tooltip>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+                                    onClick={handleFileClick}
+                                    disabled={isLoading || isUploading}
+                                >
+                                    <ClipIcon />
+                                </Button>
+                            )}
 
                             {isUploading && (
                                 <Button
