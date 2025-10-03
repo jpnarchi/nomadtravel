@@ -28,7 +28,9 @@ export function Templates() {
             <AppSidebar />
             <SidebarInset>
                 <ChatHeader />
-                <TemplatesContainer />
+                <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background overflow-y-auto">
+                    <TemplatesContainer />
+                </div>
             </SidebarInset>
         </SidebarProvider>
     )

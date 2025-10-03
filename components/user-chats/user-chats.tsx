@@ -33,7 +33,7 @@ export function UserChats({ userId }: UserChatsProps) {
             <AppSidebar />
             <SidebarInset className="flex flex-col h-screen">
                 <ChatHeader />
-                <div className="flex-1 w-full overflow-y-auto pb-24 md:pb-8">
+                <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background overflow-y-auto">
                     <UserChatsContainer userId={userId} />
                 </div>
             </SidebarInset>

@@ -10,6 +10,7 @@ import {
 import { AppSidebar } from "../global/app-sidebar";
 import { ChatHeader } from "../global/chat-header";
 import { AdminContainer } from "./admin-container";
+import { ScrollArea } from "../ui/scroll-area";
 
 export function Admin() {
     const isAdmin = useQuery(api.users.isAdmin);
@@ -28,7 +29,7 @@ export function Admin() {
             <AppSidebar />
             <SidebarInset className="flex flex-col h-screen">
                 <ChatHeader />
-                <div className="flex-1 w-full overflow-y-auto pb-24 md:pb-8">
+                <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background overflow-y-auto">
                     <AdminContainer />
                 </div>
             </SidebarInset>
