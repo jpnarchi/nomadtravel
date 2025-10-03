@@ -1,6 +1,36 @@
 import { v } from "convex/values";
-import { query, mutation, QueryCtx } from "./_generated/server";
+import { query, mutation, QueryCtx, MutationCtx } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
+
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+};
+
+// Helper function to increment daily signup count
+const incrementDailySignups = async (ctx: MutationCtx) => {
+    const today = getTodayString();
+
+    // Check if there's already a record for today
+    const existingRecord = await ctx.db
+        .query("dailySignups")
+        .withIndex("by_date", (q) => q.eq("date", today))
+        .unique();
+
+    if (existingRecord) {
+        // Increment existing count
+        await ctx.db.patch(existingRecord._id, {
+            count: existingRecord.count + 1
+        });
+    } else {
+        // Create new record for today
+        await ctx.db.insert("dailySignups", {
+            date: today,
+            count: 1
+        });
+    }
+};
 
 // Helper function to get current user (exported for reuse in other files)
 export const getCurrentUser = async (ctx: QueryCtx) => {
@@ -83,6 +113,9 @@ export const store = mutation({
             }
             return user._id;
         }
+
+        // This is a new user signup - increment daily signup count
+        await incrementDailySignups(ctx);
 
         return await ctx.db.insert("users", {
             email: identity.email ?? "Anonymous",
@@ -227,5 +260,32 @@ export const updatePlanAsAdmin = mutation({
 
         await ctx.db.patch(args.userId, { plan: args.plan });
         return { success: true };
+    },
+})
+
+export const getDailySignups = query({
+    args: {
+        startDate: v.optional(v.string()),
+        endDate: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        if (currentUser.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        let query = ctx.db.query("dailySignups");
+
+        if (args.startDate && args.endDate) {
+            // Filter by date range
+            const records = await query.collect();
+            return records.filter(record =>
+                record.date >= args.startDate! && record.date <= args.endDate!
+            ).sort((a, b) => a.date.localeCompare(b.date));
+        } else {
+            // Return all records sorted by date
+            return await query.order("asc").collect();
+        }
     },
 })
