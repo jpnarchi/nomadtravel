@@ -27,10 +27,11 @@ export function Pricing() {
             <SidebarInset>
                 <ChatHeader />
                 <div
-                    className="w-full overflow-auto"
+                    className="w-full overflow-auto pb-safe"
                     style={{
                         height: `calc(${viewportHeight} - 4rem)`,
-                        minHeight: 'calc(100vh - 4rem)'
+                        minHeight: 'calc(100vh - 4rem)',
+                        paddingBottom: 'env(safe-area-inset-bottom, 2rem)'
                     }}
                 >
                     <PricingContainer />

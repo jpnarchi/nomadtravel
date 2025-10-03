@@ -8,6 +8,13 @@ html, body {
   overflow: hidden;
 }
 
+/* Support for safe area insets on mobile devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  html {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -41,10 +41,11 @@ export function Workbench({
 
     return (
         <div
-            className="px-4 md:px-12 pb-12 pt-4"
+            className="px-4 md:px-12 pt-4"
             style={{
                 height: `calc(${viewportHeight} - 6%)`,
-                minHeight: 'calc(100vh - 6%)'
+                minHeight: 'calc(100vh - 6%)',
+                paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 3rem))'
             }}
         >
             <div className="flex flex-row justify-between items-center">
