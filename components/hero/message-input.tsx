@@ -5,7 +5,7 @@ import { Textarea } from "../ui/textarea";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const MAX_FILES = 6;
+const MAX_FILES = 5;
 
 export function MessageInput({
     input,
