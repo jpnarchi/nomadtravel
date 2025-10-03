@@ -24,7 +24,7 @@ export function Pricing() {
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
                 <ChatHeader />
-                <div className="h-[calc(100vh-4rem)] w-full overflow-auto">
+                <div className="h-[calc(100dvh-4rem)] w-full overflow-auto" style={{ minHeight: 'calc(100vh - 4rem)' }}>
                     <PricingContainer />
                     <Footer />
                 </div>

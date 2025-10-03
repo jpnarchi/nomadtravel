@@ -40,7 +40,7 @@ export function Workbench({
     return (
         <div
             className="px-4 md:px-12 pb-12 pt-4"
-            style={{ height: 'calc(100vh - 6%)' }}
+            style={{ height: 'calc(100dvh - 6%)', minHeight: 'calc(100vh - 6%)' }}
         >
             <div className="flex flex-row justify-between items-center">
                 <Button
@@ -108,7 +108,8 @@ export function Workbench({
                                     showTabs={true}
                                     showRunButton={false}
                                     style={{
-                                        height: '85.25vh'
+                                        height: '85.25dvh',
+                                        minHeight: '85.25vh'
                                     }}
                                 />
                             </>

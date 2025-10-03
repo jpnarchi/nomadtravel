@@ -32,7 +32,7 @@ export function PreviewTemplate({
     return (
         <div
             className="px-4 md:px-12 pb-12 pt-4"
-            style={{ height: 'calc(100vh - 6%)' }}
+            style={{ height: 'calc(100dvh - 6%)', minHeight: 'calc(100vh - 6%)' }}
         >
             <h1>Template {id}</h1>
             <Button variant="default" className="cursor-pointer" onClick={() => setShowCode(!showCode)}>
@@ -58,7 +58,7 @@ export function PreviewTemplate({
                                 showOpenInCodeSandbox={false}
                                 showRefreshButton={false}
                                 showNavigator={true}
-                                style={{ height: '80vh', width: '100%' }}
+                                style={{ height: '80dvh', minHeight: '80vh', width: '100%' }}
                             />
                         )}
                         {showCode && (
@@ -77,7 +77,8 @@ export function PreviewTemplate({
                                     showLineNumbers={true}
                                     showTabs={true}
                                     style={{
-                                        height: '85.25vh'
+                                        height: '85.25dvh',
+                                        minHeight: '85.25vh'
                                     }}
                                 />
                             </>
