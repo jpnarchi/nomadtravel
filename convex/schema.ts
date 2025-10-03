@@ -85,4 +85,12 @@ export default defineSchema({
         count: v.number(),
     })
         .index('by_date', ['date'])
+    ,
+    sessions: defineTable({
+        userId: v.id('users'),
+        date: v.string(), // Format: YYYY-MM-DD
+    })
+        .index('by_user_id', ['userId'])
+        .index('by_date', ['date'])
+        .index('by_user_id_date', ['userId', 'date'])
 });

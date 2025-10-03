@@ -13,6 +13,7 @@ export function useStoreUserEffect() {
     const [userId, setUserId] = useState<Id<"users"> | null>(null);
     const storeUser = useMutation(api.users.store);
     const updateLastLogin = useMutation(api.users.updateLastLogin);
+    const trackDailySession = useMutation(api.users.trackDailySession);
     const userInfo = useQuery(api.users.getUserInfo);
 
     // Call the `storeUser` mutation function to store
@@ -35,7 +36,7 @@ export function useStoreUserEffect() {
         // a different identity
     }, [isAuthenticated, storeUser, user?.id]);
 
-    // Check if we need to update lastLogin when day changes
+    // Check if we need to update lastLogin when day changes and track daily session
     useEffect(() => {
         if (!isAuthenticated || !userInfo || !userId) {
             return;
@@ -53,12 +54,14 @@ export function useStoreUserEffect() {
 
             if (isDifferentDay) {
                 updateLastLogin();
+                trackDailySession(); // Track daily session for new day
             }
         } else {
-            // If lastLogin doesn't exist, update it
+            // If lastLogin doesn't exist, update it and track session
             updateLastLogin();
+            trackDailySession();
         }
-    }, [isAuthenticated, userInfo, userId, updateLastLogin]);
+    }, [isAuthenticated, userInfo, userId, updateLastLogin, trackDailySession]);
 
     // Combine the local state with the state from context
     return {

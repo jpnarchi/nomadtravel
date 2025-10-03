@@ -5,7 +5,11 @@ import { paginationOptsValidator } from "convex/server";
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    // Use local timezone instead of UTC to avoid date shifting
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
 
 // Helper function to increment daily signup count
@@ -287,5 +291,84 @@ export const getDailySignups = query({
             // Return all records sorted by date
             return await query.order("asc").collect();
         }
+    },
+})
+
+export const trackDailySession = mutation({
+    args: {},
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (identity === null) {
+            throw new Error("Unauthorized");
+        }
+
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_token_identifier", (q) =>
+                q.eq("tokenIdentifier", identity.tokenIdentifier),
+            )
+            .unique();
+
+        if (user === null) {
+            throw new Error("User not found");
+        }
+
+        const today = getTodayString();
+
+        // Check if there's already a session record for this user today
+        const existingSession = await ctx.db
+            .query("sessions")
+            .withIndex("by_user_id_date", (q) =>
+                q.eq("userId", user._id).eq("date", today)
+            )
+            .unique();
+
+        // If no session exists for today, create one
+        if (!existingSession) {
+            await ctx.db.insert("sessions", {
+                userId: user._id,
+                date: today,
+            });
+        }
+
+        return user._id;
+    },
+})
+
+export const getSessionsAsAdmin = query({
+    args: {
+        paginationOpts: paginationOptsValidator,
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (user.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        const sessions = await ctx.db
+            .query("sessions")
+            .order("desc")
+            .paginate(args.paginationOpts);
+
+        // Get user information for each session
+        const sessionsWithUsers = await Promise.all(
+            sessions.page.map(async (session) => {
+                const user = await ctx.db.get(session.userId);
+                return {
+                    ...session,
+                    user: user ? {
+                        name: user.name,
+                        email: user.email,
+                        pictureUrl: user.pictureUrl,
+                    } : null,
+                };
+            })
+        );
+
+        return {
+            ...sessions,
+            page: sessionsWithUsers,
+        };
     },
 })
