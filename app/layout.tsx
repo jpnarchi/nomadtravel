@@ -6,7 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "@/components/providers/convex-client-provider";
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/sonner";
-
+import { esES } from '@clerk/localizations'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +44,7 @@ export default function RootLayout({
           appearance={{
             theme: shadcn,
           }}
+          localization={esES}
         >
           <ConvexClientProvider>
             <ThemeProvider
