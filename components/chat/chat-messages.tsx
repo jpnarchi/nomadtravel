@@ -350,10 +350,20 @@ export function ChatMessages({
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setTimeout(() => {
+        // Use requestAnimationFrame to ensure DOM is updated
+        requestAnimationFrame(() => {
             scrollToBottom();
-        }, 500);
+        });
     }, [messages])
+
+    // Also scroll when suggestions change (which happens when files are uploaded)
+    useEffect(() => {
+        if (showSuggestions) {
+            requestAnimationFrame(() => {
+                scrollToBottom();
+            });
+        }
+    }, [showSuggestions])
 
     const scrollToBottom = () => {
         if (scrollRef.current) {
@@ -363,7 +373,7 @@ export function ChatMessages({
 
     return (
         <ScrollArea
-            className="max-h-[calc(100%-130px)] h-full w-full flex-1"
+            className="h-full w-full"
         >
             <div className="flex flex-col gap-4 items-center p-4">
                 {messages.map(({ role, parts, id: messageId, ...message }: UIMessage, messageIndex: number) => (

@@ -194,7 +194,7 @@ export function ChatContainer({
             <AnimatePresence mode="wait">
                 <motion.div
                     key="chat-state"
-                    className="flex flex-col h-full"
+                    className="flex flex-col h-full min-h-0"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{
                         opacity: 1,
@@ -202,16 +202,18 @@ export function ChatContainer({
                         transition: { duration: 0.4, ease: "easeOut" }
                     }}
                 >
-                    <ChatMessages
-                        id={id}
-                        messages={messages}
-                        isLoading={isLoading}
-                        displayThinking={status === 'submitted'}
-                        handleSuggestionClick={handleSuggestionClick}
-                        suggestions={suggestions || []}
-                        showSuggestions={showSuggestions}
-                        currentVersion={currentVersion}
-                    />
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <ChatMessages
+                            id={id}
+                            messages={messages}
+                            isLoading={isLoading}
+                            displayThinking={status === 'submitted'}
+                            handleSuggestionClick={handleSuggestionClick}
+                            suggestions={suggestions || []}
+                            showSuggestions={showSuggestions}
+                            currentVersion={currentVersion}
+                        />
+                    </div>
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{
@@ -219,6 +221,7 @@ export function ChatContainer({
                             opacity: 1,
                             transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
                         }}
+                        className="flex-shrink-0"
                     >
                         <MessageInput
                             input={input}
