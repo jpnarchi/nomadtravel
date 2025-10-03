@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MessageInput } from "./message-input"
 import { useAuth } from "@clerk/nextjs";
@@ -25,6 +25,21 @@ export function ChatContainer() {
     const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
+
+    // Load saved draft on component mount
+    useEffect(() => {
+        const savedDraft = localStorage.getItem('nerd-lat-draft');
+        if (savedDraft) {
+            setInput(savedDraft);
+        }
+    }, []);
+
+    // Save to localStorage every time input changes (only if not signed in)
+    useEffect(() => {
+        if (!isSignedIn) {
+            localStorage.setItem('nerd-lat-draft', input);
+        }
+    }, [input, isSignedIn]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -79,6 +94,8 @@ export function ChatContainer() {
                 // if (fileInputRef.current) {
                 //     fileInputRef.current.value = '';
                 // }
+
+                localStorage.removeItem('nerd-lat-draft');
 
                 router.push(`/chat/${chatId}`);
             }
