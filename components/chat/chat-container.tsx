@@ -80,11 +80,11 @@ export function ChatContainer({
     }, []);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         if (!isSignedIn) {
             redirect('/sign-in');
         }
         setIsUploading(true);
-        e.preventDefault();
         if (input.trim()) {
 
             const messageId = await createMessage({

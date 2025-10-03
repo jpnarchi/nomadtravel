@@ -27,12 +27,12 @@ export function ChatContainer() {
     const updateParts = useMutation(api.messages.updateParts);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
         if (!isSignedIn) {
             router.push('/sign-in');
             return
         }
         setIsLoading(true);
-        e.preventDefault();
         try {
             if (input.trim()) {
                 const chatId = await createChat();
