@@ -36,6 +36,26 @@ const incrementDailySignups = async (ctx: MutationCtx) => {
     }
 };
 
+// Helper function to increment total users count
+const incrementTotalUsers = async (ctx: MutationCtx) => {
+    // Check if there's already a total users record
+    const existingRecord = await ctx.db
+        .query("totalUsers")
+        .first();
+
+    if (existingRecord) {
+        // Increment existing count
+        await ctx.db.patch(existingRecord._id, {
+            count: existingRecord.count + 1
+        });
+    } else {
+        // Create new record with count 1
+        await ctx.db.insert("totalUsers", {
+            count: 1
+        });
+    }
+};
+
 // Helper function to get current user (exported for reuse in other files)
 export const getCurrentUser = async (ctx: QueryCtx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -64,7 +84,6 @@ export const getUserInfo = query({
         try {
             return await getCurrentUser(ctx);
         } catch (error) {
-            console.error(error);
             return null;
         }
     },
@@ -118,8 +137,9 @@ export const store = mutation({
             return user._id;
         }
 
-        // This is a new user signup - increment daily signup count
+        // This is a new user signup - increment daily signup count and total users count
         await incrementDailySignups(ctx);
+        await incrementTotalUsers(ctx);
 
         return await ctx.db.insert("users", {
             email: identity.email ?? "Anonymous",
@@ -370,5 +390,22 @@ export const getSessionsAsAdmin = query({
             ...sessions,
             page: sessionsWithUsers,
         };
+    },
+})
+
+export const getTotalUsers = query({
+    args: {},
+    handler: async (ctx) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        if (currentUser.plan !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        const totalUsersRecord = await ctx.db
+            .query("totalUsers")
+            .first();
+
+        return totalUsersRecord ? totalUsersRecord.count : 0;
     },
 })

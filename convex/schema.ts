@@ -93,4 +93,8 @@ export default defineSchema({
         .index('by_user_id', ['userId'])
         .index('by_date', ['date'])
         .index('by_user_id_date', ['userId', 'date'])
+    ,
+    totalUsers: defineTable({
+        count: v.number(),
+    })
 });
