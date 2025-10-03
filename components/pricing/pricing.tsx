@@ -9,11 +9,10 @@ import {
 import { useAuth } from "@clerk/nextjs"
 import { PricingContainer } from "./pricing-container"
 import { Footer } from "../global/footer"
-import { useMobileViewport } from "@/hooks/use-mobile-viewport"
+import { ScrollArea } from "../ui/scroll-area"
 
 export function Pricing() {
     const { isSignedIn } = useAuth()
-    const viewportHeight = useMobileViewport()
 
     return (
         <SidebarProvider
@@ -26,17 +25,10 @@ export function Pricing() {
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
                 <ChatHeader />
-                <div
-                    className="w-full overflow-auto pb-safe"
-                    style={{
-                        height: `calc(${viewportHeight} - 4rem)`,
-                        minHeight: 'calc(100vh - 4rem)',
-                        paddingBottom: 'env(safe-area-inset-bottom, 2rem)'
-                    }}
-                >
+                <ScrollArea className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
                     <PricingContainer />
                     <Footer />
-                </div>
+                </ScrollArea>
             </SidebarInset>
         </SidebarProvider>
     )

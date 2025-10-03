@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
-import { useMobileViewport } from "@/hooks/use-mobile-viewport";
 
 export function Workbench({
     id,
@@ -21,7 +20,6 @@ export function Workbench({
     const [files, setFiles] = useState(initialFiles);
     const [isDesktop, setIsDesktop] = useState(false);
     const router = useRouter();
-    const viewportHeight = useMobileViewport();
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -40,14 +38,7 @@ export function Workbench({
     }
 
     return (
-        <div
-            className="px-4 md:px-12 pt-4"
-            style={{
-                height: `calc(${viewportHeight} - 6%)`,
-                minHeight: 'calc(100vh - 6%)',
-                paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 3rem))'
-            }}
-        >
+        <div className="h-screen flex flex-col px-4 md:px-12 pt-4 pb-24 md:pb-12">
             <div className="flex flex-row justify-between items-center">
                 <Button
                     variant="ghost"
@@ -73,7 +64,7 @@ export function Workbench({
                     </Button>
                 </div>
             </div>
-            <div className="h-full border rounded-lg overflow-hidden mt-4">
+            <div className="flex-1 border rounded-lg overflow-hidden mt-4">
                 <SandpackProvider
                     key={showCode ? 'code' : 'preview'}
                     files={files}

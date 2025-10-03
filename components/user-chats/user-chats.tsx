@@ -11,7 +11,6 @@ import { Id } from "@/convex/_generated/dataModel"
 import { notFound } from "next/navigation"
 import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import { useMobileViewport } from "@/hooks/use-mobile-viewport"
 
 interface UserChatsProps {
     userId: Id<"users">
@@ -19,7 +18,6 @@ interface UserChatsProps {
 
 export function UserChats({ userId }: UserChatsProps) {
     const isAdmin = useQuery(api.users.isAdmin);
-    const viewportHeight = useMobileViewport();
     if (!isAdmin) {
         notFound();
     }
@@ -33,16 +31,9 @@ export function UserChats({ userId }: UserChatsProps) {
             }
         >
             <AppSidebar />
-            <SidebarInset>
+            <SidebarInset className="flex flex-col h-screen">
                 <ChatHeader />
-                <div
-                    className="w-full overflow-auto pb-safe"
-                    style={{
-                        height: `calc(${viewportHeight} - 4rem)`,
-                        minHeight: 'calc(100vh - 4rem)',
-                        paddingBottom: 'env(safe-area-inset-bottom, 2rem)'
-                    }}
-                >
+                <div className="flex-1 w-full overflow-y-auto pb-24 md:pb-8">
                     <UserChatsContainer userId={userId} />
                 </div>
             </SidebarInset>

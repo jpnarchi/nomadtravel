@@ -10,11 +10,9 @@ import {
 import { AppSidebar } from "../global/app-sidebar";
 import { ChatHeader } from "../global/chat-header";
 import { AdminContainer } from "./admin-container";
-import { useMobileViewport } from "@/hooks/use-mobile-viewport";
 
 export function Admin() {
     const isAdmin = useQuery(api.users.isAdmin);
-    const viewportHeight = useMobileViewport();
     if (!isAdmin) {
         notFound();
     }
@@ -28,16 +26,9 @@ export function Admin() {
             }
         >
             <AppSidebar />
-            <SidebarInset>
+            <SidebarInset className="flex flex-col h-screen">
                 <ChatHeader />
-                <div
-                    className="w-full overflow-auto pb-safe"
-                    style={{
-                        height: `calc(${viewportHeight} - 4rem)`,
-                        minHeight: 'calc(100vh - 4rem)',
-                        paddingBottom: 'env(safe-area-inset-bottom, 2rem)'
-                    }}
-                >
+                <div className="flex-1 w-full overflow-y-auto pb-24 md:pb-8">
                     <AdminContainer />
                 </div>
             </SidebarInset>

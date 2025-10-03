@@ -4,7 +4,6 @@ import { Id } from "@/convex/_generated/dataModel"
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
 import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
-import { useMobileViewport } from "@/hooks/use-mobile-viewport";
 
 const dependencies = {
     "lucide-react": "latest",
@@ -20,7 +19,6 @@ export function PreviewTemplate({
 }) {
     const [showCode, setShowCode] = useState(true);
     const [isDesktop, setIsDesktop] = useState(false);
-    const viewportHeight = useMobileViewport();
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -32,19 +30,12 @@ export function PreviewTemplate({
     }, []);
 
     return (
-        <div
-            className="px-4 md:px-12 pt-4"
-            style={{
-                height: `calc(${viewportHeight} - 6%)`,
-                minHeight: 'calc(100vh - 6%)',
-                paddingBottom: 'max(3rem, env(safe-area-inset-bottom, 3rem))'
-            }}
-        >
+        <div className="h-screen flex flex-col px-4 md:px-12 pt-4 pb-24 md:pb-12">
             <h1>Template {id}</h1>
             <Button variant="default" className="cursor-pointer" onClick={() => setShowCode(!showCode)}>
                 {showCode ? "Vista previa" : "Código"}
             </Button>
-            <div className="h-full border rounded-lg overflow-hidden mt-4">
+            <div className="flex-1 border rounded-lg overflow-hidden mt-4">
                 <SandpackProvider
                     files={initialFiles}
                     theme="dark"
