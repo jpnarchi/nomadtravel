@@ -2,8 +2,6 @@ import { getTemplateById, getTemplateFiles } from "@/lib/convex-server";
 import { Id } from "@/convex/_generated/dataModel";
 import { notFound } from "next/navigation";
 import { PreviewTemplate } from "@/components/templates/preview-template";
-import { indexJs } from "@/lib/element-inspector-files";
-import { elementInspectorJs } from "@/lib/element-inspector-files";
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -19,9 +17,6 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         acc[file.path] = file.content;
         return acc;
     }, {} as Record<string, string>);
-
-    initialFiles["/index.js"] = indexJs;
-    initialFiles['/components/ElementInspector.js'] = elementInspectorJs
 
     return (
         <div>

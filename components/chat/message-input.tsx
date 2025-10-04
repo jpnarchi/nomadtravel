@@ -19,6 +19,7 @@ export const MessageInput = ({
     files,
     setFiles,
     fileInputRef,
+    disabled = false,
 }: {
     input: string;
     setInput: (input: string) => void;
@@ -31,6 +32,7 @@ export const MessageInput = ({
     files: File[],
     setFiles: React.Dispatch<React.SetStateAction<File[]>>,
     fileInputRef: React.RefObject<HTMLInputElement | null>,
+    disabled: boolean,
 }) => {
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -136,11 +138,11 @@ export const MessageInput = ({
                             placeholder="Envía un mensaje..."
                             className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[28px] max-h-[120px] placeholder:text-muted-foreground rounded-md flex-1 overflow-y-auto"
                             rows={1}
-                            disabled={isLoading || isUploading}
+                            disabled={isLoading || isUploading || disabled}
                         />
                         <div className="flex gap-2 justify-end items-center mt-2 flex-shrink-0">
 
-                            <MicrophoneButton isDisabled={isLoading || isUploading} />
+                            <MicrophoneButton isDisabled={isLoading || isUploading || disabled} />
 
                             {files.length >= MAX_FILES ? (
                                 <Tooltip>
@@ -169,7 +171,7 @@ export const MessageInput = ({
                                     variant="ghost"
                                     className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
                                     onClick={handleFileClick}
-                                    disabled={isLoading || isUploading}
+                                    disabled={isLoading || isUploading || disabled}
                                 >
                                     <ClipIcon />
                                 </Button>
@@ -191,6 +193,7 @@ export const MessageInput = ({
                                     type="button"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
+                                    disabled={disabled}
                                     onClick={() => {
                                         stop();
                                         setIsLoading(false);
@@ -206,7 +209,7 @@ export const MessageInput = ({
                                     type="submit"
                                     size="icon"
                                     className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={!input.trim() && files.length === 0}
+                                    disabled={!input.trim() && files.length === 0 || disabled}
                                 >
                                     <ArrowUpIcon />
                                 </Button>

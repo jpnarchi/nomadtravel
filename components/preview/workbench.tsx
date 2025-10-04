@@ -1,12 +1,12 @@
-import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
+import { SandpackProvider, SandpackLayout, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
-
 import { ArrowLeftIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
+import { SandpackPreviewClient } from "./sandpack-preview-client";
 
 export function Workbench({
     id,
@@ -81,12 +81,7 @@ export function Workbench({
                 >
                     <SandpackLayout style={{ height: '100%' }}>
                         {!showCode && (
-                            <SandpackPreview
-                                showOpenInCodeSandbox={false}
-                                showRefreshButton={false}
-                                showNavigator={true}
-                                style={{ height: '100%', width: '100%' }}
-                            />
+                            <SandpackPreviewClient chatId={id} />
                         )}
                         {showCode && (
                             <>

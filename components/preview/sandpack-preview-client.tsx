@@ -2,6 +2,10 @@
 
 import { SandpackPreview, useSandpack } from "@codesandbox/sandpack-react";
 import { useEffect } from "react";
+import { Id } from "@/convex/_generated/dataModel";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useRouter } from "next/navigation";
 
 const ERROR_TYPES = [
     'Error',
@@ -21,8 +25,11 @@ interface SandpackMessage {
     log?: Array<{ data: string[] }>;
 }
 
-export function SandpackPreviewClient() {
+export function SandpackPreviewClient({ chatId }: { chatId: Id<"chats"> }) {
     const { listen } = useSandpack();
+    const createMessage = useMutation(api.messages.create);
+
+    const router = useRouter();
 
     function handleSandpackMessage(msg: SandpackMessage): void {
         if (isErrorMessage(msg)) {
@@ -51,11 +58,21 @@ export function SandpackPreviewClient() {
         return ERROR_TYPES.includes(msg.title as any);
     }
 
-    function handleConsoleMessage(msg: SandpackMessage): void {
+    async function handleConsoleMessage(msg: SandpackMessage): Promise<void> {
         const logData = msg.log?.[0]?.data?.[0];
 
         if (logData?.includes('Selected Element:')) {
             console.log('INPUT:', logData);
+
+            // create message 
+            await createMessage({
+                chatId,
+                role: "user",
+                parts: [{ type: "text", text: logData }],
+            });
+
+            router.push(`/chat/${chatId}`);
+            router.refresh();
         }
     }
 

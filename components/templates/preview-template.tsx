@@ -1,6 +1,5 @@
 "use client"
 
-
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
 
@@ -9,8 +8,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { Loader } from "../ai-elements/loader";
-import { elementInspectorFiles } from "@/lib/element-inspector-files";
-import { SandpackPreviewClient } from "./sandpack-preview-client";
 
 export function PreviewTemplate({
     id,
@@ -21,7 +18,7 @@ export function PreviewTemplate({
 }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
-    const [files, setFiles] = useState(elementInspectorFiles);
+    const [files, setFiles] = useState(initialFiles);
     const [isDesktop, setIsDesktop] = useState(false);
     const router = useRouter();
 
@@ -84,7 +81,12 @@ export function PreviewTemplate({
                 >
                     <SandpackLayout style={{ height: '100%' }}>
                         {!showCode && (
-                            <SandpackPreviewClient />
+                            <SandpackPreview
+                                showOpenInCodeSandbox={false}
+                                showRefreshButton={false}
+                                showNavigator={true}
+                                style={{ height: '100%', width: '100%' }}
+                            />
                         )}
                         {showCode && (
                             <>

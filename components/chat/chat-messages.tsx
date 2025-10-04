@@ -324,7 +324,7 @@ import { Attachments } from "./attachments";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import { Skeleton } from "../ui/skeleton";
 import { ToolMessage } from "./tools/tool-message";
-import { File, Folders } from "lucide-react";
+import { File, Folders, SquareDashedMousePointer } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 
@@ -403,7 +403,14 @@ export function ChatMessages({
                                                     </div>
                                                 )}
                                                 <div className="flex-1 min-w-0 break-words overflow-wrap-anywhere">
-                                                    {displayText && <Markdown>{displayText}</Markdown>}
+                                                    {role === "user" && displayText.includes("Selected Element:") ? (
+                                                        <div className="flex flex-row gap-2 items-center text-green-600">
+                                                            <SquareDashedMousePointer className="size-4" />
+                                                            <p>Elemento seleccionado</p>
+                                                        </div>
+                                                    ) : (
+                                                        <>{displayText && <Markdown>{displayText}</Markdown>}</>
+                                                    )}
                                                 </div>
                                             </div>
 

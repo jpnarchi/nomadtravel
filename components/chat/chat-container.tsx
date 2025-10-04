@@ -42,6 +42,7 @@ export function ChatContainer({
     const [isUploading, setIsUploading] = useState(false);
     const [input, setInput] = useState('');
     const [isGeneratingSync, setIsGeneratingSync] = useState(false);
+
     const { messages, sendMessage, stop: originalStop, status } = useChat({
         transport: new DefaultChatTransport({
             api: `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`,
@@ -68,14 +69,60 @@ export function ChatContainer({
         originalStop();
     };
 
+    const sendMessageDirectly = async () => {
+        try {
+            const token = await getToken({ template: "convex" });
+            if (!token) {
+                console.error("No authentication token available");
+                return;
+            }
+
+            await updateIsGenerating({
+                chatId: id,
+                isGenerating: true,
+            });
+            setIsLoading(false);
+            setIsGeneratingSync(false);
+
+            // Make direct API call to chat endpoint
+            const response = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    id,
+                    messages: initialMessages
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+        } catch (error) {
+            console.error("Error sending message directly:", error);
+        }
+    };
+
     useEffect(() => {
         if (hasRun.current) return;
         hasRun.current = true;
 
-        if (initialMessages.length === 1) {
+        const lastUserMessage = initialMessages[initialMessages.length - 1].parts.filter(part => part.type === 'text').map(part => part.text).join('');
+
+        if (initialMessages.length === 1 || lastUserMessage.includes("Selected Element:")) {
             setIsLoading(true);
-            const content = initialMessages[0].parts.filter(part => part.type === 'text').map(part => part.text).join('');
-            sendMessage({ text: content });
+            const content = initialMessages[initialMessages.length - 1].parts.filter(part => part.type === 'text').map(part => part.text).join('');
+
+            if (lastUserMessage.includes("Selected Element:")) {
+                // For Selected Element messages, send directly to AI without adding to frontend messages
+                sendMessageDirectly();
+            } else {
+                // For regular messages, use the normal flow
+                sendMessage({ text: content });
+            }
         }
     }, []);
 
@@ -180,11 +227,50 @@ export function ChatContainer({
 
     if (!isLoading && isGenerating && !isGeneratingSync) {
         return (
-            <div className="flex flex-col h-full bg-background items-center justify-center">
-                <div className="flex items-center gap-3">
-                    <Loader />
-                    <p>Generando...</p>
-                </div>
+            <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key="chat-state"
+                        className="flex flex-col h-full min-h-0"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{
+                            opacity: 1,
+                            y: 0,
+                            transition: { duration: 0.4, ease: "easeOut" }
+                        }}
+                    >
+                        <div className="flex flex-col h-full bg-background items-center justify-center">
+                            <div className="flex items-center gap-3">
+                                <Loader />
+                                <p>Generando...</p>
+                            </div>
+                        </div>
+                        <motion.div
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{
+                                y: 0,
+                                opacity: 1,
+                                transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
+                            }}
+                            className="flex-shrink-0"
+                        >
+                            <MessageInput
+                                input={input}
+                                setInput={setInput}
+                                handleSubmit={handleSubmit}
+                                stop={stop}
+                                isLoading={true}
+                                setIsLoading={setIsLoading}
+                                setShowSuggestions={setShowSuggestions}
+                                isUploading={isUploading}
+                                files={files}
+                                setFiles={setFiles}
+                                fileInputRef={fileInputRef}
+                                disabled={true}
+                            />
+                        </motion.div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
         )
     }
@@ -215,12 +301,12 @@ export function ChatContainer({
                         />
                     </div>
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{
-                            y: 0,
-                            opacity: 1,
-                            transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
-                        }}
+                        // initial={{ y: 100, opacity: 0 }}
+                        // animate={{
+                        //     y: 0,
+                        //     opacity: 1,
+                        //     transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
+                        // }}
                         className="flex-shrink-0"
                     >
                         <MessageInput
@@ -235,6 +321,7 @@ export function ChatContainer({
                             files={files}
                             setFiles={setFiles}
                             fileInputRef={fileInputRef}
+                            disabled={false}
                         />
                     </motion.div>
                 </motion.div>
