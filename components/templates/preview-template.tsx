@@ -1,14 +1,16 @@
-'use client'
+"use client"
 
-import { Id } from "@/convex/_generated/dataModel"
+
 import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
-import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 
-const dependencies = {
-    "lucide-react": "latest",
-    "framer-motion": "latest"
-}
+import { ArrowLeftIcon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Id } from "@/convex/_generated/dataModel";
+import { Loader } from "../ai-elements/loader";
+import { elementInspectorFiles } from "@/lib/element-inspector-files";
+import { SandpackPreviewClient } from "./sandpack-preview-client";
 
 export function PreviewTemplate({
     id,
@@ -17,27 +19,58 @@ export function PreviewTemplate({
     id: Id<"templates">,
     initialFiles: Record<string, string>
 }) {
-    const [showCode, setShowCode] = useState(true);
+    const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
+    const [showCode, setShowCode] = useState(false);
+    const [files, setFiles] = useState(elementInspectorFiles);
     const [isDesktop, setIsDesktop] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         const checkScreenSize = () => {
-            setIsDesktop(window.innerWidth >= 1024);
+            setIsDesktop(window.innerWidth >= 1024); // lg breakpoint
         };
+
         checkScreenSize();
         window.addEventListener('resize', checkScreenSize);
+
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
 
+    const dependencies = {
+        "lucide-react": "latest",
+        "framer-motion": "latest"
+    }
+
     return (
         <div className="h-screen flex flex-col px-4 md:px-12 pt-4 pb-24 md:pb-12">
-            <h1>Template {id}</h1>
-            <Button variant="default" className="cursor-pointer" onClick={() => setShowCode(!showCode)}>
-                {showCode ? "Vista previa" : "Código"}
-            </Button>
+            <div className="flex flex-row justify-between items-center">
+                <Button
+                    variant="ghost"
+                    className="cursor-pointer"
+                    onClick={() => {
+                        setIsBackButtonLoading(true);
+                        router.push(`/chat/${id}`);
+                        router.refresh();
+                    }}
+                >
+                    {isBackButtonLoading ? (<Loader />) : (<ArrowLeftIcon className="size-4" />)}
+                    {isBackButtonLoading ? "Cargando" : "Volver a Chat"}
+                </Button>
+
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        className="cursor-pointer"
+                        onClick={() => setShowCode(!showCode)}
+                    >
+                        {showCode ? "Vista previa" : "Código"}
+                    </Button>
+                </div>
+            </div>
             <div className="flex-1 border rounded-lg overflow-hidden mt-4">
                 <SandpackProvider
-                    files={initialFiles}
+                    key={showCode ? 'code' : 'preview'}
+                    files={files}
                     theme="dark"
                     template="react"
                     options={{
@@ -51,12 +84,7 @@ export function PreviewTemplate({
                 >
                     <SandpackLayout style={{ height: '100%' }}>
                         {!showCode && (
-                            <SandpackPreview
-                                showOpenInCodeSandbox={false}
-                                showRefreshButton={false}
-                                showNavigator={true}
-                                style={{ height: '80dvh', minHeight: '80vh', width: '100%' }}
-                            />
+                            <SandpackPreviewClient />
                         )}
                         {showCode && (
                             <>
@@ -73,6 +101,7 @@ export function PreviewTemplate({
                                 <SandpackCodeEditor
                                     showLineNumbers={true}
                                     showTabs={true}
+                                    showRunButton={false}
                                     style={{
                                         height: '85.25dvh',
                                         minHeight: '85.25vh'
@@ -84,5 +113,5 @@ export function PreviewTemplate({
                 </SandpackProvider>
             </div>
         </div>
-    )
+    );
 }
