@@ -438,7 +438,7 @@ export function ChatMessages({
         <ScrollArea className="h-full w-full">
 
             {/* History messages */}
-            <div className="flex flex-col gap-4 items-center p-2">
+            <div className="flex flex-col gap-4 items-center py-2">
                 {historyMessages.map(({ role, parts, id: messageId, ...message }: UIMessage, messageIndex: number) => (
                     <ChatMessage
                         key={messageId}
