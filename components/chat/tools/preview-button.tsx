@@ -88,7 +88,7 @@ export function PreviewButton({
             </Card>
             <div className="flex flex-row items-center gap-2 text-xs text-muted-foreground italic">
                 <div className="flex flex-row items-center gap-1">
-                    <p>Tip: Usa el icono</p> 
+                    <p>Tip: Usa el botón</p> 
                 </div>
                 <div className="bg-green-600 rounded-sm p-0.5">
                     <span className="text-white"><InspectorIcon /></span> 
