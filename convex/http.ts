@@ -14,7 +14,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { Id } from "./_generated/dataModel";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 const webSearchTool = anthropic.tools.webSearch_20250305({
@@ -569,6 +569,27 @@ http.route({
             });
         } else {
             return new Response();
+        }
+    }),
+});
+
+http.route({
+    path: "/api/stripe",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        const signature: string = request.headers.get("stripe-signature") as string;
+        const result = await ctx.runAction(internal.stripe.fulfill, {
+            signature,
+            payload: await request.text(),
+        });
+        if (result.success) {
+            return new Response(null, {
+                status: 200,
+            });
+        } else {
+            return new Response("Webhook Error", {
+                status: 400,
+            });
         }
     }),
 });

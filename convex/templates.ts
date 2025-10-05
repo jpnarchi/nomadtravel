@@ -22,7 +22,7 @@ export const getById = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -73,7 +73,7 @@ export const createTemplate = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -104,7 +104,7 @@ export const createTemplateFile = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -134,7 +134,7 @@ export const updateTemplate = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -162,7 +162,7 @@ export const deleteTemplate = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 

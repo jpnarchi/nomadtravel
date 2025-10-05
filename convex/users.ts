@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, QueryCtx, MutationCtx } from "./_generated/server";
+import { query, mutation, QueryCtx, MutationCtx, internalMutation } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
 // Helper function to get today's date in YYYY-MM-DD format
@@ -96,7 +96,7 @@ export const getAll = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -147,6 +147,7 @@ export const store = mutation({
             pictureUrl: identity.pictureUrl ?? undefined,
             tokenIdentifier: identity.tokenIdentifier,
             plan: "free",
+            role: "user",
             lastLogin: Date.now(),
         });
     },
@@ -180,14 +181,13 @@ export const getUsersByPlan = query({
     args: {
         plan: v.union(
             v.literal("free"),
-            v.literal("basic"),
             v.literal("pro"),
-            v.literal("admin")
+            v.literal("premium"),
         ),
     },
     handler: async (ctx, args) => {
         const users = await ctx.db.query("users")
-            .withIndex("by_plan", (q) => q.eq("plan", args.plan as "free" | "basic" | "pro" | "admin"))
+            .withIndex("by_plan", (q) => q.eq("plan", args.plan as "free" | "pro" | "premium"))
             .collect();
         return users;
     },
@@ -198,9 +198,8 @@ export const isAdmin = query({
     handler: async (ctx) => {
         try {
             const user = await getCurrentUser(ctx);
-            return user.plan === "admin";
+            return user.role === "admin";
         } catch (error) {
-            // Return false for unsigned users or any other error
             return false;
         }
     },
@@ -214,7 +213,7 @@ export const searchByEmailAsAdmin = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -246,7 +245,7 @@ export const getUserByIdAsAdmin = query({
     handler: async (ctx, args) => {
         const currentUser = await getCurrentUser(ctx);
 
-        if (currentUser.plan !== "admin") {
+        if (currentUser.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -264,15 +263,14 @@ export const updatePlanAsAdmin = mutation({
         userId: v.id("users"),
         plan: v.union(
             v.literal("free"),
-            v.literal("basic"),
+            v.literal("premium"),
             v.literal("pro"),
-            v.literal("admin")
         ),
     },
     handler: async (ctx, args) => {
         const currentUser = await getCurrentUser(ctx);
 
-        if (currentUser.plan !== "admin") {
+        if (currentUser.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -295,7 +293,7 @@ export const getDailySignups = query({
     handler: async (ctx, args) => {
         const currentUser = await getCurrentUser(ctx);
 
-        if (currentUser.plan !== "admin") {
+        if (currentUser.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -362,7 +360,7 @@ export const getSessionsAsAdmin = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.plan !== "admin") {
+        if (user.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -398,7 +396,7 @@ export const getTotalUsers = query({
     handler: async (ctx) => {
         const currentUser = await getCurrentUser(ctx);
 
-        if (currentUser.plan !== "admin") {
+        if (currentUser.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -409,3 +407,41 @@ export const getTotalUsers = query({
         return totalUsersRecord ? totalUsersRecord.count : 0;
     },
 })
+
+export const updateSubscription = internalMutation({
+    args: {
+        subscriptionId: v.string(),
+        userId: v.id("users"),
+        endsOn: v.number(),
+        customerId: v.string(),
+        plan: v.string(),
+    },
+    handler: async (ctx, { subscriptionId, userId, endsOn, customerId, plan }) => {
+        await ctx.db.patch(userId, {
+            subscriptionId: subscriptionId,
+            customerId: customerId,
+            endsOn: endsOn,
+            plan: plan as "free" | "pro" | "premium"
+        });
+    },
+});
+
+export const updateSubscriptionById = internalMutation({
+    args: {
+        subscriptionId: v.string(),
+        endsOn: v.number()
+    },
+    handler: async (ctx, { subscriptionId, endsOn }) => {
+        const user = await ctx.db.query("users")
+            .withIndex("by_subscriptionId", (q) => q.eq("subscriptionId", subscriptionId))
+            .unique();
+
+        if (!user) {
+            throw new Error("User not found!");
+        }
+
+        await ctx.db.patch(user._id, {
+            endsOn: endsOn
+        });
+    },
+});

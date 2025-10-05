@@ -51,7 +51,7 @@ export const duplicateChat = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -125,7 +125,7 @@ export const updateIsGenerating = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -148,7 +148,7 @@ export const getIsGenerating = query({
             return false;
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -173,7 +173,7 @@ export const getCurrentVersion = query({
             return 1;
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -199,7 +199,7 @@ export const updateCurrentVersion = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -229,7 +229,7 @@ export const updateTitle = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -254,7 +254,7 @@ export const verifyOwnership = query({
 
         const chat = await ctx.db.get(args.chatId);
 
-        if (chat && chat.userId === user._id) {
+        if (chat && chat.userId === user._id || user.role === "admin") {
             return chat;
         }
 
@@ -279,7 +279,7 @@ export const deleteChat = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied")
         }
 
@@ -324,7 +324,7 @@ export const getById = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -345,7 +345,7 @@ export const getTitle = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -361,7 +361,7 @@ export const getUserChatsAsAdmin = query({
         const currentUser = await getCurrentUser(ctx);
 
         // Only admins can view other users' chats
-        if (currentUser.plan !== "admin") {
+        if (currentUser.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -385,7 +385,7 @@ export const searchUserChatsAsAdmin = query({
         const currentUser = await getCurrentUser(ctx);
 
         // Only admins can view other users' chats
-        if (currentUser.plan !== "admin") {
+        if (currentUser.role !== "admin") {
             throw new Error("Unauthorized");
         }
 
@@ -421,7 +421,7 @@ export const getUserChatsCountAsAdmin = query({
         const currentUser = await getCurrentUser(ctx);
 
         // Only admins can view other users' chats
-        if (currentUser.plan !== "admin") {
+        if (currentUser.role !== "admin") {
             throw new Error("Unauthorized");
         }
 

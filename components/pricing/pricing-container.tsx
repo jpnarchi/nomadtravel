@@ -1,9 +1,42 @@
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check } from 'lucide-react'
+import { useAction, useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 
 export function PricingContainer() {
+    const { isSignedIn } = useAuth();
+    const user = useQuery(api.users.getUserInfo);
+    const upgrade = useAction(api.stripe.pay);
+    const billingPortal = useAction(api.stripe.billingPortal);
+    const router = useRouter();
+
+    const handleUpgrade = async (plan: "pro" | "premium") => {
+        if (!isSignedIn) {
+            router.push('/sign-in');
+            return;
+        }
+
+        // const url = await upgrade({ plan });
+        // if (url) {
+        //     router.push(url);
+        // }
+    }
+
+    const handleBillingPortal = async () => {
+        if (!isSignedIn) {
+            router.push('/sign-in');
+            return;
+        }
+
+        // const url = await billingPortal();
+        // if (url) {
+        //     router.push(url);
+        // }
+    }
+
     return (
         <section className="py-16">
             <div className="mx-auto max-w-6xl px-6">
@@ -12,19 +45,34 @@ export function PricingContainer() {
                     <p>Escoge el plan que mejor se adapte a tus necesidades</p>
                 </div>
 
+                {user?.subscriptionId && (
+                    <div className="mt-8 flex justify-center">
+                        <Button
+                            variant="outline"
+                            className="mt-4 w-fit cursor-pointer"
+                            onClick={handleBillingPortal}
+
+                        >
+                            Gestionar suscripción
+                        </Button>
+                    </div>
+                )}
+
                 <div className="mt-8 grid gap-6 md:mt-12 md:grid-cols-3">
                     <Card>
                         <CardHeader>
                             <CardTitle className="font-medium">Gratis</CardTitle>
 
-                            <span className="my-3 block text-2xl font-semibold">$0 USD / mes</span>
+                            <span className="my-3 block text-2xl font-semibold">$0 MXN / mes</span>
 
                             <CardDescription className="text-sm">Para testear</CardDescription>
                             <Button
-                                asChild
                                 variant="outline"
-                                className="mt-4 w-full">
-                                <Link href="">Empezar</Link>
+                                className="mt-4 w-full cursor-pointer"
+                                onClick={() => { }}
+                                disabled={user?.plan === "free" || user?.plan === "pro" || user?.plan === "premium"}
+                            >
+                                {user?.plan === "free" ? "Plan actual" : "Empezar"}
                             </Button>
                         </CardHeader>
 
@@ -50,14 +98,16 @@ export function PricingContainer() {
                         <CardHeader>
                             <CardTitle className="font-medium">Pro</CardTitle>
 
-                            <span className="my-3 block text-2xl font-semibold">$49 USD / mes</span>
+                            <span className="my-3 block text-2xl font-semibold">$1,000 MXN / mes</span>
 
                             <CardDescription className="text-sm">Para negocios</CardDescription>
 
                             <Button
-                                asChild
-                                className="mt-4 w-full">
-                                <Link href="">Empezar</Link>
+                                className="mt-4 w-full cursor-pointer"
+                                onClick={() => handleUpgrade('pro')}
+                                disabled={user?.plan === "pro"}
+                            >
+                                {user?.plan === "pro" ? "Plan actual" : "Empezar"}
                             </Button>
                         </CardHeader>
 
@@ -81,15 +131,17 @@ export function PricingContainer() {
                         <CardHeader>
                             <CardTitle className="font-medium">Premium</CardTitle>
 
-                            <span className="my-3 block text-2xl font-semibold">$199 USD / mes</span>
+                            <span className="my-3 block text-2xl font-semibold">$4,000 MXN / mes</span>
 
                             <CardDescription className="text-sm">Para agencias</CardDescription>
 
                             <Button
-                                asChild
                                 variant="outline"
-                                className="mt-4 w-full">
-                                <Link href="">Empezar</Link>
+                                className="mt-4 w-full cursor-pointer"
+                                onClick={() => handleUpgrade('premium')}
+                                disabled={user?.plan === "premium"}
+                            >
+                                {user?.plan === "premium" ? "Plan actual" : "Empezar"}
                             </Button>
                         </CardHeader>
 

@@ -10,16 +10,23 @@ export default defineSchema({
         plan: v.optional(
             v.union(
                 v.literal("free"),
-                v.literal("basic"),
                 v.literal("pro"),
-                v.literal("admin")
+                v.literal("premium"),
             )
         ),
-        lastLogin: v.optional(v.number())
+        role: v.optional(v.union(
+            v.literal("user"),
+            v.literal("admin")
+        )),
+        lastLogin: v.optional(v.number()),
+        endsOn: v.optional(v.number()),
+        subscriptionId: v.optional(v.string()),
+        customerId: v.optional(v.string()),
     })
         .index('by_token_identifier', ['tokenIdentifier'])
         .index('by_email', ['email'])
         .index('by_plan', ['plan'])
+        .index("by_subscriptionId", ["subscriptionId"])
     ,
     chats: defineTable({
         userId: v.id('users'),

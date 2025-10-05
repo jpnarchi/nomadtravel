@@ -116,7 +116,7 @@ export const getAll = query({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -160,7 +160,7 @@ export const create = mutation({
             throw new Error("Chat not found");
         }
 
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -197,7 +197,7 @@ export const deleteMessage = mutation({
             throw new Error("Message not found");
         }
 
-        if (message.userId !== user._id) {
+        if (message.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 
@@ -218,7 +218,7 @@ export const restoreVersion = mutation({
         if (!chat) {
             throw new Error("Chat not found");
         }
-        if (chat.userId !== user._id && user.plan !== "admin") {
+        if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
         }
 

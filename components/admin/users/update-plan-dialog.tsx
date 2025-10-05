@@ -28,12 +28,12 @@ interface UpdatePlanDialogProps {
 }
 
 export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialogProps) {
-    const [selectedPlan, setSelectedPlan] = useState<"free" | "basic" | "pro" | "admin">(user.plan || "free")
+    const [selectedPlan, setSelectedPlan] = useState<"free" | "pro" | "premium" | "admin">(user.plan || "free")
     const [isUpdatingPlan, setIsUpdatingPlan] = useState(false)
     const updatePlan = useMutation(api.users.updatePlanAsAdmin)
 
     const handlePlanSelect = (value: string) => {
-        setSelectedPlan(value as "free" | "basic" | "pro" | "admin")
+        setSelectedPlan(value as "free" | "pro" | "premium")
     }
 
     const handlePlanChange = async () => {
@@ -41,7 +41,7 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
         try {
             await updatePlan({
                 userId: user._id,
-                plan: selectedPlan as "free" | "basic" | "pro" | "admin"
+                plan: selectedPlan as "free" | "pro" | "premium"
             })
             toast.success(`Plan actualizado a ${selectedPlan}`)
             onOpenChange(false)
@@ -66,7 +66,7 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                         <label htmlFor="plan" className="text-sm font-medium w-24">
                             Plan actual:
                         </label>
-                        <Badge variant={user.plan === "admin" ? "destructive" : user.plan === "pro" ? "default" : "secondary"} className="capitalize">
+                        <Badge variant={user.role === "admin" ? "destructive" : user.plan === "pro" ? "default" : "secondary"} className="capitalize">
                             {user.plan || "free"}
                         </Badge>
                     </div>
@@ -80,8 +80,8 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="free">Free</SelectItem>
-                                <SelectItem value="basic">Basic</SelectItem>
                                 <SelectItem value="pro">Pro</SelectItem>
+                                <SelectItem value="premium">Premium</SelectItem>
                                 <SelectItem value="admin">Admin</SelectItem>
                             </SelectContent>
                         </Select>

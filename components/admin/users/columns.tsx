@@ -4,7 +4,6 @@ import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useMutation } from "convex/react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -113,8 +112,8 @@ export const columns: ColumnDef<User>[] = [
             const plan = row.getValue("plan") as string || "free"
             const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
                 free: "secondary",
-                basic: "default",
                 pro: "default",
+                premium: "default",
                 admin: "destructive",
             }
             return (
