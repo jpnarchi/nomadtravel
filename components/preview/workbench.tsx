@@ -18,7 +18,7 @@ export function Workbench({
 }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
-    const [files, setFiles] = useState(elementInspectorFiles);
+    const [files, setFiles] = useState(initialFiles);
     const [isDesktop, setIsDesktop] = useState(false);
     const router = useRouter();
 
