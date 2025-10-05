@@ -7,6 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
 import { SandpackPreviewClient } from "./sandpack-preview-client";
+import { elementInspectorFiles } from "@/lib/element-inspector-files";
 
 export function Workbench({
     id,
@@ -17,7 +18,7 @@ export function Workbench({
 }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
-    const [files, setFiles] = useState(initialFiles);
+    const [files, setFiles] = useState(elementInspectorFiles);
     const [isDesktop, setIsDesktop] = useState(false);
     const router = useRouter();
 

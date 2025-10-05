@@ -432,7 +432,7 @@ User Input: \${ aiPrompt }
       <button
         onClick={toggleInspector}
         data-inspector-ui
-        className={\`fixed \${ getButtonPositionClasses()} z-50 w-12 h-12 bg-black text-white rounded-full shadow-lg hover:bg-gray-800 transition-all flex items-center justify-center\`}
+        className={\`fixed \${ getButtonPositionClasses()} z-50 w-12 h-12 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-600/90 transition-all flex items-center justify-center\`}
         title={isInspecting ? "Stop Inspecting" : "Start Inspecting"}
       >
         {isInspecting ? (
@@ -440,8 +440,8 @@ User Input: \${ aiPrompt }
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         ) : (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="currentColor" d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83l3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/>
           </svg>
         )}
       </button>
