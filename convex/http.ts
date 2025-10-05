@@ -70,7 +70,7 @@ CAPACIDADES DE NERD:
 - Hacer cambios y mejoras visuales
 
 TU TAREA:
-Genera exactamente 3 sugerencias (máximo 12 caracteres cada una) que sean:
+Genera exactamente 3 sugerencias (máximo 40 caracteres cada una) que sean:
 
 1. **Respuestas naturales** que un usuario real escribiría
 2. **Próximos pasos lógicos** en la conversación actual
@@ -103,7 +103,7 @@ Genera las 3 sugerencias más útiles y naturales para ESTE momento específico 
 Usa lenguaje simple y conversacional, como si fueras el usuario respondiendo.
 `.trim(),
             schema: z.object({
-                suggestions: z.array(z.string().max(20)).length(3)
+                suggestions: z.array(z.string().max(40)).length(3)
             }),
             temperature: 0.8,
         });
