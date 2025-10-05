@@ -17,9 +17,9 @@ export function PricingContainer() {
                         <CardHeader>
                             <CardTitle className="font-medium">Gratis</CardTitle>
 
-                            <span className="my-3 block text-2xl font-semibold">$0 / mo</span>
+                            <span className="my-3 block text-2xl font-semibold">$0 USD / mes</span>
 
-                            <CardDescription className="text-sm">Per editor</CardDescription>
+                            <CardDescription className="text-sm">Para testear</CardDescription>
                             <Button
                                 asChild
                                 variant="outline"
@@ -32,7 +32,7 @@ export function PricingContainer() {
                             <hr className="border-dashed" />
 
                             <ul className="list-outside space-y-3 text-sm">
-                                {['Basic Analytics Dashboard', '5GB Cloud Storage', 'Email and Chat Support'].map((item, index) => (
+                                {['Nerd limitado', 'Plantillas limitadas', 'Comunidad de usuarios'].map((item, index) => (
                                     <li
                                         key={index}
                                         className="flex items-center gap-2">
@@ -50,9 +50,9 @@ export function PricingContainer() {
                         <CardHeader>
                             <CardTitle className="font-medium">Pro</CardTitle>
 
-                            <span className="my-3 block text-2xl font-semibold">$19 / mes</span>
+                            <span className="my-3 block text-2xl font-semibold">$49 USD / mes</span>
 
-                            <CardDescription className="text-sm">Per editor</CardDescription>
+                            <CardDescription className="text-sm">Para negocios</CardDescription>
 
                             <Button
                                 asChild
@@ -65,7 +65,7 @@ export function PricingContainer() {
                             <hr className="border-dashed" />
 
                             <ul className="list-outside space-y-3 text-sm">
-                                {['Everything in Free Plan', '5GB Cloud Storage', 'Email and Chat Support', 'Access to Community Forum', 'Single User Access', 'Access to Basic Templates', 'Mobile App Access'].map((item, index) => (
+                                {['Todo lo del plan gratis', 'Llamada semanal con negocios', 'Seminario con expertos', 'Participa en votación semanal', 'Nerd ilimitado', 'Plantillas ilimitadas', 'Soporte prioritario', '2 Hostings'].map((item, index) => (
                                     <li
                                         key={index}
                                         className="flex items-center gap-2">
@@ -81,9 +81,9 @@ export function PricingContainer() {
                         <CardHeader>
                             <CardTitle className="font-medium">Premium</CardTitle>
 
-                            <span className="my-3 block text-2xl font-semibold">$29 / mes</span>
+                            <span className="my-3 block text-2xl font-semibold">$199 USD / mes</span>
 
-                            <CardDescription className="text-sm">Per editor</CardDescription>
+                            <CardDescription className="text-sm">Para agencias</CardDescription>
 
                             <Button
                                 asChild
@@ -97,7 +97,7 @@ export function PricingContainer() {
                             <hr className="border-dashed" />
 
                             <ul className="list-outside space-y-3 text-sm">
-                                {['Everything in Pro Plan', '5GB Cloud Storage', 'Email and Chat Support'].map((item, index) => (
+                                {['Todo lo del plan pro', 'Llamada semanal con agencias', 'Hostings ilimitados'].map((item, index) => (
                                     <li
                                         key={index}
                                         className="flex items-center gap-2">
