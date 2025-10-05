@@ -231,11 +231,11 @@ const ElementInspector = ({ children, buttonPosition = 'top-right' }) => {
 
   const getButtonPositionClasses = () => {
     switch (buttonPosition) {
-      case 'top-left': return 'top-3 left-3';
-      case 'top-right': return 'top-3 right-3';
-      case 'bottom-left': return 'bottom-3 left-3';
-      case 'bottom-right': return 'bottom-3 right-3';
-      default: return 'top-3 right-3';
+      case 'top-left': return 'top-2 left-2';
+      case 'top-right': return 'top-2 right-2';
+      case 'bottom-left': return 'bottom-2 left-2';
+      case 'bottom-right': return 'bottom-2 right-2';
+      default: return 'top-2 right-2';
     }
   };
 
@@ -432,7 +432,7 @@ User Input: \${ aiPrompt }
       <button
         onClick={toggleInspector}
         data-inspector-ui
-        className={\`fixed \${ getButtonPositionClasses()} z-50 w-12 h-12 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-600/90 transition-all flex items-center justify-center\`}
+        className={\`fixed \${ getButtonPositionClasses()} z-50 w-10 h-10 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-600/90 transition-all flex items-center justify-center\`}
         title={isInspecting ? "Stop Inspecting" : "Start Inspecting"}
       >
         {isInspecting ? (
