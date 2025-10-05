@@ -84,7 +84,7 @@ export function ChatMessages({
             </div>
 
             {/* Current messages */}
-            <div className="min-h-[calc(100dvh-13rem)] max-w-lg mx-auto flex flex-col gap-4">
+            <div className="min-h-[calc(100dvh-13rem)] max-w-lg mx-auto flex flex-col gap-4 px-1.5">
                 {currentMessages.map(({ role, parts, id: messageId, ...message }: UIMessage, messageIndex: number) => (
                     <ChatMessage
                         key={messageId}
