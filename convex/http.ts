@@ -460,8 +460,14 @@ Pregunta primero si quiere subir su foto o generarla con IA.
                     },
                 },
             },
-            onError(error) {
+            async onError(error) {
                 console.error("streamText error:", error);
+
+                // update is generating
+                await ctx.runMutation(api.chats.updateIsGenerating, {
+                    chatId: id,
+                    isGenerating: false,
+                });
             },
             async onFinish(result) {
                 const assistantParts = [];
