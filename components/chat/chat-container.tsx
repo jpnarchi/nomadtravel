@@ -13,6 +13,7 @@ import { Id } from '@/convex/_generated/dataModel';
 import { createPromptWithAttachments } from '@/lib/utils';
 import { DefaultChatTransport } from 'ai';
 import { Loader } from '../ai-elements/loader';
+import Image from 'next/image';
 
 export function ChatContainer({
     id,
@@ -225,7 +226,7 @@ export function ChatContainer({
         }
     }, [isLoading, isGenerating, isGeneratingSync]);
 
-    if (!isLoading && isGenerating && !isGeneratingSync) {
+    if (!isLoading && isGenerating && !isGeneratingSync) { 
         return (
             <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
                 <AnimatePresence mode="wait">
@@ -239,19 +240,26 @@ export function ChatContainer({
                             transition: { duration: 0.4, ease: "easeOut" }
                         }}
                     >
-                        <div className="flex flex-col h-full bg-background items-center justify-center">
+                        {/* <div className="flex flex-col h-full bg-background items-center justify-center">
                             <div className="flex items-center gap-3">
                                 <Loader />
                                 <p>Generando...</p>
                             </div>
+                        </div> */}
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                            <ChatMessages
+                                id={id}
+                                messages={messages}
+                                isLoading={isLoading}
+                                displayThinking={status === 'submitted'}
+                                handleSuggestionClick={handleSuggestionClick}
+                                suggestions={suggestions || []}
+                                showSuggestions={showSuggestions}
+                                currentVersion={currentVersion}
+                                isGenerating={true}
+                            />
                         </div>
                         <motion.div
-                            initial={{ y: 100, opacity: 0 }}
-                            animate={{
-                                y: 0,
-                                opacity: 1,
-                                transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
-                            }}
                             className="flex-shrink-0"
                         >
                             <MessageInput
