@@ -114,7 +114,6 @@ export const columns: ColumnDef<User>[] = [
                 free: "secondary",
                 pro: "default",
                 premium: "default",
-                admin: "destructive",
             }
             return (
                 <Badge variant={variants[plan] || "secondary"} className="capitalize">
