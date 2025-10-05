@@ -14,6 +14,7 @@ import { createPromptWithAttachments } from '@/lib/utils';
 import { DefaultChatTransport } from 'ai';
 import { Loader } from '../ai-elements/loader';
 import Image from 'next/image';
+import { toast } from 'sonner';
 
 export function ChatContainer({
     id,
@@ -102,8 +103,15 @@ export function ChatContainer({
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error sending message directly:", error);
+
+            toast.error("Error al enviar el mensaje", error.message);
+
+            await updateIsGenerating({
+                chatId: id,
+                isGenerating: false,
+            });
         }
     };
 
@@ -226,7 +234,7 @@ export function ChatContainer({
         }
     }, [isLoading, isGenerating, isGeneratingSync]);
 
-    if (!isLoading && isGenerating && !isGeneratingSync) { 
+    if (!isLoading && isGenerating && !isGeneratingSync) {
         return (
             <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
                 <AnimatePresence mode="wait">

@@ -56,7 +56,7 @@ export function ChatMessages({
 
     const scrollToBottom = () => {
         if (scrollRef.current) {
-            scrollRef.current.scrollIntoView({ behavior: "smooth" });
+            scrollRef.current.scrollIntoView({ behavior: "auto" });
         }
     };
 
