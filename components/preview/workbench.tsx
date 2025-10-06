@@ -10,7 +10,7 @@ import { SandpackPreviewClient } from "./sandpack-preview-client";
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { WorkbenchFileExplorer } from "./custom-file-explorer";
-import { elementInspectorJs, indexJs } from "@/lib/element-inspector-files";
+import { elementInspectorJs, indexJs, toasterIndexJs } from "@/lib/element-inspector-files";
 
 export function Workbench({ id, version }: { id: Id<"chats">, version: number }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
@@ -46,7 +46,11 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     }
 
     if (!files["/index.js"] || !files["/components/ElementInspector.js"]) {
-        files["/index.js"] = indexJs;
+        if (files['/lib/utils.js']) {
+            files["/index.js"] = toasterIndexJs;
+        } else {
+            files["/index.js"] = indexJs;
+        }
         files['/components/ElementInspector.js'] = elementInspectorJs
     }
 

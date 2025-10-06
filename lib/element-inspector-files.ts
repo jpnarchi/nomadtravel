@@ -78,6 +78,24 @@ export const indexJs = `import React, { StrictMode } from "react";
                 </ElementInspector>
             </StrictMode>
         );`
+
+export const toasterIndexJs = `import React, { StrictMode } from "react";
+        import { createRoot } from "react-dom/client";
+        import "./styles.css";
+        import ElementInspector from "./components/ElementInspector";
+        import { Toaster } from "/components/ui/Sonner"
+
+        import App from "./App";
+
+        const root = createRoot(document.getElementById("root"));
+        root.render(
+            <StrictMode>
+                <ElementInspector>
+                    <App />
+                    <Toaster />
+                </ElementInspector>
+            </StrictMode>
+        );`
 const packageJson = `{
             "dependencies": {
                 "react": "^19.0.0",
