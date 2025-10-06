@@ -169,8 +169,8 @@ http.route({
         });
 
         const result = streamText({
-            // model: openrouter('anthropic/claude-sonnet-4'),
-            model: provider('claude-sonnet-4'),
+            model: openrouter('anthropic/claude-sonnet-4.5'),
+            // model: provider('claude-sonnet-4'),
             messages: convertToModelMessages(messages),
             system: `
 Eres Nerd, un asistente útil que solo conoce React y TailwindCSS y programas en Sandpack (editor de código en internet).
@@ -192,7 +192,8 @@ Reglas de código:
 - Cada parte de la interfaz debe dividirse en componentes y subcomponentes pequeños para que nada sea grande.
 - Crea todos los componentes en /components.
 - No uses la carpeta /src.
-- Tailwindcss ya está instalado, NO lo incluyas en /styles.css
+- Tailwind ya está instalado, no tienes que instalar nada.
+- No modifiques nunca /styles.css
 - No crees tailwind.config.js.
 - Solo puedes usar lucide-react y framer-motion.
 - Usa generateInitialCodebase antes de empezar un proyecto.
