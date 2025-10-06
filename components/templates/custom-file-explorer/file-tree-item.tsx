@@ -17,7 +17,7 @@ interface FileTreeItemProps {
 }
 
 export function FileTreeItem({ node, level, activeFile, onFileClick, onDeleteClick, onAddToFolder, onRenameClick }: FileTreeItemProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const isActive = activeFile === node.path;
 

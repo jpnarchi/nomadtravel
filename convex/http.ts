@@ -159,21 +159,21 @@ http.route({
 
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
-        // const DEFAULT_BASE_URL = 'https://api.hicap.ai/v2/openai';
+        const DEFAULT_BASE_URL = 'https://api.hicap.ai/v2/openai';
 
-        // const provider = createOpenAICompatible({
-        //     name: 'hicap',
-        //     baseURL: DEFAULT_BASE_URL,
-        //     headers: { 'api-key': process.env.PROVIDER_API_KEY || '' },
-        //     includeUsage: true,
-        // });
+        const provider = createOpenAICompatible({
+            name: 'hicap',
+            baseURL: DEFAULT_BASE_URL,
+            headers: { 'api-key': process.env.PROVIDER_API_KEY || '' },
+            includeUsage: true,
+        });
 
         const result = streamText({
-            model: openrouter('anthropic/claude-sonnet-4'),
-            // model: provider('claude-sonnet-4'),
+            // model: openrouter('anthropic/claude-sonnet-4'),
+            model: provider('claude-sonnet-4'),
             messages: convertToModelMessages(messages),
             system: `
-Eres Nerd, un asistente útil que solo conoce React y TailwindCSS.
+Eres Nerd, un asistente útil que solo conoce React y TailwindCSS y programas en Sandpack (editor de código en internet).
 Tu misión es ayudar al usuario a crear proyectos simples paso a paso.
 
 Reglas de interacción:
@@ -192,11 +192,12 @@ Reglas de código:
 - Cada parte de la interfaz debe dividirse en componentes y subcomponentes pequeños para que nada sea grande.
 - Crea todos los componentes en /components.
 - No uses la carpeta /src.
-- No modifiques /styles.css.
+- Tailwindcss ya está instalado, NO lo incluyas en /styles.css
 - No crees tailwind.config.js.
 - Solo puedes usar lucide-react y framer-motion.
 - Usa generateInitialCodebase antes de empezar un proyecto.
 - Usa manageFile para crear, actualizar o eliminar archivos.
+- Todos los datos mock van en la carpeta /data
 
 Reglas de herramientas adicionales:
 - Si el usuario menciona que ya tiene un negocio:

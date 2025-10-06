@@ -40,7 +40,6 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
             <div className="h-screen flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
                     <Loader />
-                    <p>Cargando archivos</p>
                 </div>
             </div>
         );
