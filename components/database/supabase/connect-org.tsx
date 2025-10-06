@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { api } from "@/convex/_generated/api";
-import { useAction, useMutation, useQuery } from "convex/react";
 import { Id } from "@/convex/_generated/dataModel";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ProjectsDb } from "./projects-db";
 import { Loader } from "@/components/ai-elements/loader";
+import { useSupabaseAuth } from "./hooks/use-supabase-auth";
+import { DisconnectDialog } from "./components/disconnect-dialog";
+import { useState } from "react";
 
 export function ConnectOrg({
     id,
@@ -20,62 +21,24 @@ export function ConnectOrg({
     const searchParams = useSearchParams()
     const code = searchParams.get('code')
 
-    const user = useQuery(api.users.getUserInfo);
-    const updateSupabaseAccessToken = useMutation(api.users.updateSupabaseAccessToken);
-
-    const getOAuthUrl = useAction(api.supabase.getOAuthUrl);
-    const exangeCodeForToken = useAction(api.supabase.exangeCodeForToken);
-    const getOrganizations = useAction(api.supabase.getOrganizations);
-
-    const [organizations, setOrganizations] = useState<any>([]);
-    const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false);
-    const [isUpdatingToken, setIsUpdatingToken] = useState(false);
+    const {
+        user,
+        organizations,
+        isLoadingOrganizations,
+        isUpdatingToken,
+        handleSupabaseAuth,
+        handleSupabaseDisconnect,
+        exchangeAndStoreToken,
+    } = useSupabaseAuth(redirectUri);
 
     useEffect(() => {
         if (code) {
-            handleSupabaseToken()
+            exchangeAndStoreToken(code);
         }
-    }, [code])
-
-    useEffect(() => {
-        if (user?.supabaseAccessToken) {
-            fetchOrganizations();
-        }
-    }, [user?.supabaseAccessToken])
-
-    const handleSupabaseToken = async () => {
-        if (!code) { return }
-        setIsUpdatingToken(true);
-        try {
-            const data = await exangeCodeForToken({ code: code, redirectUri: redirectUri });
-            if (!data) { return }
-            await updateSupabaseAccessToken({ supabaseAccessToken: data.access_token });
-        } finally {
-            setIsUpdatingToken(false);
-        }
-    }
-
-    const fetchOrganizations = async () => {
-        setIsLoadingOrganizations(true);
-        try {
-            const organizations = await getOrganizations();
-            setOrganizations(organizations);
-        } finally {
-            setIsLoadingOrganizations(false);
-        }
-    }
-
-    const handleSupabaseAuth = async () => {
-        const url = await getOAuthUrl({ redirectUri: redirectUri });
-        if (!url) { return }
-        window.location.href = url;
-    };
-
-    const handleSupabaseDisconnect = async () => {
-        await updateSupabaseAccessToken({ supabaseAccessToken: undefined });
-    }
+    }, [code]);
 
     const isLoading = isUpdatingToken || isLoadingOrganizations;
+    const [disconnectOpen, setDisconnectOpen] = useState(false);
 
     return (
         <div className="flex flex-col gap-2 w-full">
@@ -101,7 +64,7 @@ export function ConnectOrg({
                                     className="bg-red-500/70 hover:bg-red-500 text-white cursor-pointer"
                                     variant="default"
                                     size="sm"
-                                    onClick={() => handleSupabaseDisconnect()}
+                                    onClick={() => setDisconnectOpen(true)}
                                 >
                                     Desconectar
                                 </Button>
@@ -119,7 +82,7 @@ export function ConnectOrg({
                             )}
                         </div>
 
-                        {user?.supabaseAccessToken && (
+                        {user?.supabaseAccessToken && organizations?.length > 0 && (
                             <div className="flex flex-row items-center justify-between gap-4 w-full">
                                 <div className="flex flex-col gap-1">
                                     <p className="font-semibold">Organización</p>
@@ -136,12 +99,17 @@ export function ConnectOrg({
                         )}
 
                         {user?.supabaseAccessToken && (
-                            <ProjectsDb 
-                                accessToken={user.supabaseAccessToken} 
-                                chatId={id} 
-                                onSupabaseProjectSelect={onSupabaseProjectSelect} 
+                            <ProjectsDb
+                                accessToken={user.supabaseAccessToken}
+                                chatId={id}
+                                onSupabaseProjectSelect={onSupabaseProjectSelect}
                             />
                         )}
+                        <DisconnectDialog
+                            open={disconnectOpen}
+                            onOpenChange={setDisconnectOpen}
+                            onConfirm={handleSupabaseDisconnect}
+                        />
                     </>
                 )}
             </Card>

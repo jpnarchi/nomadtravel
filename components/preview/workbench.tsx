@@ -1,4 +1,4 @@
-import { SandpackProvider, SandpackLayout, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
+import { SandpackProvider, SandpackLayout, SandpackCodeEditor } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
 import { ArrowLeftIcon } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -7,18 +7,15 @@ import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
 import { SandpackPreviewClient } from "./sandpack-preview-client";
-import { elementInspectorFiles } from "@/lib/element-inspector-files";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
+import { WorkbenchFileExplorer } from "./custom-file-explorer";
+import { elementInspectorJs, indexJs } from "@/lib/element-inspector-files";
 
-export function Workbench({
-    id,
-    initialFiles
-}: {
-    id: Id<"chats">,
-    initialFiles: Record<string, string>
-}) {
+export function Workbench({ id, version }: { id: Id<"chats">, version: number }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
-    const [files, setFiles] = useState(initialFiles);
+    const files = useQuery(api.files.getAll, { chatId: id, version });
     const [isDesktop, setIsDesktop] = useState(false);
     const router = useRouter();
 
@@ -36,6 +33,22 @@ export function Workbench({
     const dependencies = {
         "lucide-react": "latest",
         "framer-motion": "latest"
+    }
+
+    if (!files) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                    <Loader />
+                    <p>Cargando archivos</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!files["/index.js"] || !files["/components/ElementInspector.js"]) {
+        files["/index.js"] = indexJs;
+        files['/components/ElementInspector.js'] = elementInspectorJs
     }
 
     return (
@@ -87,13 +100,10 @@ export function Workbench({
                         {showCode && (
                             <>
                                 {isDesktop && (
-                                    <SandpackFileExplorer
-                                        style={{
-                                            width: '250px',
-                                            height: '100%',
-                                            minWidth: '250px',
-                                            maxWidth: '250px'
-                                        }}
+                                    <WorkbenchFileExplorer
+                                        chatId={id}
+                                        version={version}
+                                        initialFiles={files}
                                     />
                                 )}
                                 <SandpackCodeEditor
@@ -101,8 +111,8 @@ export function Workbench({
                                     showTabs={true}
                                     showRunButton={false}
                                     style={{
-                                        height: '85.25dvh',
-                                        minHeight: '85.25vh'
+                                        height: '100%',
+                                        minHeight: '100%'
                                     }}
                                 />
                             </>

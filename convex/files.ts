@@ -33,7 +33,13 @@ export const getAll = query({
             .withIndex("by_chat_version", (q) => q.eq("chatId", args.chatId!).eq("version", args.version!))
             .collect();
 
-        return files;
+        // Convert to Record<string, string> format for easier use
+        const filesObject = files.reduce((acc, file) => {
+            acc[file.path] = file.content;
+            return acc;
+        }, {} as Record<string, string>);
+
+        return filesObject;
     },
 });
 

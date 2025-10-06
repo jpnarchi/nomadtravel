@@ -60,35 +60,6 @@ export async function getChatById(chatId: Id<"chats">): Promise<Doc<"chats"> | n
     }
 }
 
-export async function getFilesForVersion(chatId: Id<"chats">, version: number): Promise<Record<string, string>> {
-    try {
-        // Get the user's session token from Clerk
-        const { getToken } = await auth();
-        const token = await getToken({ template: "convex" });
-
-        if (!token) {
-            throw new Error("No authentication token available");
-        }
-
-        // Set the auth token for this request
-        convex.setAuth(token);
-
-        const files = await convex.query(api.files.getAll, { chatId, version });
-
-        if (!files) {
-            return {};
-        }
-
-        return files.reduce((acc, file) => ({
-            ...acc,
-            [file.path]: file.content
-        }), {});
-    } catch (error) {
-        console.error("Error fetching files:", error);
-        return {};
-    }
-}
-
 export async function getAllTemplates(): Promise<Doc<"templates">[]> {
     try {
         const { getToken } = await auth();

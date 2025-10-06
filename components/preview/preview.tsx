@@ -9,13 +9,7 @@ import { Workbench } from "@/components/preview/workbench"
 import { Id } from "@/convex/_generated/dataModel"
 import { useAuth } from "@clerk/nextjs"
 
-export function Preview({
-    id,
-    initialFiles,
-}: {
-    id: Id<"chats">,
-    initialFiles: Record<string, string>
-}) {
+export function Preview({ id, version }: { id: Id<"chats">, version: number }) {
     const { isSignedIn } = useAuth()
 
     return (
@@ -28,10 +22,7 @@ export function Preview({
         >
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
-                <Workbench
-                    id={id}
-                    initialFiles={initialFiles}
-                />
+                <Workbench id={id} version={version} />
             </SidebarInset>
         </SidebarProvider>
     )

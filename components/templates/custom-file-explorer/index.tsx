@@ -1,7 +1,7 @@
 "use client"
 
 import { useSandpack } from "@codesandbox/sandpack-react";
-import { ChevronRight, ChevronDown, FileIcon, FolderIcon, FolderOpenIcon, Plus, Trash2, FilePlus, FolderPlus, SaveIcon, Edit } from "lucide-react";
+import { Plus, SaveIcon, FilePlus, FolderPlus } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Id } from "@/convex/_generated/dataModel";
@@ -12,207 +12,14 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { buildFileTree } from "./file-tree-utils";
+import { FileTreeItem } from "./file-tree-item";
+import { CreateItemDialog } from "./create-item-dialog";
+import { RenameDialog } from "./rename-dialog";
+import { DeleteConfirmDialog } from "./delete-confirm-dialog";
 
-interface FileNode {
-    name: string;
-    path: string;
-    type: 'file' | 'folder';
-    children?: FileNode[];
-}
-
-function buildFileTree(filePaths: string[]): FileNode[] {
-    const root: FileNode[] = [];
-
-    filePaths.forEach(path => {
-        // Remove leading slash if present
-        const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-        const parts = cleanPath.split('/');
-
-        let currentLevel = root;
-        let currentPath = '';
-
-        parts.forEach((part, index) => {
-            currentPath += (currentPath ? '/' : '') + part;
-            const fullPath = '/' + currentPath;
-            const isFile = index === parts.length - 1;
-
-            let existingNode = currentLevel.find(node => node.name === part);
-
-            if (!existingNode) {
-                existingNode = {
-                    name: part,
-                    path: fullPath,
-                    type: isFile ? 'file' : 'folder',
-                    children: isFile ? undefined : []
-                };
-                currentLevel.push(existingNode);
-            }
-
-            if (!isFile && existingNode.children) {
-                currentLevel = existingNode.children;
-            }
-        });
-    });
-
-    // Sort: folders first, then files, both alphabetically
-    const sortNodes = (nodes: FileNode[]): FileNode[] => {
-        return nodes.sort((a, b) => {
-            if (a.type !== b.type) {
-                return a.type === 'folder' ? -1 : 1;
-            }
-            return a.name.localeCompare(b.name);
-        }).map(node => ({
-            ...node,
-            children: node.children ? sortNodes(node.children) : undefined
-        }));
-    };
-
-    return sortNodes(root);
-}
-
-interface FileTreeItemProps {
-    node: FileNode;
-    level: number;
-    activeFile: string;
-    onFileClick: (path: string) => void;
-    onDeleteClick: (path: string, name: string, type: 'file' | 'folder') => void;
-    onAddToFolder: (folderPath: string, type: 'file' | 'folder') => void;
-    onRenameClick: (path: string, name: string, type: 'file' | 'folder') => void;
-}
-
-function FileTreeItem({ node, level, activeFile, onFileClick, onDeleteClick, onAddToFolder, onRenameClick }: FileTreeItemProps) {
-    const [isExpanded, setIsExpanded] = useState(true);
-    const [isHovered, setIsHovered] = useState(false);
-    const isActive = activeFile === node.path;
-
-    const handleClick = (e: React.MouseEvent) => {
-        // Don't trigger if clicking on delete button
-        if ((e.target as HTMLElement).closest('[data-delete-button]')) {
-            return;
-        }
-
-        if (node.type === 'folder') {
-            setIsExpanded(!isExpanded);
-        } else {
-            onFileClick(node.path);
-        }
-    };
-
-    const handleDelete = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onDeleteClick(node.path, node.name, node.type);
-    };
-
-    const paddingLeft = level * 12 + 8;
-
-    const itemContent = (
-        <>
-            <div
-                className={cn(
-                    "group flex items-center gap-1 py-1.5 px-2 cursor-pointer hover:bg-accent/50 transition-colors text-sm relative",
-                    isActive && "bg-accent text-accent-foreground"
-                )}
-                style={{ paddingLeft: `${paddingLeft}px` }}
-                onClick={handleClick}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                {node.type === 'folder' ? (
-                    <>
-                        {isExpanded ? (
-                            <ChevronDown className="size-4 flex-shrink-0 text-muted-foreground" />
-                        ) : (
-                            <ChevronRight className="size-4 flex-shrink-0 text-muted-foreground" />
-                        )}
-                        {isExpanded ? (
-                            <FolderOpenIcon className="size-4 flex-shrink-0 text-green-500" />
-                        ) : (
-                            <FolderIcon className="size-4 flex-shrink-0 text-green-500" />
-                        )}
-                    </>
-                ) : (
-                    <>
-                        <div className="size-4 flex-shrink-0" /> {/* Spacer for alignment */}
-                        <FileIcon className="size-4 flex-shrink-0 text-gray-500" />
-                    </>
-                )}
-                <span className="truncate flex-1 text-foreground/90">
-                    {node.name}
-                </span>
-                {isHovered && (
-                    <button
-                        data-delete-button
-                        onClick={handleDelete}
-                        className="p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive/20 rounded transition-all"
-                        title="Delete"
-                    >
-                        <Trash2 className="size-3.5 text-destructive" />
-                    </button>
-                )}
-            </div>
-            {node.type === 'folder' && isExpanded && node.children && (
-                <div>
-                    {node.children.map((child) => (
-                        <FileTreeItem
-                            key={child.path}
-                            node={child}
-                            level={level + 1}
-                            activeFile={activeFile}
-                            onFileClick={onFileClick}
-                            onDeleteClick={onDeleteClick}
-                            onAddToFolder={onAddToFolder}
-                            onRenameClick={onRenameClick}
-                        />
-                    ))}
-                </div>
-            )}
-        </>
-    );
-
-    // Wrap both files and folders with context menu
-    return (
-        <ContextMenu>
-            <ContextMenuTrigger asChild>
-                <div>{itemContent}</div>
-            </ContextMenuTrigger>
-            <ContextMenuContent>
-                {node.type === 'folder' && (
-                    <>
-                        <ContextMenuItem onClick={() => onAddToFolder(node.path, 'file')}>
-                            <FilePlus className="mr-2 h-4 w-4" />
-                            Nuevo Archivo
-                        </ContextMenuItem>
-                        <ContextMenuItem onClick={() => onAddToFolder(node.path, 'folder')}>
-                            <FolderPlus className="mr-2 h-4 w-4" />
-                            Nueva Carpeta
-                        </ContextMenuItem>
-                    </>
-                )}
-                <ContextMenuItem onClick={() => onRenameClick(node.path, node.name, node.type)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Renombrar
-                </ContextMenuItem>
-            </ContextMenuContent>
-        </ContextMenu>
-    );
-}
+// FileTreeItem moved to its own component
 
 interface CustomFileExplorerProps {
     templateId: Id<"templates">;
@@ -235,13 +42,11 @@ export function CustomFileExplorer({
     const { files, activeFile, openFile, deleteFile, addFile } = sandpack;
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [dialogType, setDialogType] = useState<'file' | 'folder'>('file');
-    const [newItemName, setNewItemName] = useState('');
     const [targetFolder, setTargetFolder] = useState<string>('');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<{ path: string; name: string; type: 'file' | 'folder' } | null>(null);
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
     const [itemToRename, setItemToRename] = useState<{ path: string; name: string; type: 'file' | 'folder' } | null>(null);
-    const [newName, setNewName] = useState('');
 
     // Track file changes
     useEffect(() => {
@@ -303,7 +108,6 @@ export function CustomFileExplorer({
     const handleAddNew = (type: 'file' | 'folder', folderPath: string = '') => {
         setDialogType(type);
         setTargetFolder(folderPath);
-        setNewItemName('');
         setIsDialogOpen(true);
     };
 
@@ -311,7 +115,7 @@ export function CustomFileExplorer({
         handleAddNew(type, folderPath);
     };
 
-    const handleCreateItem = async () => {
+    const handleCreateItem = async (newItemName: string) => {
         if (!newItemName.trim()) return;
 
         let fullPath: string;
@@ -372,24 +176,16 @@ export function CustomFileExplorer({
         }
 
         setIsDialogOpen(false);
-        setNewItemName('');
         setTargetFolder('');
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            handleCreateItem();
-        }
     };
 
     const handleRenameClick = (path: string, name: string, type: 'file' | 'folder') => {
         setItemToRename({ path, name, type });
-        setNewName(name);
         setRenameDialogOpen(true);
     };
 
-    const handleConfirmRename = async () => {
-        if (!itemToRename || !newName.trim() || newName === itemToRename.name) {
+    const handleConfirmRename = async (confirmedNewName: string) => {
+        if (!itemToRename || !confirmedNewName.trim() || confirmedNewName === itemToRename.name) {
             setRenameDialogOpen(false);
             return;
         }
@@ -397,7 +193,7 @@ export function CustomFileExplorer({
         try {
             // Calculate new path
             const pathParts = itemToRename.path.split('/');
-            pathParts[pathParts.length - 1] = newName;
+            pathParts[pathParts.length - 1] = confirmedNewName;
             const newPath = pathParts.join('/');
 
             // Check if the new path already exists (case-insensitive, but not if it's the same as current path)
@@ -421,7 +217,7 @@ export function CustomFileExplorer({
                 );
 
                 if (conflictingFiles.length > 0) {
-                    toast.error(`Ya existe una carpeta con el nombre: ${newName}`);
+                    toast.error(`Ya existe una carpeta con el nombre: ${confirmedNewName}`);
                     return;
                 }
             }
@@ -467,7 +263,6 @@ export function CustomFileExplorer({
 
         setRenameDialogOpen(false);
         setItemToRename(null);
-        setNewName('');
     };
 
     const handleSaveClick = async () => {
@@ -552,110 +347,29 @@ export function CustomFileExplorer({
                 </div>
             </div>
 
-            <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Renombrar {itemToRename?.type === 'folder' ? 'Carpeta' : 'Archivo'}</DialogTitle>
-                        <DialogDescription>
-                            Ingresa el nuevo nombre para {itemToRename?.name}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="rename">Nuevo Nombre</Label>
-                            <Input
-                                id="rename"
-                                placeholder={itemToRename?.name}
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleConfirmRename();
-                                    }
-                                }}
-                                autoFocus
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
-                            Cancelar
-                        </Button>
-                        <Button onClick={handleConfirmRename} disabled={!newName.trim() || newName === itemToRename?.name}>
-                            Renombrar
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <RenameDialog
+                open={renameDialogOpen}
+                onOpenChange={setRenameDialogOpen}
+                itemName={itemToRename?.name}
+                itemType={itemToRename?.type}
+                onConfirm={(name) => handleConfirmRename(name)}
+            />
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>
-                            Crear Nuevo {dialogType === 'file' ? 'Archivo' : 'Carpeta'}
-                            {targetFolder && ` en ${targetFolder}`}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {targetFolder
-                                ? `Ingresa el nombre del ${dialogType === 'file' ? 'archivo' : 'carpeta'} (ej., Button.tsx o utils)`
-                                : `Ingresa la ruta del ${dialogType === 'file' ? 'archivo' : 'carpeta'}. Usa / para rutas anidadas (ej., /components/Button.tsx)`
-                            }
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">
-                                Nombre del {dialogType === 'file' ? 'Archivo' : 'Carpeta'}
-                            </Label>
-                            {targetFolder && (
-                                <p className="text-sm text-muted-foreground">
-                                    Ubicación: {targetFolder}/
-                                </p>
-                            )}
-                            <Input
-                                id="name"
-                                placeholder={
-                                    targetFolder
-                                        ? (dialogType === 'file' ? 'Button.tsx' : 'components')
-                                        : (dialogType === 'file' ? '/MyComponent.tsx' : '/components')
-                                }
-                                value={newItemName}
-                                onChange={(e) => setNewItemName(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                autoFocus
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                            Cancelar
-                        </Button>
-                        <Button onClick={handleCreateItem} disabled={!newItemName.trim()}>
-                            Crear
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <CreateItemDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                dialogType={dialogType}
+                targetFolder={targetFolder}
+                onConfirm={(name) => handleCreateItem(name)}
+            />
 
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Eliminar {itemToDelete?.name}</DialogTitle>
-                        <DialogDescription>
-                            ¿Estás seguro de que quieres eliminar este {itemToDelete?.type === 'folder' ? 'carpeta y todos sus archivos' : 'archivo'}?
-                            Esta acción no se puede deshacer.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                            Cancelar
-                        </Button>
-                        <Button variant="destructive" onClick={handleConfirmDelete}>
-                            Eliminar
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <DeleteConfirmDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                itemName={itemToDelete?.name}
+                itemType={itemToDelete?.type}
+                onConfirm={handleConfirmDelete}
+            />
         </>
     );
 }
