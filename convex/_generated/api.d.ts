@@ -19,6 +19,7 @@ import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as stripe from "../stripe.js";
 import type * as suggestions from "../suggestions.js";
+import type * as supabase from "../supabase.js";
 import type * as templates from "../templates.js";
 import type * as users from "../users.js";
 
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   stripe: typeof stripe;
   suggestions: typeof suggestions;
+  supabase: typeof supabase;
   templates: typeof templates;
   users: typeof users;
 }>;

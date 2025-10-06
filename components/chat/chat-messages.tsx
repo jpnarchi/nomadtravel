@@ -7,6 +7,8 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useEffect, useRef } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { ChatMessage } from "./chat-message";
+import { ConnectOrg } from "../database/supabase/connect-org";
+import { ProjectsDb } from "../database/supabase/projects-db";
 
 export function ChatMessages({
     id,
@@ -149,6 +151,10 @@ export function ChatMessages({
                         </div>
                     </motion.div>
                 )}
+
+                {/* <div className="flex flex-row gap-3 pl-8 pb-4">
+                    <ConnectOrg id={id} />
+                </div> */}
             </div>
 
             <div ref={scrollRef} />

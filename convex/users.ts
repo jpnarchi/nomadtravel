@@ -445,3 +445,18 @@ export const updateSubscriptionById = internalMutation({
         });
     },
 });
+
+export const updateSupabaseAccessToken = mutation({
+    args: {
+        supabaseAccessToken: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        await ctx.db.patch(user._id, { 
+            supabaseAccessToken: args.supabaseAccessToken
+        });
+
+        return user._id;
+    },
+});
