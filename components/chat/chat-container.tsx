@@ -194,6 +194,24 @@ export function ChatContainer({
         }
     };
 
+    const handleSupabaseProjectSelect = async () => {
+        setIsLoading(true);
+        setIsGeneratingSync(false);
+        const text = "HIDDEN MESSAGE: Por favor, escribe una consulta SQL de Supabase para crear las tablas ahora"
+        sendMessage({ text: text });
+        await createMessage({
+            chatId: id,
+            role: "user",
+            parts: [{ type: "text", text: text }],
+        });
+        setInput('');
+        setShowSuggestions(false);
+        setFiles([]);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const handleSuggestionClick = async (suggestion: string) => {
         setIsLoading(true);
         setIsGeneratingSync(false);
@@ -265,6 +283,7 @@ export function ChatContainer({
                                 showSuggestions={showSuggestions}
                                 currentVersion={currentVersion}
                                 isGenerating={true}
+                                onSupabaseProjectSelect={handleSupabaseProjectSelect}
                             />
                         </div>
                         <motion.div
@@ -314,6 +333,7 @@ export function ChatContainer({
                             suggestions={suggestions || []}
                             showSuggestions={showSuggestions}
                             currentVersion={currentVersion}
+                            onSupabaseProjectSelect={handleSupabaseProjectSelect}
                         />
                     </div>
                     <motion.div

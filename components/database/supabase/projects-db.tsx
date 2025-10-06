@@ -4,13 +4,24 @@ import { useState, useEffect } from "react";
 import { DbProject } from "@/lib/interfaces";
 import { Loader } from "@/components/ai-elements/loader";
 import { api } from "@/convex/_generated/api";
-import { useAction } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { Id } from "@/convex/_generated/dataModel";
 
-export function ProjectsDb({ accessToken }: { accessToken: string }) {
+export function ProjectsDb({
+    accessToken,
+    chatId,
+    onSupabaseProjectSelect
+}: {
+    accessToken: string,
+    chatId: Id<"chats">,
+    onSupabaseProjectSelect: () => void
+}) {
     const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
     const [projects, setProjects] = useState<DbProject[]>([]);
     const [loading, setLoading] = useState(false);
     const fetchProjects = useAction(api.supabase.fetchProjects);
+    const updateSupabaseProjectIdForChat = useMutation(api.chats.updateSupabaseProjectIdForChat);
+    const getSupabaseProjectId = useQuery(api.chats.getSupabaseProjectId, { chatId });
 
     useEffect(() => {
         getProjects();
@@ -39,6 +50,7 @@ export function ProjectsDb({ accessToken }: { accessToken: string }) {
             return newSet;
         });
     };
+
     return (
         <div className="flex flex-col gap-2 w-full">
             <div className="flex flex-row items-start justify-between">
@@ -66,12 +78,16 @@ export function ProjectsDb({ accessToken }: { accessToken: string }) {
                     projects.map((project) => (
                         <div key={project.id} className="flex flex-col gap-2">
                             <Button
-                                className="cursor-pointer w-full flex flex-row gap-4 items-center justify-between px-4"
+                                className={`cursor-pointer w-full flex flex-row gap-4 items-center justify-between px-4 ${getSupabaseProjectId === project.id ? '!border-green-500' : ''}`}
                                 variant="outline"
                                 size="lg"
-                                onClick={() => {
+                                onClick={async () => {
                                     if (project.status.toLowerCase() === 'inactive') {
                                         toggleProjectExpansion(project.id);
+                                    } else {
+                                        // window.open(`https://app.supabase.com/project/${project.id}`, '_blank');
+                                        await updateSupabaseProjectIdForChat({ supabaseProjectId: project.id, chatId });
+                                        onSupabaseProjectSelect();
                                     }
                                 }}
                             >

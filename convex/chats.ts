@@ -433,3 +433,58 @@ export const getUserChatsCountAsAdmin = query({
         return chats.length;
     },
 });
+
+export const updateSupabaseProjectIdForChat = mutation({
+    args: {
+        chatId: v.id("chats"),
+        supabaseProjectId: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.supabaseProjectId) {
+            throw new Error("Supabase project id is required");
+        }
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id && user.role !== "admin") {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.patch(args.chatId, {
+            supabaseProjectId: args.supabaseProjectId,
+        });
+
+        return args.chatId;
+    },
+});
+
+export const getSupabaseProjectId = query({
+    args: {
+        chatId: v.id("chats"),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.chatId) {
+            throw new Error("Chat not found");
+        }
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id && user.role !== "admin") {
+            throw new Error("Access denied");
+        }
+
+        return chat.supabaseProjectId;
+    },
+});

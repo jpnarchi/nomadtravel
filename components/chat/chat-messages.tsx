@@ -20,6 +20,7 @@ export function ChatMessages({
     showSuggestions,
     currentVersion,
     isGenerating = false,
+    onSupabaseProjectSelect,
 }: {
     id: Id<"chats">,
     messages: UIMessage[],
@@ -30,6 +31,7 @@ export function ChatMessages({
     showSuggestions: boolean,
     currentVersion: number | null | undefined,
     isGenerating?: boolean,
+    onSupabaseProjectSelect: () => void,
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -153,7 +155,7 @@ export function ChatMessages({
                 )}
 
                 {/* <div className="flex flex-row gap-3 pl-8 pb-4">
-                    <ConnectOrg id={id} />
+                    <ConnectOrg id={id} onSupabaseProjectSelect={onSupabaseProjectSelect} />
                 </div> */}
             </div>
 

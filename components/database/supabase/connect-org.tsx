@@ -6,11 +6,14 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ProjectsDb } from "./projects-db";
+import { Loader } from "@/components/ai-elements/loader";
 
 export function ConnectOrg({
-    id
+    id,
+    onSupabaseProjectSelect
 }: {
     id: Id<"chats">;
+    onSupabaseProjectSelect: () => void;
 }) {
     const redirectUri = process.env.NEXT_PUBLIC_BASE_URL + "/chat/" + id;
 
@@ -25,6 +28,8 @@ export function ConnectOrg({
     const getOrganizations = useAction(api.supabase.getOrganizations);
 
     const [organizations, setOrganizations] = useState<any>([]);
+    const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false);
+    const [isUpdatingToken, setIsUpdatingToken] = useState(false);
 
     useEffect(() => {
         if (code) {
@@ -40,14 +45,24 @@ export function ConnectOrg({
 
     const handleSupabaseToken = async () => {
         if (!code) { return }
-        const data = await exangeCodeForToken({ code: code, redirectUri: redirectUri });
-        if (!data) { return }
-        await updateSupabaseAccessToken({ supabaseAccessToken: data.access_token });
+        setIsUpdatingToken(true);
+        try {
+            const data = await exangeCodeForToken({ code: code, redirectUri: redirectUri });
+            if (!data) { return }
+            await updateSupabaseAccessToken({ supabaseAccessToken: data.access_token });
+        } finally {
+            setIsUpdatingToken(false);
+        }
     }
 
     const fetchOrganizations = async () => {
-        const organizations = await getOrganizations();
-        setOrganizations(organizations);
+        setIsLoadingOrganizations(true);
+        try {
+            const organizations = await getOrganizations();
+            setOrganizations(organizations);
+        } finally {
+            setIsLoadingOrganizations(false);
+        }
     }
 
     const handleSupabaseAuth = async () => {
@@ -60,55 +75,74 @@ export function ConnectOrg({
         await updateSupabaseAccessToken({ supabaseAccessToken: undefined });
     }
 
+    const isLoading = isUpdatingToken || isLoadingOrganizations;
+
     return (
         <div className="flex flex-col gap-2 w-full">
             <Card className="group relative w-full flex flex-col items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:border-border/80 hover:shadow-sm transition-all duration-200">
-                <div className="flex flex-row items-center justify-between gap-4 w-full">
-                    <div className="flex flex-col gap-1">
-                        <p className="font-semibold">Supabase</p>
-                        <p className="text-muted-foreground text-sm">Conecta tu Base de Datos</p>
-                    </div>
-                    {user?.supabaseAccessToken && (
-                        <Button
-                            className="bg-red-500/70 hover:bg-red-500 text-white cursor-pointer"
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleSupabaseDisconnect()}
-                        >
-                            Desconectar
-                        </Button>
-                    )}
-
-                    {!user?.supabaseAccessToken && (
-                        <Button
-                            className="bg-green-700 hover:bg-green-600 text-white cursor-pointer"
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleSupabaseAuth()}
-                        >
-                            Conectar
-                        </Button>
-                    )}
-                </div>
-
-                {user?.supabaseAccessToken && organizations.length > 0 && (
-                    <div className="flex flex-row items-center justify-between gap-4 w-full">
-                        <div className="flex flex-col gap-1">
-                            <p className="font-semibold">Organización</p>
-                            <p className="text-muted-foreground text-sm">Organización seleccionada</p>
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="flex flex-col items-center gap-2">
+                            <Loader />
+                            <p className="text-sm text-muted-foreground">
+                                Cargando...
+                            </p>
                         </div>
-                        <div className="flex flex-row gap-2">
-                            {organizations.map((organization: any) => (
-                                <Button key={organization.id} variant="outline" size="sm">
-                                    {organization.name}
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex flex-row items-center justify-between gap-4 w-full">
+                            <div className="flex flex-col gap-1">
+                                <p className="font-semibold">Supabase</p>
+                                <p className="text-muted-foreground text-sm">Conecta tu Base de Datos</p>
+                            </div>
+                            {user?.supabaseAccessToken && (
+                                <Button
+                                    className="bg-red-500/70 hover:bg-red-500 text-white cursor-pointer"
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleSupabaseDisconnect()}
+                                >
+                                    Desconectar
                                 </Button>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                            )}
 
-                {user?.supabaseAccessToken && (
-                    <ProjectsDb accessToken={user.supabaseAccessToken} />
+                            {!user?.supabaseAccessToken && (
+                                <Button
+                                    className="bg-green-700 hover:bg-green-600 text-white cursor-pointer"
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleSupabaseAuth()}
+                                >
+                                    Conectar
+                                </Button>
+                            )}
+                        </div>
+
+                        {user?.supabaseAccessToken && (
+                            <div className="flex flex-row items-center justify-between gap-4 w-full">
+                                <div className="flex flex-col gap-1">
+                                    <p className="font-semibold">Organización</p>
+                                    <p className="text-muted-foreground text-sm">Organización seleccionada</p>
+                                </div>
+                                <div className="flex flex-row gap-2">
+                                    {organizations.map((organization: any) => (
+                                        <Button key={organization.id} variant="outline" size="sm">
+                                            {organization.name}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {user?.supabaseAccessToken && (
+                            <ProjectsDb 
+                                accessToken={user.supabaseAccessToken} 
+                                chatId={id} 
+                                onSupabaseProjectSelect={onSupabaseProjectSelect} 
+                            />
+                        )}
+                    </>
                 )}
             </Card>
         </div>
