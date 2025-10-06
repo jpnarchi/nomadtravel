@@ -86,6 +86,7 @@ export default defineSchema({
         content: v.string(),
     })
         .index('by_templateId', ['templateId'])
+        .index('by_templateId_path', ['templateId', 'path'])
     ,
     dailySignups: defineTable({
         date: v.string(), // Format: YYYY-MM-DD

@@ -11,17 +11,5 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         notFound();
     }
 
-    const templateFiles = await getTemplateFiles(template.name);
-
-    const initialFiles = templateFiles.reduce((acc, file) => {
-        acc[file.path] = file.content;
-        return acc;
-    }, {} as Record<string, string>);
-
-    return (
-        <div>
-            <h1>Template {template.name}</h1>
-            <PreviewTemplate id={id as Id<"templates">} initialFiles={initialFiles} />
-        </div>
-    )
+    return <PreviewTemplate id={id as Id<"templates">} />
 }

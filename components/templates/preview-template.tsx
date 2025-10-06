@@ -8,19 +8,25 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { Loader } from "../ai-elements/loader";
+import { CustomFileExplorer } from "./custom-file-explorer";
+import { api } from "@/convex/_generated/api";
+import { useQuery, useMutation } from "convex/react";
+import { toast } from "sonner";
 
 export function PreviewTemplate({
     id,
-    initialFiles
 }: {
     id: Id<"templates">,
-    initialFiles: Record<string, string>
 }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
-    const [files, setFiles] = useState(initialFiles);
+    const initialFiles = useQuery(api.templates.getFilesByTemplateId, { templateId: id });
     const [isDesktop, setIsDesktop] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
+
+    const saveTemplateFiles = useMutation(api.templates.saveTemplateFiles);
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -38,6 +44,57 @@ export function PreviewTemplate({
         "framer-motion": "latest"
     }
 
+    if (!initialFiles) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                    <Loader />
+                    <p>Cargando archivos</p>
+                </div>
+            </div>
+        );
+    }
+
+    const handleSave = async (currentFiles: Record<string, string>) => {
+        setIsSaving(true);
+        try {
+            // Calculate differences
+            const added: { path: string; content: string }[] = [];
+            const updated: { path: string; content: string }[] = [];
+            const deleted: string[] = [];
+
+            // Find added and updated files
+            Object.entries(currentFiles).forEach(([path, content]) => {
+                if (!initialFiles[path]) {
+                    added.push({ path, content });
+                } else if (initialFiles[path] !== content) {
+                    updated.push({ path, content });
+                }
+            });
+
+            // Find deleted files
+            Object.keys(initialFiles).forEach(path => {
+                if (!currentFiles[path]) {
+                    deleted.push(path);
+                }
+            });
+
+            await saveTemplateFiles({
+                templateId: id,
+                files: { added, updated, deleted }
+            });
+
+            toast.success('Cambios guardados exitosamente');
+            setHasChanges(false);
+            router.refresh();
+        } catch (error) {
+            toast.error('Error al guardar cambios');
+            console.error(error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div className="h-screen flex flex-col px-4 md:px-12 pt-4 pb-24 md:pb-12">
             <div className="flex flex-row justify-between items-center">
@@ -46,12 +103,11 @@ export function PreviewTemplate({
                     className="cursor-pointer"
                     onClick={() => {
                         setIsBackButtonLoading(true);
-                        router.push(`/chat/${id}`);
-                        router.refresh();
+                        router.push(`/`);
                     }}
                 >
                     {isBackButtonLoading ? (<Loader />) : (<ArrowLeftIcon className="size-4" />)}
-                    {isBackButtonLoading ? "Cargando" : "Volver a Chat"}
+                    {isBackButtonLoading ? "Cargando" : "Volver"}
                 </Button>
 
                 <div className="flex gap-2">
@@ -67,7 +123,7 @@ export function PreviewTemplate({
             <div className="flex-1 border rounded-lg overflow-hidden mt-4">
                 <SandpackProvider
                     key={showCode ? 'code' : 'preview'}
-                    files={files}
+                    files={initialFiles}
                     theme="dark"
                     template="react"
                     options={{
@@ -91,13 +147,16 @@ export function PreviewTemplate({
                         {showCode && (
                             <>
                                 {isDesktop && (
-                                    <SandpackFileExplorer
-                                        style={{
-                                            width: '250px',
-                                            height: '100%',
-                                            minWidth: '250px',
-                                            maxWidth: '250px'
+                                    <CustomFileExplorer
+                                        templateId={id}
+                                        initialFiles={initialFiles}
+                                        onFilesChange={(currentFiles) => {
+                                            const filesChanged = JSON.stringify(initialFiles) !== JSON.stringify(currentFiles);
+                                            setHasChanges(filesChanged);
                                         }}
+                                        onSave={handleSave}
+                                        hasChanges={hasChanges}
+                                        isSaving={isSaving}
                                     />
                                 )}
                                 <SandpackCodeEditor
@@ -105,8 +164,8 @@ export function PreviewTemplate({
                                     showTabs={true}
                                     showRunButton={false}
                                     style={{
-                                        height: '85.25dvh',
-                                        minHeight: '85.25vh'
+                                        height: '100dvh',
+                                        minHeight: '100dvh'
                                     }}
                                 />
                             </>
