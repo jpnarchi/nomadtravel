@@ -325,6 +325,30 @@ export function CustomFileExplorer({
             fullPath = newItemName.startsWith('/') ? newItemName : `/${newItemName}`;
         }
 
+        // Check if file or folder already exists (case-insensitive)
+        const existingPaths = Object.keys(files);
+        const pathExists = existingPaths.some(existingPath =>
+            existingPath.toLowerCase() === fullPath.toLowerCase()
+        );
+
+        if (pathExists) {
+            toast.error(`Ya existe un archivo o carpeta con la ruta: ${fullPath}`);
+            return;
+        }
+
+        // For folders, check if any files exist that would be inside this folder (case-insensitive)
+        if (dialogType === 'folder') {
+            const folderPath = fullPath.endsWith('/') ? fullPath : `${fullPath}/`;
+            const conflictingFiles = existingPaths.filter(filePath =>
+                filePath.toLowerCase().startsWith(folderPath.toLowerCase())
+            );
+
+            if (conflictingFiles.length > 0) {
+                toast.error(`Ya existe una carpeta con el nombre: ${newItemName}`);
+                return;
+            }
+        }
+
         try {
             if (dialogType === 'file') {
                 // Add file with empty content (database will be updated when user clicks Save)
@@ -376,10 +400,50 @@ export function CustomFileExplorer({
             pathParts[pathParts.length - 1] = newName;
             const newPath = pathParts.join('/');
 
+            // Check if the new path already exists (case-insensitive, but not if it's the same as current path)
+            const existingPaths = Object.keys(files);
+            const pathExists = existingPaths.some(existingPath =>
+                existingPath.toLowerCase() === newPath.toLowerCase() && existingPath !== itemToRename.path
+            );
+
+            if (pathExists) {
+                toast.error(`Ya existe un archivo o carpeta con la ruta: ${newPath}`);
+                return;
+            }
+
+            // For folders, check if any files exist that would be inside the new folder path (case-insensitive)
+            if (itemToRename.type === 'folder') {
+                const newFolderPath = newPath.endsWith('/') ? newPath : `${newPath}/`;
+                const conflictingFiles = existingPaths.filter(filePath =>
+                    filePath.toLowerCase().startsWith(newFolderPath.toLowerCase()) &&
+                    !filePath.toLowerCase().startsWith(itemToRename.path.toLowerCase() + '/') &&
+                    filePath.toLowerCase() !== itemToRename.path.toLowerCase()
+                );
+
+                if (conflictingFiles.length > 0) {
+                    toast.error(`Ya existe una carpeta con el nombre: ${newName}`);
+                    return;
+                }
+            }
+
             // Get all files that need to be renamed (for folders)
             const filesToRename = Object.keys(files).filter(filePath =>
                 filePath === itemToRename.path || filePath.startsWith(itemToRename.path + '/')
             );
+
+            // For folders, also check if any of the new paths would conflict
+            if (itemToRename.type === 'folder') {
+                for (const oldPath of filesToRename) {
+                    const updatedPath = oldPath === itemToRename.path
+                        ? newPath
+                        : oldPath.replace(itemToRename.path, newPath);
+
+                    if (files[updatedPath] && updatedPath !== oldPath) {
+                        toast.error(`No se puede renombrar: ya existe un archivo con la ruta ${updatedPath}`);
+                        return;
+                    }
+                }
+            }
 
             // Rename in sandpack (database will be updated when user clicks Save)
             for (const oldPath of filesToRename) {

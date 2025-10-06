@@ -164,8 +164,8 @@ export function PreviewTemplate({
                                     showTabs={true}
                                     showRunButton={false}
                                     style={{
-                                        height: '100dvh',
-                                        minHeight: '100dvh'
+                                        height: '100%',
+                                        minHeight: '100%'
                                     }}
                                 />
                             </>
