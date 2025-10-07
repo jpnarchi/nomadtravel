@@ -2,12 +2,11 @@ import { useEffect, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
-export function useSupabaseAuth(redirectUri: string) {
+export function useSupabaseAuth(redirectUri: string, chatId?: string) {
     const user = useQuery(api.users.getUserInfo);
     const updateSupabaseAccessToken = useMutation(api.users.updateSupabaseAccessToken);
 
     const getOAuthUrl = useAction(api.supabase.getOAuthUrl);
-    const exangeCodeForToken = useAction(api.supabase.exangeCodeForToken);
     const getOrganizations = useAction(api.supabase.getOrganizations);
 
     const [organizations, setOrganizations] = useState<any[]>([]);
@@ -32,24 +31,13 @@ export function useSupabaseAuth(redirectUri: string) {
     }, [user?.supabaseAccessToken]);
 
     const handleSupabaseAuth = async () => {
-        const url = await getOAuthUrl({ redirectUri });
+        const url = await getOAuthUrl({ redirectUri, state: chatId });
         if (!url) return;
         window.location.href = url;
     };
 
     const handleSupabaseDisconnect = async () => {
         await updateSupabaseAccessToken({ supabaseAccessToken: undefined });
-    };
-
-    const exchangeAndStoreToken = async (code: string) => {
-        setIsUpdatingToken(true);
-        try {
-            const data = await exangeCodeForToken({ code, redirectUri });
-            if (!data) return;
-            await updateSupabaseAccessToken({ supabaseAccessToken: data.access_token });
-        } finally {
-            setIsUpdatingToken(false);
-        }
     };
 
     return {
@@ -59,7 +47,6 @@ export function useSupabaseAuth(redirectUri: string) {
         isLoadingOrganizations,
         handleSupabaseAuth,
         handleSupabaseDisconnect,
-        exchangeAndStoreToken,
     };
 }
 

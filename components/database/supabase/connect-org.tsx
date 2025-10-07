@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Id } from "@/convex/_generated/dataModel";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 import { ProjectsDb } from "./projects-db";
 import { Loader } from "@/components/ai-elements/loader";
 import { useSupabaseAuth } from "./hooks/use-supabase-auth";
@@ -20,10 +18,8 @@ export function ConnectOrg({
     showLoader: boolean;
     disableConnectOrg: boolean;
 }) {
-    const redirectUri = process.env.NEXT_PUBLIC_BASE_URL + "/chat/" + id;
-
-    const searchParams = useSearchParams()
-    const code = searchParams.get('code')
+    // Use a static redirect URI that's registered with Supabase
+    const redirectUri = process.env.NEXT_PUBLIC_BASE_URL + "/auth/supabase-callback";
 
     const {
         user,
@@ -32,14 +28,7 @@ export function ConnectOrg({
         isUpdatingToken,
         handleSupabaseAuth,
         handleSupabaseDisconnect,
-        exchangeAndStoreToken,
-    } = useSupabaseAuth(redirectUri);
-
-    useEffect(() => {
-        if (code) {
-            exchangeAndStoreToken(code);
-        }
-    }, [code]);
+    } = useSupabaseAuth(redirectUri, id);
 
     const isLoading = isUpdatingToken || isLoadingOrganizations || showLoader;
     const [disconnectOpen, setDisconnectOpen] = useState(false);

@@ -5,6 +5,7 @@ import { action } from "./_generated/server";
 export const getOAuthUrl = action({
     args: {
         redirectUri: v.string(),
+        state: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(api.users.getUserInfo, {});
@@ -28,6 +29,11 @@ export const getOAuthUrl = action({
             redirect_uri: args.redirectUri,
             response_type: 'code'
         });
+
+        // Add state parameter if provided (for passing chat ID)
+        if (args.state) {
+            urlParams.append('state', args.state);
+        }
 
         const supabaseOAuthUrl = `https://api.supabase.com/v1/oauth/authorize?${urlParams.toString()}`
 
