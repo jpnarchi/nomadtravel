@@ -488,3 +488,33 @@ export const getSupabaseProjectId = query({
         return chat.supabaseProjectId;
     },
 });
+
+export const updateVercelProjectId = mutation({
+    args: {
+        chatId: v.id("chats"),
+        vercelProjectId: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.vercelProjectId) {
+            throw new Error("Vercel project id is required");
+        }
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id && user.role !== "admin") {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.patch(args.chatId, {
+            vercelProjectId: args.vercelProjectId,
+        });
+
+        return args.chatId;
+    },
+});

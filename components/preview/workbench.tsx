@@ -11,6 +11,7 @@ import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { WorkbenchFileExplorer } from "./custom-file-explorer";
 import { elementInspectorJs, indexJs, toasterIndexJs } from "@/lib/element-inspector-files";
+import { DeployButton } from "./deploy-button";
 
 export function Workbench({ id, version }: { id: Id<"chats">, version: number }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
@@ -81,6 +82,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                     >
                         {showCode ? "Vista previa" : "Código"}
                     </Button>
+                    <DeployButton id={id} version={version} />
                 </div>
             </div>
             <div className="flex-1 border rounded-lg overflow-hidden mt-4">

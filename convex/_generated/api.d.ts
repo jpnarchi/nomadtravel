@@ -22,6 +22,7 @@ import type * as suggestions from "../suggestions.js";
 import type * as supabase from "../supabase.js";
 import type * as templates from "../templates.js";
 import type * as users from "../users.js";
+import type * as vercel from "../vercel.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   supabase: typeof supabase;
   templates: typeof templates;
   users: typeof users;
+  vercel: typeof vercel;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

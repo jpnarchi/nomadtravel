@@ -35,6 +35,7 @@ export default defineSchema({
         currentVersion: v.optional(v.number()),
         isGenerating: v.optional(v.boolean()),
         supabaseProjectId: v.optional(v.string()),
+        vercelProjectId: v.optional(v.string()),
     })
         .index('by_user_id', ['userId'])
         .index('by_title', ['title'])
