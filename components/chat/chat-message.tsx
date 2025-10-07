@@ -52,11 +52,10 @@ export function ChatMessage({
                 {parts.map((part, index) => {
                     // console.log(part)
                     if (part.type === "text") {
-                        let { files, displayText } = parseAttachmentsFromText(part.text);
-
-                        if (displayText.includes("Anon Key:")) {
-                            displayText = displayText.slice(0, displayText.indexOf("Anon Key:"));
-                        }
+                        const { files, displayText: originalText } = parseAttachmentsFromText(part.text);
+                        const displayText = originalText.includes("Anon Key:")
+                            ? originalText.slice(0, originalText.indexOf("Anon Key:"))
+                            : originalText;
 
                         return (
                             <div key={index} className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4 mb-2">
