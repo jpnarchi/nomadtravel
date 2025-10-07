@@ -9,6 +9,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { ChatMessage } from "./chat-message";
 import { ConnectOrg } from "../database/supabase/connect-org";
 import { ProjectsDb } from "../database/supabase/projects-db";
+import { ConnectStripe } from "../payments/connect-stripe";
 
 export function ChatMessages({
     id,
@@ -157,6 +158,10 @@ export function ChatMessages({
                         </div>
                     </motion.div>
                 )}
+
+                {/* <div className="flex flex-row gap-3 pt-2 pb-4 pl-8">
+                    <ConnectStripe />
+                </div> */}
             </div>
 
             <div ref={scrollRef} />

@@ -230,3 +230,145 @@ export const getSupabaseAnonKey = action({
         return { anonKey };
     },
 });
+
+export const saveStripeCredentials = action({
+    args: {
+        publishableKey: v.string(),
+        secretKey: v.string(),
+        webhookSecret: v.string(),
+        projectId: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (!user.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        if (!args.projectId) {
+            throw new Error("Project ID is required");
+        }
+
+        // Save Stripe credentials as secrets in Supabase
+        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/secrets`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${user.supabaseAccessToken}`
+            },
+            body: JSON.stringify([
+                {
+                    name: 'STRIPE_PUBLISHABLE_KEY',
+                    value: args.publishableKey
+                },
+                {
+                    name: 'STRIPE_SECRET_KEY',
+                    value: args.secretKey
+                },
+                {
+                    name: 'STRIPE_WEBHOOK_SECRET',
+                    value: args.webhookSecret
+                }
+            ])
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Supabase secrets API error:', errorText);
+            return {
+                success: false,
+                error: errorText,
+                message: `Error ${response.status}: ${errorText}`
+            };
+        }
+
+        const message = `
+        Las credenciales de Stripe se han guardado correctamente como secrets.
+        STRIPE_PUBLISHABLE_KEY
+        STRIPE_SECRET_KEY
+        STRIPE_WEBHOOK_SECRET
+        `.trim()
+
+        return {
+            success: true,
+            message: message
+        };
+    },
+});
+
+export const deployEdgeFunction = action({
+    args: {
+        functionName: v.string(),
+        fileContent: v.string(),
+        projectId: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (!user.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        if (!args.projectId) {
+            throw new Error("Project ID is required");
+        }
+
+        if (!args.functionName) {
+            throw new Error("Function name is required");
+        }
+
+        if (!args.fileContent) {
+            throw new Error("File content is required");
+        }
+
+        const METADATA = {
+            name: args.functionName,
+            entrypoint_path: 'index.ts',
+            verify_jwt: false,
+            static_patterns: [],
+        };
+
+        // Build multipart/form-data body
+        const form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(METADATA)], { type: 'application/json' }));
+        // Provide the function source as a file - Supabase expects the file path to match entrypoint_path
+        form.append('file', new Blob([args.fileContent], { type: 'application/typescript' }), 'index.ts');
+
+        // Deploy to Supabase (slug as query param)
+        const url = `https://api.supabase.com/v1/projects/${args.projectId}/functions/deploy?slug=${encodeURIComponent(args.functionName)}`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${user.supabaseAccessToken}`,
+                Accept: 'application/json',
+            },
+            body: form,
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            return {
+                success: false,
+                error: errorText,
+                status: response.status,
+                message: `Error ${response.status}: ${errorText}`,
+            };
+        }
+
+        const data = await response.json();
+        return {
+            success: true,
+            data,
+            message: 'Function deployed successfully',
+        };
+    },
+});
