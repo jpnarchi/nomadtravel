@@ -33,7 +33,8 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     const dependencies = {
         "lucide-react": "latest",
         "framer-motion": "latest",
-        "@supabase/supabase-js": "latest"
+        "@supabase/supabase-js": "latest",
+        "@stripe/stripe-js": "latest",
     }
 
     if (!files) {

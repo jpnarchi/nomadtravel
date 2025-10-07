@@ -4,100 +4,43 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { useState } from "react";
 import { Loader } from "../ai-elements/loader";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { toast } from "sonner";
 
-export function ConnectStripe() {
+export function ConnectStripe({ 
+    id, 
+    onStripeConnected, 
+    disableConnectStripe 
+}: { 
+    id: Id<"chats">, 
+    onStripeConnected: (publishableKey: string) => void, 
+    disableConnectStripe: boolean 
+}) {
     const [isLoading, setIsLoading] = useState(false);
-    const [isDeploying, setIsDeploying] = useState(false);
     const [showInputs, setShowInputs] = useState(false);
     const [publishableKey, setPublishableKey] = useState("");
     const [secretKey, setSecretKey] = useState("");
     const [webhookSecret, setWebhookSecret] = useState("");
-    const [deployResult, setDeployResult] = useState<string | null>(null);
 
-    const projectId = 'qrrvowlhalhjczhpcrlk'
     const saveStripeCredentials = useAction(api.supabase.saveStripeCredentials);
-    const deployEdgeFunction = useAction(api.supabase.deployEdgeFunction);
+    const supabaseProjectId = useQuery(api.chats.getSupabaseProjectId, { chatId: id });
 
     const handleSave = async () => {
-        setIsLoading(true);
-        await saveStripeCredentials({ publishableKey, secretKey, webhookSecret, projectId });
-        setIsLoading(false);
-    }
-
-    const handleDeployTestFunction = async () => {
-        setIsDeploying(true);
-        setDeployResult(null);
-
-        // Test edge function code
-        const testFunctionCode = `
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-serve(async (req) => {
-  const { method } = req;
-  
-  if (method === 'GET') {
-    return new Response(
-      JSON.stringify({
-        message: "Test Edge Function is working!",
-        timestamp: new Date().toISOString(),
-        method: method,
-        url: req.url
-      }),
-      {
-        headers: { "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-  }
-  
-  if (method === 'POST') {
-    const body = await req.json();
-    return new Response(
-      JSON.stringify({
-        message: "POST request received!",
-        receivedData: body,
-        timestamp: new Date().toISOString()
-      }),
-      {
-        headers: { "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-  }
-  
-  return new Response(
-    JSON.stringify({ error: "Method not allowed" }),
-    {
-      headers: { "Content-Type": "application/json" },
-      status: 405,
-    }
-  );
-});
-`;
-
-        try {
-            const result = await deployEdgeFunction({
-                functionName: 'test-stripe-function',
-                projectId: projectId,
-                fileContent: testFunctionCode,
-                // slug: 'test-stripe-function',
-                // entrypointPath: 'index.ts',
-                // verifyJwt: false,
-                // importMap: false
-            });
-
-            if (result.success) {
-                setDeployResult(`✅ Function deployed successfully! You can test it at: https://${projectId}.supabase.co/functions/v1/test-stripe-function`);
-            } else {
-                setDeployResult(`❌ Deployment failed: ${result.message}`);
-            }
-        } catch (error) {
-            setDeployResult(`❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        if (!supabaseProjectId) {
+            toast.error("No se encontró un proyecto de Supabase conectado");
+            return;
         }
-
-        setIsDeploying(false);
+        setIsLoading(true);
+        const result = await saveStripeCredentials({ publishableKey, secretKey, webhookSecret, projectId: supabaseProjectId });
+        if (result.success && publishableKey) {
+            onStripeConnected(publishableKey);
+        }
+        if (result.error) {
+            toast.error(result.error);
+        }
+        setIsLoading(false);
     }
 
     return (
@@ -119,7 +62,7 @@ serve(async (req) => {
                         onClick={() => {
                             setShowInputs(!showInputs);
                         }}
-                        disabled={isLoading}
+                        disabled={isLoading || disableConnectStripe}
                         className="bg-[#533AFD] hover:bg-[#533AFD]/90 text-white cursor-pointer"
                     >
                         {isLoading ? (
@@ -139,6 +82,18 @@ serve(async (req) => {
             {/* Input fields section */}
             {showInputs && (
                 <Card className="w-full p-4 space-y-2">
+                    <div className="mb-2">
+                        <Button
+                            variant="default"
+                            size="lg"
+                            onClick={() => window.open('https://dashboard.stripe.com/test/apikeys', '_blank')}
+                            disabled={disableConnectStripe}
+                            className="bg-[#533AFD] hover:bg-[#533AFD]/90 text-white cursor-pointer w-full"
+                        >
+                            Obtener credenciales
+                        </Button>
+                    </div>
+
                     <div className="space-y-2">
                         <Label htmlFor="publishable-key">Publishable Key</Label>
                         <Input
@@ -147,6 +102,7 @@ serve(async (req) => {
                             placeholder="pk_test_..."
                             value={publishableKey}
                             onChange={(e) => setPublishableKey(e.target.value)}
+                            disabled={disableConnectStripe}
                         />
                     </div>
 
@@ -158,6 +114,7 @@ serve(async (req) => {
                             placeholder="sk_test_..."
                             value={secretKey}
                             onChange={(e) => setSecretKey(e.target.value)}
+                            disabled={disableConnectStripe}
                         />
                     </div>
 
@@ -169,6 +126,7 @@ serve(async (req) => {
                             placeholder="whsec_..."
                             value={webhookSecret}
                             onChange={(e) => setWebhookSecret(e.target.value)}
+                            disabled={disableConnectStripe}
                         />
                     </div>
 
@@ -180,36 +138,6 @@ serve(async (req) => {
                         </p>
                     </div>
 
-                    {/* Test Edge Function Section */}
-                    <div className="border-t pt-4 mt-4">
-                        <h4 className="font-medium text-sm mb-2">🧪 Test Edge Function</h4>
-                        <p className="text-xs text-muted-foreground mb-3">
-                            Deploy a test edge function to verify the integration works correctly.
-                        </p>
-
-                        <Button
-                            onClick={handleDeployTestFunction}
-                            disabled={isDeploying}
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                        >
-                            {isDeploying ? (
-                                <>
-                                    <Loader className="w-4 h-4 mr-2" />
-                                    Deploying Test Function...
-                                </>
-                            ) : (
-                                "Deploy Test Edge Function"
-                            )}
-                        </Button>
-
-                        {deployResult && (
-                            <div className="mt-3 p-3 rounded-lg bg-muted/50 border border-muted">
-                                <p className="text-xs font-mono break-all">{deployResult}</p>
-                            </div>
-                        )}
-                    </div>
 
                     {/* Action buttons */}
                     <div className="flex justify-end gap-2">
@@ -219,9 +147,8 @@ serve(async (req) => {
                                 setPublishableKey("");
                                 setSecretKey("");
                                 setWebhookSecret("");
-                                setDeployResult(null);
                             }}
-                            disabled={!publishableKey && !secretKey && !webhookSecret}
+                            disabled={!publishableKey && !secretKey && !webhookSecret || disableConnectStripe}
                         >
                             Limpiar
                         </Button>
@@ -230,7 +157,7 @@ serve(async (req) => {
                                 handleSave();
                                 setShowInputs(false);
                             }}
-                            disabled={!publishableKey || !secretKey || !webhookSecret}
+                            disabled={!publishableKey || !secretKey || !webhookSecret || disableConnectStripe}
                         >
                             Guardar
                         </Button>

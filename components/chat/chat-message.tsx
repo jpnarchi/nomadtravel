@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import Image from "next/image";
 import { UserIcon } from "@/components/global/icons";
-import { Database, File, Folders, SquareDashedMousePointer } from "lucide-react";
+import { Database, File, Folders, SquareDashedMousePointer, SquareFunction } from "lucide-react";
 import { Markdown } from "@/components/global/markdown";
 import { Attachments } from "./attachments";
 import { ToolMessage } from "./tools/tool-message";
@@ -14,6 +14,7 @@ import { PreviewButton } from "./tools/preview-button";
 import { Skeleton } from "../ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
 import { ConnectOrg } from "../database/supabase/connect-org";
+import { ConnectStripe } from "../payments/connect-stripe";
 
 
 export function ChatMessage({
@@ -25,7 +26,9 @@ export function ChatMessage({
     currentVersion,
     isNewMessage = false,
     onSupabaseProjectSelect,
-    disableConnectOrg
+    disableConnectOrg,
+    onStripeConnected,
+    disableConnectStripe
 }: {
     id: Id<"chats">;
     messageId: string;
@@ -36,6 +39,8 @@ export function ChatMessage({
     isNewMessage?: boolean;
     onSupabaseProjectSelect: (projectId: string, projectName: string) => void;
     disableConnectOrg: boolean;
+    onStripeConnected: (publishableKey: string) => void;
+    disableConnectStripe: boolean;
 }) {
     return (
         <motion.div
@@ -55,6 +60,8 @@ export function ChatMessage({
                         const { files, displayText: originalText } = parseAttachmentsFromText(part.text);
                         const displayText = originalText.includes("Anon Key:")
                             ? originalText.slice(0, originalText.indexOf("Anon Key:"))
+                            : originalText.includes("STRIPE_PUBLISHABLE_KEY:")
+                            ? originalText.slice(0, originalText.indexOf("STRIPE_PUBLISHABLE_KEY:"))
                             : originalText;
 
                         return (
@@ -279,6 +286,60 @@ export function ChatMessage({
                                     <ToolMessage
                                         icon={<Database className="size-4" />}
                                         message={"Actualizando base de datos..."}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-connectToStripe") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            return (
+                                <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
+                                    <ConnectStripe 
+                                        id={id} 
+                                        onStripeConnected={onStripeConnected}
+                                        disableConnectStripe={disableConnectStripe}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
+                                    <ConnectStripe 
+                                        id={id} 
+                                        onStripeConnected={onStripeConnected}
+                                        disableConnectStripe={disableConnectStripe}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-deployEdgeFunction") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<SquareFunction className="size-4" />}
+                                        message={"Edge function desplegada"}
+                                        isLoading={false}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<SquareFunction className="size-4" />}
+                                        message={"Desplegando edge function..."}
                                         isLoading={true}
                                     />
                                 </div>

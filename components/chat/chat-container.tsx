@@ -226,6 +226,32 @@ export function ChatContainer({
         }
     };
 
+    const handleStripeConnected = async (publishableKey: string) => {
+        setIsLoading(true);
+        setIsGeneratingSync(false);
+
+        const text = `Stripe conectado! Las credenciales se han guardado correctamente.`
+        const keys = `
+        STRIPE_PUBLISHABLE_KEY: ${publishableKey}\n
+        STRIPE_SECRET_KEY
+        STRIPE_WEBHOOK_SECRET
+
+        Stripe secret key y Stripe webhook secret se guardaron en secrets.
+        `
+        sendMessage({ text: text + keys });
+        await createMessage({
+            chatId: id,
+            role: "user",
+            parts: [{ type: "text", text: text + keys }],
+        });
+        setInput('');
+        setShowSuggestions(false);
+        setFiles([]);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
     const handleSuggestionClick = async (suggestion: string) => {
         setIsLoading(true);
         setIsGeneratingSync(false);
@@ -298,6 +324,7 @@ export function ChatContainer({
                                 currentVersion={currentVersion}
                                 isGenerating={true}
                                 onSupabaseProjectSelect={handleSupabaseProjectSelect}
+                                onStripeConnected={handleStripeConnected}
                             />
                         </div>
                         <motion.div
@@ -348,6 +375,7 @@ export function ChatContainer({
                             showSuggestions={showSuggestions}
                             currentVersion={currentVersion}
                             onSupabaseProjectSelect={handleSupabaseProjectSelect}
+                            onStripeConnected={handleStripeConnected}
                         />
                     </div>
                     <motion.div

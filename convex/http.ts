@@ -186,7 +186,7 @@ http.route({
                 execute: async function () {
                     return {
                         success: true,
-                        message: 'Conectando a Supabase...'
+                        message: 'Esperando a que el usuario conecte Supabase...'
                     };
                 },
             },
@@ -234,6 +234,53 @@ http.route({
                     };
                 },
             };
+
+            supabaseTools.connectToStripe = {
+                description: 'Conecta a Stripe.',
+                inputSchema: z.object({}),
+                execute: async function () {
+                    return {
+                        success: true,
+                        message: 'Esperando a que el usuario conecte Stripe...'
+                    };
+                },
+            };
+
+            supabaseTools.deployEdgeFunction = {
+                description: 'Despliega una edge function en Supabase.',
+                inputSchema: z.object({
+                    functionName: z.string().describe('El nombre de la función a desplegar'),
+                    fileContent: z.string().describe('El contenido de la función a desplegar. El código debe ser en TypeScript.'),
+                }),
+                execute: async function ({ functionName, fileContent }: any) {
+                    if (!chat.supabaseProjectId) {
+                        return {
+                            success: false,
+                            message: 'Supabase no conectado'
+                        };
+                    }
+
+                    const result = await ctx.runAction(api.supabase.deployEdgeFunction, {
+                        functionName: functionName,
+                        fileContent: fileContent,
+                        projectId: chat.supabaseProjectId
+                    });
+
+                    if (!result) {
+                        return {
+                            success: false,
+                            error: result.error,
+                            message: 'Error al desplegar la función'
+                        };
+                    }
+
+                    return {
+                        success: true,
+                        message: result.message || 'Función desplegada exitosamente',
+                        data: result.data
+                    };
+                },
+            };
         }
 
         const result = streamText({
@@ -273,6 +320,11 @@ ${isSupabaseConnected
                     ? '- Supabase YA está conectado. Puedes usar supabaseSQLQuery para ejecutar consultas SQL.\n- Si el usuario quiere cambiar la conexión o conectar a otro proyecto, usa connectToSupabase.'
                     : '- Supabase NO está conectado. Si el usuario quiere usar base de datos, primero usa connectToSupabase.'}
 
+Reglas de Stripe:
+${isSupabaseConnected
+                    ? '- Supabase está conectado; puedes proceder con pagos.\n- Antes de pagos, verifica que existan las tablas necesarias (por ejemplo: payments). Si faltan, créalas con supabaseSQLQuery.\n- Conecta Stripe con connectToStripe si aún no está conectado.\n- Despliega una Edge Function con deployEdgeFunction.\n- No cobres hasta tener: tablas creadas + Stripe conectado + función desplegada.\n- Si falla algo, informa el error y detente.'
+                    : '- Supabase NO está conectado; antes de cualquier pago usa connectToSupabase y espera confirmación.'}
+				
 Reglas de herramientas adicionales:
 - Si el usuario menciona que ya tiene un negocio:
   1. Pregunta si puedes buscarlo en internet y espera su respuesta.

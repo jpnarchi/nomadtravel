@@ -282,21 +282,10 @@ export const saveStripeCredentials = action({
             return {
                 success: false,
                 error: errorText,
-                message: `Error ${response.status}: ${errorText}`
             };
         }
 
-        const message = `
-        Las credenciales de Stripe se han guardado correctamente como secrets.
-        STRIPE_PUBLISHABLE_KEY
-        STRIPE_SECRET_KEY
-        STRIPE_WEBHOOK_SECRET
-        `.trim()
-
-        return {
-            success: true,
-            message: message
-        };
+        return { success: true };
     },
 });
 

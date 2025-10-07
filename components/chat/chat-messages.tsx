@@ -7,9 +7,6 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useEffect, useRef } from "react";
 import { ScrollArea } from "../ui/scroll-area";
 import { ChatMessage } from "./chat-message";
-import { ConnectOrg } from "../database/supabase/connect-org";
-import { ProjectsDb } from "../database/supabase/projects-db";
-import { ConnectStripe } from "../payments/connect-stripe";
 
 export function ChatMessages({
     id,
@@ -22,6 +19,7 @@ export function ChatMessages({
     currentVersion,
     isGenerating = false,
     onSupabaseProjectSelect,
+    onStripeConnected,
 }: {
     id: Id<"chats">,
     messages: UIMessage[],
@@ -33,6 +31,7 @@ export function ChatMessages({
     currentVersion: number | null | undefined,
     isGenerating?: boolean,
     onSupabaseProjectSelect: (projectId: string, projectName: string) => void,
+    onStripeConnected: (publishableKey: string) => void,
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +85,8 @@ export function ChatMessages({
                         currentVersion={currentVersion}
                         onSupabaseProjectSelect={onSupabaseProjectSelect}
                         disableConnectOrg={true}
+                        onStripeConnected={onStripeConnected}
+                        disableConnectStripe={true}
                     />
                 ))}
             </div>
@@ -104,6 +105,8 @@ export function ChatMessages({
                         isNewMessage={true}
                         onSupabaseProjectSelect={onSupabaseProjectSelect}
                         disableConnectOrg={false}
+                        onStripeConnected={onStripeConnected}
+                        disableConnectStripe={false}
                     />
                 ))}
 
@@ -158,10 +161,6 @@ export function ChatMessages({
                         </div>
                     </motion.div>
                 )}
-
-                {/* <div className="flex flex-row gap-3 pt-2 pb-4 pl-8">
-                    <ConnectStripe />
-                </div> */}
             </div>
 
             <div ref={scrollRef} />
