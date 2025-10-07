@@ -472,13 +472,13 @@ export const getSupabaseProjectId = query({
         const user = await getCurrentUser(ctx);
 
         if (!args.chatId) {
-            throw new Error("Chat not found");
+            return null;
         }
 
         const chat = await ctx.db.get(args.chatId);
 
         if (!chat) {
-            throw new Error("Chat not found");
+            return null;
         }
 
         if (chat.userId !== user._id && user.role !== "admin") {

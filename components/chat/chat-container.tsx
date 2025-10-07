@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ChatMessages } from './chat-messages';
 import { MessageInput } from './message-input';
@@ -33,6 +33,8 @@ export function ChatContainer({
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
     const updateIsGenerating = useMutation(api.chats.updateIsGenerating);
+    const updateSupabaseProjectIdForChat = useMutation(api.chats.updateSupabaseProjectIdForChat);
+    const getSupabaseAnonKey = useAction(api.supabase.getSupabaseAnonKey);
     const suggestions = useQuery(api.suggestions.getAll, { chatId: id });
     const isGenerating = useQuery(api.chats.getIsGenerating, { chatId: id });
     const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId: id });
@@ -194,15 +196,27 @@ export function ChatContainer({
         }
     };
 
-    const handleSupabaseProjectSelect = async () => {
+    const handleSupabaseProjectSelect = async (projectId: string, projectName: string) => {
         setIsLoading(true);
         setIsGeneratingSync(false);
-        const text = "HIDDEN MESSAGE: Por favor, escribe una consulta SQL de Supabase para crear las tablas ahora"
-        sendMessage({ text: text });
+
+        // Set the project for the chat
+        await updateSupabaseProjectIdForChat({ supabaseProjectId: projectId, chatId: id });
+
+        // Get the anon key for the project
+        const { anonKey } = await getSupabaseAnonKey({ projectId });
+        const supabaseUrl = `https://${projectId}.supabase.co`;
+
+        const text = `Supabase conectado! Proyecto: ${projectName}`
+        const keys = `
+        Anon Key: ${anonKey}
+        Supabase URL: ${supabaseUrl}
+        `
+        sendMessage({ text: text + keys });
         await createMessage({
             chatId: id,
             role: "user",
-            parts: [{ type: "text", text: text }],
+            parts: [{ type: "text", text: text + keys }],
         });
         setInput('');
         setShowSuggestions(false);

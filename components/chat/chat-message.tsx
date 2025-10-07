@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import Image from "next/image";
 import { UserIcon } from "@/components/global/icons";
-import { File, Folders, SquareDashedMousePointer } from "lucide-react";
+import { Database, File, Folders, SquareDashedMousePointer } from "lucide-react";
 import { Markdown } from "@/components/global/markdown";
 import { Attachments } from "./attachments";
 import { ToolMessage } from "./tools/tool-message";
@@ -13,6 +13,7 @@ import { ClipIcon, ErrorIcon } from "@/components/global/icons";
 import { PreviewButton } from "./tools/preview-button";
 import { Skeleton } from "../ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
+import { ConnectOrg } from "../database/supabase/connect-org";
 
 
 export function ChatMessage({
@@ -23,6 +24,8 @@ export function ChatMessage({
     isLoading,
     currentVersion,
     isNewMessage = false,
+    onSupabaseProjectSelect,
+    disableConnectOrg
 }: {
     id: Id<"chats">;
     messageId: string;
@@ -31,6 +34,8 @@ export function ChatMessage({
     isLoading: boolean;
     currentVersion: number | null | undefined;
     isNewMessage?: boolean;
+    onSupabaseProjectSelect: (projectId: string, projectName: string) => void;
+    disableConnectOrg: boolean;
 }) {
     return (
         <motion.div
@@ -47,7 +52,11 @@ export function ChatMessage({
                 {parts.map((part, index) => {
                     // console.log(part)
                     if (part.type === "text") {
-                        const { files, displayText } = parseAttachmentsFromText(part.text);
+                        let { files, displayText } = parseAttachmentsFromText(part.text);
+
+                        if (displayText.includes("Anon Key:")) {
+                            displayText = displayText.slice(0, displayText.indexOf("Anon Key:"));
+                        }
 
                         return (
                             <div key={index} className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4 mb-2">
@@ -217,6 +226,60 @@ export function ChatMessage({
                                     <ToolMessage
                                         icon={<ClipIcon />}
                                         message={"Leyendo archivo..."}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-connectToSupabase") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            return (
+                                <div key={index} className="flex flex-row gap-3 pl-8 pb-4">
+                                    <ConnectOrg
+                                        id={id}
+                                        onSupabaseProjectSelect={onSupabaseProjectSelect}
+                                        showLoader={false}
+                                        disableConnectOrg={disableConnectOrg}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index} className="flex flex-row gap-3 pl-8 pb-4">
+                                    <ConnectOrg
+                                        id={id}
+                                        onSupabaseProjectSelect={onSupabaseProjectSelect}
+                                        showLoader={true}
+                                        disableConnectOrg={disableConnectOrg}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-supabaseSQLQuery") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<Database className="size-4" />}
+                                        message={"Base de datos actualizada"}
+                                        isLoading={false}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<Database className="size-4" />}
+                                        message={"Actualizando base de datos..."}
                                         isLoading={true}
                                     />
                                 </div>

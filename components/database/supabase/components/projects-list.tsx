@@ -7,17 +7,21 @@ import { useState } from "react";
 export function ProjectsList({
     projects,
     isLoading,
+    isSelectingProject,
     selectedProjectId,
     onRefresh,
     onSelect,
     onCreateNew,
+    disableConnectOrg,
 }: {
     projects: DbProject[];
     isLoading: boolean;
+    isSelectingProject: boolean;
     selectedProjectId?: string | null;
     onRefresh: () => void;
     onSelect: (projectId: string) => void;
     onCreateNew: () => void;
+    disableConnectOrg: boolean;
 }) {
     const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
 
@@ -44,7 +48,7 @@ export function ProjectsList({
                     variant="ghost"
                     size="icon"
                     onClick={onRefresh}
-                    disabled={isLoading}
+                    disabled={isLoading || disableConnectOrg}
                 >
                     <RotateCcw className="size-4 cursor-pointer" />
                 </Button>
@@ -62,7 +66,10 @@ export function ProjectsList({
                                 className={`cursor-pointer w-full flex flex-row gap-4 items-center justify-between px-4 ${selectedProjectId === project.id ? '!border-green-500' : ''}`}
                                 variant="outline"
                                 size="lg"
-                                onClick={async () => {
+                                disabled={isSelectingProject || disableConnectOrg}
+                                onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     if (project.status.toLowerCase() === 'inactive') {
                                         toggleProjectExpansion(project.id);
                                     } else {
@@ -75,13 +82,19 @@ export function ProjectsList({
                                     <p>{project.name}</p>
                                 </div>
                                 <div className="flex flex-row gap-2 items-center">
-                                    {project.status.toLowerCase() === 'inactive' && (
+                                    {isSelectingProject ? (
+                                        <Loader />
+                                    ) : (
                                         <>
-                                            <AlertTriangle className="size-4 text-red-500" />
-                                            {expandedProjects.has(project.id) ? (
-                                                <ChevronDown className="size-4" />
-                                            ) : (
-                                                <ChevronRight className="size-4" />
+                                            {project.status.toLowerCase() === 'inactive' && (
+                                                <>
+                                                    <AlertTriangle className="size-4 text-red-500" />
+                                                    {expandedProjects.has(project.id) ? (
+                                                        <ChevronDown className="size-4" />
+                                                    ) : (
+                                                        <ChevronRight className="size-4" />
+                                                    )}
+                                                </>
                                             )}
                                         </>
                                     )}
@@ -109,6 +122,7 @@ export function ProjectsList({
                     className="bg-green-700 hover:bg-green-600 text-white cursor-pointer"
                     variant="default"
                     size="lg"
+                    disabled={isSelectingProject || disableConnectOrg}
                     onClick={onCreateNew}
                 >
                     <div className="flex flex-row gap-2 items-center">

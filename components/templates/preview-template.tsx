@@ -41,7 +41,8 @@ export function PreviewTemplate({
 
     const dependencies = {
         "lucide-react": "latest",
-        "framer-motion": "latest"
+        "framer-motion": "latest",
+        "@supabase/supabase-js": "latest"
     }
 
     if (!initialFiles) {

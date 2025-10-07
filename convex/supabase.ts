@@ -142,3 +142,85 @@ export const fetchProjects = action({
         return { projects: uniqueProjects };
     },
 });
+
+export const executeSQLQuery = action({
+    args: {
+        query: v.string(),
+        projectId: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user?.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        if (!args.projectId) {
+            throw new Error("Project ID is required");
+        }
+
+        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/database/query`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${user.supabaseAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: args.query }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Supabase API error:', errorText);
+            return {
+                success: false,
+                error: errorText,
+                message: `Error ${response.status}: ${errorText}`
+            };
+        }
+
+        const data = await response.json();
+
+        return {
+            success: true,
+            data: data,
+            message: 'Consulta SQL ejecutada exitosamente'
+        };
+    },
+});
+
+export const getSupabaseAnonKey = action({
+    args: {
+        projectId: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user?.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        if (!args.projectId) {
+            throw new Error("Project ID is required");
+        }
+
+        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/api-keys`, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${user.supabaseAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Supabase API error:', errorText);
+            return errorText;
+        }
+
+        const apiKeys = await response.json();
+
+        const anonKey = apiKeys[0].api_key;
+
+        return { anonKey };
+    },
+});

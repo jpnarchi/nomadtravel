@@ -11,10 +11,14 @@ import { useState } from "react";
 
 export function ConnectOrg({
     id,
-    onSupabaseProjectSelect
+    onSupabaseProjectSelect,
+    showLoader,
+    disableConnectOrg
 }: {
     id: Id<"chats">;
-    onSupabaseProjectSelect: () => void;
+    onSupabaseProjectSelect: (projectId: string, projectName: string) => void;
+    showLoader: boolean;
+    disableConnectOrg: boolean;
 }) {
     const redirectUri = process.env.NEXT_PUBLIC_BASE_URL + "/chat/" + id;
 
@@ -37,7 +41,7 @@ export function ConnectOrg({
         }
     }, [code]);
 
-    const isLoading = isUpdatingToken || isLoadingOrganizations;
+    const isLoading = isUpdatingToken || isLoadingOrganizations || showLoader;
     const [disconnectOpen, setDisconnectOpen] = useState(false);
 
     return (
@@ -65,6 +69,7 @@ export function ConnectOrg({
                                     variant="default"
                                     size="sm"
                                     onClick={() => setDisconnectOpen(true)}
+                                    disabled={disableConnectOrg}
                                 >
                                     Desconectar
                                 </Button>
@@ -76,6 +81,7 @@ export function ConnectOrg({
                                     variant="default"
                                     size="sm"
                                     onClick={() => handleSupabaseAuth()}
+                                    disabled={disableConnectOrg}
                                 >
                                     Conectar
                                 </Button>
@@ -90,7 +96,7 @@ export function ConnectOrg({
                                 </div>
                                 <div className="flex flex-row gap-2">
                                     {organizations.map((organization: any) => (
-                                        <Button key={organization.id} variant="outline" size="sm">
+                                        <Button key={organization.id} variant="outline" size="sm" disabled={disableConnectOrg}>
                                             {organization.name}
                                         </Button>
                                     ))}
@@ -103,6 +109,7 @@ export function ConnectOrg({
                                 accessToken={user.supabaseAccessToken}
                                 chatId={id}
                                 onSupabaseProjectSelect={onSupabaseProjectSelect}
+                                disableConnectOrg={disableConnectOrg}
                             />
                         )}
                         <DisconnectDialog

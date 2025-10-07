@@ -31,7 +31,7 @@ export function ChatMessages({
     showSuggestions: boolean,
     currentVersion: number | null | undefined,
     isGenerating?: boolean,
-    onSupabaseProjectSelect: () => void,
+    onSupabaseProjectSelect: (projectId: string, projectName: string) => void,
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -83,6 +83,8 @@ export function ChatMessages({
                         messageId={messageId}
                         isLoading={isLoading}
                         currentVersion={currentVersion}
+                        onSupabaseProjectSelect={onSupabaseProjectSelect}
+                        disableConnectOrg={true}
                     />
                 ))}
             </div>
@@ -99,6 +101,8 @@ export function ChatMessages({
                         isLoading={isLoading}
                         currentVersion={currentVersion}
                         isNewMessage={true}
+                        onSupabaseProjectSelect={onSupabaseProjectSelect}
+                        disableConnectOrg={false}
                     />
                 ))}
 
@@ -153,10 +157,6 @@ export function ChatMessages({
                         </div>
                     </motion.div>
                 )}
-
-                {/* <div className="flex flex-row gap-3 pl-8 pb-4">
-                    <ConnectOrg id={id} onSupabaseProjectSelect={onSupabaseProjectSelect} />
-                </div> */}
             </div>
 
             <div ref={scrollRef} />

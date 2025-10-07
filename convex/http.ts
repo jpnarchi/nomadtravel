@@ -157,6 +157,13 @@ http.route({
             isGenerating: true,
         });
 
+        // get chat 
+        const chat = await ctx.runQuery(api.chats.getById, { chatId: id });
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
         const DEFAULT_BASE_URL = 'https://api.hicap.ai/v2/openai';
@@ -167,6 +174,67 @@ http.route({
             headers: { 'api-key': process.env.PROVIDER_API_KEY || '' },
             includeUsage: true,
         });
+
+        // check if supabase is connected 
+        const isSupabaseConnected = !!chat.supabaseProjectId;
+
+        // create supabase tools
+        const supabaseTools: any = {
+            connectToSupabase: {
+                description: 'Conecta a Supabase.',
+                inputSchema: z.object({}),
+                execute: async function () {
+                    return {
+                        success: true,
+                        message: 'Conectando a Supabase...'
+                    };
+                },
+            },
+        };
+
+        // Add supabaseSQLQuery tool only if Supabase is connected
+        if (isSupabaseConnected) {
+            supabaseTools.supabaseSQLQuery = {
+                description: 'Escribe una consulta SQL en Supabase.',
+                inputSchema: z.object({
+                    query: z.string().describe('La consulta SQL a ejecutar. Drop table if exists si lo necesitas. Usa mock data para nuevas tablas.'),
+                }),
+                execute: async function ({ query }: any) {
+                    if (!chat.supabaseProjectId) {
+                        return {
+                            success: false,
+                            message: 'Supabase no conectado'
+                        };
+                    }
+
+                    const result = await ctx.runAction(api.supabase.executeSQLQuery, {
+                        query: query,
+                        projectId: chat.supabaseProjectId
+                    });
+
+                    if (!result) {
+                        return {
+                            success: false,
+                            message: 'Error al ejecutar la consulta SQL'
+                        };
+                    }
+
+                    // Check if the result indicates an error
+                    if (result.success === false) {
+                        return {
+                            success: false,
+                            message: result.message || 'Error al ejecutar la consulta SQL'
+                        };
+                    }
+
+                    return {
+                        success: true,
+                        message: result.message || 'Consulta SQL ejecutada exitosamente',
+                        data: result.data
+                    };
+                },
+            };
+        }
 
         const result = streamText({
             model: openrouter('anthropic/claude-sonnet-4.5'),
@@ -199,6 +267,11 @@ Reglas de código:
 - Usa generateInitialCodebase antes de empezar un proyecto.
 - Usa manageFile para crear, actualizar o eliminar archivos.
 - Todos los datos mock van en la carpeta /data
+
+Reglas de Supabase:
+${isSupabaseConnected
+                    ? '- Supabase YA está conectado. Puedes usar supabaseSQLQuery para ejecutar consultas SQL.\n- Si el usuario quiere cambiar la conexión o conectar a otro proyecto, usa connectToSupabase.'
+                    : '- Supabase NO está conectado. Si el usuario quiere usar base de datos, primero usa connectToSupabase.'}
 
 Reglas de herramientas adicionales:
 - Si el usuario menciona que ya tiene un negocio:
@@ -235,7 +308,7 @@ Flujo de trabajo obligatorio:
                         content: z.string().optional().describe('Contenido completo del archivo (requerido para create y update)'),
                         explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios para usuarios no técnicos'),
                     }),
-                    execute: async function ({ operation, path, content, explanation }) {
+                    execute: async function ({ operation, path, content, explanation }: any) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
 
@@ -302,7 +375,7 @@ Flujo de trabajo obligatorio:
                             )
                         ),
                     }),
-                    execute: async function ({ templateName }) {
+                    execute: async function ({ templateName }: any) {
                         // get current version
                         const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
 
@@ -359,7 +432,7 @@ Flujo de trabajo obligatorio:
                     inputSchema: z.object({
                         query: z.string().describe('La consulta a realizar en internet'),
                     }),
-                    execute: async function ({ query }) {
+                    execute: async function ({ query }: any) {
                         try {
                             const { text } = await generateText({
                                 model: anthropic('claude-sonnet-4-20250514'),
@@ -402,7 +475,7 @@ Flujo de trabajo obligatorio:
                             z.literal('text/csv') // .csv
                         ]).describe('Tipo de archivo'),
                     }),
-                    execute: async function ({ question, url, mimeType }) {
+                    execute: async function ({ question, url, mimeType }: any) {
                         try {
                             const { text } = await generateText({
                                 model: anthropic('claude-sonnet-4-20250514'),
@@ -450,7 +523,7 @@ Flujo de trabajo obligatorio:
                             z.literal("1792x1024"),
                         ]).describe('El tamaño de la imagen a generar'),
                     }),
-                    execute: async function ({ prompt, size }) {
+                    execute: async function ({ prompt, size }: any) {
                         try {
                             const { image } = await generateImage({
                                 // model: openai.imageModel('gpt-image-1'),
@@ -477,6 +550,8 @@ Flujo de trabajo obligatorio:
                         }
                     },
                 },
+
+                ...supabaseTools,
             },
             async onError(error) {
                 console.error("streamText error:", error);
