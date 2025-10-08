@@ -89,8 +89,8 @@ export function TransferChatDialog({
 
     return (
         <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
-            <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2 cursor-pointer">
+            <DialogTrigger asChild className="hover:bg-[#3A3A3A]">
+                <Button variant="ghost" size="sm" className="gap-1 cursor-pointer w-full flex justify-start">
                     <UserPlus className="h-4 w-4" />
                     Transferir
                 </Button>

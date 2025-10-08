@@ -236,7 +236,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             )}
                             {isDuplicating ? "Duplicando" : "Duplicar"}
                           </DropdownMenuItem>
-                          <div className="px-1">
+                          <div className="px-0">
                             <TransferChatDialog
                               chatId={item._id as Id<"chats">}
                               chatTitle={item.title || "Untitled Chat"}
