@@ -573,3 +573,107 @@ export const getDeploymentUrl = query({
         return chat.deploymentUrl;
     },
 });
+
+export const transferChatOwnership = mutation({
+    args: {
+        chatId: v.id("chats"),
+        newOwnerEmail: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const currentUser = await getCurrentUser(ctx);
+
+        // Verify the chat exists and current user owns it
+        const chat = await ctx.db.get(args.chatId);
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== currentUser._id && currentUser.role !== "admin") {
+            throw new Error("Access denied");
+        }
+
+        // Find the new owner by email
+        const newOwner = await ctx.db
+            .query("users")
+            .withIndex("by_email", (q) => q.eq("email", args.newOwnerEmail))
+            .first();
+
+        if (!newOwner) {
+            throw new Error("User with this email does not exist");
+        }
+
+        // Prevent transferring to the same user
+        if (newOwner._id === currentUser._id) {
+            throw new Error("Cannot transfer chat to yourself");
+        }
+
+        // Update chat ownership
+        await ctx.db.patch(args.chatId, {
+            userId: newOwner._id,
+        });
+
+        // Update all messages for this chat
+        const messages = await ctx.db
+            .query("messages")
+            .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId))
+            .collect();
+
+        for (const message of messages) {
+            await ctx.db.patch(message._id, {
+                userId: newOwner._id,
+            });
+        }
+
+        // Update all files for this chat
+        const files = await ctx.db
+            .query("files")
+            .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId))
+            .collect();
+
+        for (const file of files) {
+            await ctx.db.patch(file._id, {
+                userId: newOwner._id,
+            });
+        }
+
+        // Update all suggestions for this chat
+        const suggestions = await ctx.db
+            .query("suggestions")
+            .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId))
+            .collect();
+
+        for (const suggestion of suggestions) {
+            await ctx.db.patch(suggestion._id, {
+                userId: newOwner._id,
+            });
+        }
+
+        return {
+            success: true,
+            newOwnerName: newOwner.name,
+            newOwnerEmail: newOwner.email,
+        };
+    },
+});
+
+export const validateUserEmail = query({
+    args: {
+        email: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_email", (q) => q.eq("email", args.email))
+            .first();
+
+        if (!user) {
+            return { exists: false };
+        }
+
+        return {
+            exists: true,
+            name: user.name,
+            email: user.email,
+        };
+    },
+});

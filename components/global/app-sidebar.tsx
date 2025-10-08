@@ -4,6 +4,7 @@ import * as React from "react"
 import { Plus, Search, MoreHorizontal, Trash2, Edit2, Copy, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMutation } from "convex/react"
+import { TransferChatDialog } from "@/components/chat/transfer-chat-dialog"
 
 import {
   Sidebar,
@@ -235,6 +236,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             )}
                             {isDuplicating ? "Duplicando" : "Duplicar"}
                           </DropdownMenuItem>
+                          <div className="px-1">
+                            <TransferChatDialog
+                              chatId={item._id as Id<"chats">}
+                              chatTitle={item.title || "Untitled Chat"}
+                            />
+                          </div>
                           <DropdownMenuItem
                             onClick={() => handleDeleteClick(item._id, item.title || "Untitled Chat")}
                             className="gap-2 cursor-pointer text-red-500 hover:text-red-500"
