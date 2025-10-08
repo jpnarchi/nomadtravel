@@ -46,6 +46,7 @@ export const pay = action({
                 },
                 success_url: `${baseUrl}`,
                 cancel_url: `${baseUrl}`,
+                allow_promotion_codes: true,
             }
         );
         return session.url;
