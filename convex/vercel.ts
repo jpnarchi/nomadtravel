@@ -226,8 +226,7 @@ function convertToViteFormat(files: Record<string, string>) {
         }
     }
 
-    const filesArray = Array.from(vFiles, ([file, data]) => ({ file, data }));
-
+    const filesArray = Array.from(vFiles, ([file, data]) => ({ file, data })); 
     // console.log(filesArray);
 
     return filesArray;
