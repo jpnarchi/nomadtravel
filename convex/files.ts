@@ -83,11 +83,11 @@ export const create = mutation({
         const existingFiles = await ctx.db.query("files")
             .withIndex("by_chat_path_version", (q) => q.eq("chatId", args.chatId!).eq("path", args.path!).eq("version", args.version!))
             .collect();
-            
+
         if (existingFiles.length > 0) {
             return existingFiles[0]._id;
         }
-            
+
         const fileId = await ctx.db.insert("files", {
             chatId: args.chatId,
             userId: user._id,
@@ -121,13 +121,19 @@ export const deleteByPath = mutation({
             throw new Error("Version not found");
         }
 
-        const file = await ctx.db.query("files")
+        const files = await ctx.db.query("files")
             .withIndex("by_chat_path_version", (q) => q.eq("chatId", args.chatId!).eq("path", args.path!).eq("version", args.version!))
-            .unique();
+            .collect();
 
-        if (!file) {
+        if (files.length === 0) {
             throw new Error("File not found");
         }
+
+        if (files.length > 1) {
+            throw new Error("Multiple files found with the same path and version");
+        }
+
+        const file = files[0];
 
         if (file.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
@@ -164,13 +170,19 @@ export const updateByPath = mutation({
             throw new Error("Version not found");
         }
 
-        const file = await ctx.db.query("files")
+        const files = await ctx.db.query("files")
             .withIndex("by_chat_path_version", (q) => q.eq("chatId", args.chatId!).eq("path", args.path!).eq("version", args.version!))
-            .unique();
+            .collect();
 
-        if (!file) {
+        if (files.length === 0) {
             throw new Error("File not found");
         }
+
+        if (files.length > 1) {
+            throw new Error("Multiple files found with the same path and version");
+        }
+
+        const file = files[0];
 
         if (file.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
@@ -230,7 +242,7 @@ export const createNewVersion = mutation({
             });
         }
 
-        return { 
+        return {
             success: true,
             creationTime: new Date().toISOString(),
         };
