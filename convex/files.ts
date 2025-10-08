@@ -79,6 +79,15 @@ export const create = mutation({
             throw new Error("Access denied");
         }
 
+        // Check if file already exists to prevent duplicates
+        const existingFiles = await ctx.db.query("files")
+            .withIndex("by_chat_path_version", (q) => q.eq("chatId", args.chatId!).eq("path", args.path!).eq("version", args.version!))
+            .collect();
+            
+        if (existingFiles.length > 0) {
+            return existingFiles[0]._id;
+        }
+            
         const fileId = await ctx.db.insert("files", {
             chatId: args.chatId,
             userId: user._id,
