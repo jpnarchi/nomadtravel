@@ -16,7 +16,9 @@ export function useProjects(chatId: Id<"chats">) {
         setIsLoading(true);
         try {
             const result = await fetchProjects();
-            setProjects(result.projects);
+            if (result && result.projects) {
+                setProjects(result.projects);
+            }
         } finally {
             setIsLoading(false);
         }

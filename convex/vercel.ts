@@ -253,6 +253,10 @@ export const deploy = action({
             throw new Error("User not found");
         }
 
+        if (user.role !== "admin" && user.plan !== "pro" && user.plan !== "premium") {
+            throw new Error("User does not have permission to deploy");
+        }
+
         if (!args.id) {
             throw new Error("Chat ID is required");
         }

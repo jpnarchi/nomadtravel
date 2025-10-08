@@ -6,13 +6,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DeploymentSuccessDialog } from "./deployment-success-dialog";
 import { ExternalLink } from "lucide-react";
+import { PricingPopup } from "../pricing/pricing-popup";
 
 export function DeployButton({ id, version }: { id: Id<"chats">, version: number }) {
     const deploy = useAction(api.vercel.deploy);
     const currentDeploymentUrl = useQuery(api.chats.getDeploymentUrl, { chatId: id });
+    const user = useQuery(api.users.getUserInfo);
+    const isAdmin = useQuery(api.users.isAdmin);
     const [isLoading, setIsLoading] = useState(false);
     const [deploymentUrl, setDeploymentUrl] = useState('');
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+    const [isPricingPopupOpen, setIsPricingPopupOpen] = useState(false);
     return (
         <div className="flex items-center gap-2">
             {currentDeploymentUrl && (
@@ -26,6 +30,12 @@ export function DeployButton({ id, version }: { id: Id<"chats">, version: number
                 className="cursor-pointer"
                 size="sm"
                 onClick={async () => {
+                    // Check if user has pro or premium plan
+                    if (user?.plan !== "pro" && user?.plan !== "premium" && !isAdmin) {
+                        setIsPricingPopupOpen(true);
+                        return;
+                    }
+
                     try {
                         setIsLoading(true);
                         const result = await deploy({ id, version });
@@ -47,6 +57,10 @@ export function DeployButton({ id, version }: { id: Id<"chats">, version: number
                 isOpen={isSuccessDialogOpen}
                 onClose={() => setIsSuccessDialogOpen(false)}
                 deploymentUrl={deploymentUrl}
+            />
+            <PricingPopup
+                isOpen={isPricingPopupOpen}
+                onOpenChange={setIsPricingPopupOpen}
             />
         </div>
     )
