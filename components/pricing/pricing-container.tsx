@@ -30,10 +30,10 @@ export function PricingContainer() {
             return;
         }
 
-        // const url = await billingPortal();
-        // if (url) {
-        //     router.push(url);
-        // }
+        const url = await billingPortal();
+        if (url) {
+            router.push(url);
+        }
     }
 
     return (
