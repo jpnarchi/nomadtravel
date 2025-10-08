@@ -518,3 +518,58 @@ export const updateVercelProjectId = mutation({
         return args.chatId;
     },
 });
+
+export const updatedDeploymentUrl = mutation({
+    args: {
+        chatId: v.id("chats"),
+        deploymentUrl: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.deploymentUrl) {
+            throw new Error("Deployment url is required");
+        }
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id && user.role !== "admin") {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.patch(args.chatId, {
+            deploymentUrl: args.deploymentUrl,
+        });
+
+        return args.chatId;
+    },
+});
+
+export const getDeploymentUrl = query({
+    args: {
+        chatId: v.id("chats"),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (!args.chatId) {
+            return null;
+        }
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            return null;
+        }
+
+        if (chat.userId !== user._id && user.role !== "admin") {
+            throw new Error("Access denied");
+        }
+
+        return chat.deploymentUrl;
+    },
+});

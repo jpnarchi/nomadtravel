@@ -2,7 +2,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { PlusIcon, Loader2 } from "lucide-react";
+import { FilePlus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
@@ -61,9 +61,8 @@ export function CreateTemplateDialog({
     return (
         <Dialog open={isCreateTemplateOpen} onOpenChange={setIsCreateTemplateOpen}>
             <DialogTrigger asChild>
-                <Button variant="default" className="cursor-pointer">
-                    <PlusIcon className="size-4" />
-                    Crear Template
+                <Button variant="outline" className="cursor-pointer" size="sm">
+                    <FilePlus className="size-4" />
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">

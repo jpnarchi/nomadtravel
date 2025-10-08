@@ -36,6 +36,7 @@ export default defineSchema({
         isGenerating: v.optional(v.boolean()),
         supabaseProjectId: v.optional(v.string()),
         vercelProjectId: v.optional(v.string()),
+        deploymentUrl: v.optional(v.string()),
     })
         .index('by_user_id', ['userId'])
         .index('by_title', ['title'])

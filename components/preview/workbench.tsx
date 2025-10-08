@@ -1,6 +1,6 @@
 import { SandpackProvider, SandpackLayout, SandpackCodeEditor } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, CodeXml, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
@@ -14,6 +14,7 @@ import { elementInspectorJs, indexJs, toasterIndexJs } from "@/lib/element-inspe
 import { DeployButton } from "./deploy-button";
 
 export function Workbench({ id, version }: { id: Id<"chats">, version: number }) {
+    const isAdmin = useQuery(api.users.isAdmin);
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
     const files = useQuery(api.files.getAll, { chatId: id, version });
@@ -74,13 +75,14 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                 </Button>
 
                 <div className="flex gap-2">
-                    <CreateTemplateDialog files={files} />
+                    {isAdmin && <CreateTemplateDialog files={files} />}
                     <Button
+                        size="sm"
                         variant="outline"
                         className="cursor-pointer"
                         onClick={() => setShowCode(!showCode)}
                     >
-                        {showCode ? "Vista previa" : "Código"}
+                        {showCode ? <Eye className="size-4" /> : <CodeXml className="size-4" />}
                     </Button>
                     <DeployButton id={id} version={version} />
                 </div>

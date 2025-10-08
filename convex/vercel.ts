@@ -40,7 +40,7 @@ const viteFiles = [
             "  <head>\n" +
             "    <meta charset=\"UTF-8\" />\n" +
             "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
-            "    <title>Vite + React</title>\n" +
+            "    <title>Nerd</title>\n" +
             "  </head>\n" +
             "  <body>\n" +
             "    <div id=\"root\"></div>\n" +
@@ -185,19 +185,50 @@ function convertToViteFormat(files: Record<string, string>) {
     }
 
     // Process other files (excluding package.json, index.html, index.js, styles.css)
+    // for (const file of initialFiles) {
+    //     const fileName = file.file.slice(1);
+    //     if (!fileName.includes('public/index.html') && !fileName.includes('index.js') && !fileName.includes('styles.css') && !fileName.includes('package.json')) {
+    //         const newFileName = 'src/' + fileName.replace('.js', '.jsx');
+    //         if (!vFiles.has(newFileName)) {
+    //             vFiles.set(newFileName, file.data);
+    //         }
+    //     }
+    // }
     for (const file of initialFiles) {
         const fileName = file.file.slice(1);
-        if (!fileName.includes('public/index.html') && !fileName.includes('index.js') && !fileName.includes('styles.css') && !fileName.includes('package.json')) {
+
+        if (!fileName.includes('public/index.html') &&
+            !fileName.includes('index.js') &&
+            !fileName.includes('styles.css') &&
+            !fileName.includes('package.json')) {
+
             const newFileName = 'src/' + fileName.replace('.js', '.jsx');
+
             if (!vFiles.has(newFileName)) {
-                vFiles.set(newFileName, file.data);
+                let fileContent = file.data;
+
+                // Calculate the directory depth of the current file
+                // e.g., 'src/App.jsx' = 0 levels, 'src/components/TestPage.jsx' = 1 level
+                const fileDepth = (newFileName.match(/\//g) || []).length - 1;
+
+                // Fix absolute imports starting with '/' (convert to relative path)
+                fileContent = fileContent.replace(
+                    /from\s+['"]\/([^'"]+)['"]/g,
+                    (match, importPath) => {
+                        // Build relative path based on depth
+                        const relativePath = fileDepth === 0 ? './' : '../'.repeat(fileDepth);
+                        return `from '${relativePath}${importPath}'`;
+                    }
+                );
+
+                vFiles.set(newFileName, fileContent);
             }
         }
     }
 
     const filesArray = Array.from(vFiles, ([file, data]) => ({ file, data }));
 
-    console.log(filesArray);
+    // console.log(filesArray);
 
     return filesArray;
 }
@@ -281,6 +312,11 @@ export const deploy = action({
         if (!success) {
             throw new Error(error || "Deployment failed");
         }
+
+        await ctx.runMutation(api.chats.updatedDeploymentUrl, {
+            chatId: args.id,
+            deploymentUrl: deploymentUrl,
+        });
 
         return { success: true, deploymentUrl: deploymentUrl };
     },
