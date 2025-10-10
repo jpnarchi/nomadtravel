@@ -585,7 +585,12 @@ export const transferChatOwnership = mutation({
         // Verify the chat exists and current user owns it
         const chat = await ctx.db.get(args.chatId);
         if (!chat) {
-            throw new Error("Chat not found");
+            // throw new Error("Chat not found");
+            return {
+                success: false,
+                newOwnerName: "",
+                newOwnerEmail: "",
+            };
         }
 
         if (chat.userId !== currentUser._id && currentUser.role !== "admin") {

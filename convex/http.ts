@@ -284,8 +284,9 @@ http.route({
         }
 
         const result = streamText({
-            model: openrouter('anthropic/claude-sonnet-4.5'),
+            // model: openrouter('anthropic/claude-sonnet-4.5'),
             // model: provider('claude-sonnet-4'),
+            model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
             system: `
 Eres Nerd, un asistente útil que solo conoce React y TailwindCSS y programas en Sandpack (editor de código en internet).

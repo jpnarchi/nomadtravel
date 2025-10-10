@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { Id } from "@/convex/_generated/dataModel";
+import { useRouter } from "next/navigation";
 
 export function TransferChatDialog({
     chatId,
@@ -15,6 +16,7 @@ export function TransferChatDialog({
     chatId: Id<"chats">
     chatTitle: string
 }) {
+    const router = useRouter();
     const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false);
     const [newOwnerEmail, setNewOwnerEmail] = useState("");
     const [isTransferring, setIsTransferring] = useState(false);
@@ -73,6 +75,7 @@ export function TransferChatDialog({
             setIsTransferDialogOpen(false);
             setNewOwnerEmail("");
             setEmailValidation(null);
+            router.push('/');
         } catch (error) {
             console.error("Error transferring chat:", error);
             toast.error(error instanceof Error ? error.message : "Error al transferir el chat");
