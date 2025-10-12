@@ -109,6 +109,55 @@ export const getOrganizations = action({
     },
 });
 
+export const createProject = action({
+    args: {
+        name: v.string(),
+        dbPass: v.string(),
+        organizationId: v.string(),
+        region: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user?.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        const result = await fetch('https://api.supabase.com/v1/projects', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${user.supabaseAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: args.name,
+                db_pass: args.dbPass,
+                organization_id: args.organizationId,
+                region: args.region,
+            }),
+        });
+
+        if (!result.ok) {
+            const errorText = await result.text();
+            console.error('Supabase API error:', errorText);
+            return {
+                success: false,
+                error: errorText,
+                project: null,
+            }
+        }
+
+        const project = await result.json();
+
+        return {
+            success: true,
+            project: project,
+            error: null,
+        }
+    },
+});
+
+
 
 export const fetchProjects = action({
     args: {},
@@ -286,6 +335,45 @@ export const saveStripeCredentials = action({
         }
 
         return { success: true };
+    },
+});
+
+export const restoreProject = action({
+    args: {
+        projectId: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user?.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        if (!args.projectId) {
+            throw new Error("Project ID is required");
+        }
+
+        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/restore`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${user.supabaseAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Supabase API error:', errorText);
+            return {
+                success: false,
+                error: errorText,
+            };
+        }
+
+        return {
+            success: true,
+            error: null,
+        };
     },
 });
 

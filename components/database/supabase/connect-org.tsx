@@ -101,6 +101,7 @@ export function ConnectOrg({
                         chatId={id}
                         onSupabaseProjectSelect={onSupabaseProjectSelect}
                         disableConnectOrg={disableConnectOrg}
+                        organizationId={organizations[0]?.id}
                     />
                 )}
                 <DisconnectDialog
