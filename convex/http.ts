@@ -149,7 +149,9 @@ http.route({
             throw new Error("Unauthorized");
         }
 
-        const { id, messages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
+        const { id, messages: allMessages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
+
+        const messages = allMessages.slice(-50);
 
         // update is generating
         await ctx.runMutation(api.chats.updateIsGenerating, {
