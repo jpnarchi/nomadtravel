@@ -23,6 +23,8 @@ export function ChatContainer({
     id: Id<"chats">,
     initialMessages: UIMessage[],
 }) {
+    // Add safety check for initialMessages
+    const safeInitialMessages = initialMessages || [];
     const { isSignedIn, getToken } = useAuth();
 
     const [files, setFiles] = useState<File[]>([]);
@@ -55,7 +57,7 @@ export function ChatContainer({
             }),
         }),
         id,
-        messages: initialMessages.length === 1 ? [] : initialMessages,
+        messages: safeInitialMessages.length === 1 ? [] : safeInitialMessages,
         onFinish: async (options) => {
             setIsLoading(false);
             setShowSuggestions(true);
@@ -97,7 +99,7 @@ export function ChatContainer({
                 },
                 body: JSON.stringify({
                     id,
-                    messages: initialMessages
+                    messages: safeInitialMessages
                 }),
             });
 
@@ -121,11 +123,21 @@ export function ChatContainer({
         if (hasRun.current) return;
         hasRun.current = true;
 
-        const lastUserMessage = initialMessages[initialMessages.length - 1].parts.filter(part => part.type === 'text').map(part => part.text).join('');
+        // Add null checks for initialMessages
+        if (!safeInitialMessages || safeInitialMessages.length === 0) {
+            return;
+        }
 
-        if (initialMessages.length === 1 || lastUserMessage.includes("Selected Element:")) {
+        const lastMessage = safeInitialMessages[safeInitialMessages.length - 1];
+        if (!lastMessage || !lastMessage.parts) {
+            return;
+        }
+
+        const lastUserMessage = lastMessage.parts.filter(part => part.type === 'text').map(part => part.text).join('');
+
+        if (safeInitialMessages.length === 1 || lastUserMessage.includes("Selected Element:")) {
             setIsLoading(true);
-            const content = initialMessages[initialMessages.length - 1].parts.filter(part => part.type === 'text').map(part => part.text).join('');
+            const content = lastMessage.parts.filter(part => part.type === 'text').map(part => part.text).join('');
 
             if (lastUserMessage.includes("Selected Element:")) {
                 // For Selected Element messages, send directly to AI without adding to frontend messages
@@ -270,7 +282,7 @@ export function ChatContainer({
     };
 
     useEffect(() => {
-        if (messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+        if (messages && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant') {
             setShowSuggestions(true);
         }
     }, [suggestions]);

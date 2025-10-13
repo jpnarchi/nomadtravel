@@ -151,7 +151,7 @@ http.route({
 
         const { id, messages: allMessages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
 
-        const messages = allMessages.slice(-50);
+        const messages = allMessages.slice(-6);
 
         // update is generating
         await ctx.runMutation(api.chats.updateIsGenerating, {
@@ -165,6 +165,9 @@ http.route({
         if (!chat) {
             throw new Error("Chat not found");
         }
+
+        const files = await ctx.runQuery(api.files.getAll, { chatId: id, version: chat.currentVersion });
+        const fileNames = Object.keys(files);
 
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
@@ -317,6 +320,12 @@ Reglas de código:
 - Usa generateInitialCodebase antes de empezar un proyecto.
 - Usa manageFile para crear, actualizar o eliminar archivos.
 - Todos los datos mock van en la carpeta /data
+
+Archivos existentes:
+${fileNames.map(fileName => `- ${fileName}`).join('\n')}
+
+Archivos:
+${JSON.stringify(files, null, 2)}
 
 Reglas de Supabase:
 ${isSupabaseConnected
