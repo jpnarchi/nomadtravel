@@ -58,11 +58,12 @@ export function ChatMessage({
                     // console.log(part)
                     if (part.type === "text") {
                         const { files, displayText: originalText } = parseAttachmentsFromText(part.text);
-                        const displayText = originalText.includes("Anon Key:")
-                            ? originalText.slice(0, originalText.indexOf("Anon Key:"))
-                            : originalText.includes("STRIPE_PUBLISHABLE_KEY:")
-                            ? originalText.slice(0, originalText.indexOf("STRIPE_PUBLISHABLE_KEY:"))
-                            : originalText;
+                        // const displayText = originalText.includes("Anon Key:")
+                        //     ? originalText.slice(0, originalText.indexOf("Anon Key:"))
+                        //     : originalText.includes("STRIPE_PUBLISHABLE_KEY:")
+                        //     ? originalText.slice(0, originalText.indexOf("STRIPE_PUBLISHABLE_KEY:"))
+                        //     : originalText;
+                        const displayText = originalText;
 
                         return (
                             <div key={index} className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4 mb-2">

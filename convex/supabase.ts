@@ -157,8 +157,6 @@ export const createProject = action({
     },
 });
 
-
-
 export const fetchProjects = action({
     args: {},
     handler: async (ctx): Promise<any> => {
@@ -449,3 +447,52 @@ export const deployEdgeFunction = action({
         };
     },
 });
+
+export const saveRedirectUrl = action({
+    args: {
+        redirectUrl: v.string(),
+        projectId: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (!user.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        if (!args.projectId) {
+            throw new Error("Project ID is required");
+        }
+
+        if (!args.redirectUrl) {
+            throw new Error("Redirect URL is required");
+        }
+
+        // Save Stripe credentials as secrets in Supabase
+        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/config/auth`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${user.supabaseAccessToken}`
+            },
+            body: JSON.stringify({
+                uri_allow_list: args.redirectUrl,
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Supabase secrets API error:', errorText);
+            return {
+                success: false,
+                error: errorText,
+            };
+        }
+
+        return { success: true };
+    },
+})

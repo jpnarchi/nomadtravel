@@ -180,6 +180,13 @@ http.route({
             includeUsage: true,
         });
 
+        // Redirect URL for Supabase auth callback
+        let redirectUrl = process.env.NEXT_PUBLIC_BASE_URL + "/auth/supabase-auth-callback?chatId=" + id;
+
+        if (chat.deploymentUrl) {
+            redirectUrl = chat.deploymentUrl + "/auth/supabase-auth-callback?chatId=" + id;
+        }
+
         // check if supabase is connected 
         const isSupabaseConnected = !!chat.supabaseProjectId;
 
@@ -329,7 +336,18 @@ ${JSON.stringify(files, null, 2)}
 
 Reglas de Supabase:
 ${isSupabaseConnected
-                    ? '- Supabase YA está conectado. Puedes usar supabaseSQLQuery para ejecutar consultas SQL.\n- Si el usuario quiere cambiar la conexión o conectar a otro proyecto, usa connectToSupabase.'
+                    ? `- Supabase YA está conectado. Puedes usar supabaseSQLQuery para ejecutar consultas SQL.
+- Si el usuario quiere cambiar la conexión o conectar a otro proyecto, usa connectToSupabase.
+
+- Configuración de autenticación:
+  - Cuando hagas cualquier funcionalidad de autenticación (login, registro, verificación de email, etc.), DEBES implementar el flujo completo de Supabase Auth.
+  - La configuración de emailRedirectTo siempre debe usar: options: { emailRedirectTo: callback }
+  - El valor de callback siempre debe ser:
+    const callback = /codesandbox\\.io/.test(window.location.href)
+      ? '${redirectUrl}'
+      : \`\${window.location.origin}/auth/callback\`;
+  - Siempre debes crear la ruta /auth/callback con react router dom para manejar el redireccionamiento después de la verificación de email.
+  - Esto asegura que el redireccionamiento funcione automáticamente tanto en desarrollo como en producción.`
                     : '- Supabase NO está conectado. Si el usuario quiere usar base de datos, primero usa connectToSupabase.'}
 
 Reglas de Stripe:

@@ -36,6 +36,7 @@ export function ChatContainer({
     const updateParts = useMutation(api.messages.updateParts);
     const updateIsGenerating = useMutation(api.chats.updateIsGenerating);
     const updateSupabaseProjectIdForChat = useMutation(api.chats.updateSupabaseProjectIdForChat);
+    const saveRedirectUrl = useAction(api.supabase.saveRedirectUrl);
     const getSupabaseAnonKey = useAction(api.supabase.getSupabaseAnonKey);
     const suggestions = useQuery(api.suggestions.getAll, { chatId: id });
     const isGenerating = useQuery(api.chats.getIsGenerating, { chatId: id });
@@ -215,14 +216,21 @@ export function ChatContainer({
         // Set the project for the chat
         await updateSupabaseProjectIdForChat({ supabaseProjectId: projectId, chatId: id });
 
+        // Save the redirect URL for the project
+        await saveRedirectUrl({ 
+            redirectUrl: process.env.NEXT_PUBLIC_BASE_URL + "/auth/supabase-auth-callback?chatId=" + id, 
+            projectId 
+        });
+
         // Get the anon key for the project
         const { anonKey } = await getSupabaseAnonKey({ projectId });
         const supabaseUrl = `https://${projectId}.supabase.co`;
 
         const text = `Supabase conectado! Proyecto: ${projectName}`
         const keys = `
-        Anon Key: ${anonKey}
-        Supabase URL: ${supabaseUrl}
+        \n\nAnon Key: ${anonKey}\n\n
+        \n\nSupabase URL: ${supabaseUrl}\n\n
+        Usa estas credenciales para conectarte a Supabase.
         `
         sendMessage({ text: text + keys });
         await createMessage({
