@@ -1,6 +1,106 @@
 import { v } from "convex/values";
 import { api } from "./_generated/api";
-import { action } from "./_generated/server";
+import { action, ActionCtx } from "./_generated/server";
+
+// Helper function to refresh Supabase access token
+async function refreshSupabaseToken(ctx: ActionCtx, redirectUri: string): Promise<string | null> {
+    const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+    if (!user?.supabaseRefreshToken) {
+        console.error('No refresh token available');
+        return null;
+    }
+
+    const clientId = process.env.SUPABASE_CLIENT_ID;
+    const clientSecret = process.env.SUPABASE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        console.error('Supabase credentials not configured');
+        return null;
+    }
+
+    try {
+        const result = await fetch('https://api.supabase.com/v1/oauth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json',
+                'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+            },
+            body: new URLSearchParams({
+                grant_type: 'refresh_token',
+                refresh_token: user.supabaseRefreshToken,
+                redirect_uri: redirectUri,
+            }),
+        });
+
+        if (!result.ok) {
+            // console.error('Failed to refresh token:', await result.text());
+            return null;
+        }
+
+        const data = await result.json();
+
+        // Update user tokens in database
+        await ctx.runMutation(api.users.updateSupabaseTokens, {
+            supabaseAccessToken: data.access_token,
+            supabaseRefreshToken: data.refresh_token || user.supabaseRefreshToken,
+        });
+
+        return data.access_token;
+    } catch (error) {
+        console.error('Error refreshing token:', error);
+        return null;
+    }
+}
+
+// Helper function to fetch with automatic token refresh
+async function fetchWithAuth(
+    ctx: ActionCtx,
+    url: string,
+    options: RequestInit,
+    redirectUri: string = process.env.NEXT_PUBLIC_BASE_URL + '/auth/supabase-callback'
+): Promise<Response> {
+    const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+    if (!user?.supabaseAccessToken) {
+        throw new Error("Supabase access token is required");
+    }
+
+    // First attempt with current token
+    const authOptions = {
+        ...options,
+        headers: {
+            ...options.headers,
+            Authorization: `Bearer ${user.supabaseAccessToken}`,
+        },
+    };
+
+    let response = await fetch(url, authOptions);
+
+    // If unauthorized, try to refresh token and retry
+    if (response.status === 401) {
+        // console.log('Access token expired, attempting to refresh...');
+        const newAccessToken = await refreshSupabaseToken(ctx, redirectUri);
+
+        if (newAccessToken) {
+            // console.log('Token refreshed successfully, retrying request...');
+            // Retry with new token
+            const retryOptions = {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    Authorization: `Bearer ${newAccessToken}`,
+                },
+            };
+            response = await fetch(url, retryOptions);
+        } else {
+            // console.error('Failed to refresh token');
+        }
+    }
+
+    return response;
+}
 
 export const getOAuthUrl = action({
     args: {
@@ -41,7 +141,7 @@ export const getOAuthUrl = action({
     },
 });
 
-export const exangeCodeForToken = action({
+export const exchangeCodeForToken = action({
     args: {
         code: v.string(),
         redirectUri: v.string(),
@@ -86,21 +186,24 @@ export const getOrganizations = action({
     handler: async (ctx): Promise<any> => {
         const user = await ctx.runQuery(api.users.getUserInfo, {});
 
-        if (!user?.supabaseAccessToken) {
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (!user.supabaseAccessToken) {
             throw new Error("Supabase access token is required");
         }
 
-        const result = await fetch('https://api.supabase.com/v1/organizations', {
+        const result = await fetchWithAuth(ctx, 'https://api.supabase.com/v1/organizations', {
             headers: {
-                Authorization: `Bearer ${user.supabaseAccessToken}`,
                 'Content-Type': 'application/json',
             },
         });
 
         if (!result.ok) {
             const errorText = await result.text();
-            console.error('Supabase API error:', errorText);
-            return null
+            // console.error('Supabase API error:', errorText);
+            return { organizations: [] }
         }
 
         const organizations = await result.json();
@@ -123,10 +226,9 @@ export const createProject = action({
             throw new Error("Supabase access token is required");
         }
 
-        const result = await fetch('https://api.supabase.com/v1/projects', {
+        const result = await fetchWithAuth(ctx, 'https://api.supabase.com/v1/projects', {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${user.supabaseAccessToken}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -166,17 +268,16 @@ export const fetchProjects = action({
             throw new Error("Supabase access token is required");
         }
 
-        const result = await fetch('https://api.supabase.com/v1/projects', {
+        const result = await fetchWithAuth(ctx, 'https://api.supabase.com/v1/projects', {
             headers: {
-                Authorization: `Bearer ${user.supabaseAccessToken}`,
                 'Content-Type': 'application/json',
             },
         });
 
         if (!result.ok) {
             const errorText = await result.text();
-            console.error('Supabase API error:', errorText);
-            return null
+            // console.error('Supabase API error:', errorText);
+            return { projects: [] }
         }
 
         const projects = await result.json();
@@ -212,10 +313,9 @@ export const executeSQLQuery = action({
             throw new Error("Project ID is required");
         }
 
-        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/database/query`, {
+        const response = await fetchWithAuth(ctx, `https://api.supabase.com/v1/projects/${args.projectId}/database/query`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${user.supabaseAccessToken}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ query: args.query }),
@@ -256,10 +356,9 @@ export const getSupabaseAnonKey = action({
             throw new Error("Project ID is required");
         }
 
-        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/api-keys`, {
+        const response = await fetchWithAuth(ctx, `https://api.supabase.com/v1/projects/${args.projectId}/api-keys`, {
             method: 'GET',
             headers: {
-                Authorization: `Bearer ${user.supabaseAccessToken}`,
                 'Content-Type': 'application/json',
             },
         });
@@ -301,11 +400,10 @@ export const saveStripeCredentials = action({
         }
 
         // Save Stripe credentials as secrets in Supabase
-        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/secrets`, {
+        const response = await fetchWithAuth(ctx, `https://api.supabase.com/v1/projects/${args.projectId}/secrets`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${user.supabaseAccessToken}`
             },
             body: JSON.stringify([
                 {
@@ -351,10 +449,9 @@ export const restoreProject = action({
             throw new Error("Project ID is required");
         }
 
-        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/restore`, {
+        const response = await fetchWithAuth(ctx, `https://api.supabase.com/v1/projects/${args.projectId}/restore`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${user.supabaseAccessToken}`,
                 'Content-Type': 'application/json',
             },
         });
@@ -420,10 +517,9 @@ export const deployEdgeFunction = action({
         // Deploy to Supabase (slug as query param)
         const url = `https://api.supabase.com/v1/projects/${args.projectId}/functions/deploy?slug=${encodeURIComponent(args.functionName)}`;
 
-        const response = await fetch(url, {
+        const response = await fetchWithAuth(ctx, url, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${user.supabaseAccessToken}`,
                 Accept: 'application/json',
             },
             body: form,
@@ -472,12 +568,11 @@ export const saveRedirectUrl = action({
             throw new Error("Redirect URL is required");
         }
 
-        // Save Stripe credentials as secrets in Supabase
-        const response = await fetch(`https://api.supabase.com/v1/projects/${args.projectId}/config/auth`, {
+        // Save redirect URL in Supabase auth config
+        const response = await fetchWithAuth(ctx, `https://api.supabase.com/v1/projects/${args.projectId}/config/auth`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${user.supabaseAccessToken}`
             },
             body: JSON.stringify({
                 uri_allow_list: args.redirectUrl,

@@ -110,6 +110,9 @@ const viteFiles = [
             "import react from '@vitejs/plugin-react';\n\n" +
             "export default defineConfig({\n" +
             "  plugins: [react()],\n" +
+            "  server: {\n" +
+            "    historyApiFallback: true\n" +
+            "  },\n" +
             "});\n",
     },
     {
@@ -137,6 +140,17 @@ const viteFiles = [
             "  },\n" +
             "}\n",
     },
+    {
+        file: "vercel.json",
+        data: JSON.stringify({
+            "rewrites": [
+                {
+                    "source": "/(.*)",
+                    "destination": "/index.html"
+                }
+            ]
+        }, null, 2),
+    }
 ];
 
 // Function to convert React files to Vite format

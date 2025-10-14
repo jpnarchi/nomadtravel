@@ -21,7 +21,7 @@ export const getAll = query({
         const chat = await ctx.db.get(args.chatId);
 
         if (!chat) {
-            throw new Error("Chat not found");
+            return {};
         }
 
         if (chat.userId !== user._id && user.role !== "admin") {

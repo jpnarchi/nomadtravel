@@ -23,6 +23,7 @@ export default defineSchema({
         subscriptionId: v.optional(v.string()),
         customerId: v.optional(v.string()),
         supabaseAccessToken: v.optional(v.string()),
+        supabaseRefreshToken: v.optional(v.string()),
     })
         .index('by_token_identifier', ['tokenIdentifier'])
         .index('by_email', ['email'])

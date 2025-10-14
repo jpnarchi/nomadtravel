@@ -10,6 +10,8 @@ import { PricingPopup } from "../pricing/pricing-popup";
 
 export function DeployButton({ id, version }: { id: Id<"chats">, version: number }) {
     const deploy = useAction(api.vercel.deploy);
+    const saveRedirectUrl = useAction(api.supabase.saveRedirectUrl);
+    const getSupabaseProjectId = useQuery(api.chats.getSupabaseProjectId, { chatId: id });
     const currentDeploymentUrl = useQuery(api.chats.getDeploymentUrl, { chatId: id });
     const user = useQuery(api.users.getUserInfo);
     const isAdmin = useQuery(api.users.isAdmin);
@@ -40,6 +42,14 @@ export function DeployButton({ id, version }: { id: Id<"chats">, version: number
                         setIsLoading(true);
                         const result = await deploy({ id, version });
                         setDeploymentUrl(result.deploymentUrl);
+                        let redirectUrl = process.env.NEXT_PUBLIC_BASE_URL + "/auth/supabase-auth-callback?chatId=" + id;
+                        if (result.deploymentUrl) {
+                            redirectUrl = redirectUrl + "," + result.deploymentUrl + "/auth/supabase-auth-callback";
+                        }
+                        await saveRedirectUrl({
+                            redirectUrl: redirectUrl,
+                            projectId: getSupabaseProjectId || ""
+                        });
                         setIsSuccessDialogOpen(true);
                         toast.success("Publicado exitosamente");
                     } catch (error) {

@@ -17,8 +17,8 @@ function SupabaseCallback() {
     const router = useRouter();
     const [status, setStatus] = useState("Conectando tu cuenta...");
 
-    const exangeCodeForToken = useAction(api.supabase.exangeCodeForToken);
-    const updateSupabaseAccessToken = useMutation(api.users.updateSupabaseAccessToken);
+    const exchangeCodeForToken = useAction(api.supabase.exchangeCodeForToken);
+    const updateSupabaseTokens = useMutation(api.users.updateSupabaseTokens);
 
     useEffect(() => {
         const handleCallback = async () => {
@@ -35,7 +35,7 @@ function SupabaseCallback() {
                 setStatus("Verificando tu cuenta...");
 
                 // Exchange code for token
-                const data = await exangeCodeForToken({ code, redirectUri });
+                const data = await exchangeCodeForToken({ code, redirectUri });
 
                 if (!data) {
                     setStatus("No se pudo verificar tu cuenta");
@@ -45,7 +45,10 @@ function SupabaseCallback() {
                 setStatus("Guardando tu información...");
 
                 // Save the token
-                await updateSupabaseAccessToken({ supabaseAccessToken: data.access_token });
+                await updateSupabaseTokens({
+                    supabaseAccessToken: data.access_token,
+                    supabaseRefreshToken: data.refresh_token
+                });
 
                 setStatus("¡Listo! Te regresamos al chat...");
 
@@ -63,7 +66,7 @@ function SupabaseCallback() {
         };
 
         handleCallback();
-    }, [searchParams, router, exangeCodeForToken, updateSupabaseAccessToken]);
+    }, [searchParams, router, exchangeCodeForToken, updateSupabaseTokens]);
 
     return (
         <div className="flex items-center justify-center min-h-screen">

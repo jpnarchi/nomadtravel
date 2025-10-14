@@ -4,7 +4,7 @@ import { api } from "@/convex/_generated/api";
 
 export function useSupabaseAuth(redirectUri: string, chatId?: string) {
     const user = useQuery(api.users.getUserInfo);
-    const updateSupabaseAccessToken = useMutation(api.users.updateSupabaseAccessToken);
+    const updateSupabaseTokens = useMutation(api.users.updateSupabaseTokens);
 
     const getOAuthUrl = useAction(api.supabase.getOAuthUrl);
     const getOrganizations = useAction(api.supabase.getOrganizations);
@@ -37,7 +37,7 @@ export function useSupabaseAuth(redirectUri: string, chatId?: string) {
     };
 
     const handleSupabaseDisconnect = async () => {
-        await updateSupabaseAccessToken({ supabaseAccessToken: undefined });
+        await updateSupabaseTokens({ supabaseAccessToken: undefined, supabaseRefreshToken: undefined });
     };
 
     return {

@@ -12,6 +12,7 @@ import { useQuery } from "convex/react";
 import { WorkbenchFileExplorer } from "./custom-file-explorer";
 import { elementInspectorJs, indexJs, toasterIndexJs } from "@/lib/element-inspector-files";
 import { DeployButton } from "./deploy-button";
+import { dependencies } from "@/lib/dependencies";
 
 export function Workbench({ id, version }: { id: Id<"chats">, version: number }) {
     const isAdmin = useQuery(api.users.isAdmin);
@@ -31,13 +32,6 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
 
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
-
-    const dependencies = {
-        "lucide-react": "latest",
-        "framer-motion": "latest",
-        "@supabase/supabase-js": "latest",
-        "@stripe/stripe-js": "latest",
-    }
 
     if (!files) {
         return (

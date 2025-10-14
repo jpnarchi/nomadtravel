@@ -12,6 +12,7 @@ import { CustomFileExplorer } from "./custom-file-explorer";
 import { api } from "@/convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { toast } from "sonner";
+import { dependencies } from "@/lib/dependencies";
 
 export function PreviewTemplate({
     id,
@@ -38,13 +39,6 @@ export function PreviewTemplate({
 
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
-
-    const dependencies = {
-        "lucide-react": "latest",
-        "framer-motion": "latest",
-        "@supabase/supabase-js": "latest",
-        "@stripe/stripe-js": "latest",
-    }
 
     if (!initialFiles) {
         return (

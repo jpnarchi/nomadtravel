@@ -345,8 +345,9 @@ ${isSupabaseConnected
   - El valor de callback siempre debe ser:
     const callback = /codesandbox\\.io/.test(window.location.href)
       ? '${redirectUrl}'
-      : \`\${window.location.origin}/auth/callback\`;
-  - Siempre debes crear la ruta /auth/callback con react router dom para manejar el redireccionamiento después de la verificación de email.
+      : \`\${window.location.origin}/auth/supabase-auth-callback\`;
+  - SIEMPRE debes crear la ruta /auth/supabase-auth-callback con react router dom para manejar el redireccionamiento después de la verificación de email.
+  - SIEMPRE crea la ruta /auth/supabase-auth-callback con react router dom para manejar el redireccionamiento después de la verificación de email.
   - Esto asegura que el redireccionamiento funcione automáticamente tanto en desarrollo como en producción.`
                     : '- Supabase NO está conectado. Si el usuario quiere usar base de datos, primero usa connectToSupabase.'}
 
