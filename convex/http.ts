@@ -293,6 +293,36 @@ http.route({
                     };
                 },
             };
+
+            supabaseTools.saveResendKeyInSecrets = {
+                description: 'Despliega una edge function en Supabase.',
+                inputSchema: z.object({}),
+                execute: async function () {
+                    if (!chat.supabaseProjectId) {
+                        return {
+                            success: false,
+                            message: 'Supabase no conectado'
+                        };
+                    }
+
+                    const result = await ctx.runAction(api.supabase.saveResendKeyInSecrets, {
+                        projectId: chat.supabaseProjectId
+                    });
+
+                    if (!result) {
+                        return {
+                            success: false,
+                            error: result.error,
+                            message: 'Error al guardar la clave de Resend en Supabase'
+                        };
+                    }
+
+                    return {
+                        success: true,
+                        message: 'Clave de Resend (RESEND_API_KEY) guardada en Supabase secrets exitosamente',
+                    };
+                },
+            };
         }
 
         const result = streamText({
@@ -353,9 +383,22 @@ ${isSupabaseConnected
 
 Reglas de Stripe:
 ${isSupabaseConnected
-                    ? '- Supabase está conectado; puedes proceder con pagos.\n- Antes de pagos, verifica que existan las tablas necesarias (por ejemplo: payments). Si faltan, créalas con supabaseSQLQuery.\n- Conecta Stripe con connectToStripe si aún no está conectado.\n- Despliega una Edge Function con deployEdgeFunction.\n- No cobres hasta tener: tablas creadas + Stripe conectado + función desplegada.\n- Si falla algo, informa el error y detente.'
+                    ? `- Supabase está conectado; puedes proceder con pagos.
+- Antes de pagos, verifica que existan las tablas necesarias (por ejemplo: payments). Si faltan, créalas con supabaseSQLQuery.
+- Conecta Stripe con connectToStripe si aún no está conectado.
+- Despliega una Edge Function con deployEdgeFunction.
+- No cobres hasta tener: tablas creadas + Stripe conectado + función desplegada.
+- Si falla algo, informa el error y detente.`
                     : '- Supabase NO está conectado; antes de cualquier pago usa connectToSupabase y espera confirmación.'}
 				
+Reglas de Resend (Para enviar correos):
+${isSupabaseConnected
+                    ? `- Supabase está conectado; puedes proceder con enviar correos con Resend.
+- Tu tienes la clave de Resend (RESEND_API_KEY) solo llama la herramienta saveResendKeyInSecrets para guardarla en Supabase secrets.
+- Despliega una Edge Function con deployEdgeFunction para enviar correos con "Nerd <noreply@nuevonerd.lat>".
+- Si falla algo, informa el error y detente.`
+                    : '- Supabase NO está conectado; antes de enviar correos usa connectToSupabase y espera confirmación.'}
+
 Reglas de herramientas adicionales:
 - Si el usuario menciona que ya tiene un negocio:
   1. Pregunta si puedes buscarlo en internet y espera su respuesta.

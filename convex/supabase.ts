@@ -591,3 +591,51 @@ export const saveRedirectUrl = action({
         return { success: true };
     },
 })
+
+export const saveResendKeyInSecrets = action({
+    args: {
+        projectId: v.string(),
+    },
+    handler: async (ctx, args): Promise<any> => {
+        const user = await ctx.runQuery(api.users.getUserInfo, {});
+
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        if (!user.supabaseAccessToken) {
+            throw new Error("Supabase access token is required");
+        }
+
+        if (!args.projectId) {
+            throw new Error("Project ID is required");
+        }
+
+        const resendKey = process.env.RESEND_API_KEY;
+
+        // Save Stripe credentials as secrets in Supabase
+        const response = await fetchWithAuth(ctx, `https://api.supabase.com/v1/projects/${args.projectId}/secrets`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify([
+                {
+                    name: 'RESEND_API_KEY',
+                    value: resendKey
+                },
+            ])
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Supabase secrets API error:', errorText);
+            return {
+                success: false,
+                error: errorText,
+            };
+        }
+
+        return { success: true };
+    },
+});
