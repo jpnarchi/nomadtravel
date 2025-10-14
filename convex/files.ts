@@ -8,38 +8,43 @@ export const getAll = query({
         version: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
-        const user = await getCurrentUser(ctx);
+        try {
+            const user = await getCurrentUser(ctx);
 
-        if (!args.chatId) {
-            throw new Error("Chat not found");
-        }
+            if (!args.chatId) {
+                throw new Error("Chat not found");
+            }
 
-        if (!args.version) {
-            throw new Error("Version not found");
-        }
+            if (!args.version) {
+                throw new Error("Version not found");
+            }
 
-        const chat = await ctx.db.get(args.chatId);
+            const chat = await ctx.db.get(args.chatId);
 
-        if (!chat) {
+            if (!chat) {
+                return {};
+            }
+
+            if (chat.userId !== user._id && user.role !== "admin") {
+                throw new Error("Access denied");
+            }
+
+            const files = await ctx.db
+                .query("files")
+                .withIndex("by_chat_version", (q) => q.eq("chatId", args.chatId!).eq("version", args.version!))
+                .collect();
+
+            // Convert to Record<string, string> format for easier use
+            const filesObject = files.reduce((acc, file) => {
+                acc[file.path] = file.content;
+                return acc;
+            }, {} as Record<string, string>);
+
+            return filesObject;
+        } catch (error) {
+            // Return empty object for unauthenticated users or errors
             return {};
         }
-
-        if (chat.userId !== user._id && user.role !== "admin") {
-            throw new Error("Access denied");
-        }
-
-        const files = await ctx.db
-            .query("files")
-            .withIndex("by_chat_version", (q) => q.eq("chatId", args.chatId!).eq("version", args.version!))
-            .collect();
-
-        // Convert to Record<string, string> format for easier use
-        const filesObject = files.reduce((acc, file) => {
-            acc[file.path] = file.content;
-            return acc;
-        }, {} as Record<string, string>);
-
-        return filesObject;
     },
 });
 

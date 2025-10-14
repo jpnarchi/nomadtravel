@@ -63,7 +63,12 @@ export function PricingContainer() {
                             name: "Gratis",
                             price: "$0 MXN / mes",
                             description: "Para testear",
-                            features: ['Nerd limitado', 'Plantillas limitadas', 'Comunidad de usuarios'],
+                            features: [
+                                '1 proyecto',
+                                '4 versiones de tu proyecto',
+                                'Plantillas limitadas',
+                                'Comunidad de usuarios'
+                            ],
                             buttonText: user?.plan === "free" ? "Plan actual" : "Empezar",
                             buttonVariant: "outline",
                             onButtonClick: () => { },
@@ -76,7 +81,17 @@ export function PricingContainer() {
                             name: "Pro",
                             price: "$1,000 MXN / mes",
                             description: "Para negocios",
-                            features: ['Todo lo del plan gratis', 'Llamada semanal con negocios', 'Seminario con expertos', 'Participa en votación semanal', 'Nerd ilimitado', 'Plantillas ilimitadas', 'Soporte prioritario', '2 Hostings'],
+                            features: [
+                                'Todo lo del plan gratis',
+                                'Llamada semanal con negocios',
+                                'Seminario con expertos',
+                                'Participa en votación semanal',
+                                'Proyectos ilimitados',
+                                '50 versiones de tu proyecto',
+                                'Plantillas ilimitadas',
+                                'Soporte prioritario',
+                                '2 Hostings'
+                            ],
                             isPopular: true,
                             buttonText: user?.plan === "pro" ? "Plan actual" : "Empezar",
                             onButtonClick: () => handleUpgrade('pro'),
@@ -89,7 +104,13 @@ export function PricingContainer() {
                             name: "Premium",
                             price: "$4,000 MXN / mes",
                             description: "Para agencias",
-                            features: ['Todo lo del plan pro', 'Llamada semanal con agencias', 'Hostings ilimitados'],
+                            features: [
+                                'Todo lo del plan pro',
+                                'Llamada semanal con agencias',
+                                'Proyectos ilimitados',
+                                'Versiones ilimitadas de tu proyecto',
+                                'Hostings ilimitados'
+                            ],
                             buttonText: user?.plan === "premium" ? "Plan actual" : "Empezar",
                             buttonVariant: "outline",
                             onButtonClick: () => handleUpgrade('premium'),

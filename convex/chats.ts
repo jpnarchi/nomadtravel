@@ -1,7 +1,33 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
-import { getCurrentUser } from "./users";
+import { getCurrentUser, getVersionLimit } from "./users";
+
+// Chat limits for different plans
+const CHAT_LIMITS = {
+    free: 1,
+    pro: 8000,
+    premium: 8000,
+    admin: 8000,
+} as const;
+
+// Helper function to get chat limit for a user
+const getChatLimit = (user: { plan?: string; role?: string }): number => {
+    if (user.role === "admin") {
+        return CHAT_LIMITS.admin;
+    }
+
+    switch (user.plan) {
+        case "free":
+            return CHAT_LIMITS.free;
+        case "pro":
+            return CHAT_LIMITS.pro;
+        case "premium":
+            return CHAT_LIMITS.premium;
+        default:
+            return CHAT_LIMITS.free;
+    }
+};
 
 export const getAll = query({
     args: {},
@@ -22,6 +48,17 @@ export const create = mutation({
     args: {},
     handler: async (ctx) => {
         const user = await getCurrentUser(ctx);
+
+        // Check if user has reached chat limit
+        const chatLimit = getChatLimit(user);
+        const existingChats = await ctx.db
+            .query("chats")
+            .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+            .collect();
+
+        if (existingChats.length >= chatLimit) {
+            throw new Error(`Chat limit exceeded. Maximum chats allowed: ${chatLimit}. Please upgrade your plan to create more chats.`);
+        }
 
         const chatId = await ctx.db.insert("chats", {
             userId: user._id,
@@ -53,6 +90,17 @@ export const duplicateChat = mutation({
 
         if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
+        }
+
+        // Check if user has reached chat limit
+        const chatLimit = getChatLimit(user);
+        const existingChats = await ctx.db
+            .query("chats")
+            .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+            .collect();
+
+        if (existingChats.length >= chatLimit) {
+            throw new Error(`Chat limit exceeded. Maximum chats allowed: ${chatLimit}. Please upgrade your plan to create more chats.`);
         }
 
         const newChatId = await ctx.db.insert("chats", {
@@ -201,6 +249,14 @@ export const updateCurrentVersion = mutation({
 
         if (chat.userId !== user._id && user.role !== "admin") {
             throw new Error("Access denied");
+        }
+
+        // Check version limit before updating
+        if (args.currentVersion) {
+            const versionLimit = getVersionLimit(user);
+            if (args.currentVersion > versionLimit) {
+                throw new Error(`Version limit exceeded. Maximum versions allowed: ${versionLimit}`);
+            }
         }
 
         await ctx.db.patch(args.chatId, {
@@ -680,5 +736,65 @@ export const validateUserEmail = query({
             name: user.name,
             email: user.email,
         };
+    },
+});
+
+// Query to check if user can create more chats
+export const canCreateChat = query({
+    args: {},
+    handler: async (ctx) => {
+        try {
+            const user = await getCurrentUser(ctx);
+            const chatLimit = getChatLimit(user);
+            const existingChats = await ctx.db
+                .query("chats")
+                .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+                .collect();
+
+            return {
+                canCreate: existingChats.length < chatLimit,
+                currentCount: existingChats.length,
+                limit: chatLimit,
+                plan: user.plan || "free",
+            };
+        } catch (error) {
+            // Return default values for unauthenticated users
+            return {
+                canCreate: false,
+                currentCount: 0,
+                limit: 0,
+                plan: "free",
+            };
+        }
+    },
+});
+
+// Query to get user's chat count and limit info
+export const getChatLimitInfo = query({
+    args: {},
+    handler: async (ctx) => {
+        try {
+            const user = await getCurrentUser(ctx);
+            const chatLimit = getChatLimit(user);
+            const existingChats = await ctx.db
+                .query("chats")
+                .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+                .collect();
+
+            return {
+                currentCount: existingChats.length,
+                limit: chatLimit,
+                plan: user.plan || "free",
+                role: user.role || "user",
+            };
+        } catch (error) {
+            // Return default values for unauthenticated users
+            return {
+                currentCount: 0,
+                limit: 0,
+                plan: "free",
+                role: "user",
+            };
+        }
     },
 });

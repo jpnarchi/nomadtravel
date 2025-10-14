@@ -454,11 +454,90 @@ export const updateSupabaseTokens = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        await ctx.db.patch(user._id, { 
+        await ctx.db.patch(user._id, {
             supabaseAccessToken: args.supabaseAccessToken,
             supabaseRefreshToken: args.supabaseRefreshToken
         });
 
         return user._id;
+    },
+});
+
+// Version limit constants (server-side)
+const VERSION_LIMITS = {
+    free: 5,
+    pro: 51,
+    premium: 8000, // High limit for premium users
+    admin: 8000, // Very high limit for admins
+} as const;
+
+// Helper function to get version limit for a user
+export const getVersionLimit = (user: { plan?: string; role?: string }): number => {
+    if (user.role === "admin") {
+        return VERSION_LIMITS.admin;
+    }
+
+    switch (user.plan) {
+        case "free":
+            return VERSION_LIMITS.free;
+        case "pro":
+            return VERSION_LIMITS.pro;
+        case "premium":
+            return VERSION_LIMITS.premium;
+        default:
+            return VERSION_LIMITS.free;
+    }
+};
+
+// Query to check if user has reached version limit
+export const hasReachedVersionLimit = query({
+    args: {
+        chatId: v.id("chats"),
+    },
+    handler: async (ctx, args) => {
+        try {
+            const user = await getCurrentUser(ctx);
+            const chat = await ctx.db.get(args.chatId);
+
+            if (!chat) {
+                return false;
+            }
+
+            if (chat.userId !== user._id && user.role !== "admin") {
+                throw new Error("Access denied");
+            }
+
+            const versionLimit = getVersionLimit(user);
+            const currentVersion = chat.currentVersion || 1;
+
+            return currentVersion >= versionLimit;
+        } catch (error) {
+            // Return false for unauthenticated users
+            return false;
+        }
+    },
+});
+
+// Query to get user's version limit info
+export const getVersionLimitInfo = query({
+    args: {},
+    handler: async (ctx) => {
+        try {
+            const user = await getCurrentUser(ctx);
+            const versionLimit = getVersionLimit(user);
+
+            return {
+                limit: versionLimit,
+                plan: user.plan || "free",
+                role: user.role || "user",
+            };
+        } catch (error) {
+            // Return default values for unauthenticated users
+            return {
+                limit: VERSION_LIMITS.free,
+                plan: "free",
+                role: "user",
+            };
+        }
     },
 });

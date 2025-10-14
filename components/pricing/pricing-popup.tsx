@@ -95,7 +95,8 @@ export function PricingPopup({
                                 price: "$0 MXN / mes",
                                 description: "Para testear",
                                 features: [
-                                    'Nerd limitado',
+                                    '1 proyecto',
+                                    '4 versiones de tu proyecto',
                                     'Plantillas limitadas',
                                     'Comunidad de usuarios'
                                 ],
@@ -116,7 +117,8 @@ export function PricingPopup({
                                     'Llamada semanal con negocios',
                                     'Seminario con expertos',
                                     'Participa en votación semanal',
-                                    'Nerd ilimitado',
+                                    'Proyectos ilimitados',
+                                    '50 versiones de tu proyecto',
                                     'Plantillas ilimitadas',
                                     'Soporte prioritario',
                                     '2 Hostings'
@@ -136,6 +138,8 @@ export function PricingPopup({
                                 features: [
                                     'Todo lo del plan pro',
                                     'Llamada semanal con agencias',
+                                    'Proyectos ilimitados',
+                                    'Versiones ilimitadas de tu proyecto',
                                     'Hostings ilimitados'
                                 ],
                                 buttonText: user?.plan === "premium" ? "Plan actual" : "Empezar",

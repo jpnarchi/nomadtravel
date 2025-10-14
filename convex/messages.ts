@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { api } from "./_generated/api";
-import { getCurrentUser } from "./users";
+import { getCurrentUser, getVersionLimit } from "./users";
 
 export const generateUploadUrl = mutation({
     handler: async (ctx) => {
@@ -167,6 +167,12 @@ export const create = mutation({
         // Read the current version from the chat and stamp it onto the message
         const chatCurrent = await ctx.db.get(args.chatId);
         const currentVersion = chatCurrent?.currentVersion ?? 1;
+
+        // Check version limit before creating message
+        const versionLimit = getVersionLimit(user);
+        if (currentVersion > versionLimit) {
+            throw new Error(`Version limit exceeded. Maximum versions allowed: ${versionLimit}. Please upgrade your plan to continue.`);
+        }
 
         const messageId = await ctx.db.insert("messages", {
             chatId: args.chatId,
