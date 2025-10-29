@@ -119,7 +119,7 @@ export function ChatMessages({
                     >
                         <div className="flex flex-row gap-3 items-start w-full md:w-[500px] md:px-0">
                             <div className="shrink-0 mt-2">
-                                <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
+                                <Image src="/logo.svg" alt="logo" width={24} height={24} priority />
                             </div>
                             <div className="flex-1 min-w-0 flex flex-row gap-2 items-center">
                                 <Loader className="size-4" />
@@ -150,7 +150,7 @@ export function ChatMessages({
                     >
                         <div className="flex flex-row gap-3 items-start w-full md:w-[500px] md:px-0">
                             <div className="shrink-0 mt-2">
-                                <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
+                                <Image src="/logo.svg" alt="logo" width={24} height={24} priority />
                             </div>
                             <div className="flex-1 min-w-0 flex flex-row gap-2 items-center">
                                 <Loader className="size-4" />

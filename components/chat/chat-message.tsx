@@ -70,7 +70,7 @@ export function ChatMessage({
                                 <div className="flex flex-row gap-3 items-start">
                                     {role === 'assistant' && (
                                         <div className="shrink-0 mt-2">
-                                            <Image src="/lentes.svg" alt="logo" width={24} height={24} priority />
+                                            <Image src="/logo.svg" alt="logo" width={24} height={24} priority />
                                         </div>
                                     )}
                                     {role === 'user' && (
@@ -200,7 +200,7 @@ export function ChatMessage({
                             return (
                                 <div key={index} className="flex flex-row gap-4 items-center pt-2">
                                     {role === 'assistant' && (
-                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                        <Image src="/logo.svg" alt="logo" width={24} height={24} />
                                     )}
                                     <div className="flex flex-row gap-2 items-center">
                                         <Loader />
@@ -383,7 +383,7 @@ export function ChatMessage({
                             return (
                                 <div key={index} className="flex flex-row gap-4 items-start py-2">
                                     {role === 'assistant' && (
-                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                        <Image src="/logo.svg" alt="logo" width={24} height={24} />
                                     )}
                                     {imageUrl && (
                                         <a href={imageUrl} target="_blank" rel="noopener noreferrer">
@@ -411,7 +411,7 @@ export function ChatMessage({
                             return (
                                 <div key={index} className="flex flex-row gap-4 items-start py-2">
                                     {role === 'assistant' && (
-                                        <Image src="/lentes.svg" alt="logo" width={24} height={24} />
+                                        <Image src="/logo.svg" alt="logo" width={24} height={24} />
                                     )}
                                     <div className="flex flex-col space-y-3">
                                         <Skeleton className="h-[250px] w-[250px] rounded-xl" />

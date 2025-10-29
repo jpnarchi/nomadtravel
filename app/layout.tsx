@@ -21,15 +21,15 @@ const geistMono = Geist_Mono({
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ilovepresentations.ai";
 
 export const metadata = {
-  title: "Astri ",
-  description: "Astri es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada para cualquier negocio o proyecto.",
+  title: "I Love Presentations ",
+  description: "I Love Presentations es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada para cualquier negocio o proyecto.",
   icons: {
-    icon: "/lentes.svg"
+    icon: "/logo.svg"
   },
   openGraph: {
-    title: "Astri - Crea tu sitio web con IA",
+    title: "I Love Presentations - Crea tu sitio web con IA",
     description:
-      "Astri es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
+      "I Love Presentations es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
     url: baseUrl,
     type: "website",
     images: [
@@ -37,15 +37,15 @@ export const metadata = {
         url: `${baseUrl}/marketing.jpeg`, // Dynamic URL
         width: 1200,
         height: 630,
-        alt: "Astri - Plataforma impulsada por IA",
+        alt: "I Love Presentations - Plataforma impulsada por IA",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Astri - Crea tu sitio web con IA",
+    title: "I Love Presentations - Crea tu sitio web con IA",
     description:
-      "Astri es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
+      "I Love Presentations es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
     images: [`${baseUrl}/marketing.jpeg`], // Dynamic URL
   },
 };
