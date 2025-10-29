@@ -164,7 +164,7 @@ export function UserNav() {
                 )}
                 {isAdmin && (
                     <UserButton.Action
-                        label="Plantillas"
+                        label="Templates"
                         labelIcon={<Laptop2 className="w-3.5 h-3.5 stroke-2" />}
                         onClick={() => router.push('/templates')}
                     />

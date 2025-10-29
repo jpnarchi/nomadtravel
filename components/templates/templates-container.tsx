@@ -296,7 +296,7 @@ export function TemplatesContainer() {
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-2">
-                <h1 className="text-xl sm:text-2xl font-bold">Plantillas</h1>
+                <h1 className="text-xl sm:text-2xl font-bold">Templates</h1>
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                     <PlusIcon className="size-4" />
                     <span className="ml-2">Crear Nueva</span>

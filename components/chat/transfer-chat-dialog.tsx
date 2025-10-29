@@ -95,7 +95,7 @@ export function TransferChatDialog({
             <DialogTrigger asChild className="hover:bg-[#3A3A3A]">
                 <Button variant="ghost" size="sm" className="gap-1 cursor-pointer w-full flex justify-start">
                     <UserPlus className="h-4 w-4" />
-                    Transferir
+                    Transfer
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">

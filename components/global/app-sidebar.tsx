@@ -159,7 +159,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             variant="outline"
           >
             <Plus className="h-4 w-4" />
-            Nuevo Chat
+            New Chat
           </Button>
         </div>
 
@@ -168,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar chats..."
+              placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 h-9"
@@ -210,7 +210,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="h-8 w-8 p-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0"
                           >
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Abrir menú</span>
+                            <span className="sr-only">Open Menu</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
@@ -222,7 +222,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="gap-2 cursor-pointer"
                           >
                             <Edit2 className="h-4 w-4 text-white" />
-                            Editar título
+                            Rename
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDuplicateChat(item._id)}
@@ -234,7 +234,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             ) : (
                               <Copy className="h-4 w-4 text-white" />
                             )}
-                            {isDuplicating ? "Duplicando" : "Duplicar"}
+                            {isDuplicating ? "Duplicating" : "Duplicate"}
                           </DropdownMenuItem>
                           <div className="px-0">
                             <TransferChatDialog
@@ -247,7 +247,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             className="gap-2 cursor-pointer text-red-500 hover:text-red-500"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
-                            <p className="text-red-500">Eliminar</p>
+                            <p className="text-red-500">Delete</p>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
