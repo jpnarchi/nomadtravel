@@ -79,7 +79,7 @@ export function MessageInput({
         <div className="flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex justify-center p-4 pb-4">
                 <form onSubmit={handleSubmit} className="flex flex-row gap-2 relative items-end w-full max-w-lg">
-                    <div className="relative flex-1 min-h-[44px] p-2 rounded-xl border-2 border-input bg-[#171717] dark:bg-[#171717] focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20 transition-colors flex flex-col">
+                    <div className="relative flex-1 min-h-[44px] p-2 rounded-xl border-2 border-input bg-white dark:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20 transition-colors flex flex-col">
                         {/* Hidden file input */}
                         <input
                             ref={fileInputRef}
@@ -125,7 +125,7 @@ export function MessageInput({
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Envía un mensaje..."
+                            placeholder="Send a message..."
                             className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[28px] max-h-[120px] placeholder:text-muted-foreground rounded-md flex-1 overflow-y-auto"
                             rows={1}
                             disabled={isLoading}

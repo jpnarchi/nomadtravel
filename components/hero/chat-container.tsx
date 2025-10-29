@@ -138,14 +138,14 @@ export function ChatContainer() {
                         }}
                     >
                         <motion.p
-                            className="text-white text-4xl sm:text-5xl"
+                            className="text-black text-4xl sm:text-5xl"
                             exit={{
                                 y: -30,
                                 opacity: 0,
                                 transition: { duration: 0.2, ease: "easeInOut" }
                             }}
                         >
-                            Crea tu página
+                            Create your Presentation with AI
                         </motion.p>
                         <motion.div
                             className="w-full"

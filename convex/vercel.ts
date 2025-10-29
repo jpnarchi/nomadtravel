@@ -351,7 +351,7 @@ export const authenticate = internalAction({
         const response = await fetch('https://api.vercel.com/v2/user', {
             headers: {
                 Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-                'User-Agent': 'Astri.dev',
+                'User-Agent': 'I Love Presentations',
             },
         });
         const data = await response.json();
@@ -379,7 +379,7 @@ export const createProject = internalAction({
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-                'User-Agent': 'Astri.dev',
+                'User-Agent': 'I Love Presentations',
             },
             body: JSON.stringify({
                 name: args.name,

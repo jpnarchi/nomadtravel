@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://astri.dev";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ilovepresentations.ai";
 
 export const metadata = {
   title: "Astri ",
