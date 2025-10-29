@@ -32,7 +32,7 @@ export function ChatContainer() {
 
     // Load saved draft on component mount
     useEffect(() => {
-        const savedDraft = localStorage.getItem('nerd-lat-draft');
+        const savedDraft = localStorage.getItem('astri-dev-draft');
         if (savedDraft) {
             setInput(savedDraft);
         }
@@ -41,7 +41,7 @@ export function ChatContainer() {
     // Save to localStorage every time input changes (only if not signed in)
     useEffect(() => {
         if (!isSignedIn) {
-            localStorage.setItem('nerd-lat-draft', input);
+            localStorage.setItem('astri-dev-draft', input);
         }
     }, [input, isSignedIn]);
 
@@ -106,7 +106,7 @@ export function ChatContainer() {
                 //     fileInputRef.current.value = '';
                 // }
 
-                localStorage.removeItem('nerd-lat-draft');
+                localStorage.removeItem('astri-dev-draft');
 
                 router.push(`/chat/${chatId}`);
             }

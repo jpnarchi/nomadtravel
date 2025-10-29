@@ -133,7 +133,7 @@ export function ConnectStripe({
                     {/* Disclaimer */}
                     <div className="bg-muted/50 p-3 rounded-lg border border-muted">
                         <p className="text-xs text-muted-foreground">
-                            <strong>🔒 Seguridad:</strong> Nerd no almacena ni tiene acceso a tus credenciales de Stripe.
+                            <strong>🔒 Seguridad:</strong> Astri no almacena ni tiene acceso a tus credenciales de Stripe.
                             Estas se envían directamente a tu aplicación y se almacenan de forma segura en tu entorno.
                         </p>
                     </div>

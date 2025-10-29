@@ -57,12 +57,12 @@ async function generateSuggestions(messages: string[]) {
         const { object } = await generateObject({
             model: openrouter('google/gemini-2.5-flash'),
             prompt: `
-Eres un experto en generar respuestas rápidas contextuales para un chat con Nerd, un asistente que ayuda a crear páginas web paso a paso.
+Eres un experto en generar respuestas rápidas contextuales para un chat con Astri, un asistente que ayuda a crear páginas web paso a paso.
 
 CONTEXTO DE LA CONVERSACIÓN:
 ${messages.join('\n\n')}
 
-CAPACIDADES DE NERD:
+CAPACIDADES DE ASTRI:
 - Crear páginas web y diseños responsivos
 - Buscar información en internet (negocios, referencias, datos)
 - Leer archivos que el usuario suba
@@ -74,7 +74,7 @@ Genera exactamente 3 sugerencias (máximo 40 caracteres cada una) que sean:
 
 1. **Respuestas naturales** que un usuario real escribiría
 2. **Próximos pasos lógicos** en la conversación actual
-3. **Acciones concretas** relacionadas con lo que Nerd puede hacer
+3. **Acciones concretas** relacionadas con lo que Astri puede hacer
 4. **Variadas** - mezcla diferentes tipos (confirmar, preguntar, pedir acción)
 
 REGLAS ESTRICTAS:
@@ -88,7 +88,7 @@ REGLAS ESTRICTAS:
 ✅ SÍ sugiere agregar secciones o elementos nuevos
 
 EJEMPLOS BUENOS:
-- Si Nerd preguntó algo → "Sí", "No", "Claro"
+- Si Astri preguntó algo → "Sí", "No", "Claro"
 - Si mostró una vista previa → "Cambia color", "Más grande", "Agrega logo"
 - Si terminó algo → "Agrega menú", "Qué sigue?", "Búscalo"
 - Si mencionó un negocio → "Búscalo", "Tengo logo", "Dame ideas"
@@ -331,7 +331,7 @@ http.route({
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
             system: `
-Eres Nerd, un asistente útil que solo conoce React y TailwindCSS y programas en Sandpack (editor de código en internet).
+Eres Astri, un asistente útil que solo conoce React y TailwindCSS y programas en Sandpack (editor de código en internet).
 Tu misión es ayudar al usuario a crear proyectos simples paso a paso.
 
 Reglas de interacción:
@@ -395,7 +395,7 @@ Reglas de Resend (Para enviar correos):
 ${isSupabaseConnected
                     ? `- Supabase está conectado; puedes proceder con enviar correos con Resend.
 - Tu tienes la clave de Resend (RESEND_API_KEY) solo llama la herramienta saveResendKeyInSecrets para guardarla en Supabase secrets.
-- Despliega una Edge Function con deployEdgeFunction para enviar correos con "Nerd <noreply@nuevonerd.lat>".
+- Despliega una Edge Function con deployEdgeFunction para enviar correos con "Astri <noreply@astri.dev>".
 - Si falla algo, informa el error y detente.`
                     : '- Supabase NO está conectado; antes de enviar correos usa connectToSupabase y espera confirmación.'}
 

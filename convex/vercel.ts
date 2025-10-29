@@ -40,7 +40,7 @@ const viteFiles = [
             "  <head>\n" +
             "    <meta charset=\"UTF-8\" />\n" +
             "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n" +
-            "    <title>Nerd</title>\n" +
+            "    <title>Astri</title>\n" +
             "  </head>\n" +
             "  <body>\n" +
             "    <div id=\"root\"></div>\n" +
@@ -351,7 +351,7 @@ export const authenticate = internalAction({
         const response = await fetch('https://api.vercel.com/v2/user', {
             headers: {
                 Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-                'User-Agent': 'Nerd.lat',
+                'User-Agent': 'Astri.dev',
             },
         });
         const data = await response.json();
@@ -379,7 +379,7 @@ export const createProject = internalAction({
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${process.env.VERCEL_ACCESS_TOKEN}`,
-                'User-Agent': 'Nerd.lat',
+                'User-Agent': 'Astri.dev',
             },
             body: JSON.stringify({
                 name: args.name,

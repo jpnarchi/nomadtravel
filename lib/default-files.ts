@@ -1,5 +1,5 @@
 const appJs = `export default function App() {
-            return <h1>Welcome to nerd</h1>
+            return <h1>Welcome to astri</h1>
         }`
 const indexJs = `import React, { StrictMode } from "react";
         import { createRoot } from "react-dom/client";

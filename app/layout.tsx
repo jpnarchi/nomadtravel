@@ -18,18 +18,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nuevonerd.lat";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://astri.dev";
 
 export const metadata = {
-  title: "Nerd ",
-  description: "Nerd es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada para cualquier negocio o proyecto.",
+  title: "Astri ",
+  description: "Astri es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada para cualquier negocio o proyecto.",
   icons: {
     icon: "/lentes.svg"
   },
   openGraph: {
-    title: "Nerd - Crea tu sitio web con IA",
+    title: "Astri - Crea tu sitio web con IA",
     description:
-      "Nerd es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
+      "Astri es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
     url: baseUrl,
     type: "website",
     images: [
@@ -37,15 +37,15 @@ export const metadata = {
         url: `${baseUrl}/marketing.jpeg`, // Dynamic URL
         width: 1200,
         height: 630,
-        alt: "Nerd - Plataforma impulsada por IA",
+        alt: "Astri - Plataforma impulsada por IA",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nerd - Crea tu sitio web con IA",
+    title: "Astri - Crea tu sitio web con IA",
     description:
-      "Nerd es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
+      "Astri es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
     images: [`${baseUrl}/marketing.jpeg`], // Dynamic URL
   },
 };

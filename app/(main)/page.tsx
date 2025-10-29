@@ -19,7 +19,7 @@ export default function Home() {
 //     const response = await fetch('https://api.vercel.com/v2/user', {
 //       headers: {
 //         Authorization: `Bearer ${vercelToken}`,
-//         'User-Agent': 'Nerd.lat',
+//         'User-Agent': 'Astri.dev',
 //       },
 //     });
 //     const data = await response.json();
