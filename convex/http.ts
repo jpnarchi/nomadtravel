@@ -439,6 +439,15 @@ Reglas de presentaciones:
 - Usa manageFile para crear, actualizar o eliminar slides.
 - Cada slide puede contener: textos, imágenes, formas geométricas, líneas, etc.
 
+Reglas para agregar slides:
+- Si el usuario pide agregar un slide AL FINAL de la presentación, usa manageFile con operation "create" y el número siguiente (ej: si hay 3 slides, crea slide-4.json).
+- Si el usuario pide agregar un slide EN MEDIO de la presentación (ej: "agrega un slide después del slide 1" o "inserta un slide entre el 2 y el 3"), USA insertSlideAtPosition.
+- insertSlideAtPosition renumerará automáticamente los slides existentes, no necesitas hacerlo manualmente.
+- Ejemplo: Si tienes slide-1, slide-2, slide-3 y quieres insertar después del slide-1:
+  - USA insertSlideAtPosition con position=2 (el nuevo slide será slide-2)
+  - La herramienta automáticamente renombrará slide-2→slide-3 y slide-3→slide-4
+- NUNCA intentes renumerar slides manualmente con múltiples llamadas a manageFile.
+
 REGLA CRÍTICA - Preservar diseño de templates:
 - Cuando uses generateInitialCodebase, el template YA tiene un diseño profesional completo.
 - TU ÚNICA TAREA es personalizar los TEXTOS con la información del usuario.
@@ -779,6 +788,110 @@ Flujo para personalizar templates:
                             return {
                                 success: false,
                                 error: `Error al ${operation === 'create' ? 'crear' : operation === 'update' ? 'actualizar' : 'eliminar'} ${path}`
+                            };
+                        }
+                    },
+                },
+
+                insertSlideAtPosition: {
+                    description: 'Inserta un nuevo slide en una posición específica de la presentación, renumerando automáticamente los slides existentes. Usa esto cuando el usuario pida agregar un slide en medio de la presentación.',
+                    inputSchema: z.object({
+                        position: z.number().min(1).describe('Posición donde insertar el nuevo slide (1 = primer slide, 2 = segundo slide, etc.)'),
+                        content: z.string().describe('Contenido JSON del nuevo slide con estructura Fabric.js. Debe ser un JSON válido con version, objects y background'),
+                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios para usuarios no técnicos'),
+                    }),
+                    execute: async function ({ position, content, explanation }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+
+                            // Get all existing slide paths and sort them
+                            const slidePaths = Object.keys(allFiles)
+                                .filter(path => path.startsWith('/slides/') && path.endsWith('.json'))
+                                .sort((a, b) => {
+                                    const numA = parseInt(a.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                    const numB = parseInt(b.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                    return numA - numB;
+                                });
+
+                            // Validate position
+                            if (position < 1) {
+                                return {
+                                    success: false,
+                                    error: 'La posición debe ser mayor o igual a 1'
+                                };
+                            }
+
+                            if (position > slidePaths.length + 1) {
+                                return {
+                                    success: false,
+                                    error: `La posición ${position} es mayor al número de slides existentes (${slidePaths.length}). Usa posición ${slidePaths.length + 1} para agregar al final.`
+                                };
+                            }
+
+                            // If inserting at the end, just create the new slide
+                            if (position > slidePaths.length) {
+                                const newPath = `/slides/slide-${position}.json`;
+                                await ctx.runMutation(api.files.create, {
+                                    chatId: id,
+                                    path: newPath,
+                                    content,
+                                    version: currentVersion ?? 0
+                                });
+
+                                return {
+                                    success: true,
+                                    message: explanation,
+                                    slideNumber: position
+                                };
+                            }
+
+                            // We need to renumber slides from position onwards
+                            // Process slides in reverse order to avoid conflicts
+                            const slidesToRenumber = slidePaths.slice(position - 1); // Get slides from position to end
+
+                            for (let i = slidesToRenumber.length - 1; i >= 0; i--) {
+                                const oldPath = slidesToRenumber[i];
+                                const oldNumber = parseInt(oldPath.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                const newNumber = oldNumber + 1;
+                                const newPath = `/slides/slide-${newNumber}.json`;
+
+                                // Delete old file
+                                await ctx.runMutation(api.files.deleteByPath, {
+                                    chatId: id,
+                                    path: oldPath,
+                                    version: currentVersion ?? 0
+                                });
+
+                                // Create with new name
+                                await ctx.runMutation(api.files.create, {
+                                    chatId: id,
+                                    path: newPath,
+                                    content: allFiles[oldPath],
+                                    version: currentVersion ?? 0
+                                });
+                            }
+
+                            // Now create the new slide at the desired position
+                            const newPath = `/slides/slide-${position}.json`;
+                            await ctx.runMutation(api.files.create, {
+                                chatId: id,
+                                path: newPath,
+                                content,
+                                version: currentVersion ?? 0
+                            });
+
+                            return {
+                                success: true,
+                                message: explanation,
+                                slideNumber: position,
+                                slidesRenumbered: slidesToRenumber.length
+                            };
+                        } catch (error) {
+                            console.error(`Error insertando slide en posición ${position}:`, error);
+                            return {
+                                success: false,
+                                error: `Error al insertar slide en posición ${position}`
                             };
                         }
                     },
