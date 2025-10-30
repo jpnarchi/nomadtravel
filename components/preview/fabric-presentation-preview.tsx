@@ -168,10 +168,22 @@ export function FabricPresentationPreview({
                 return
             }
 
-            console.log(`📦 Cargando ${slide.objects.length} objetos`)
+            // Sort objects by zIndex to preserve layer order
+            const sortedObjects = [...slide.objects].sort((a, b) => {
+                const aIndex = a.zIndex !== undefined ? a.zIndex : 0
+                const bIndex = b.zIndex !== undefined ? b.zIndex : 0
+                return aIndex - bIndex
+            })
+
+            console.log(`📦 Cargando ${sortedObjects.length} objetos en orden`)
+            console.log(`🔢 Objetos ordenados por zIndex:`, sortedObjects.map((obj, i) => ({
+                type: obj.type,
+                zIndex: obj.zIndex,
+                position: i
+            })))
 
             // Create promises for all objects
-            const objectPromises = slide.objects.map(async (obj: any, index: number) => {
+            const objectPromises = sortedObjects.map(async (obj: any, index: number) => {
                 console.log(`🔸 Objeto ${index}:`, obj.type, obj)
                 try {
                     // Normalize type to lowercase for comparison

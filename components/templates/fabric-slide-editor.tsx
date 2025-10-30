@@ -28,7 +28,11 @@ import {
     Link,
     Scan,
     Lock,
-    Unlock
+    Unlock,
+    ArrowUp,
+    ArrowDown,
+    ChevronsUp,
+    ChevronsDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -91,7 +95,7 @@ export function FabricSlideEditor({
         const canvas = fabricCanvasRef.current
 
         // Export all objects with their complete state
-        const objects = canvas.getObjects().map(obj => {
+        const objects = canvas.getObjects().map((obj, index) => {
             // Include all necessary properties for serialization
             const json = obj.toJSON([
                 'selectable',
@@ -118,12 +122,16 @@ export function FabricSlideEditor({
                 'editable'
             ])
 
+            // Add z-index to preserve layer order
+            json.zIndex = index
+
             // Log text objects specifically
             if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
                 console.log('📝 Serializando texto:', {
                     type: obj.type,
                     text: (obj as any).text,
                     fontSize: (obj as any).fontSize,
+                    zIndex: index,
                     json: json
                 })
             }
@@ -221,152 +229,182 @@ export function FabricSlideEditor({
             console.log(`📥 Cargando ${slideData.objects.length} objetos en el slide ${slideNumber}`)
             console.log(`📋 Datos de slideData:`, slideData)
 
-            slideData.objects.forEach((obj: any, index: number) => {
-                console.log(`🔍 Procesando objeto ${index}:`, obj)
-                let fabricObj: fabric.FabricObject | null = null
-
-                try {
-                    const objType = (obj.type || '').toLowerCase()
-
-                    switch (objType) {
-                        case 'text':
-                        case 'i-text':
-                        case 'itext':  // IText se normaliza a 'itext' sin guión
-                        case 'textbox':
-                            console.log(`📝 Creando texto: "${obj.text}"`)
-                            // Create text object with basic properties first
-                            fabricObj = new fabric.IText(obj.text || 'Text', {
-                                left: obj.left,
-                                top: obj.top,
-                                fontSize: obj.fontSize || 40,
-                                fill: obj.fill || '#000000',
-                                fontFamily: obj.fontFamily || 'Arial',
-                                fontWeight: obj.fontWeight || 'normal',
-                                textAlign: obj.textAlign || 'left',
-                            })
-                            // Apply additional properties
-                            if (obj.originX) fabricObj.set('originX', obj.originX)
-                            if (obj.originY) fabricObj.set('originY', obj.originY)
-                            if (obj.angle !== undefined) fabricObj.set('angle', obj.angle)
-                            if (obj.scaleX !== undefined) fabricObj.set('scaleX', obj.scaleX)
-                            if (obj.scaleY !== undefined) fabricObj.set('scaleY', obj.scaleY)
-                            break
-                        case 'rect':
-                        case 'rectangle':
-                            console.log(`📦 Creando rectángulo`)
-                            fabricObj = new fabric.Rect({
-                                left: obj.left,
-                                top: obj.top,
-                                width: obj.width || 100,
-                                height: obj.height || 100,
-                                fill: obj.fill || '#000000',
-                                stroke: obj.stroke,
-                                strokeWidth: obj.strokeWidth || 0,
-                                rx: obj.rx || 0,
-                                ry: obj.ry || 0,
-                                angle: obj.angle || 0,
-                                scaleX: obj.scaleX || 1,
-                                scaleY: obj.scaleY || 1,
-                            })
-                            break
-                        case 'circle':
-                            console.log(`⭕ Creando círculo`)
-                            fabricObj = new fabric.Circle({
-                                left: obj.left,
-                                top: obj.top,
-                                radius: obj.radius || 50,
-                                fill: obj.fill || '#000000',
-                                stroke: obj.stroke,
-                                strokeWidth: obj.strokeWidth || 0,
-                                angle: obj.angle || 0,
-                                scaleX: obj.scaleX || 1,
-                                scaleY: obj.scaleY || 1,
-                            })
-                            break
-                        case 'triangle':
-                            console.log(`🔺 Creando triángulo`)
-                            fabricObj = new fabric.Triangle({
-                                left: obj.left,
-                                top: obj.top,
-                                width: obj.width || 100,
-                                height: obj.height || 100,
-                                fill: obj.fill || '#000000',
-                                stroke: obj.stroke,
-                                strokeWidth: obj.strokeWidth || 0,
-                                angle: obj.angle || 0,
-                                scaleX: obj.scaleX || 1,
-                                scaleY: obj.scaleY || 1,
-                            })
-                            break
-                        case 'line':
-                            console.log(`📏 Creando línea`)
-                            fabricObj = new fabric.Line([obj.x1 || 0, obj.y1 || 0, obj.x2 || 100, obj.y2 || 100], {
-                                stroke: obj.stroke || '#000000',
-                                strokeWidth: obj.strokeWidth || 1,
-                            })
-                            break
-                        case 'image':
-                            console.log(`🖼️ Creando imagen desde: ${obj.src}`)
-                            if (obj.src) {
-                                fabric.FabricImage.fromURL(obj.src).then((img) => {
-                                    if (obj.left !== undefined) img.set('left', obj.left)
-                                    if (obj.top !== undefined) img.set('top', obj.top)
-                                    if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX)
-                                    if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY)
-                                    if (obj.angle !== undefined) img.set('angle', obj.angle)
-                                    img.set({
-                                        selectable: obj.lockMovementX ? true : true,
-                                        evented: obj.lockMovementX ? true : true,
-                                        hasControls: obj.lockMovementX ? false : true,
-                                        hasBorders: true,
-                                        lockScalingFlip: true,
-                                        lockMovementX: obj.lockMovementX || false,
-                                        lockMovementY: obj.lockMovementY || false,
-                                        lockRotation: obj.lockRotation || false,
-                                        lockScalingX: obj.lockScalingX || false,
-                                        lockScalingY: obj.lockScalingY || false,
-                                    })
-                                    canvas.add(img)
-                                    canvas.renderAll()
-                                    console.log(`✅ Imagen ${index} agregada al canvas`,
-                                        obj.lockMovementX ? '🔒 bloqueado' : '')
-                                }).catch((err) => {
-                                    console.error(`❌ Error cargando imagen ${index}:`, err)
-                                })
-                            }
-                            // Don't set fabricObj for async image loading
-                            return
-                        default:
-                            console.warn(`⚠️ Tipo de objeto desconocido: ${obj.type} (normalizado: ${objType})`)
-                            return
-                    }
-
-                    if (fabricObj) {
-                        // Apply saved lock properties or default to unlocked
-                        fabricObj.set({
-                            selectable: obj.lockMovementX ? true : true,
-                            evented: obj.lockMovementX ? true : true,
-                            hasControls: obj.lockMovementX ? false : true,
-                            hasBorders: true,
-                            lockScalingFlip: true,
-                            lockMovementX: obj.lockMovementX || false,
-                            lockMovementY: obj.lockMovementY || false,
-                            lockRotation: obj.lockRotation || false,
-                            lockScalingX: obj.lockScalingX || false,
-                            lockScalingY: obj.lockScalingY || false,
-                        })
-                        canvas.add(fabricObj)
-                        console.log(`✅ Objeto ${index} agregado al canvas: ${obj.type} en (${obj.left}, ${obj.top})`,
-                            obj.lockMovementX ? '🔒 bloqueado' : '')
-                    } else {
-                        console.error(`❌ No se pudo crear el objeto ${index}`, obj)
-                    }
-                } catch (error) {
-                    console.error(`❌ Error al crear objeto ${index}:`, error, obj)
-                }
+            // Sort objects by zIndex to preserve layer order
+            const sortedObjects = [...slideData.objects].sort((a, b) => {
+                const aIndex = a.zIndex !== undefined ? a.zIndex : 0
+                const bIndex = b.zIndex !== undefined ? b.zIndex : 0
+                return aIndex - bIndex
             })
-            canvas.renderAll()
-            console.log(`✅ Slide ${slideNumber} cargado completamente con ${canvas.getObjects().length} objetos`)
+
+            console.log(`🔢 Objetos ordenados por zIndex:`, sortedObjects.map((obj, i) => ({
+                type: obj.type,
+                zIndex: obj.zIndex,
+                position: i
+            })))
+
+            // Load all objects asynchronously to preserve layer order
+            const loadObjects = async () => {
+                const objectPromises = sortedObjects.map(async (obj: any, index: number) => {
+                    console.log(`🔍 Procesando objeto ${index}:`, obj)
+
+                    try {
+                        const objType = (obj.type || '').toLowerCase()
+                        let fabricObj: fabric.FabricObject | null = null
+
+                        switch (objType) {
+                            case 'text':
+                            case 'i-text':
+                            case 'itext':  // IText se normaliza a 'itext' sin guión
+                            case 'textbox':
+                                console.log(`📝 Creando texto: "${obj.text}"`)
+                                fabricObj = new fabric.IText(obj.text || 'Text', {
+                                    left: obj.left,
+                                    top: obj.top,
+                                    fontSize: obj.fontSize || 40,
+                                    fill: obj.fill || '#000000',
+                                    fontFamily: obj.fontFamily || 'Arial',
+                                    fontWeight: obj.fontWeight || 'normal',
+                                    textAlign: obj.textAlign || 'left',
+                                })
+                                // Apply additional properties
+                                if (obj.originX) fabricObj.set('originX', obj.originX)
+                                if (obj.originY) fabricObj.set('originY', obj.originY)
+                                if (obj.angle !== undefined) fabricObj.set('angle', obj.angle)
+                                if (obj.scaleX !== undefined) fabricObj.set('scaleX', obj.scaleX)
+                                if (obj.scaleY !== undefined) fabricObj.set('scaleY', obj.scaleY)
+                                break
+                            case 'rect':
+                            case 'rectangle':
+                                console.log(`📦 Creando rectángulo`)
+                                fabricObj = new fabric.Rect({
+                                    left: obj.left,
+                                    top: obj.top,
+                                    width: obj.width || 100,
+                                    height: obj.height || 100,
+                                    fill: obj.fill || '#000000',
+                                    stroke: obj.stroke,
+                                    strokeWidth: obj.strokeWidth || 0,
+                                    rx: obj.rx || 0,
+                                    ry: obj.ry || 0,
+                                    angle: obj.angle || 0,
+                                    scaleX: obj.scaleX || 1,
+                                    scaleY: obj.scaleY || 1,
+                                })
+                                break
+                            case 'circle':
+                                console.log(`⭕ Creando círculo`)
+                                fabricObj = new fabric.Circle({
+                                    left: obj.left,
+                                    top: obj.top,
+                                    radius: obj.radius || 50,
+                                    fill: obj.fill || '#000000',
+                                    stroke: obj.stroke,
+                                    strokeWidth: obj.strokeWidth || 0,
+                                    angle: obj.angle || 0,
+                                    scaleX: obj.scaleX || 1,
+                                    scaleY: obj.scaleY || 1,
+                                })
+                                break
+                            case 'triangle':
+                                console.log(`🔺 Creando triángulo`)
+                                fabricObj = new fabric.Triangle({
+                                    left: obj.left,
+                                    top: obj.top,
+                                    width: obj.width || 100,
+                                    height: obj.height || 100,
+                                    fill: obj.fill || '#000000',
+                                    stroke: obj.stroke,
+                                    strokeWidth: obj.strokeWidth || 0,
+                                    angle: obj.angle || 0,
+                                    scaleX: obj.scaleX || 1,
+                                    scaleY: obj.scaleY || 1,
+                                })
+                                break
+                            case 'line':
+                                console.log(`📏 Creando línea`)
+                                fabricObj = new fabric.Line([obj.x1 || 0, obj.y1 || 0, obj.x2 || 100, obj.y2 || 100], {
+                                    stroke: obj.stroke || '#000000',
+                                    strokeWidth: obj.strokeWidth || 1,
+                                })
+                                break
+                            case 'image':
+                                console.log(`🖼️ Creando imagen desde: ${obj.src}`)
+                                if (obj.src) {
+                                    try {
+                                        const img = await fabric.FabricImage.fromURL(obj.src)
+                                        if (obj.left !== undefined) img.set('left', obj.left)
+                                        if (obj.top !== undefined) img.set('top', obj.top)
+                                        if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX)
+                                        if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY)
+                                        if (obj.angle !== undefined) img.set('angle', obj.angle)
+                                        img.set({
+                                            selectable: obj.lockMovementX ? true : true,
+                                            evented: obj.lockMovementX ? true : true,
+                                            hasControls: obj.lockMovementX ? false : true,
+                                            hasBorders: true,
+                                            lockScalingFlip: true,
+                                            lockMovementX: obj.lockMovementX || false,
+                                            lockMovementY: obj.lockMovementY || false,
+                                            lockRotation: obj.lockRotation || false,
+                                            lockScalingX: obj.lockScalingX || false,
+                                            lockScalingY: obj.lockScalingY || false,
+                                        })
+                                        fabricObj = img
+                                        console.log(`✅ Imagen ${index} cargada`,
+                                            obj.lockMovementX ? '🔒 bloqueado' : '')
+                                    } catch (err) {
+                                        console.error(`❌ Error cargando imagen ${index}:`, err)
+                                        return null
+                                    }
+                                }
+                                break
+                            default:
+                                console.warn(`⚠️ Tipo de objeto desconocido: ${obj.type} (normalizado: ${objType})`)
+                                return null
+                        }
+
+                        if (fabricObj) {
+                            // Apply saved lock properties or default to unlocked
+                            fabricObj.set({
+                                selectable: obj.lockMovementX ? true : true,
+                                evented: obj.lockMovementX ? true : true,
+                                hasControls: obj.lockMovementX ? false : true,
+                                hasBorders: true,
+                                lockScalingFlip: true,
+                                lockMovementX: obj.lockMovementX || false,
+                                lockMovementY: obj.lockMovementY || false,
+                                lockRotation: obj.lockRotation || false,
+                                lockScalingX: obj.lockScalingX || false,
+                                lockScalingY: obj.lockScalingY || false,
+                            })
+                            console.log(`✅ Objeto ${index} creado: ${obj.type} en (${obj.left}, ${obj.top})`,
+                                obj.lockMovementX ? '🔒 bloqueado' : '')
+                            return fabricObj
+                        }
+                        return null
+                    } catch (error) {
+                        console.error(`❌ Error al crear objeto ${index}:`, error, obj)
+                        return null
+                    }
+                })
+
+                // Wait for all objects to be created
+                const loadedObjects = await Promise.all(objectPromises)
+
+                // Add objects to canvas in the correct order
+                loadedObjects.forEach((fabricObj, index) => {
+                    if (fabricObj) {
+                        canvas.add(fabricObj)
+                        console.log(`✅ Objeto ${index} agregado al canvas en orden`)
+                    }
+                })
+
+                canvas.renderAll()
+                console.log(`✅ Slide ${slideNumber} cargado completamente con ${canvas.getObjects().length} objetos en el orden correcto`)
+            }
+
+            // Execute async loading
+            loadObjects()
         } else {
             console.log(`📭 Slide ${slideNumber} está vacío (sin objetos)`)
         }
@@ -787,6 +825,39 @@ export function FabricSlideEditor({
         saveCanvas()
     }
 
+    // Layer controls
+    const bringToFront = () => {
+        if (!fabricCanvasRef.current || !selectedObject) return
+        fabricCanvasRef.current.bringObjectToFront(selectedObject)
+        fabricCanvasRef.current.renderAll()
+        saveCanvas()
+        toast.success('Objeto movido al frente')
+    }
+
+    const sendToBack = () => {
+        if (!fabricCanvasRef.current || !selectedObject) return
+        fabricCanvasRef.current.sendObjectToBack(selectedObject)
+        fabricCanvasRef.current.renderAll()
+        saveCanvas()
+        toast.success('Objeto movido al fondo')
+    }
+
+    const bringForward = () => {
+        if (!fabricCanvasRef.current || !selectedObject) return
+        fabricCanvasRef.current.bringObjectForward(selectedObject)
+        fabricCanvasRef.current.renderAll()
+        saveCanvas()
+        toast.success('Objeto movido hacia adelante')
+    }
+
+    const sendBackward = () => {
+        if (!fabricCanvasRef.current || !selectedObject) return
+        fabricCanvasRef.current.sendObjectBackwards(selectedObject)
+        fabricCanvasRef.current.renderAll()
+        saveCanvas()
+        toast.success('Objeto movido hacia atrás')
+    }
+
     // Zoom controls
     const handleZoomIn = () => {
         if (!fabricCanvasRef.current) return
@@ -1087,6 +1158,46 @@ export function FabricSlideEditor({
                         {/* Object Actions */}
                         {selectedObject && (
                             <div className="flex items-center gap-1">
+                                {/* Layer Controls */}
+                                <div className="flex items-center gap-0.5 px-1 py-0.5 bg-zinc-800 rounded-md">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={bringToFront}
+                                        className="h-7 w-7"
+                                        title="Traer al frente"
+                                    >
+                                        <ChevronsUp className="size-3.5" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={bringForward}
+                                        className="h-7 w-7"
+                                        title="Traer adelante"
+                                    >
+                                        <ArrowUp className="size-3.5" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={sendBackward}
+                                        className="h-7 w-7"
+                                        title="Enviar atrás"
+                                    >
+                                        <ArrowDown className="size-3.5" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={sendToBack}
+                                        className="h-7 w-7"
+                                        title="Enviar al fondo"
+                                    >
+                                        <ChevronsDown className="size-3.5" />
+                                    </Button>
+                                </div>
+
                                 <Button
                                     variant="ghost"
                                     size="icon"
