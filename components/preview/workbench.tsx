@@ -1,20 +1,61 @@
 import { Button } from "../ui/button";
-import { ArrowLeftIcon, CodeXml, Eye } from "lucide-react";
+import { ArrowLeftIcon, CodeXml, Eye, Pencil, Save, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
 import { FabricPresentationPreview } from "./fabric-presentation-preview";
+import { FabricPresentationEditor } from "../templates/fabric-presentation-editor";
 import { api } from "@/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
+import { toast } from "sonner";
 
 export function Workbench({ id, version }: { id: Id<"chats">, version: number }) {
     const isAdmin = useQuery(api.users.isAdmin);
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
     const files = useQuery(api.files.getAll, { chatId: id, version });
+    const updateFile = useMutation(api.files.updateByPath);
     const router = useRouter();
+
+    // Handle save changes
+    const handleSaveChanges = async (filesToSave: Record<string, string>) => {
+        setIsSaving(true);
+        try {
+            // Update each modified file
+            const updatePromises = Object.entries(filesToSave).map(([path, content]) =>
+                updateFile({ chatId: id, path, content, version })
+            );
+
+            await Promise.all(updatePromises);
+
+            toast.success('Cambios guardados exitosamente');
+            setEditedFiles({});
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error guardando cambios:', error);
+            toast.error('Error al guardar cambios');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Handle cancel editing
+    const handleCancelEdit = () => {
+        setEditedFiles({});
+        setIsEditing(false);
+        toast.info('Edición cancelada');
+    };
+
+    // Handle start editing
+    const handleStartEdit = () => {
+        setIsEditing(true);
+        toast.info('Modo de edición activado');
+    };
 
     if (!files) {
         return (
@@ -44,21 +85,53 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
 
                 <div className="flex gap-2">
                     {isAdmin && <CreateTemplateDialog files={files} />}
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="cursor-pointer"
-                        onClick={() => setShowCode(!showCode)}
-                    >
-                        {showCode ? <Eye className="size-4" /> : <CodeXml className="size-4" />}
-                    </Button>
+
+                    {!isEditing ? (
+                        <>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="cursor-pointer"
+                                onClick={handleStartEdit}
+                            >
+                                <Pencil className="size-4 mr-2" />
+                                Editar
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="cursor-pointer"
+                                onClick={() => setShowCode(!showCode)}
+                            >
+                                {showCode ? <Eye className="size-4" /> : <CodeXml className="size-4" />}
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="cursor-pointer"
+                                onClick={handleCancelEdit}
+                                disabled={isSaving}
+                            >
+                                <X className="size-4 mr-2" />
+                                Cancelar
+                            </Button>
+                        </>
+                    )}
                 </div>
             </div>
             <div className="flex-1 border rounded-lg overflow-hidden mt-4 bg-black">
-                {!showCode && (
+                {isEditing ? (
+                    <FabricPresentationEditor
+                        initialFiles={files}
+                        onSave={handleSaveChanges}
+                        isSaving={isSaving}
+                    />
+                ) : !showCode ? (
                     <FabricPresentationPreview chatId={id} version={version} />
-                )}
-                {showCode && (
+                ) : (
                     <div className="h-full overflow-auto p-6 bg-zinc-900 text-white">
                         <h2 className="text-xl font-bold mb-4">Archivos de la Presentación</h2>
                         <div className="space-y-4">
