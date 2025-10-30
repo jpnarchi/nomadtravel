@@ -13,9 +13,12 @@ import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { Loader } from '../ai-elements/loader'
 import * as fabric from 'fabric'
-import { ChevronLeft, ChevronRight, Maximize, Minimize, Grid3x3, Menu, X, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Grid3x3, Menu, X, ZoomIn, ZoomOut, RotateCcw, FileDown } from 'lucide-react'
 import { Button } from '../ui/button'
 import { ScrollArea } from '../ui/scroll-area'
+import { jsPDF } from 'jspdf'
+import PptxGenJS from 'pptxgenjs'
+import { toast } from 'sonner'
 
 interface FabricPresentationPreviewProps {
     chatId: Id<"chats"> | null
@@ -271,7 +274,7 @@ export function FabricPresentationPreview({
                             console.log(`🖼️ Creando imagen desde: ${obj.src}`)
                             if (obj.src) {
                                 try {
-                                    const img = await fabric.FabricImage.fromURL(obj.src)
+                                    const img = await fabric.FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' })
                                     if (obj.left !== undefined) img.set('left', obj.left)
                                     if (obj.top !== undefined) img.set('top', obj.top)
                                     if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX)
@@ -550,6 +553,130 @@ export function FabricPresentationPreview({
         }
     }
 
+    // Export to PDF
+    const handleExportToPDF = async () => {
+        if (!fabricCanvasRef.current || slides.length === 0) {
+            toast.error('No hay slides para exportar')
+            return
+        }
+
+        try {
+            toast.loading('Exportando a PDF...')
+
+            // Create PDF with 16:9 aspect ratio (landscape)
+            // A4 size in landscape: 297mm x 210mm
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            })
+
+            const pageWidth = 297
+            const pageHeight = 210
+
+            // Save current slide
+            const currentSlideIndex = currentSlide
+
+            // Export each slide
+            for (let i = 0; i < slides.length; i++) {
+                // Navigate to slide (this will trigger re-render)
+                setCurrentSlide(i)
+
+                // Wait for slide to render
+                await new Promise(resolve => setTimeout(resolve, 500))
+
+                if (!fabricCanvasRef.current) continue
+
+                // Export canvas as image
+                const dataUrl = fabricCanvasRef.current.toDataURL({
+                    format: 'png',
+                    quality: 1,
+                    multiplier: 2 // Higher resolution
+                })
+
+                // Add page if not first slide
+                if (i > 0) {
+                    pdf.addPage()
+                }
+
+                // Add image to PDF (full page)
+                pdf.addImage(dataUrl, 'PNG', 0, 0, pageWidth, pageHeight)
+            }
+
+            // Restore original slide
+            setCurrentSlide(currentSlideIndex)
+
+            // Save PDF
+            pdf.save('presentacion.pdf')
+            toast.success('PDF exportado exitosamente')
+        } catch (error) {
+            console.error('Error exporting to PDF:', error)
+            toast.error('Error al exportar a PDF')
+        }
+    }
+
+    // Export to PPT
+    const handleExportToPPT = async () => {
+        if (!fabricCanvasRef.current || slides.length === 0) {
+            toast.error('No hay slides para exportar')
+            return
+        }
+
+        try {
+            toast.loading('Exportando a PowerPoint...')
+
+            const pptx = new PptxGenJS()
+
+            // Set presentation size to 16:9
+            pptx.layout = 'LAYOUT_16x9'
+            pptx.author = 'Astri'
+            pptx.title = 'Presentación'
+
+            // Save current slide
+            const currentSlideIndex = currentSlide
+
+            // Export each slide
+            for (let i = 0; i < slides.length; i++) {
+                // Navigate to slide (this will trigger re-render)
+                setCurrentSlide(i)
+
+                // Wait for slide to render
+                await new Promise(resolve => setTimeout(resolve, 500))
+
+                if (!fabricCanvasRef.current) continue
+
+                // Export canvas as image
+                const dataUrl = fabricCanvasRef.current.toDataURL({
+                    format: 'png',
+                    quality: 1,
+                    multiplier: 2 // Higher resolution
+                })
+
+                // Add slide to presentation
+                const slide = pptx.addSlide()
+
+                // Add image to fill entire slide
+                slide.addImage({
+                    data: dataUrl,
+                    x: 0,
+                    y: 0,
+                    w: '100%',
+                    h: '100%'
+                })
+            }
+
+            // Restore original slide
+            setCurrentSlide(currentSlideIndex)
+
+            // Save PowerPoint
+            await pptx.writeFile({ fileName: 'presentacion.pptx' })
+            toast.success('PowerPoint exportado exitosamente')
+        } catch (error) {
+            console.error('Error exporting to PowerPoint:', error)
+            toast.error('Error al exportar a PowerPoint')
+        }
+    }
+
     if (!files || isLoading) {
         return (
             <div className="h-full flex items-center justify-center bg-zinc-900">
@@ -665,7 +792,7 @@ export function FabricPresentationPreview({
             <div className="flex-1 flex flex-col relative">
                 {/* Top Control Bar */}
                 {!isFullscreen && (
-                    <div className="h-14 bg-zinc-900/50 backdrop-blur-sm border-b border-zinc-800 flex items-center justify-between px-4">
+                    <div className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 z-50">
                         <div className="flex items-center gap-3">
                             {!showThumbnails && (
                                 <Button
@@ -685,6 +812,31 @@ export function FabricPresentationPreview({
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* Export Controls */}
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleExportToPDF}
+                                className="h-8"
+                                title="Exportar a PDF"
+                            >
+                                <FileDown className="size-4 mr-2" />
+                                PDF
+                            </Button>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleExportToPPT}
+                                className="h-8"
+                                title="Exportar a PowerPoint"
+                            >
+                                <FileDown className="size-4 mr-2" />
+                                PPT
+                            </Button>
+
+                            <div className="h-6 w-px bg-zinc-700" />
+
                             {/* Zoom Controls */}
                             <div className="flex items-center gap-1 border border-zinc-700 rounded-lg px-1">
                                 <Button
@@ -813,6 +965,32 @@ export function FabricPresentationPreview({
                         className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                         <ChevronRight className="size-6" />
+                    </Button>
+
+                    {/* Divider */}
+                    <div className="h-8 w-px bg-white/20" />
+
+                    {/* Export Controls */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleExportToPDF}
+                        className="h-9 text-white hover:bg-white/20 px-3"
+                        title="Exportar a PDF"
+                    >
+                        <FileDown className="size-4 mr-2" />
+                        PDF
+                    </Button>
+
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleExportToPPT}
+                        className="h-9 text-white hover:bg-white/20 px-3"
+                        title="Exportar a PowerPoint"
+                    >
+                        <FileDown className="size-4 mr-2" />
+                        PPT
                     </Button>
                 </div>
 
