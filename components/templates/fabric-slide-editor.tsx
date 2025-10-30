@@ -76,6 +76,7 @@ export function FabricSlideEditor({
     const saveCanvasRef = useRef<() => void>(() => {})
     const isInitialLoadRef = useRef(true)
     const baseScaleRef = useRef(1) // Store the base scale for reset functionality
+    const copiedObjectRef = useRef<any>(null) // Store copied object for clipboard
 
     // Save canvas function
     const saveCanvas = () => {
@@ -766,6 +767,160 @@ export function FabricSlideEditor({
         toast.success('Objeto eliminado')
     }
 
+    // Copy selected object
+    const copyObject = () => {
+        if (!selectedObject) {
+            console.log('❌ No hay objeto seleccionado para copiar')
+            return
+        }
+
+        // Serialize the object with all its properties
+        const objectData = selectedObject.toJSON([
+            'selectable', 'evented', 'hasControls', 'hasBorders',
+            'lockScalingFlip', 'crossOrigin',
+            'lockMovementX', 'lockMovementY', 'lockRotation',
+            'lockScalingX', 'lockScalingY',
+            'text', 'fontSize', 'fontFamily', 'fontWeight',
+            'fontStyle', 'textAlign', 'lineHeight',
+            'charSpacing', 'styles', 'editable'
+        ])
+
+        copiedObjectRef.current = objectData
+        console.log('📋 Objeto copiado:', objectData)
+        toast.success('Objeto copiado')
+    }
+
+    // Paste object
+    const pasteObject = async () => {
+        if (!fabricCanvasRef.current || !copiedObjectRef.current) {
+            console.log('❌ No hay objeto en el portapapeles')
+            return
+        }
+
+        const canvas = fabricCanvasRef.current
+        const objData = copiedObjectRef.current
+
+        try {
+            let newObj: fabric.FabricObject | null = null
+            const objType = (objData.type || '').toLowerCase()
+
+            console.log('📋 Pegando objeto tipo:', objType, objData)
+
+            switch (objType) {
+                case 'text':
+                case 'i-text':
+                case 'itext':
+                case 'textbox':
+                    newObj = new fabric.IText(objData.text || 'Text', {
+                        left: objData.left + 20,
+                        top: objData.top + 20,
+                        fontSize: objData.fontSize,
+                        fill: objData.fill,
+                        fontFamily: objData.fontFamily,
+                        fontWeight: objData.fontWeight,
+                        fontStyle: objData.fontStyle,
+                        textAlign: objData.textAlign,
+                        lineHeight: objData.lineHeight,
+                        charSpacing: objData.charSpacing,
+                        angle: objData.angle || 0,
+                        scaleX: objData.scaleX || 1,
+                        scaleY: objData.scaleY || 1,
+                        originX: objData.originX,
+                        originY: objData.originY,
+                    })
+                    break
+                case 'rect':
+                case 'rectangle':
+                    newObj = new fabric.Rect({
+                        left: objData.left + 20,
+                        top: objData.top + 20,
+                        width: objData.width,
+                        height: objData.height,
+                        fill: objData.fill,
+                        stroke: objData.stroke,
+                        strokeWidth: objData.strokeWidth,
+                        rx: objData.rx,
+                        ry: objData.ry,
+                        angle: objData.angle,
+                        scaleX: objData.scaleX,
+                        scaleY: objData.scaleY,
+                    })
+                    break
+                case 'circle':
+                    newObj = new fabric.Circle({
+                        left: objData.left + 20,
+                        top: objData.top + 20,
+                        radius: objData.radius,
+                        fill: objData.fill,
+                        stroke: objData.stroke,
+                        strokeWidth: objData.strokeWidth,
+                        angle: objData.angle,
+                        scaleX: objData.scaleX,
+                        scaleY: objData.scaleY,
+                    })
+                    break
+                case 'triangle':
+                    newObj = new fabric.Triangle({
+                        left: objData.left + 20,
+                        top: objData.top + 20,
+                        width: objData.width,
+                        height: objData.height,
+                        fill: objData.fill,
+                        stroke: objData.stroke,
+                        strokeWidth: objData.strokeWidth,
+                        angle: objData.angle,
+                        scaleX: objData.scaleX,
+                        scaleY: objData.scaleY,
+                    })
+                    break
+                case 'line':
+                    newObj = new fabric.Line([objData.x1, objData.y1, objData.x2, objData.y2], {
+                        left: objData.left + 20,
+                        top: objData.top + 20,
+                        stroke: objData.stroke,
+                        strokeWidth: objData.strokeWidth,
+                    })
+                    break
+                case 'image':
+                    if (objData.src) {
+                        const img = await fabric.FabricImage.fromURL(objData.src)
+                        img.set({
+                            left: objData.left + 20,
+                            top: objData.top + 20,
+                            scaleX: objData.scaleX,
+                            scaleY: objData.scaleY,
+                            angle: objData.angle,
+                        })
+                        newObj = img
+                    }
+                    break
+                default:
+                    console.warn('⚠️ Tipo de objeto no soportado para pegar:', objType)
+                    return
+            }
+
+            if (newObj) {
+                // Apply common properties
+                newObj.set({
+                    selectable: true,
+                    evented: true,
+                    hasControls: true,
+                    hasBorders: true,
+                })
+
+                canvas.add(newObj)
+                canvas.setActiveObject(newObj)
+                canvas.renderAll()
+
+                console.log('✅ Objeto pegado')
+                toast.success('Objeto pegado')
+            }
+        } catch (error) {
+            console.error('❌ Error al pegar objeto:', error)
+            toast.error('Error al pegar objeto')
+        }
+    }
+
     // Toggle lock/unlock selected object
     const toggleLockObject = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
@@ -1041,6 +1196,47 @@ export function FabricSlideEditor({
             }
         }
     }, [])
+
+    // Handle keyboard shortcuts for copy/paste
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Check if user is typing in a text field
+            const target = e.target as HTMLElement
+            const isTextInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+
+            // If editing text on canvas, don't trigger shortcuts
+            if (fabricCanvasRef.current) {
+                const activeObject = fabricCanvasRef.current.getActiveObject()
+                if (activeObject && (activeObject.type === 'i-text' || activeObject.type === 'textbox') && (activeObject as any).isEditing) {
+                    return // User is editing text, don't intercept
+                }
+            }
+
+            // Don't trigger if typing in input fields
+            if (isTextInput) return
+
+            // Cmd/Ctrl + C: Copy
+            if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
+                e.preventDefault()
+                copyObject()
+            }
+
+            // Cmd/Ctrl + V: Paste
+            if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
+                e.preventDefault()
+                pasteObject()
+            }
+
+            // Delete/Backspace: Delete selected object
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !isTextInput) {
+                e.preventDefault()
+                deleteSelected()
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [selectedObject, copiedObjectRef.current])
 
     return (
         <div className="h-full flex">

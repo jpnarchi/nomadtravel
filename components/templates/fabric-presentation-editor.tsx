@@ -18,7 +18,8 @@ import {
     Trash2,
     Eye,
     Code,
-    Save
+    Save,
+    Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Loader } from '../ai-elements/loader'
@@ -137,6 +138,42 @@ export function FabricPresentationEditor({
         toast.success(`Slide ${newSlideNumber} creado`)
     }
 
+    // Duplicate slide
+    const duplicateSlide = (index: number) => {
+        const slideToDuplicate = slides[index]
+        const newSlideNumber = slides.length + 1
+
+        // Deep clone the slide data
+        const duplicatedData = {
+            version: slideToDuplicate.data.version || '5.3.0',
+            objects: JSON.parse(JSON.stringify(slideToDuplicate.data.objects || [])),
+            background: slideToDuplicate.data.background || '#ffffff'
+        }
+
+        const newSlide = {
+            path: `/slides/slide-${newSlideNumber}.json`,
+            data: duplicatedData
+        }
+
+        // Insert the duplicated slide right after the original
+        const updatedSlides = [
+            ...slides.slice(0, index + 1),
+            newSlide,
+            ...slides.slice(index + 1)
+        ]
+
+        // Renumber all slides
+        const renumberedSlides = updatedSlides.map((slide, i) => ({
+            ...slide,
+            path: `/slides/slide-${i + 1}.json`
+        }))
+
+        setSlides(renumberedSlides)
+        setCurrentSlideIndex(index + 1) // Move to the duplicated slide
+        setHasUnsavedChanges(true)
+        toast.success(`Slide ${index + 1} duplicado`)
+    }
+
     // Delete slide
     const deleteSlide = (index: number) => {
         if (slides.length === 1) {
@@ -234,6 +271,14 @@ export function FabricPresentationEditor({
                     <span className="text-sm text-zinc-400">
                         Slide {currentSlideIndex + 1} de {slides.length}
                     </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => duplicateSlide(currentSlideIndex)}
+                    >
+                        <Copy className="size-4 mr-2" />
+                        Duplicar Slide
+                    </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -306,19 +351,32 @@ export function FabricPresentationEditor({
                                             <span className="text-sm font-medium text-white">
                                                 Slide {index + 1}
                                             </span>
-                                            {slides.length > 1 && (
+                                            <div className="flex items-center gap-1">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                                    className="h-6 w-6 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
-                                                        deleteSlide(index)
+                                                        duplicateSlide(index)
                                                     }}
                                                 >
-                                                    <Trash2 className="size-3" />
+                                                    <Copy className="size-3" />
                                                 </Button>
-                                            )}
+                                                {slides.length > 1 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            deleteSlide(index)
+                                                        }}
+                                                    >
+                                                        <Trash2 className="size-3" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
                                         <div
                                             className="aspect-video rounded border border-zinc-700 flex items-center justify-center text-xs"
