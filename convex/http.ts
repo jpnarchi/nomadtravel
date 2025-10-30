@@ -27,6 +27,46 @@ const openrouter = createOpenRouter({
 
 const http = httpRouter();
 
+// Helper function to clean base64 images from files before sending to API
+function cleanBase64FromFiles(files: Record<string, string>): Record<string, string> {
+    const cleaned: Record<string, string> = {};
+
+    for (const [path, content] of Object.entries(files)) {
+        try {
+            // Try to parse as JSON (most files will be JSON slides)
+            const parsed = JSON.parse(content);
+
+            // If it has objects array, filter out base64 images
+            if (parsed.objects && Array.isArray(parsed.objects)) {
+                parsed.objects = parsed.objects.map((obj: any) => {
+                    // If it's an image with base64 data, replace with placeholder
+                    if (obj.type === 'image' && obj.src && obj.src.startsWith('data:image')) {
+                        return {
+                            ...obj,
+                            src: '[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]'
+                        };
+                    }
+                    // For image type, also check other base64 fields
+                    if (obj.type === 'Image' && obj.src && obj.src.startsWith('data:image')) {
+                        return {
+                            ...obj,
+                            src: '[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]'
+                        };
+                    }
+                    return obj;
+                });
+            }
+
+            cleaned[path] = JSON.stringify(parsed, null, 2);
+        } catch {
+            // If not JSON or parsing fails, keep original content
+            cleaned[path] = content;
+        }
+    }
+
+    return cleaned;
+}
+
 // Helper function to upload image to storage within HTTP action context
 async function uploadFileToStorageFromHttpAction(
     ctx: any,
@@ -152,7 +192,33 @@ http.route({
 
         const { id, messages: allMessages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
 
-        const messages = allMessages.slice(-6);
+        // Take last 6 messages and clean base64 from them
+        const rawMessages = allMessages.slice(-6);
+
+        // Clean base64 from message history to save tokens
+        const messages = rawMessages.map(msg => {
+            // Process all message parts to clean base64 from tool outputs
+            const cleanedParts = msg.parts.map((part: any) => {
+                // Check if this is a tool result part (type starts with 'tool-')
+                if (part.type && part.type.startsWith('tool-') && part.output) {
+                    // Clean tool outputs that might contain files with base64
+                    try {
+                        const output = typeof part.output === 'string' ? JSON.parse(part.output) : part.output;
+                        if (output.files) {
+                            output.files = cleanBase64FromFiles(output.files);
+                        }
+                        return {
+                            ...part,
+                            output: typeof part.output === 'string' ? JSON.stringify(output) : output
+                        };
+                    } catch {
+                        return part;
+                    }
+                }
+                return part;
+            });
+            return { ...msg, parts: cleanedParts };
+        });
 
         // update is generating
         await ctx.runMutation(api.chats.updateIsGenerating, {
@@ -169,6 +235,26 @@ http.route({
 
         const files = await ctx.runQuery(api.files.getAll, { chatId: id, version: chat.currentVersion });
         const fileNames = Object.keys(files);
+
+        // Clean base64 images from files to save tokens (only for display in system prompt)
+        const cleanedFiles = cleanBase64FromFiles(files);
+
+        // Check if there are any slides with images to avoid showing cleaned content
+        const hasImagesInSlides = Object.entries(files).some(([path, content]) => {
+            if (path.startsWith('/slides/') && path.endsWith('.json')) {
+                try {
+                    const parsed = JSON.parse(content);
+                    return parsed.objects?.some((obj: any) =>
+                        (obj.type === 'image' || obj.type === 'Image') &&
+                        obj.src &&
+                        obj.src.startsWith('data:image')
+                    );
+                } catch {
+                    return false;
+                }
+            }
+            return false;
+        });
 
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
@@ -353,6 +439,14 @@ Reglas de presentaciones:
 - Usa manageFile para crear, actualizar o eliminar slides.
 - Cada slide puede contener: textos, imágenes, formas geométricas, líneas, etc.
 
+REGLA CRÍTICA - Preservar diseño de templates:
+- Cuando uses generateInitialCodebase, el template YA tiene un diseño profesional completo.
+- TU ÚNICA TAREA es personalizar los TEXTOS con la información del usuario.
+- NUNCA cambies: posiciones (left/top), tamaños (width/height/fontSize), colores (fill/stroke), imágenes existentes, formas, o cualquier propiedad visual.
+- Solo modifica el campo "text" de los objetos tipo "text", "i-text" o "textbox".
+- Si hay una imagen con "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", DÉJALA tal cual. NO la elimines, NO la cambies.
+- El diseño del template es perfecto, solo actualiza los textos con los datos reales del usuario.
+
 Estructura de un slide JSON:
 {
   "version": "5.3.0",
@@ -386,8 +480,17 @@ Tipos de objetos disponibles en Fabric.js:
 - circle: Círculo
 - triangle: Triángulo
 - line: Línea
-- image: Imagen (requiere URL)
+- image: Imagen (requiere URL pública, NUNCA uses base64)
 - group: Grupo de objetos
+
+IMPORTANTE sobre imágenes:
+- Las imágenes base64 han sido removidas de los archivos mostrados para ahorrar tokens.
+- Si ves "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]" significa que hay una imagen allí.
+- NUNCA elimines ni modifiques objetos tipo "image" que ya existen en el template.
+- Si un objeto image tiene src: "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", déjalo exactamente igual.
+- Para agregar NUEVAS imágenes (no reemplazar existentes), usa URLs públicas en el campo "src".
+- NUNCA uses imágenes base64 (data:image/...) porque son muy pesadas.
+- Si el usuario quiere agregar una imagen nueva, usa generateImageTool y luego usa la URL que devuelve.
 
 Propiedades comunes:
 - left, top: Posición X, Y
@@ -409,8 +512,14 @@ Para textos:
 Archivos existentes:
 ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
 
-Archivos:
-${JSON.stringify(files, null, 2)}
+${hasImagesInSlides ? `
+IMPORTANTE: Los archivos contienen imágenes. Para ver o modificar el contenido:
+- Lee el archivo actual desde la base de datos antes de modificarlo
+- NO copies contenido de memoria, siempre usa el contenido actual del archivo
+- Cuando actualices un slide, asegúrate de preservar TODAS las propiedades de TODOS los objetos
+- Las imágenes ya están guardadas correctamente, NO las modifiques
+` : `Archivos:
+${JSON.stringify(cleanedFiles, null, 2)}`}
 
 IMPORTANTE - NO disponibles para presentaciones:
 - NO uses Supabase (esto es solo para presentaciones visuales).
@@ -476,10 +585,86 @@ Flujo de trabajo obligatorio:
 3. Procesa la respuesta.
 4. Si usas manageFile o modificas código, muestra SIEMPRE el preview al terminar.
 5. Repite desde el paso 1 si necesitas más información.
+
+Flujo para personalizar templates:
+1. Usa generateInitialCodebase para cargar el template.
+2. Pide al usuario la información para personalizar (nombre, eslogan, etc.).
+3. ESPERA la respuesta del usuario.
+4. Para actualizar los textos en los slides:
+   a. USA readFile para obtener el contenido actual del slide (ej: readFile con path "/slides/slide-1.json")
+   b. El readFile te devolverá el JSON del slide, donde verás:
+      - Objetos tipo "text" con su contenido actual
+      - Objetos tipo "image" con src: "[BASE64_IMAGE_DATA]" (NO los modifiques)
+      - Todas las formas, colores, posiciones, tamaños
+   c. Copia TODO el JSON que recibiste de readFile
+   d. Modifica SOLO el campo "text" de los objetos tipo text/i-text/textbox
+   e. Mantén TODO lo demás exactamente igual:
+      - Todos los objetos (textos, imágenes, formas, líneas, etc.)
+      - Todas las propiedades (left, top, fontSize, fill, fontFamily, fontWeight, width, height, etc.)
+      - Para objetos "image": copia TODO incluyendo src: "[BASE64_IMAGE_DATA]" SIN CAMBIAR NADA
+   f. USA manageFile con operation "update" para guardar el slide modificado
+5. Repite el paso 4 para cada slide que necesite actualización.
+6. Muestra el preview al terminar con showPreview.
 `.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
             tools: {
+                readFile: {
+                    description: 'Lee el contenido actual de un archivo específico de la presentación. Usa esto ANTES de actualizar un archivo para obtener su contenido completo.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Ruta del archivo a leer (ej: "/slides/slide-1.json")'),
+                    }),
+                    execute: async function ({ path }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+
+                            const fileContent = allFiles[path];
+                            if (!fileContent) {
+                                return {
+                                    success: false,
+                                    error: `Archivo no encontrado: ${path}`
+                                };
+                            }
+
+                            // Clean base64 from response to save tokens, but keep structure
+                            let contentToReturn = fileContent;
+                            if (path.endsWith('.json')) {
+                                try {
+                                    const parsed = JSON.parse(fileContent);
+                                    if (parsed.objects && Array.isArray(parsed.objects)) {
+                                        const cleanedObjects = parsed.objects.map((obj: any) => {
+                                            if ((obj.type === 'image' || obj.type === 'Image') && obj.src && obj.src.startsWith('data:image')) {
+                                                return {
+                                                    ...obj,
+                                                    src: '[BASE64_IMAGE_DATA]',
+                                                    _note: 'Esta imagen tiene datos base64. Al actualizar el slide, copia este objeto COMPLETO pero deja el src como "[BASE64_IMAGE_DATA]" - NO lo cambies.'
+                                                };
+                                            }
+                                            return obj;
+                                        });
+                                        contentToReturn = JSON.stringify({ ...parsed, objects: cleanedObjects }, null, 2);
+                                    }
+                                } catch {
+                                    // Si no se puede parsear, devolver contenido original
+                                }
+                            }
+
+                            return {
+                                success: true,
+                                path: path,
+                                content: contentToReturn
+                            };
+                        } catch (error) {
+                            console.error(`Error leyendo archivo ${path}:`, error);
+                            return {
+                                success: false,
+                                error: `Error al leer ${path}`
+                            };
+                        }
+                    },
+                },
+
                 manageFile: {
                     description: 'Gestiona slides de la presentación en formato JSON. IMPORTANTE: Cada slide debe ser un archivo JSON separado.',
                     inputSchema: z.object({
@@ -515,10 +700,63 @@ Flujo de trabajo obligatorio:
                                             error: 'El contenido es requerido para actualizar un archivo'
                                         };
                                     }
+
+                                    // Restore base64 images before saving
+                                    let contentToSave = content;
+                                    if (path.endsWith('.json')) {
+                                        try {
+                                            // Get current file from database
+                                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+                                            const currentContent = allFiles[path];
+
+                                            if (currentContent) {
+                                                const newData = JSON.parse(content);
+                                                const currentData = JSON.parse(currentContent);
+
+                                                // If both have objects arrays, restore base64 images
+                                                if (newData.objects && currentData.objects && Array.isArray(newData.objects) && Array.isArray(currentData.objects)) {
+                                                    // Create a map of current images by their index or properties
+                                                    const currentImages = new Map();
+                                                    currentData.objects.forEach((obj: any, idx: number) => {
+                                                        if ((obj.type === 'image' || obj.type === 'Image') && obj.src && obj.src.startsWith('data:image')) {
+                                                            currentImages.set(idx, obj.src);
+                                                        }
+                                                    });
+
+                                                    // Restore base64 in new data
+                                                    newData.objects = newData.objects.map((obj: any, idx: number) => {
+                                                        if ((obj.type === 'image' || obj.type === 'Image') && obj.src === '[BASE64_IMAGE_DATA]') {
+                                                            const originalSrc = currentImages.get(idx);
+                                                            if (originalSrc) {
+                                                                // Remove _note field if it exists
+                                                                const { _note, ...rest } = obj;
+                                                                return {
+                                                                    ...rest,
+                                                                    src: originalSrc
+                                                                };
+                                                            }
+                                                        }
+                                                        // Remove _note field if it exists
+                                                        if (obj._note) {
+                                                            const { _note, ...rest } = obj;
+                                                            return rest;
+                                                        }
+                                                        return obj;
+                                                    });
+
+                                                    contentToSave = JSON.stringify(newData, null, 2);
+                                                }
+                                            }
+                                        } catch (err) {
+                                            console.error('Error restoring base64 images:', err);
+                                            // If restoration fails, use original content
+                                        }
+                                    }
+
                                     await ctx.runMutation(api.files.updateByPath, {
                                         chatId: id,
                                         path,
-                                        content,
+                                        content: contentToSave,
                                         version: currentVersion ?? 0
                                     });
                                     break;
@@ -581,14 +819,14 @@ Flujo de trabajo obligatorio:
                             version: currentVersion ?? 0
                         });
 
-                        // return message and files created
+                        // Return success message WITHOUT returning the files
+                        // The files are now in the database and will be loaded from there
                         const message = `Plantilla "${templateName}" creada con éxito`;
                         const filesCreated = Object.keys(files).length;
                         return {
                             success: true,
                             message: message,
                             filesCreated: filesCreated,
-                            files: files,
                         };
                     },
                 },

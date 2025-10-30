@@ -486,7 +486,7 @@ export function FabricSlideEditor({
     const addText = () => {
         if (!fabricCanvasRef.current) return
 
-        const text = new fabric.FabricText('Haz clic para editar', {
+        const text = new fabric.IText('Haz clic para editar', {
             left: 100,
             top: 100,
             fontSize: 60,
@@ -501,8 +501,11 @@ export function FabricSlideEditor({
 
         fabricCanvasRef.current.add(text)
         fabricCanvasRef.current.setActiveObject(text)
+        // Enter editing mode immediately
+        text.enterEditing()
+        text.selectAll()
         fabricCanvasRef.current.renderAll()
-        toast.success('Texto agregado - Haz doble clic para editar')
+        toast.success('Texto agregado - Escribe para editar')
     }
 
     // Add rectangle
