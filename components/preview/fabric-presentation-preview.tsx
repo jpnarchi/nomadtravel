@@ -13,8 +13,9 @@ import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { Loader } from '../ai-elements/loader'
 import * as fabric from 'fabric'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Grid3x3, Menu, X, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 import { Button } from '../ui/button'
+import { ScrollArea } from '../ui/scroll-area'
 
 interface FabricPresentationPreviewProps {
     chatId: Id<"chats"> | null
@@ -41,6 +42,14 @@ export function FabricPresentationPreview({
     const [slides, setSlides] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [canvasReady, setCanvasReady] = useState(false)
+    const [isFullscreen, setIsFullscreen] = useState(false)
+    const [showThumbnails, setShowThumbnails] = useState(true)
+    const [isTransitioning, setIsTransitioning] = useState(false)
+    const [zoomLevel, setZoomLevel] = useState(1) // 1 = 100%, 0.5 = 50%, 2 = 200%
+    const fullscreenRef = useRef<HTMLDivElement>(null)
+    const [isPanning, setIsPanning] = useState(false)
+    const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+    const [scrollStart, setScrollStart] = useState({ x: 0, y: 0 })
 
     // Extract slides from files
     useEffect(() => {
@@ -95,27 +104,7 @@ export function FabricPresentationPreview({
         console.log('🎨 Inicializando Fabric.js canvas con elemento:', canvasElement)
 
         try {
-            // Get container dimensions with padding
-            const container = containerRef.current
-            const containerWidth = container.clientWidth - 64 // Account for p-8 (32px * 2)
-            const containerHeight = container.clientHeight - 64
-
-            console.log('📐 Preview - Dimensiones del contenedor:', { containerWidth, containerHeight })
-
-            // Calculate scale to fit 1920x1080 in container
-            const scaleX = containerWidth / 1920
-            const scaleY = containerHeight / 1080
-            const scale = Math.min(scaleX, scaleY, 1)
-
-            console.log('📐 Preview - Scale calculado:', { scaleX, scaleY, scale })
-
-            // Calculate display dimensions
-            const displayWidth = 1920 * scale
-            const displayHeight = 1080 * scale
-
-            console.log('📐 Preview - Dimensiones de display:', { displayWidth, displayHeight })
-
-            // Initialize fabric canvas
+            // Initialize fabric canvas with original dimensions
             const canvas = new fabric.Canvas(canvasElement, {
                 width: 1920,
                 height: 1080,
@@ -123,21 +112,9 @@ export function FabricPresentationPreview({
                 selection: false,
             })
 
-            // Ensure zoom is at 1 (no zoom applied)
-            canvas.setZoom(1)
-            canvas.viewportTransform = [1, 0, 0, 1, 0, 0]
-
-            // Apply CSS scaling
-            canvasElement.style.width = `${displayWidth}px`
-            canvasElement.style.height = `${displayHeight}px`
-
             fabricCanvasRef.current = canvas
             setCanvasReady(true)
-            console.log('✅ Preview - Canvas de Fabric.js inicializado correctamente', {
-                zoom: canvas.getZoom(),
-                displayWidth,
-                displayHeight
-            })
+            console.log('✅ Preview - Canvas de Fabric.js inicializado correctamente')
         } catch (error) {
             console.error('❌ Error inicializando canvas:', error)
         }
@@ -317,7 +294,46 @@ export function FabricPresentationPreview({
         console.log('✅ Canvas renderizado. Objetos en canvas:', canvas.getObjects().length)
     }, [currentSlide, slides, canvasReady])
 
-    // Handle window resize
+    // Apply zoom and scale to fit container
+    useEffect(() => {
+        if (!canvasElement || !containerRef.current || !fabricCanvasRef.current) return
+
+        const container = containerRef.current
+        // Get actual available space, accounting for padding (p-4 = 16px, pb-24 = 96px)
+        const containerWidth = container.clientWidth - 32 // 16px left + 16px right
+        const containerHeight = container.clientHeight - 112 // 16px top + 96px bottom
+
+        // Calculate scale to fit 1920x1080 in container (this ensures slides fill the container)
+        const scaleX = containerWidth / 1920
+        const scaleY = containerHeight / 1080
+        const baseFitScale = Math.min(scaleX, scaleY) // Scale to fit container perfectly
+
+        // Apply zoom level on top of the base fit scale
+        const finalScale = baseFitScale * zoomLevel
+
+        // Calculate final display dimensions
+        const displayWidth = 1920 * finalScale
+        const displayHeight = 1080 * finalScale
+
+        // Apply CSS scaling to make canvas fit the desired size
+        canvasElement.style.width = `${displayWidth}px`
+        canvasElement.style.height = `${displayHeight}px`
+
+        console.log('🔍 Zoom aplicado:', {
+            containerWidth,
+            containerHeight,
+            baseFitScale,
+            zoomLevel,
+            finalScale,
+            displayWidth,
+            displayHeight
+        })
+
+        // Re-render canvas to reflect any changes
+        fabricCanvasRef.current.renderAll()
+    }, [canvasElement, zoomLevel, showThumbnails, isFullscreen])
+
+    // Handle window resize - trigger zoom recalculation
     useEffect(() => {
         if (!canvasElement || !containerRef.current || !fabricCanvasRef.current) return
 
@@ -325,27 +341,25 @@ export function FabricPresentationPreview({
             const container = containerRef.current
             if (!container || !canvasElement) return
 
-            const containerWidth = container.clientWidth - 64 // Account for p-8
-            const containerHeight = container.clientHeight - 64
-
+            // Get actual available space, accounting for padding (p-4 = 16px, pb-24 = 96px)
+            const containerWidth = container.clientWidth - 32
+            const containerHeight = container.clientHeight - 112
             const scaleX = containerWidth / 1920
             const scaleY = containerHeight / 1080
-            const scale = Math.min(scaleX, scaleY, 1)
-
-            const displayWidth = 1920 * scale
-            const displayHeight = 1080 * scale
+            const baseFitScale = Math.min(scaleX, scaleY)
+            const finalScale = baseFitScale * zoomLevel
+            const displayWidth = 1920 * finalScale
+            const displayHeight = 1080 * finalScale
 
             canvasElement.style.width = `${displayWidth}px`
             canvasElement.style.height = `${displayHeight}px`
-
-            console.log('🔄 Preview - Canvas resized:', { displayWidth, displayHeight })
 
             fabricCanvasRef.current?.renderAll()
         }
 
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
-    }, [canvasElement])
+    }, [canvasElement, zoomLevel])
 
     // Keyboard navigation
     useEffect(() => {
@@ -371,13 +385,136 @@ export function FabricPresentationPreview({
 
     const goToNextSlide = () => {
         if (currentSlide < slides.length - 1) {
-            setCurrentSlide(prev => prev + 1)
+            setIsTransitioning(true)
+            setTimeout(() => {
+                setCurrentSlide(prev => prev + 1)
+                setTimeout(() => setIsTransitioning(false), 300)
+            }, 150)
         }
     }
 
     const goToPreviousSlide = () => {
         if (currentSlide > 0) {
-            setCurrentSlide(prev => prev - 1)
+            setIsTransitioning(true)
+            setTimeout(() => {
+                setCurrentSlide(prev => prev - 1)
+                setTimeout(() => setIsTransitioning(false), 300)
+            }, 150)
+        }
+    }
+
+    // Zoom controls
+    const handleZoomIn = () => {
+        setZoomLevel(prev => Math.min(prev + 0.25, 3)) // Max 300%
+    }
+
+    const handleZoomOut = () => {
+        setZoomLevel(prev => Math.max(prev - 0.25, 0.25)) // Min 25%
+    }
+
+    const handleZoomReset = () => {
+        setZoomLevel(1) // Reset to 100%
+    }
+
+    // Toggle fullscreen mode
+    const toggleFullscreen = () => {
+        if (!fullscreenRef.current) return
+
+        if (!document.fullscreenElement) {
+            fullscreenRef.current.requestFullscreen().then(() => {
+                setIsFullscreen(true)
+            }).catch((err) => {
+                console.error('Error attempting to enable fullscreen:', err)
+            })
+        } else {
+            document.exitFullscreen().then(() => {
+                setIsFullscreen(false)
+            })
+        }
+    }
+
+    // Handle fullscreen change events
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement)
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange)
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }, [])
+
+    // Handle Escape key to exit fullscreen and other shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                e.preventDefault()
+                document.exitFullscreen()
+            } else if (e.key === 'f' || e.key === 'F') {
+                e.preventDefault()
+                toggleFullscreen()
+            } else if (e.key === 't' || e.key === 'T') {
+                e.preventDefault()
+                setShowThumbnails(!showThumbnails)
+            } else if ((e.key === '+' || e.key === '=') && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault()
+                handleZoomIn()
+            } else if ((e.key === '-' || e.key === '_') && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault()
+                handleZoomOut()
+            } else if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault()
+                handleZoomReset()
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [isFullscreen, showThumbnails])
+
+    // Handle mouse panning
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!containerRef.current) return
+
+        setIsPanning(true)
+        setPanStart({ x: e.clientX, y: e.clientY })
+        setScrollStart({
+            x: containerRef.current.scrollLeft,
+            y: containerRef.current.scrollTop
+        })
+
+        // Change cursor to grabbing
+        if (containerRef.current) {
+            containerRef.current.style.cursor = 'grabbing'
+        }
+    }
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isPanning || !containerRef.current) return
+
+        const dx = e.clientX - panStart.x
+        const dy = e.clientY - panStart.y
+
+        containerRef.current.scrollLeft = scrollStart.x - dx
+        containerRef.current.scrollTop = scrollStart.y - dy
+    }
+
+    const handleMouseUp = () => {
+        setIsPanning(false)
+
+        // Reset cursor
+        if (containerRef.current) {
+            containerRef.current.style.cursor = zoomLevel > 1 ? 'grab' : 'default'
+        }
+    }
+
+    const handleMouseLeave = () => {
+        if (isPanning) {
+            setIsPanning(false)
+
+            // Reset cursor
+            if (containerRef.current) {
+                containerRef.current.style.cursor = zoomLevel > 1 ? 'grab' : 'default'
+            }
         }
     }
 
@@ -406,57 +543,296 @@ export function FabricPresentationPreview({
     }
 
     return (
-        <div className="h-full w-full flex flex-col items-center justify-center bg-zinc-900 relative">
-            {/* Canvas Container */}
-            <div
-                ref={containerRef}
-                className="relative flex items-center justify-center w-full h-full p-8"
-            >
-                <canvas
-                    ref={(el) => {
-                        if (el && !canvasElement) {
-                            console.log('📍 Canvas element montado en el DOM:', el)
-                            setCanvasElement(el)
-                        }
-                    }}
-                    className="shadow-2xl border-2 border-zinc-700 rounded-sm"
+        <div ref={fullscreenRef} className="h-full w-full flex bg-zinc-950 relative">
+            {/* Thumbnails Sidebar */}
+            {showThumbnails && !isFullscreen && (
+                <div className="w-56 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+                    <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-white">Slides</h3>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setShowThumbnails(false)}
+                        >
+                            <X className="size-4" />
+                        </Button>
+                    </div>
+
+                    <ScrollArea className="flex-1">
+                        <div className="p-3 space-y-2">
+                            {slides.map((slide, index) => (
+                                <div
+                                    key={index}
+                                    onClick={() => {
+                                        setIsTransitioning(true)
+                                        setTimeout(() => {
+                                            setCurrentSlide(index)
+                                            setTimeout(() => setIsTransitioning(false), 300)
+                                        }, 150)
+                                    }}
+                                    className={`
+                                        relative cursor-pointer rounded-lg border-2 overflow-hidden transition-all
+                                        ${index === currentSlide
+                                            ? 'border-blue-500 ring-2 ring-blue-500/30'
+                                            : 'border-zinc-700 hover:border-zinc-600'
+                                        }
+                                    `}
+                                >
+                                    <div
+                                        className="aspect-video flex items-center justify-center text-xs font-medium"
+                                        style={{ backgroundColor: slide.background || '#ffffff' }}
+                                    >
+                                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
+                                            <span className="text-white text-xs font-bold">
+                                                {index + 1}
+                                            </span>
+                                        </div>
+                                        <span className="text-zinc-400 text-xs">
+                                            {slide.objects?.length || 0} {slide.objects?.length === 1 ? 'objeto' : 'objetos'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+
+                    <div className="p-3 border-t border-zinc-800 text-xs text-zinc-400">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">←</kbd>
+                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">→</kbd>
+                                <span>Navegar</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">F</kbd>
+                                <span>Pantalla completa</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">T</kbd>
+                                <span>Miniaturas</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">Ctrl +</kbd>
+                                <span>Zoom in</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">Ctrl -</kbd>
+                                <span>Zoom out</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">Ctrl 0</kbd>
+                                <span>Reset zoom</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col relative">
+                {/* Top Control Bar */}
+                {!isFullscreen && (
+                    <div className="h-14 bg-zinc-900/50 backdrop-blur-sm border-b border-zinc-800 flex items-center justify-between px-4">
+                        <div className="flex items-center gap-3">
+                            {!showThumbnails && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowThumbnails(true)}
+                                    className="h-8"
+                                >
+                                    <Grid3x3 className="size-4 mr-2" />
+                                    Miniaturas
+                                </Button>
+                            )}
+                            <div className="h-6 w-px bg-zinc-700" />
+                            <span className="text-sm text-zinc-400">
+                                Slide <span className="text-white font-semibold">{currentSlide + 1}</span> de {slides.length}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {/* Zoom Controls */}
+                            <div className="flex items-center gap-1 border border-zinc-700 rounded-lg px-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleZoomOut}
+                                    disabled={zoomLevel <= 0.25}
+                                    className="h-7 w-7"
+                                    title="Alejar (Ctrl -)"
+                                >
+                                    <ZoomOut className="size-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleZoomReset}
+                                    className="h-7 px-2 text-xs font-medium min-w-[50px]"
+                                    title="Restablecer zoom (Ctrl 0)"
+                                >
+                                    {Math.round(zoomLevel * 100)}%
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleZoomIn}
+                                    disabled={zoomLevel >= 3}
+                                    className="h-7 w-7"
+                                    title="Acercar (Ctrl +)"
+                                >
+                                    <ZoomIn className="size-4" />
+                                </Button>
+                            </div>
+
+                            <div className="h-6 w-px bg-zinc-700" />
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleFullscreen}
+                                className="h-8"
+                            >
+                                <Maximize className="size-4 mr-2" />
+                                Pantalla Completa
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Canvas Container */}
+                <div
+                    ref={containerRef}
+                    className={`
+                        flex-1 relative flex items-start justify-center bg-zinc-900 overflow-auto p-4 pb-24
+                        transition-opacity duration-300
+                        ${isTransitioning ? 'opacity-0' : 'opacity-100'}
+                    `}
                     style={{
-                        display: 'block',
-                        margin: '0 auto',
+                        cursor: isPanning ? 'grabbing' : (zoomLevel > 1 ? 'grab' : 'default'),
+                        userSelect: isPanning ? 'none' : 'auto'
                     }}
-                />
-            </div>
-
-            {/* Navigation Controls */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-black/70 backdrop-blur-md rounded-full px-6 py-3">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={goToPreviousSlide}
-                    disabled={currentSlide === 0}
-                    className="text-white hover:bg-white/20 disabled:opacity-30"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseLeave}
                 >
-                    <ChevronLeft className="size-6" />
-                </Button>
+                    <canvas
+                        ref={(el) => {
+                            if (el && !canvasElement) {
+                                console.log('📍 Canvas element montado en el DOM:', el)
+                                setCanvasElement(el)
+                            }
+                        }}
+                        className="shadow-2xl rounded-sm flex-shrink-0"
+                        style={{
+                            display: 'block',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        }}
+                    />
+                </div>
 
-                <span className="text-white font-medium min-w-[80px] text-center">
-                    {currentSlide + 1} / {slides.length}
-                </span>
+                {/* Navigation Controls - Always visible */}
+                <div className={`
+                    absolute bottom-8 left-1/2 transform -translate-x-1/2
+                    flex items-center gap-3 bg-black/80 backdrop-blur-xl rounded-full px-6 py-3
+                    shadow-2xl border border-white/10
+                `}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={goToPreviousSlide}
+                        disabled={currentSlide === 0}
+                        className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        <ChevronLeft className="size-6" />
+                    </Button>
 
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={goToNextSlide}
-                    disabled={currentSlide === slides.length - 1}
-                    className="text-white hover:bg-white/20 disabled:opacity-30"
-                >
-                    <ChevronRight className="size-6" />
-                </Button>
-            </div>
+                    {/* Progress indicators */}
+                    <div className="flex items-center gap-1.5 px-3">
+                        {slides.map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => {
+                                    setIsTransitioning(true)
+                                    setTimeout(() => {
+                                        setCurrentSlide(index)
+                                        setTimeout(() => setIsTransitioning(false), 300)
+                                    }, 150)
+                                }}
+                                className={`
+                                    h-2 rounded-full transition-all
+                                    ${index === currentSlide
+                                        ? 'w-8 bg-blue-500'
+                                        : 'w-2 bg-white/30 hover:bg-white/50'
+                                    }
+                                `}
+                                aria-label={`Ir al slide ${index + 1}`}
+                            />
+                        ))}
+                    </div>
 
-            {/* Instructions */}
-            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-gray-400 text-sm">
-                Usa las flechas del teclado o los botones para navegar
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={goToNextSlide}
+                        disabled={currentSlide === slides.length - 1}
+                        className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        <ChevronRight className="size-6" />
+                    </Button>
+                </div>
+
+                {/* Fullscreen Exit Button */}
+                {isFullscreen && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleFullscreen}
+                        className="absolute top-4 right-4 h-10 w-10 text-white hover:bg-white/20 bg-black/50 backdrop-blur-sm rounded-full"
+                    >
+                        <Minimize className="size-5" />
+                    </Button>
+                )}
+
+                {/* Slide Counter and Zoom in Fullscreen */}
+                {isFullscreen && (
+                    <>
+                        <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
+                            <span className="text-white text-sm font-medium">
+                                {currentSlide + 1} / {slides.length}
+                            </span>
+                        </div>
+
+                        {/* Zoom controls in fullscreen */}
+                        <div className="absolute top-4 right-16 flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-2">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleZoomOut}
+                                disabled={zoomLevel <= 0.25}
+                                className="h-8 w-8 text-white hover:bg-white/20"
+                                title="Alejar (Ctrl -)"
+                            >
+                                <ZoomOut className="size-4" />
+                            </Button>
+                            <span className="text-white text-xs font-medium px-2 min-w-[45px] text-center">
+                                {Math.round(zoomLevel * 100)}%
+                            </span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleZoomIn}
+                                disabled={zoomLevel >= 3}
+                                className="h-8 w-8 text-white hover:bg-white/20"
+                                title="Acercar (Ctrl +)"
+                            >
+                                <ZoomIn className="size-4" />
+                            </Button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     )

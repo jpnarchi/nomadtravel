@@ -26,7 +26,9 @@ import {
     Maximize,
     Upload,
     Link,
-    Scan
+    Scan,
+    Lock,
+    Unlock
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -92,7 +94,12 @@ export function FabricSlideEditor({
                 'hasControls',
                 'hasBorders',
                 'lockScalingFlip',
-                'crossOrigin'
+                'crossOrigin',
+                'lockMovementX',
+                'lockMovementY',
+                'lockRotation',
+                'lockScalingX',
+                'lockScalingY'
             ])
             return json
         })
@@ -273,15 +280,21 @@ export function FabricSlideEditor({
                                     if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY)
                                     if (obj.angle !== undefined) img.set('angle', obj.angle)
                                     img.set({
-                                        selectable: true,
-                                        evented: true,
-                                        hasControls: true,
+                                        selectable: obj.lockMovementX ? true : true,
+                                        evented: obj.lockMovementX ? true : true,
+                                        hasControls: obj.lockMovementX ? false : true,
                                         hasBorders: true,
                                         lockScalingFlip: true,
+                                        lockMovementX: obj.lockMovementX || false,
+                                        lockMovementY: obj.lockMovementY || false,
+                                        lockRotation: obj.lockRotation || false,
+                                        lockScalingX: obj.lockScalingX || false,
+                                        lockScalingY: obj.lockScalingY || false,
                                     })
                                     canvas.add(img)
                                     canvas.renderAll()
-                                    console.log(`✅ Imagen ${index} agregada al canvas`)
+                                    console.log(`✅ Imagen ${index} agregada al canvas`,
+                                        obj.lockMovementX ? '🔒 bloqueado' : '')
                                 }).catch((err) => {
                                     console.error(`❌ Error cargando imagen ${index}:`, err)
                                 })
@@ -294,16 +307,22 @@ export function FabricSlideEditor({
                     }
 
                     if (fabricObj) {
-                        // Ensure objects are selectable and moveable
+                        // Apply saved lock properties or default to unlocked
                         fabricObj.set({
-                            selectable: true,
-                            evented: true,
-                            hasControls: true,
+                            selectable: obj.lockMovementX ? true : true,
+                            evented: obj.lockMovementX ? true : true,
+                            hasControls: obj.lockMovementX ? false : true,
                             hasBorders: true,
                             lockScalingFlip: true,
+                            lockMovementX: obj.lockMovementX || false,
+                            lockMovementY: obj.lockMovementY || false,
+                            lockRotation: obj.lockRotation || false,
+                            lockScalingX: obj.lockScalingX || false,
+                            lockScalingY: obj.lockScalingY || false,
                         })
                         canvas.add(fabricObj)
-                        console.log(`✅ Objeto ${index} agregado al canvas: ${obj.type} en (${obj.left}, ${obj.top})`)
+                        console.log(`✅ Objeto ${index} agregado al canvas: ${obj.type} en (${obj.left}, ${obj.top})`,
+                            obj.lockMovementX ? '🔒 bloqueado' : '')
                     } else {
                         console.error(`❌ No se pudo crear el objeto ${index}`, obj)
                     }
@@ -589,9 +608,50 @@ export function FabricSlideEditor({
         toast.success('Objeto eliminado')
     }
 
+    // Toggle lock/unlock selected object
+    const toggleLockObject = () => {
+        if (!fabricCanvasRef.current || !selectedObject) return
+
+        const isLocked = selectedObject.lockMovementX || selectedObject.lockMovementY
+
+        if (isLocked) {
+            // Unlock object
+            selectedObject.set({
+                lockMovementX: false,
+                lockMovementY: false,
+                lockRotation: false,
+                lockScalingX: false,
+                lockScalingY: false,
+                selectable: true,
+                evented: true,
+                hasControls: true,
+                hasBorders: true,
+            })
+            toast.success('Objeto desbloqueado')
+        } else {
+            // Lock object
+            selectedObject.set({
+                lockMovementX: true,
+                lockMovementY: true,
+                lockRotation: true,
+                lockScalingX: true,
+                lockScalingY: true,
+                hasControls: false,
+            })
+            toast.success('Objeto bloqueado')
+        }
+
+        fabricCanvasRef.current.renderAll()
+        saveCanvas()
+        // Force re-render to update button icon
+        setSelectedObject({ ...selectedObject })
+    }
+
     // Change text properties
     const updateTextProperty = (property: string, value: any) => {
-        if (!selectedObject || selectedObject.type !== 'text') return
+        if (!selectedObject) return
+        const isTextType = selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox'
+        if (!isTextType) return
 
         selectedObject.set(property as any, value)
         fabricCanvasRef.current?.renderAll()
@@ -792,223 +852,282 @@ export function FabricSlideEditor({
     }, [])
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Toolbar */}
-            <div className="bg-zinc-900 border-b border-zinc-800 p-4">
-                <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-semibold text-white">Slide {slideNumber}</h3>
-                </div>
+        <div className="h-full flex">
+            {/* Left Sidebar - Tools */}
+            <div className="w-16 bg-zinc-900 border-r border-zinc-800 flex flex-col items-center py-4 gap-2">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={addText}
+                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    title="Agregar Texto"
+                >
+                    <Type className="size-5" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={addRectangle}
+                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    title="Agregar Rectángulo"
+                >
+                    <Square className="size-5" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={addCircle}
+                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    title="Agregar Círculo"
+                >
+                    <Circle className="size-5" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={addTriangle}
+                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    title="Agregar Triángulo"
+                >
+                    <Triangle className="size-5" />
+                </Button>
 
-                {/* Add objects toolbar */}
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-zinc-800 flex-wrap">
+                <div className="h-px w-8 bg-zinc-700 my-2" />
+
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    title="Subir Imagen"
+                >
+                    <Upload className="size-5" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowImageUrlDialog(true)}
+                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    title="Imagen desde URL"
+                >
+                    <ImageIcon className="size-5" />
+                </Button>
+
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                />
+            </div>
+
+            {/* Center - Canvas Area */}
+            <div className="flex-1 flex flex-col">
+                {/* Top Toolbar */}
+                <div className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4">
+                    <h3 className="text-sm font-semibold text-white">Slide {slideNumber}</h3>
+
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={addText}
-                            className="flex items-center gap-2"
-                        >
-                            <Type className="size-4" />
-                            Texto
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={addRectangle}
-                            className="flex items-center gap-2"
-                        >
-                            <Square className="size-4" />
-                            Rectángulo
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={addCircle}
-                            className="flex items-center gap-2"
-                        >
-                            <Circle className="size-4" />
-                            Círculo
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={addTriangle}
-                            className="flex items-center gap-2"
-                        >
-                            <Triangle className="size-4" />
-                            Triángulo
-                        </Button>
-                        <div className="h-6 w-px bg-zinc-700 mx-1" />
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center gap-2"
-                        >
-                            <Upload className="size-4" />
-                            Subir Imagen
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowImageUrlDialog(true)}
-                            className="flex items-center gap-2"
-                        >
-                            <Link className="size-4" />
-                            URL
-                        </Button>
-                    </div>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
-
-                    <div className="flex items-center gap-2 ml-auto">
-                        <div className="flex items-center gap-1 px-3 py-1 bg-zinc-800 rounded-md">
+                        {/* Zoom Controls */}
+                        <div className="flex items-center gap-1 px-2 py-1 bg-zinc-800 rounded-md">
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={handleZoomOut}
-                                className="h-8 w-8"
-                                title="Alejar (Zoom Out)"
+                                className="h-7 w-7"
+                                title="Alejar"
                             >
-                                <ZoomOut className="size-4" />
+                                <ZoomOut className="size-3.5" />
                             </Button>
-                            <span className="text-white text-sm min-w-[60px] text-center">
+                            <span className="text-white text-xs min-w-[45px] text-center">
                                 {Math.round(zoom * 100)}%
                             </span>
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={handleZoomIn}
-                                className="h-8 w-8"
-                                title="Acercar (Zoom In)"
+                                className="h-7 w-7"
+                                title="Acercar"
                             >
-                                <ZoomIn className="size-4" />
+                                <ZoomIn className="size-3.5" />
                             </Button>
-                            <div className="h-6 w-px bg-zinc-600 mx-1" />
+                            <div className="h-4 w-px bg-zinc-600 mx-0.5" />
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={fitToScreen}
-                                className="h-8 w-8"
-                                title="Ajustar a la pantalla"
+                                className="h-7 w-7"
+                                title="Ajustar"
                             >
-                                <Scan className="size-4" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleResetZoom}
-                                className="h-8 w-8"
-                                title="Restablecer Zoom (100%)"
-                            >
-                                <Maximize className="size-4" />
+                                <Scan className="size-3.5" />
                             </Button>
                         </div>
+
+                        {/* Object Actions */}
                         {selectedObject && (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={deleteSelected}
-                                className="flex items-center gap-2"
-                            >
-                                <Trash2 className="size-4" />
-                                Eliminar
-                            </Button>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={toggleLockObject}
+                                    className="h-8 w-8"
+                                    title={selectedObject.lockMovementX ? 'Desbloquear' : 'Bloquear'}
+                                >
+                                    {selectedObject.lockMovementX ? (
+                                        <Unlock className="size-4" />
+                                    ) : (
+                                        <Lock className="size-4" />
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={deleteSelected}
+                                    className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                    title="Eliminar"
+                                >
+                                    <Trash2 className="size-4" />
+                                </Button>
+                            </div>
                         )}
                     </div>
                 </div>
 
-                {/* Properties panel */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Canvas */}
+                <div
+                    ref={containerRef}
+                    className="flex-1 bg-zinc-800 flex items-center justify-center overflow-hidden relative"
+                >
+                    <canvas
+                        ref={canvasRef}
+                        className="shadow-2xl border-2 border-zinc-600 rounded-sm"
+                        style={{
+                            display: 'block',
+                            margin: '0 auto',
+                        }}
+                    />
+                    <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-2 py-1.5 rounded backdrop-blur-sm">
+                        <p className="text-[10px] text-zinc-300">Shift+Arrastrar para mover | Rueda para zoom</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right Sidebar - Properties */}
+            <div className="w-64 bg-zinc-900 border-l border-zinc-800 overflow-y-auto">
+                <div className="p-4 space-y-4">
                     <div>
-                        <Label className="text-white mb-2">Fondo</Label>
-                        <Input
-                            type="color"
-                            value={backgroundColor}
-                            onChange={(e) => setBackgroundColor(e.target.value)}
-                            className="h-10 cursor-pointer"
-                        />
+                        <h4 className="text-xs font-semibold text-zinc-400 uppercase mb-3">Slide</h4>
+                        <div>
+                            <Label className="text-xs text-zinc-300 mb-1.5 block">Color de fondo</Label>
+                            <Input
+                                type="color"
+                                value={backgroundColor}
+                                onChange={(e) => setBackgroundColor(e.target.value)}
+                                className="h-9 cursor-pointer"
+                            />
+                        </div>
                     </div>
 
-                    {selectedObject && selectedObject.type === 'text' && (
+                    {selectedObject && (
                         <>
+                            <div className="h-px bg-zinc-800" />
                             <div>
-                                <Label className="text-white mb-2">Tamaño de fuente</Label>
-                                <Input
-                                    type="number"
-                                    value={(selectedObject as any).fontSize || 60}
-                                    onChange={(e) => updateTextProperty('fontSize', parseInt(e.target.value))}
-                                    className="h-10"
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-white mb-2">Color de texto</Label>
-                                <Input
-                                    type="color"
-                                    value={(selectedObject as any).fill as string || '#ffffff'}
-                                    onChange={(e) => updateFillColor(e.target.value)}
-                                    className="h-10 cursor-pointer"
-                                />
-                            </div>
-                            <div>
-                                <Label className="text-white mb-2">Fuente</Label>
-                                <Select
-                                    value={(selectedObject as any).fontFamily || 'Arial'}
-                                    onValueChange={(value) => updateTextProperty('fontFamily', value)}
-                                >
-                                    <SelectTrigger className="h-10">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Arial">Arial</SelectItem>
-                                        <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                                        <SelectItem value="Courier New">Courier New</SelectItem>
-                                        <SelectItem value="Georgia">Georgia</SelectItem>
-                                        <SelectItem value="Verdana">Verdana</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <h4 className="text-xs font-semibold text-zinc-400 uppercase mb-3">
+                                    {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Texto' :
+                                     selectedObject.type === 'rect' ? 'Rectángulo' :
+                                     selectedObject.type === 'circle' ? 'Círculo' :
+                                     selectedObject.type === 'triangle' ? 'Triángulo' :
+                                     selectedObject.type === 'image' ? 'Imagen' : 'Objeto'}
+                                </h4>
+
+                                {/* Text Properties */}
+                                {(selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox') && (
+                                    <div className="space-y-3">
+                                        <div>
+                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Tamaño</Label>
+                                            <Input
+                                                type="number"
+                                                value={(selectedObject as any).fontSize || 60}
+                                                onChange={(e) => updateTextProperty('fontSize', parseInt(e.target.value))}
+                                                className="h-9"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Color</Label>
+                                            <Input
+                                                type="color"
+                                                value={(selectedObject as any).fill as string || '#ffffff'}
+                                                onChange={(e) => updateFillColor(e.target.value)}
+                                                className="h-9 cursor-pointer"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Fuente</Label>
+                                            <Select
+                                                value={(selectedObject as any).fontFamily || 'Arial'}
+                                                onValueChange={(value) => updateTextProperty('fontFamily', value)}
+                                            >
+                                                <SelectTrigger className="h-9">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Arial">Arial</SelectItem>
+                                                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                                                    <SelectItem value="Courier New">Courier New</SelectItem>
+                                                    <SelectItem value="Georgia">Georgia</SelectItem>
+                                                    <SelectItem value="Verdana">Verdana</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Peso</Label>
+                                            <Select
+                                                value={(selectedObject as any).fontWeight || 'normal'}
+                                                onValueChange={(value) => updateTextProperty('fontWeight', value)}
+                                            >
+                                                <SelectTrigger className="h-9">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="normal">Normal</SelectItem>
+                                                    <SelectItem value="bold">Negrita</SelectItem>
+                                                    <SelectItem value="100">Thin</SelectItem>
+                                                    <SelectItem value="300">Light</SelectItem>
+                                                    <SelectItem value="500">Medium</SelectItem>
+                                                    <SelectItem value="700">Bold</SelectItem>
+                                                    <SelectItem value="900">Black</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Shape Fill Color */}
+                                {selectedObject &&
+                                    selectedObject.type !== 'text' &&
+                                    selectedObject.type !== 'i-text' &&
+                                    selectedObject.type !== 'textbox' &&
+                                    selectedObject.type !== 'image' && (
+                                    <div>
+                                        <Label className="text-xs text-zinc-300 mb-1.5 block">Color</Label>
+                                        <Input
+                                            type="color"
+                                            value={(selectedObject as any).fill as string || '#667eea'}
+                                            onChange={(e) => updateFillColor(e.target.value)}
+                                            className="h-9 cursor-pointer"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </>
                     )}
 
-                    {selectedObject && selectedObject.type !== 'text' && selectedObject.type !== 'image' && (
-                        <div>
-                            <Label className="text-white mb-2">Color de relleno</Label>
-                            <Input
-                                type="color"
-                                value={(selectedObject as any).fill as string || '#667eea'}
-                                onChange={(e) => updateFillColor(e.target.value)}
-                                className="h-10 cursor-pointer"
-                            />
+                    {!selectedObject && (
+                        <div className="text-center text-zinc-500 text-xs py-8">
+                            Selecciona un objeto para editar sus propiedades
                         </div>
                     )}
-                </div>
-            </div>
-
-            {/* Canvas */}
-            <div
-                ref={containerRef}
-                className="flex-1 bg-zinc-800 flex items-center justify-center overflow-hidden relative p-4"
-            >
-                <canvas
-                    ref={canvasRef}
-                    className="shadow-2xl border-2 border-zinc-600 rounded-sm"
-                    style={{
-                        display: 'block',
-                        margin: '0 auto',
-                    }}
-                />
-                <div className="absolute bottom-4 left-4 bg-black/80 text-white text-xs px-3 py-2 rounded-md backdrop-blur-sm">
-                    <p className="mb-1">🖱️ <strong>Rueda del mouse:</strong> Zoom</p>
-                    <p className="mb-1">⌨️ <strong>Shift + Arrastrar:</strong> Mover vista</p>
-                    <p className="mb-1">🖱️ <strong>Botón central:</strong> Mover vista</p>
-                    <p className="mb-1">📋 <strong>Ctrl+V:</strong> Pegar imagen</p>
-                    <p>🎯 <strong>Arrastrar archivo:</strong> Soltar imagen</p>
                 </div>
             </div>
 
