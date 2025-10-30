@@ -563,16 +563,17 @@ export function FabricPresentationPreview({
         try {
             toast.loading('Exportando a PDF...')
 
-            // Create PDF with 16:9 aspect ratio (landscape)
-            // A4 size in landscape: 297mm x 210mm
+            // Create PDF with 16:9 aspect ratio (matching slide dimensions)
+            // Using custom page size to match 16:9 exactly
+            const slideAspectRatio = 16 / 9
+            const pageWidth = 297 // mm
+            const pageHeight = pageWidth / slideAspectRatio // Calculate height to maintain 16:9
+
             const pdf = new jsPDF({
                 orientation: 'landscape',
                 unit: 'mm',
-                format: 'a4'
+                format: [pageHeight, pageWidth] // [height, width] for landscape
             })
-
-            const pageWidth = 297
-            const pageHeight = 210
 
             // Save current slide
             const currentSlideIndex = currentSlide
