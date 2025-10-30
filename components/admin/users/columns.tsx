@@ -83,14 +83,17 @@ export const columns: ColumnDef<User>[] = [
         header: "Usuario",
         cell: ({ row }) => {
             const user = row.original
+            const userName = user.name || user.email || "Usuario"
+            const userInitial = userName.charAt(0).toUpperCase()
+
             return (
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
-                        <AvatarImage src={user.pictureUrl} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarImage src={user.pictureUrl} alt={userName} />
+                        <AvatarFallback>{userInitial}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <span className="font-medium">{user.name}</span>
+                        <span className="font-medium">{userName}</span>
                         <span className="text-sm text-muted-foreground lowercase">{user.email}</span>
                     </div>
                 </div>
@@ -99,9 +102,11 @@ export const columns: ColumnDef<User>[] = [
         filterFn: (row, id, value) => {
             const user = row.original
             const searchValue = value.toLowerCase()
+            const userName = (user.name || user.email || "").toLowerCase()
+            const userEmail = (user.email || "").toLowerCase()
             return (
-                user.name.toLowerCase().includes(searchValue) ||
-                user.email.toLowerCase().includes(searchValue)
+                userName.includes(searchValue) ||
+                userEmail.includes(searchValue)
             )
         },
     },

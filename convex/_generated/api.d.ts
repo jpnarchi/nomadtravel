@@ -17,6 +17,8 @@ import type * as chats from "../chats.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
+import type * as seedFabricTemplates from "../seedFabricTemplates.js";
+import type * as seedFabricTemplatesScript from "../seedFabricTemplatesScript.js";
 import type * as seedTemplates from "../seedTemplates.js";
 import type * as stripe from "../stripe.js";
 import type * as suggestions from "../suggestions.js";
@@ -38,6 +40,8 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   http: typeof http;
   messages: typeof messages;
+  seedFabricTemplates: typeof seedFabricTemplates;
+  seedFabricTemplatesScript: typeof seedFabricTemplatesScript;
   seedTemplates: typeof seedTemplates;
   stripe: typeof stripe;
   suggestions: typeof suggestions;

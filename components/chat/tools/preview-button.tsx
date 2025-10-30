@@ -60,7 +60,7 @@ export function PreviewButton({
                             router.push(`/chat/${id}/preview/${version}`);
                         }}
                         disabled={isLoading}
-                        className="bg-green-700 hover:bg-green-600 text-white cursor-pointer"
+                        className="bg-primary hover:bg-primary-200 text-white cursor-pointer"
                     >
                         {isLoading ? (
                             <>
@@ -69,7 +69,7 @@ export function PreviewButton({
                             </>
                         ) : (
                             <>
-                                Ver Página
+                                Ver Presentación
                             </>
                         )}
                     </Button>
@@ -87,13 +87,7 @@ export function PreviewButton({
                 />
             </Card>
             <div className="flex flex-row items-center gap-2 text-xs text-muted-foreground italic">
-                <div className="flex flex-row items-center gap-1">
-                    <p>Tip: Usa el botón</p> 
-                </div>
-                <div className="bg-green-600 rounded-sm p-0.5">
-                    <span className="text-white"><InspectorIcon /></span> 
-                </div>
-                <p>para editar la página.</p>
+                <p>Tip: Haz clic en "Ver Presentación" para visualizar los slides.</p>
             </div>
         </div>
     )

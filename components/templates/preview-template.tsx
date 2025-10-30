@@ -1,18 +1,23 @@
 "use client"
 
-import { SandpackProvider, SandpackLayout, SandpackPreview, SandpackCodeEditor, SandpackFileExplorer } from "@codesandbox/sandpack-react";
-import { Button } from "../ui/button";
+/**
+ * Vista previa y edición de Templates con Fabric.js
+ *
+ * Componente principal para visualizar y editar presentaciones
+ * Reemplaza completamente Sandpack con editor Fabric.js
+ */
 
-import { ArrowLeftIcon } from "lucide-react";
+import { Button } from "../ui/button";
+import { ArrowLeftIcon, Eye, Code } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { Loader } from "../ai-elements/loader";
-import { CustomFileExplorer } from "./custom-file-explorer";
 import { api } from "@/convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { toast } from "sonner";
-import { dependencies } from "@/lib/dependencies";
+import { FabricPresentationEditor } from "./fabric-presentation-editor";
+import { FabricPresentationPreview } from "../preview/fabric-presentation-preview";
 
 export function PreviewTemplate({
     id,
@@ -20,25 +25,12 @@ export function PreviewTemplate({
     id: Id<"templates">,
 }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
-    const [showCode, setShowCode] = useState(false);
+    const [showEditor, setShowEditor] = useState(false);
     const initialFiles = useQuery(api.templates.getFilesByTemplateId, { templateId: id });
-    const [isDesktop, setIsDesktop] = useState(false);
-    const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
 
     const saveTemplateFiles = useMutation(api.templates.saveTemplateFiles);
-
-    useEffect(() => {
-        const checkScreenSize = () => {
-            setIsDesktop(window.innerWidth >= 1024); // lg breakpoint
-        };
-
-        checkScreenSize();
-        window.addEventListener('resize', checkScreenSize);
-
-        return () => window.removeEventListener('resize', checkScreenSize);
-    }, []);
 
     if (!initialFiles) {
         return (
@@ -80,7 +72,6 @@ export function PreviewTemplate({
             });
 
             toast.success('Cambios guardados exitosamente');
-            setHasChanges(false);
             router.refresh();
         } catch (error) {
             toast.error('Error al guardar cambios');
@@ -98,7 +89,7 @@ export function PreviewTemplate({
                     className="cursor-pointer"
                     onClick={() => {
                         setIsBackButtonLoading(true);
-                        router.push(`/`);
+                        router.push(`/templates`);
                     }}
                 >
                     {isBackButtonLoading ? (<Loader />) : (<ArrowLeftIcon className="size-4" />)}
@@ -109,64 +100,38 @@ export function PreviewTemplate({
                     <Button
                         variant="outline"
                         className="cursor-pointer"
-                        onClick={() => setShowCode(!showCode)}
+                        onClick={() => setShowEditor(!showEditor)}
                     >
-                        {showCode ? "Vista previa" : "Código"}
+                        {showEditor ? (
+                            <>
+                                <Eye className="size-4 mr-2" />
+                                Vista Previa
+                            </>
+                        ) : (
+                            <>
+                                <Code className="size-4 mr-2" />
+                                Editor
+                            </>
+                        )}
                     </Button>
                 </div>
             </div>
+
             <div className="flex-1 border rounded-lg overflow-hidden mt-4">
-                <SandpackProvider
-                    key={showCode ? 'code' : 'preview'}
-                    files={initialFiles}
-                    theme="dark"
-                    template="react"
-                    options={{
-                        externalResources: ['https://cdn.tailwindcss.com'],
-                        autorun: true,
-                    }}
-                    customSetup={{
-                        dependencies: dependencies
-                    }}
-                    style={{ height: '100%' }}
-                >
-                    <SandpackLayout style={{ height: '100%' }}>
-                        {!showCode && (
-                            <SandpackPreview
-                                showOpenInCodeSandbox={false}
-                                showRefreshButton={false}
-                                showNavigator={true}
-                                style={{ height: '100%', width: '100%' }}
-                            />
-                        )}
-                        {showCode && (
-                            <>
-                                {isDesktop && (
-                                    <CustomFileExplorer
-                                        templateId={id}
-                                        initialFiles={initialFiles}
-                                        onFilesChange={(currentFiles) => {
-                                            const filesChanged = JSON.stringify(initialFiles) !== JSON.stringify(currentFiles);
-                                            setHasChanges(filesChanged);
-                                        }}
-                                        onSave={handleSave}
-                                        hasChanges={hasChanges}
-                                        isSaving={isSaving}
-                                    />
-                                )}
-                                <SandpackCodeEditor
-                                    showLineNumbers={true}
-                                    showTabs={true}
-                                    showRunButton={false}
-                                    style={{
-                                        height: '100%',
-                                        minHeight: '100%'
-                                    }}
-                                />
-                            </>
-                        )}
-                    </SandpackLayout>
-                </SandpackProvider>
+                {showEditor ? (
+                    <FabricPresentationEditor
+                        initialFiles={initialFiles}
+                        onSave={handleSave}
+                        isSaving={isSaving}
+                    />
+                ) : (
+                    <FabricPresentationPreview
+                        chatId={id as any}
+                        version={0}
+                        isTemplate={true}
+                        templateFiles={initialFiles}
+                    />
+                )}
             </div>
         </div>
     );

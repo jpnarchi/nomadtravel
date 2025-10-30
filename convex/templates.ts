@@ -47,14 +47,18 @@ export const getFiles = query({
             throw new Error("Name is required");
         }
 
-        const template = await ctx.db
+        // Get first template with this name (in case of duplicates)
+        const templates = await ctx.db
             .query("templates")
             .withIndex("by_name", (q) => q.eq("name", args.name!))
-            .unique();
+            .collect();
 
-        if (!template) {
+        if (templates.length === 0) {
             throw new Error("Template not found");
         }
+
+        // Use the first template found
+        const template = templates[0];
 
         const templateFiles = await ctx.db
             .query("templateFiles")
@@ -85,8 +89,13 @@ export const createTemplate = mutation({
             throw new Error("Description is required");
         }
 
-        const template = await ctx.db.query("templates").withIndex("by_name", (q) => q.eq("name", args.name!)).unique();
-        if (template) {
+        // Check if template already exists
+        const existingTemplates = await ctx.db
+            .query("templates")
+            .withIndex("by_name", (q) => q.eq("name", args.name!))
+            .collect();
+
+        if (existingTemplates.length > 0) {
             throw new Error("Template already exists");
         }
 
@@ -99,22 +108,20 @@ export const createTemplateWithFiles = mutation({
     args: {
         name: v.string(),
         description: v.string(),
+        files: v.optional(v.array(v.object({
+            path: v.string(),
+            content: v.string()
+        }))),
         sourceTemplateId: v.optional(v.id('templates')),
     },
     handler: async (ctx, args) => {
-        const user = await getCurrentUser(ctx);
-
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
-
         // Check if template name already exists
-        const existingTemplate = await ctx.db
+        const existingTemplates = await ctx.db
             .query("templates")
             .withIndex("by_name", (q) => q.eq("name", args.name))
-            .unique();
+            .collect();
 
-        if (existingTemplate) {
+        if (existingTemplates.length > 0) {
             throw new Error("Template already exists");
         }
 
@@ -124,8 +131,18 @@ export const createTemplateWithFiles = mutation({
             description: args.description,
         });
 
-        // If a source template is provided, copy its files
-        if (args.sourceTemplateId) {
+        // If files array is provided, create them
+        if (args.files && args.files.length > 0) {
+            for (const file of args.files) {
+                await ctx.db.insert("templateFiles", {
+                    templateId: templateId,
+                    path: file.path,
+                    content: file.content,
+                });
+            }
+        }
+        // Otherwise if a source template is provided, copy its files
+        else if (args.sourceTemplateId) {
             const sourceFiles = await ctx.db
                 .query("templateFiles")
                 .withIndex("by_templateId", (q) => q.eq("templateId", args.sourceTemplateId!))
@@ -220,24 +237,36 @@ export const deleteTemplate = mutation({
             throw new Error("Name is required");
         }
 
-        const template = await ctx.db.query("templates").withIndex("by_name", (q) => q.eq("name", args.name!)).unique();
+        // Get ALL templates with this name (in case of duplicates)
+        const templates = await ctx.db
+            .query("templates")
+            .withIndex("by_name", (q) => q.eq("name", args.name!))
+            .collect();
 
-        if (!template) {
+        if (templates.length === 0) {
             throw new Error("Template not found");
         }
 
-        const templateFiles = await ctx.db
-            .query("templateFiles")
-            .collect();
+        // Delete all matching templates and their files
+        for (const template of templates) {
+            // Delete all files for this template
+            const templateFiles = await ctx.db
+                .query("templateFiles")
+                .withIndex("by_templateId", (q) => q.eq("templateId", template._id))
+                .collect();
 
-        for (const templateFile of templateFiles) {
-            if (templateFile.templateId === template._id) {
+            for (const templateFile of templateFiles) {
                 await ctx.db.delete(templateFile._id);
             }
+
+            // Delete the template itself
+            await ctx.db.delete(template._id);
         }
 
-        await ctx.db.delete(template._id);
-        return { success: true };
+        return {
+            success: true,
+            deleted: templates.length
+        };
     },
 });
 

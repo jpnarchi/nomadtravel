@@ -1,4 +1,3 @@
-import { SandpackProvider, SandpackLayout, SandpackCodeEditor } from "@codesandbox/sandpack-react";
 import { Button } from "../ui/button";
 import { ArrowLeftIcon, CodeXml, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -6,32 +5,16 @@ import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
-import { SandpackPreviewClient } from "./sandpack-preview-client";
+import { FabricPresentationPreview } from "./fabric-presentation-preview";
 import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
-import { WorkbenchFileExplorer } from "./custom-file-explorer";
-import { elementInspectorJs, indexJs, toasterIndexJs } from "@/lib/element-inspector-files";
-import { DeployButton } from "./deploy-button";
-import { dependencies } from "@/lib/dependencies";
 
 export function Workbench({ id, version }: { id: Id<"chats">, version: number }) {
     const isAdmin = useQuery(api.users.isAdmin);
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
     const files = useQuery(api.files.getAll, { chatId: id, version });
-    const [isDesktop, setIsDesktop] = useState(false);
     const router = useRouter();
-
-    useEffect(() => {
-        const checkScreenSize = () => {
-            setIsDesktop(window.innerWidth >= 1024); // lg breakpoint
-        };
-
-        checkScreenSize();
-        window.addEventListener('resize', checkScreenSize);
-
-        return () => window.removeEventListener('resize', checkScreenSize);
-    }, []);
 
     if (!files) {
         return (
@@ -41,15 +24,6 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                 </div>
             </div>
         );
-    }
-
-    if (!files["/index.js"] || !files["/components/ElementInspector.js"]) {
-        if (files['/lib/utils.js']) {
-            files["/index.js"] = toasterIndexJs;
-        } else {
-            files["/index.js"] = indexJs;
-        }
-        files['/components/ElementInspector.js'] = elementInspectorJs
     }
 
     return (
@@ -78,50 +52,33 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                     >
                         {showCode ? <Eye className="size-4" /> : <CodeXml className="size-4" />}
                     </Button>
-                    <DeployButton id={id} version={version} />
                 </div>
             </div>
-            <div className="flex-1 border rounded-lg overflow-hidden mt-4">
-                <SandpackProvider
-                    key={showCode ? 'code' : 'preview'}
-                    files={files}
-                    theme="dark"
-                    template="react"
-                    options={{
-                        externalResources: ['https://cdn.tailwindcss.com'],
-                        autorun: true,
-                    }}
-                    customSetup={{
-                        dependencies: dependencies
-                    }}
-                    style={{ height: '100%' }}
-                >
-                    <SandpackLayout style={{ height: '100%' }}>
-                        {!showCode && (
-                            <SandpackPreviewClient chatId={id} />
-                        )}
-                        {showCode && (
-                            <>
-                                {isDesktop && (
-                                    <WorkbenchFileExplorer
-                                        chatId={id}
-                                        version={version}
-                                        initialFiles={files}
-                                    />
-                                )}
-                                <SandpackCodeEditor
-                                    showLineNumbers={true}
-                                    showTabs={true}
-                                    showRunButton={false}
-                                    style={{
-                                        height: '100%',
-                                        minHeight: '100%'
-                                    }}
-                                />
-                            </>
-                        )}
-                    </SandpackLayout>
-                </SandpackProvider>
+            <div className="flex-1 border rounded-lg overflow-hidden mt-4 bg-black">
+                {!showCode && (
+                    <FabricPresentationPreview chatId={id} version={version} />
+                )}
+                {showCode && (
+                    <div className="h-full overflow-auto p-6 bg-zinc-900 text-white">
+                        <h2 className="text-xl font-bold mb-4">Archivos de la Presentación</h2>
+                        <div className="space-y-4">
+                            {Object.entries(files)
+                                .filter(([path]) => path.startsWith('/slides/'))
+                                .sort((a, b) => a[0].localeCompare(b[0]))
+                                .map(([path, content]) => (
+                                    <div key={path} className="border border-zinc-700 rounded-lg p-4">
+                                        <h3 className="text-lg font-semibold mb-2 text-blue-400">{path}</h3>
+                                        <pre className="bg-black p-4 rounded overflow-x-auto text-sm">
+                                            <code>{content}</code>
+                                        </pre>
+                                    </div>
+                                ))}
+                            {Object.entries(files).filter(([path]) => path.startsWith('/slides/')).length === 0 && (
+                                <p className="text-gray-400">No se encontraron slides en esta presentación.</p>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

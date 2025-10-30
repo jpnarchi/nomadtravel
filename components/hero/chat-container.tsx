@@ -145,7 +145,7 @@ export function ChatContainer() {
                                 transition: { duration: 0.2, ease: "easeInOut" }
                             }}
                         >
-                            Create your Presentation with AI
+                            Crea tus Presentaciones con IA
                         </motion.p>
                         <motion.div
                             className="w-full"

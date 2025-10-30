@@ -1,6 +1,20 @@
+/**
+ * Script para poblar templates de Fabric.js
+ *
+ * INSTRUCCIONES:
+ * 1. Ve a https://dashboard.convex.dev
+ * 2. Selecciona tu proyecto
+ * 3. Ve a "Functions"
+ * 4. Busca "seedFabricTemplatesScript:seed"
+ * 5. Haz clic en "Run"
+ *
+ * Esto eliminará templates antiguos y creará los nuevos con Fabric.js
+ */
+
 import { internalMutation } from "./_generated/server";
 
-export const seedPresentationTemplates = internalMutation({
+export const seed = internalMutation({
+    args: {},
     handler: async (ctx) => {
         // 1. Eliminar todos los templates existentes
         const existingTemplates = await ctx.db.query("templates").collect();
@@ -23,13 +37,16 @@ export const seedPresentationTemplates = internalMutation({
 
         console.log("✅ Templates antiguos eliminados");
 
-        // 2. Template: Pitch Deck Moderno
+        // 2. Crear template "Pitch Deck Moderno"
+        console.log("📦 Creando template: Pitch Deck Moderno...");
+
         const pitchDeckId = await ctx.db.insert("templates", {
             name: "Pitch Deck Moderno",
-            description: "Plantilla profesional para presentar startups con Fabric.js"
+            description: "Plantilla profesional para presentar startups, ideas de negocio e inversiones con diseño moderno usando Fabric.js.",
         });
 
-        const pitchDeckFiles = [
+        // Slides del Pitch Deck
+        const pitchDeckSlides = [
             {
                 path: "/slides/slide-1.json",
                 content: JSON.stringify({
@@ -106,7 +123,7 @@ export const seedPresentationTemplates = internalMutation({
                             "left": 575,
                             "top": 450,
                             "fontSize": 28,
-                            "text": "Millones enfrentan este problema",
+                            "text": "Millones de usuarios\nenfrentan este problema",
                             "fill": "#ffffff",
                             "fontFamily": "Arial",
                             "textAlign": "center",
@@ -168,7 +185,7 @@ export const seedPresentationTemplates = internalMutation({
                         {
                             "type": "text",
                             "left": 960,
-                            "top": 500,
+                            "top": 400,
                             "fontSize": 100,
                             "text": "¡Gracias!",
                             "fill": "#ffffff",
@@ -184,23 +201,25 @@ export const seedPresentationTemplates = internalMutation({
             }
         ];
 
-        for (const file of pitchDeckFiles) {
+        for (const slide of pitchDeckSlides) {
             await ctx.db.insert("templateFiles", {
                 templateId: pitchDeckId,
-                path: file.path,
-                content: file.content
+                path: slide.path,
+                content: slide.content,
             });
         }
 
-        console.log("✅ Plantilla 'Pitch Deck Moderno' creada exitosamente");
+        console.log(`✅ Pitch Deck creado con ${pitchDeckSlides.length} slides`);
 
-        // 3. Template: Presentación Minimalista
+        // 3. Crear template "Presentación Minimalista"
+        console.log("📦 Creando template: Presentación Minimalista...");
+
         const minimalistId = await ctx.db.insert("templates", {
             name: "Presentación Minimalista",
-            description: "Diseño limpio y minimalista con Fabric.js"
+            description: "Diseño limpio y minimalista para presentaciones profesionales y corporativas con Fabric.js.",
         });
 
-        const minimalistFiles = [
+        const minimalistSlides = [
             {
                 path: "/slides/slide-1.json",
                 content: JSON.stringify({
@@ -211,7 +230,7 @@ export const seedPresentationTemplates = internalMutation({
                             "left": 960,
                             "top": 500,
                             "fontSize": 100,
-                            "text": "TÍTULO PRESENTACIÓN",
+                            "text": "TÍTULO DE LA PRESENTACIÓN",
                             "fill": "#000000",
                             "fontFamily": "Arial",
                             "fontWeight": "300",
@@ -243,7 +262,7 @@ export const seedPresentationTemplates = internalMutation({
                             "left": 200,
                             "top": 350,
                             "fontSize": 36,
-                            "text": "• Primera idea\n• Segunda idea\n• Tercera idea",
+                            "text": "• Primera idea importante\n• Segunda idea importante\n• Tercera idea importante",
                             "fill": "#333333",
                             "fontFamily": "Arial"
                         }
@@ -275,23 +294,23 @@ export const seedPresentationTemplates = internalMutation({
             }
         ];
 
-        for (const file of minimalistFiles) {
+        for (const slide of minimalistSlides) {
             await ctx.db.insert("templateFiles", {
                 templateId: minimalistId,
-                path: file.path,
-                content: file.content
+                path: slide.path,
+                content: slide.content,
             });
         }
 
-        console.log("✅ Plantilla 'Presentación Minimalista' creada exitosamente");
+        console.log(`✅ Presentación Minimalista creada con ${minimalistSlides.length} slides`);
 
         return {
             success: true,
             message: "✨ Templates de Fabric.js creados exitosamente",
             templates: [
-                { id: pitchDeckId, name: "Pitch Deck Moderno", slides: pitchDeckFiles.length },
-                { id: minimalistId, name: "Presentación Minimalista", slides: minimalistFiles.length }
+                { name: "Pitch Deck Moderno", slides: pitchDeckSlides.length },
+                { name: "Presentación Minimalista", slides: minimalistSlides.length }
             ]
         };
-    }
+    },
 });
