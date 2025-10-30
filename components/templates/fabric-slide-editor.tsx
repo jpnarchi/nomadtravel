@@ -75,13 +75,18 @@ export function FabricSlideEditor({
 
     // Save canvas function
     const saveCanvas = () => {
+        console.log('💾 saveCanvas llamado - isInitialLoad:', isInitialLoadRef.current)
+
         // Skip saving during initial load
         if (isInitialLoadRef.current) {
             console.log('⏭️ Saltando guardado - aún en carga inicial')
             return
         }
 
-        if (!fabricCanvasRef.current) return
+        if (!fabricCanvasRef.current) {
+            console.log('❌ No hay canvas para guardar')
+            return
+        }
 
         const canvas = fabricCanvasRef.current
 
@@ -99,8 +104,30 @@ export function FabricSlideEditor({
                 'lockMovementY',
                 'lockRotation',
                 'lockScalingX',
-                'lockScalingY'
+                'lockScalingY',
+                // Text-specific properties
+                'text',
+                'fontSize',
+                'fontFamily',
+                'fontWeight',
+                'fontStyle',
+                'textAlign',
+                'lineHeight',
+                'charSpacing',
+                'styles',
+                'editable'
             ])
+
+            // Log text objects specifically
+            if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
+                console.log('📝 Serializando texto:', {
+                    type: obj.type,
+                    text: (obj as any).text,
+                    fontSize: (obj as any).fontSize,
+                    json: json
+                })
+            }
+
             return json
         })
 
@@ -114,10 +141,17 @@ export function FabricSlideEditor({
             slideNumber,
             objectCount: objects.length,
             background: backgroundColor,
-            objects: objects.map(obj => ({ type: obj.type, left: obj.left, top: obj.top }))
+            objects: objects.map(obj => ({
+                type: obj.type,
+                left: obj.left,
+                top: obj.top,
+                text: obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox' ? (obj as any).text : undefined
+            }))
         })
 
+        console.log('🔄 Llamando onSlideChange con:', slideJSON)
         onSlideChange(slideJSON)
+        console.log('✅ onSlideChange llamado exitosamente')
     }
 
     // Update ref
@@ -197,10 +231,11 @@ export function FabricSlideEditor({
                     switch (objType) {
                         case 'text':
                         case 'i-text':
+                        case 'itext':  // IText se normaliza a 'itext' sin guión
                         case 'textbox':
                             console.log(`📝 Creando texto: "${obj.text}"`)
                             // Create text object with basic properties first
-                            fabricObj = new fabric.Text(obj.text || 'Text', {
+                            fabricObj = new fabric.IText(obj.text || 'Text', {
                                 left: obj.left,
                                 top: obj.top,
                                 fontSize: obj.fontSize || 40,
@@ -356,14 +391,17 @@ export function FabricSlideEditor({
         let initialObjectCount = canvas.getObjects().length
 
         const debouncedSave = () => {
+            console.log('⏱️ debouncedSave llamado - isInitialLoad:', isInitialLoad)
+
             // Skip saving during initial load
             if (isInitialLoad) {
-                console.log('⏭️ Saltando guardado durante carga inicial')
+                console.log('⏭️ Saltando guardado durante carga inicial (debouncedSave)')
                 return
             }
 
             if (saveTimeout) clearTimeout(saveTimeout)
             saveTimeout = setTimeout(() => {
+                console.log('⏰ Ejecutando guardado después del debounce')
                 saveCanvas()
             }, 500)
         }
@@ -380,15 +418,46 @@ export function FabricSlideEditor({
             })
         }, 1500)
 
-        canvas.on('object:modified', debouncedSave)
+        canvas.on('object:modified', () => {
+            console.log('🔄 Evento: object:modified')
+            debouncedSave()
+        })
         // Don't save on object:added during initial load
-        canvas.on('object:added', () => {
+        canvas.on('object:added', (e) => {
+            console.log('➕ Evento: object:added', e.target?.type, 'isInitialLoad:', isInitialLoad)
             if (!isInitialLoad) debouncedSave()
         })
-        canvas.on('object:removed', debouncedSave)
-        canvas.on('object:scaling', debouncedSave)
-        canvas.on('object:rotating', debouncedSave)
-        canvas.on('object:moving', debouncedSave)
+        canvas.on('object:removed', () => {
+            console.log('➖ Evento: object:removed')
+            debouncedSave()
+        })
+        canvas.on('object:scaling', () => {
+            console.log('📏 Evento: object:scaling')
+            debouncedSave()
+        })
+        canvas.on('object:rotating', () => {
+            console.log('🔄 Evento: object:rotating')
+            debouncedSave()
+        })
+        canvas.on('object:moving', () => {
+            console.log('🚚 Evento: object:moving')
+            debouncedSave()
+        })
+        // Text editing events - crucial for saving text content changes
+        canvas.on('text:changed', (e) => {
+            console.log('📝 Evento: text:changed', (e.target as any)?.text, 'isInitialLoad:', isInitialLoad)
+            if (!isInitialLoad) {
+                console.log('📝 Texto cambiado, guardando...')
+                debouncedSave()
+            }
+        })
+        canvas.on('text:editing:exited', (e) => {
+            console.log('📝 Evento: text:editing:exited', (e.target as any)?.text, 'isInitialLoad:', isInitialLoad)
+            if (!isInitialLoad) {
+                console.log('📝 Edición de texto finalizada, guardando...')
+                debouncedSave()
+            }
+        })
 
         // Zoom with mouse wheel
         canvas.on('mouse:wheel', (opt) => {
@@ -505,6 +574,12 @@ export function FabricSlideEditor({
     const addText = () => {
         if (!fabricCanvasRef.current) return
 
+        console.log('➕ addText llamado - isInitialLoad:', isInitialLoadRef.current)
+
+        // User is actively adding text, so initial load is complete
+        isInitialLoadRef.current = false
+        console.log('✅ Marcando carga inicial como completa (usuario agregó texto)')
+
         const text = new fabric.IText('Haz clic para editar', {
             left: 100,
             top: 100,
@@ -518,13 +593,58 @@ export function FabricSlideEditor({
             hasBorders: true,
         })
 
+        console.log('📝 Texto creado:', text.type, text.text)
+
         fabricCanvasRef.current.add(text)
         fabricCanvasRef.current.setActiveObject(text)
+
+        // Listen for when editing is done to save
+        text.on('editing:exited', () => {
+            console.log('📝 [Listener del texto] Edición finalizada:', text.text)
+            setTimeout(() => {
+                console.log('📝 [Listener del texto] Guardando después de 100ms...')
+                // Force save the canvas - bypass isInitialLoad check temporarily
+                const canvas = fabricCanvasRef.current
+                if (!canvas) return
+
+                const objects = canvas.getObjects().map(obj => {
+                    const json = obj.toJSON([
+                        'selectable', 'evented', 'hasControls', 'hasBorders',
+                        'lockScalingFlip', 'crossOrigin',
+                        'lockMovementX', 'lockMovementY', 'lockRotation',
+                        'lockScalingX', 'lockScalingY',
+                        'text', 'fontSize', 'fontFamily', 'fontWeight',
+                        'fontStyle', 'textAlign', 'lineHeight',
+                        'charSpacing', 'styles', 'editable'
+                    ])
+                    return json
+                })
+
+                const slideJSON = {
+                    version: '5.3.0',
+                    objects: objects,
+                    background: backgroundColor
+                }
+
+                console.log('💾 [Listener del texto] Guardando con', objects.length, 'objetos')
+                onSlideChange(slideJSON)
+            }, 100)
+        })
+
+        // Also listen for text changes
+        text.on('changed', () => {
+            console.log('📝 [Listener del texto] Texto cambiado:', text.text)
+        })
+
+        console.log('📝 Listeners agregados al texto')
+
         // Enter editing mode immediately
         text.enterEditing()
         text.selectAll()
         fabricCanvasRef.current.renderAll()
         toast.success('Texto agregado - Escribe para editar')
+
+        console.log('📝 Texto agregado al canvas y en modo de edición')
     }
 
     // Add rectangle

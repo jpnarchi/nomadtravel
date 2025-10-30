@@ -161,25 +161,31 @@ export function FabricPresentationPreview({
             console.log('🎨 Background configurado:', slide.background)
         }
 
-        // Load objects from JSON
-        if (slide.objects && Array.isArray(slide.objects)) {
+        // Load objects from JSON asynchronously
+        const loadSlideObjects = async () => {
+            if (!slide.objects || !Array.isArray(slide.objects)) {
+                canvas.renderAll()
+                return
+            }
+
             console.log(`📦 Cargando ${slide.objects.length} objetos`)
-            slide.objects.forEach((obj: any, index: number) => {
+
+            // Create promises for all objects
+            const objectPromises = slide.objects.map(async (obj: any, index: number) => {
                 console.log(`🔸 Objeto ${index}:`, obj.type, obj)
                 try {
-                    // Create fabric object based on type
-                    let fabricObj: fabric.FabricObject | null = null
-
                     // Normalize type to lowercase for comparison
                     const objType = (obj.type || '').toLowerCase()
+
+                    let fabricObj: fabric.FabricObject | null = null
 
                     switch (objType) {
                         case 'text':
                         case 'i-text':
+                        case 'itext':  // IText se normaliza a 'itext' sin guión
                         case 'textbox':
                             console.log(`📝 Creando texto: "${obj.text}"`)
-                            // Create text object with basic properties first
-                            fabricObj = new fabric.Text(obj.text || 'Text', {
+                            fabricObj = new fabric.IText(obj.text || 'Text', {
                                 left: obj.left,
                                 top: obj.top,
                                 fontSize: obj.fontSize || 40,
@@ -252,46 +258,60 @@ export function FabricPresentationPreview({
                         case 'image':
                             console.log(`🖼️ Creando imagen desde: ${obj.src}`)
                             if (obj.src) {
-                                fabric.FabricImage.fromURL(obj.src).then((img) => {
+                                try {
+                                    const img = await fabric.FabricImage.fromURL(obj.src)
                                     if (obj.left !== undefined) img.set('left', obj.left)
                                     if (obj.top !== undefined) img.set('top', obj.top)
                                     if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX)
                                     if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY)
                                     if (obj.angle !== undefined) img.set('angle', obj.angle)
                                     img.set({ selectable: false, evented: false })
-                                    canvas.add(img)
-                                    canvas.renderAll()
-                                    console.log(`✅ Imagen ${index} agregada al canvas`)
-                                }).catch((err) => {
+                                    fabricObj = img
+                                    console.log(`✅ Imagen ${index} cargada`)
+                                } catch (err) {
                                     console.error('Error loading image:', err)
-                                })
+                                    return null
+                                }
                             }
-                            // Don't set fabricObj for async image loading
-                            return
+                            break
                         default:
                             console.warn(`Unknown object type: ${obj.type} (normalized: ${objType})`)
-                            return
+                            return null
                     }
 
                     if (fabricObj) {
                         fabricObj.set({
-                            selectable: false, // Disable selection in preview
-                            evented: false, // Disable events in preview
+                            selectable: false,
+                            evented: false,
                         })
-                        canvas.add(fabricObj)
-                        console.log(`✅ Objeto ${index} agregado al canvas`)
-                    } else {
-                        console.log(`⚠️ Objeto ${index} es null`)
+                        console.log(`✅ Objeto ${index} creado`)
+                        return fabricObj
                     }
+                    return null
                 } catch (error) {
                     console.error('❌ Error creating fabric object:', error, obj)
+                    return null
                 }
             })
+
+            // Wait for all objects to load
+            const loadedObjects = await Promise.all(objectPromises)
+
+            // Add all loaded objects to canvas
+            loadedObjects.forEach((obj, index) => {
+                if (obj) {
+                    canvas.add(obj)
+                    console.log(`✅ Objeto ${index} agregado al canvas`)
+                }
+            })
+
+            console.log('🎨 Renderizando canvas...')
+            canvas.renderAll()
+            console.log('✅ Canvas renderizado. Objetos en canvas:', canvas.getObjects().length)
         }
 
-        console.log('🎨 Renderizando canvas...')
-        canvas.renderAll()
-        console.log('✅ Canvas renderizado. Objetos en canvas:', canvas.getObjects().length)
+        // Execute async loading
+        loadSlideObjects()
     }, [currentSlide, slides, canvasReady])
 
     // Apply zoom and scale to fit container
