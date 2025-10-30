@@ -69,6 +69,7 @@ export function FabricSlideEditor({
     const hasInitializedRef = useRef(false)
     const saveCanvasRef = useRef<() => void>(() => {})
     const isInitialLoadRef = useRef(true)
+    const baseScaleRef = useRef(1) // Store the base scale for reset functionality
 
     // Save canvas function
     const saveCanvas = () => {
@@ -142,29 +143,26 @@ export function FabricSlideEditor({
         console.log('📐 Editor - Display dimensions:', { displayWidth, displayHeight })
 
         const canvas = new fabric.Canvas(canvasRef.current, {
-            width: 1920,
-            height: 1080,
+            width: displayWidth,  // Use scaled dimensions, not 1920
+            height: displayHeight,  // Use scaled dimensions, not 1080
             backgroundColor: backgroundColor,
             selection: true,
             preserveObjectStacking: true,
         })
 
-        // Ensure zoom is at 1 initially (no zoom applied)
-        canvas.setZoom(1)
-        canvas.viewportTransform = [1, 0, 0, 1, 0, 0]
-        setZoom(1)
+        // Set zoom to show content at correct scale
+        canvas.setZoom(scale)
+        canvas.viewportTransform = [scale, 0, 0, scale, 0, 0]
+        setZoom(scale)
+        baseScaleRef.current = scale // Store base scale for reset
 
-        // Apply CSS scaling to make it visible at proper size
-        if (canvasRef.current) {
-            canvasRef.current.style.width = `${displayWidth}px`
-            canvasRef.current.style.height = `${displayHeight}px`
-            console.log('🎨 CSS dimensions applied:', {
-                width: canvasRef.current.style.width,
-                height: canvasRef.current.style.height,
-                computedWidth: window.getComputedStyle(canvasRef.current).width,
-                computedHeight: window.getComputedStyle(canvasRef.current).height
-            })
-        }
+        // No need for CSS scaling - canvas is already at correct size
+        console.log('🎨 Canvas dimensions set:', {
+            canvasWidth: canvas.getWidth(),
+            canvasHeight: canvas.getHeight(),
+            zoom: canvas.getZoom(),
+            scale
+        })
 
         fabricCanvasRef.current = canvas
 
@@ -434,7 +432,7 @@ export function FabricSlideEditor({
 
         // Adjust canvas size on window resize
         const handleResize = () => {
-            if (!canvasRef.current || !containerRef.current) return
+            if (!canvasRef.current || !containerRef.current || !fabricCanvasRef.current) return
 
             const container = containerRef.current
             const containerWidth = container.clientWidth - 32 // Account for p-4 padding
@@ -442,17 +440,22 @@ export function FabricSlideEditor({
 
             const scaleX = containerWidth / 1920
             const scaleY = containerHeight / 1080
-            const scale = Math.min(scaleX, scaleY, 1)
+            const newScale = Math.min(scaleX, scaleY, 1)
 
-            const displayWidth = 1920 * scale
-            const displayHeight = 1080 * scale
+            const displayWidth = 1920 * newScale
+            const displayHeight = 1080 * newScale
 
-            canvasRef.current.style.width = `${displayWidth}px`
-            canvasRef.current.style.height = `${displayHeight}px`
+            // Update canvas dimensions and zoom
+            fabricCanvasRef.current.setWidth(displayWidth)
+            fabricCanvasRef.current.setHeight(displayHeight)
+            fabricCanvasRef.current.setZoom(newScale)
+            fabricCanvasRef.current.viewportTransform = [newScale, 0, 0, newScale, 0, 0]
+            setZoom(newScale)
+            baseScaleRef.current = newScale // Update base scale
 
-            console.log('🔄 Editor - Canvas resized:', { displayWidth, displayHeight })
+            console.log('🔄 Editor - Canvas resized:', { displayWidth, displayHeight, zoom: newScale })
 
-            canvas.renderAll()
+            fabricCanvasRef.current.renderAll()
         }
         window.addEventListener('resize', handleResize)
 
@@ -625,9 +628,10 @@ export function FabricSlideEditor({
     const handleResetZoom = () => {
         if (!fabricCanvasRef.current) return
         const canvas = fabricCanvasRef.current
-        canvas.setZoom(1)
-        canvas.viewportTransform = [1, 0, 0, 1, 0, 0]
-        setZoom(1)
+        const baseScale = baseScaleRef.current
+        canvas.setZoom(baseScale)
+        canvas.viewportTransform = [baseScale, 0, 0, baseScale, 0, 0]
+        setZoom(baseScale)
         canvas.renderAll()
     }
 
@@ -636,15 +640,16 @@ export function FabricSlideEditor({
         if (!fabricCanvasRef.current) return
 
         const canvas = fabricCanvasRef.current
+        const baseScale = baseScaleRef.current
 
-        // Reset zoom to 1 and center viewport
-        canvas.setZoom(1)
-        canvas.viewportTransform = [1, 0, 0, 1, 0, 0]
-        setZoom(1)
+        // Reset zoom to base scale and center viewport
+        canvas.setZoom(baseScale)
+        canvas.viewportTransform = [baseScale, 0, 0, baseScale, 0, 0]
+        setZoom(baseScale)
         canvas.renderAll()
 
         console.log('🎯 Canvas ajustado a pantalla:', {
-            zoom: 1,
+            zoom: baseScale,
             canvasWidth: canvas.getWidth(),
             canvasHeight: canvas.getHeight()
         })
