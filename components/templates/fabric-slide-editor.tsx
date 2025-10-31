@@ -32,7 +32,11 @@ import {
     ArrowUp,
     ArrowDown,
     ChevronsUp,
-    ChevronsDown
+    ChevronsDown,
+    AlignLeft,
+    AlignCenter,
+    AlignRight,
+    AlignJustify
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -1289,7 +1293,7 @@ export function FabricSlideEditor({
                     variant="ghost"
                     size="icon"
                     onClick={addText}
-                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    className="h-12 w-12 text-white hover:text-black hover:bg-zinc-800"
                     title="Agregar Texto"
                 >
                     <Type className="size-5" />
@@ -1298,7 +1302,7 @@ export function FabricSlideEditor({
                     variant="ghost"
                     size="icon"
                     onClick={addRectangle}
-                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    className="h-12 w-12 text-white hover:text-black hover:bg-zinc-800"
                     title="Agregar Rectángulo"
                 >
                     <Square className="size-5" />
@@ -1307,7 +1311,7 @@ export function FabricSlideEditor({
                     variant="ghost"
                     size="icon"
                     onClick={addCircle}
-                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    className="h-12 w-12 text-white hover:text-black hover:bg-zinc-800"
                     title="Agregar Círculo"
                 >
                     <Circle className="size-5" />
@@ -1316,7 +1320,7 @@ export function FabricSlideEditor({
                     variant="ghost"
                     size="icon"
                     onClick={addTriangle}
-                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    className="h-12 w-12 text-white hover:text-black hover:bg-zinc-800"
                     title="Agregar Triángulo"
                 >
                     <Triangle className="size-5" />
@@ -1328,7 +1332,7 @@ export function FabricSlideEditor({
                     variant="ghost"
                     size="icon"
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    className="h-12 w-12 text-white hover:text-black hover:bg-zinc-800"
                     title="Subir Imagen"
                 >
                     <Upload className="size-5" />
@@ -1337,7 +1341,7 @@ export function FabricSlideEditor({
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowImageUrlDialog(true)}
-                    className="h-12 w-12 text-white hover:bg-zinc-800"
+                    className="h-12 w-12 text-white hover:text-black hover:bg-zinc-800"
                     title="Imagen desde URL"
                 >
                     <ImageIcon className="size-5" />
@@ -1365,7 +1369,7 @@ export function FabricSlideEditor({
                                 variant="ghost"
                                 size="icon"
                                 onClick={handleZoomOut}
-                                className="h-7 w-7"
+                                className="h-7 w-7 text-white hover:text-black"
                                 title="Alejar"
                             >
                                 <ZoomOut className="size-3.5" />
@@ -1377,7 +1381,7 @@ export function FabricSlideEditor({
                                 variant="ghost"
                                 size="icon"
                                 onClick={handleZoomIn}
-                                className="h-7 w-7"
+                                className="h-7 w-7 text-white hover:text-black"
                                 title="Acercar"
                             >
                                 <ZoomIn className="size-3.5" />
@@ -1387,7 +1391,7 @@ export function FabricSlideEditor({
                                 variant="ghost"
                                 size="icon"
                                 onClick={fitToScreen}
-                                className="h-7 w-7"
+                                className="h-7 w-7 text-white hover:text-black"
                                 title="Ajustar"
                             >
                                 <Scan className="size-3.5" />
@@ -1403,7 +1407,7 @@ export function FabricSlideEditor({
                                         variant="ghost"
                                         size="icon"
                                         onClick={bringToFront}
-                                        className="h-7 w-7"
+                                        className="h-7 w-7 text-white hover:text-black"
                                         title="Traer al frente"
                                     >
                                         <ChevronsUp className="size-3.5" />
@@ -1412,7 +1416,7 @@ export function FabricSlideEditor({
                                         variant="ghost"
                                         size="icon"
                                         onClick={bringForward}
-                                        className="h-7 w-7"
+                                        className="h-7 w-7 text-white hover:text-black"
                                         title="Traer adelante"
                                     >
                                         <ArrowUp className="size-3.5" />
@@ -1421,7 +1425,7 @@ export function FabricSlideEditor({
                                         variant="ghost"
                                         size="icon"
                                         onClick={sendBackward}
-                                        className="h-7 w-7"
+                                        className="h-7 w-7 text-white hover:text-black"
                                         title="Enviar atrás"
                                     >
                                         <ArrowDown className="size-3.5" />
@@ -1430,7 +1434,7 @@ export function FabricSlideEditor({
                                         variant="ghost"
                                         size="icon"
                                         onClick={sendToBack}
-                                        className="h-7 w-7"
+                                        className="h-7 w-7 text-white hover:text-black"
                                         title="Enviar al fondo"
                                     >
                                         <ChevronsDown className="size-3.5" />
@@ -1441,7 +1445,7 @@ export function FabricSlideEditor({
                                     variant="ghost"
                                     size="icon"
                                     onClick={toggleLockObject}
-                                    className="h-8 w-8"
+                                    className="h-8 w-8 text-white hover:text-black"
                                     title={selectedObject.lockMovementX ? 'Desbloquear' : 'Bloquear'}
                                 >
                                     {selectedObject.lockMovementX ? (
@@ -1454,7 +1458,7 @@ export function FabricSlideEditor({
                                     variant="ghost"
                                     size="icon"
                                     onClick={deleteSelected}
-                                    className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                    className="h-8 w-8 text-white hover:text-black hover:bg-red-500/10"
                                     title="Eliminar"
                                 >
                                     <Trash2 className="size-4" />
@@ -1486,116 +1490,155 @@ export function FabricSlideEditor({
             {/* Right Sidebar - Properties */}
             <div className="w-64 bg-zinc-900 border-l border-zinc-800 overflow-y-auto">
                 <div className="p-4 space-y-4">
-                    <div>
-                        <h4 className="text-xs font-semibold text-zinc-400 uppercase mb-3">Slide</h4>
+                    {/* Slide Properties */}
+                    <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
+                        <h4 className="text-xs font-semibold text-white uppercase mb-3 tracking-wide">Slide</h4>
                         <div>
-                            <Label className="text-xs text-zinc-300 mb-1.5 block">Color de fondo</Label>
+                            <Label className="text-xs text-zinc-300 mb-2 block font-medium">Color de fondo</Label>
                             <Input
                                 type="color"
                                 value={backgroundColor}
                                 onChange={(e) => setBackgroundColor(e.target.value)}
-                                className="h-9 cursor-pointer"
+                                className="h-10 cursor-pointer bg-zinc-700 border-zinc-600 text-white"
                             />
                         </div>
                     </div>
 
                     {selectedObject && (
-                        <>
-                            <div className="h-px bg-zinc-800" />
-                            <div>
-                                <h4 className="text-xs font-semibold text-zinc-400 uppercase mb-3">
-                                    {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Texto' :
-                                     selectedObject.type === 'rect' ? 'Rectángulo' :
-                                     selectedObject.type === 'circle' ? 'Círculo' :
-                                     selectedObject.type === 'triangle' ? 'Triángulo' :
-                                     selectedObject.type === 'image' ? 'Imagen' : 'Objeto'}
-                                </h4>
+                        <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
+                            <h4 className="text-xs font-semibold text-white uppercase mb-3 tracking-wide">
+                                {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Texto' :
+                                 selectedObject.type === 'rect' ? 'Rectángulo' :
+                                 selectedObject.type === 'circle' ? 'Círculo' :
+                                 selectedObject.type === 'triangle' ? 'Triángulo' :
+                                 selectedObject.type === 'image' ? 'Imagen' : 'Objeto'}
+                            </h4>
 
-                                {/* Text Properties */}
-                                {(selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox') && (
-                                    <div className="space-y-3">
-                                        <div>
-                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Tamaño</Label>
-                                            <Input
-                                                type="number"
-                                                value={(selectedObject as any).fontSize || 60}
-                                                onChange={(e) => updateTextProperty('fontSize', parseInt(e.target.value))}
-                                                className="h-9"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Color</Label>
-                                            <Input
-                                                type="color"
-                                                value={(selectedObject as any).fill as string || '#ffffff'}
-                                                onChange={(e) => updateFillColor(e.target.value)}
-                                                className="h-9 cursor-pointer"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Fuente</Label>
-                                            <Select
-                                                value={(selectedObject as any).fontFamily || 'Arial'}
-                                                onValueChange={(value) => updateTextProperty('fontFamily', value)}
-                                            >
-                                                <SelectTrigger className="h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Arial">Arial</SelectItem>
-                                                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                                                    <SelectItem value="Courier New">Courier New</SelectItem>
-                                                    <SelectItem value="Georgia">Georgia</SelectItem>
-                                                    <SelectItem value="Verdana">Verdana</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div>
-                                            <Label className="text-xs text-zinc-300 mb-1.5 block">Peso</Label>
-                                            <Select
-                                                value={(selectedObject as any).fontWeight || 'normal'}
-                                                onValueChange={(value) => updateTextProperty('fontWeight', value)}
-                                            >
-                                                <SelectTrigger className="h-9">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="normal">Normal</SelectItem>
-                                                    <SelectItem value="bold">Negrita</SelectItem>
-                                                    <SelectItem value="100">Thin</SelectItem>
-                                                    <SelectItem value="300">Light</SelectItem>
-                                                    <SelectItem value="500">Medium</SelectItem>
-                                                    <SelectItem value="700">Bold</SelectItem>
-                                                    <SelectItem value="900">Black</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Shape Fill Color */}
-                                {selectedObject &&
-                                    selectedObject.type !== 'text' &&
-                                    selectedObject.type !== 'i-text' &&
-                                    selectedObject.type !== 'textbox' &&
-                                    selectedObject.type !== 'image' && (
+                            {/* Text Properties */}
+                            {(selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox') && (
+                                <div className="space-y-3">
                                     <div>
-                                        <Label className="text-xs text-zinc-300 mb-1.5 block">Color</Label>
+                                        <Label className="text-xs text-zinc-300 mb-2 block font-medium">Tamaño</Label>
                                         <Input
-                                            type="color"
-                                            value={(selectedObject as any).fill as string || '#667eea'}
-                                            onChange={(e) => updateFillColor(e.target.value)}
-                                            className="h-9 cursor-pointer"
+                                            type="number"
+                                            value={(selectedObject as any).fontSize || 60}
+                                            onChange={(e) => updateTextProperty('fontSize', parseInt(e.target.value))}
+                                            className="h-10 bg-zinc-700 border-zinc-600 text-white"
                                         />
                                     </div>
-                                )}
-                            </div>
-                        </>
+                                    <div>
+                                        <Label className="text-xs text-zinc-300 mb-2 block font-medium">Color</Label>
+                                        <Input
+                                            type="color"
+                                            value={(selectedObject as any).fill as string || '#ffffff'}
+                                            onChange={(e) => updateFillColor(e.target.value)}
+                                            className="h-10 cursor-pointer bg-zinc-700 border-zinc-600 text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-zinc-300 mb-2 block font-medium">Fuente</Label>
+                                        <Select
+                                            value={(selectedObject as any).fontFamily || 'Arial'}
+                                            onValueChange={(value) => updateTextProperty('fontFamily', value)}
+                                        >
+                                            <SelectTrigger className="h-10 bg-zinc-700 border-zinc-600 text-white">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-zinc-800 border-zinc-700">
+                                                <SelectItem value="Arial" className="text-white hover:bg-zinc-700">Arial</SelectItem>
+                                                <SelectItem value="Times New Roman" className="text-white hover:bg-zinc-700">Times New Roman</SelectItem>
+                                                <SelectItem value="Courier New" className="text-white hover:bg-zinc-700">Courier New</SelectItem>
+                                                <SelectItem value="Georgia" className="text-white hover:bg-zinc-700">Georgia</SelectItem>
+                                                <SelectItem value="Verdana" className="text-white hover:bg-zinc-700">Verdana</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-zinc-300 mb-2 block font-medium">Peso</Label>
+                                        <Select
+                                            value={(selectedObject as any).fontWeight || 'normal'}
+                                            onValueChange={(value) => updateTextProperty('fontWeight', value)}
+                                        >
+                                            <SelectTrigger className="h-10 bg-zinc-700 border-zinc-600 text-white">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-zinc-800 border-zinc-700">
+                                                <SelectItem value="normal" className="text-white hover:bg-zinc-700">Normal</SelectItem>
+                                                <SelectItem value="bold" className="text-white hover:bg-zinc-700">Negrita</SelectItem>
+                                                <SelectItem value="100" className="text-white hover:bg-zinc-700">Thin</SelectItem>
+                                                <SelectItem value="300" className="text-white hover:bg-zinc-700">Light</SelectItem>
+                                                <SelectItem value="500" className="text-white hover:bg-zinc-700">Medium</SelectItem>
+                                                <SelectItem value="700" className="text-white hover:bg-zinc-700">Bold</SelectItem>
+                                                <SelectItem value="900" className="text-white hover:bg-zinc-700">Black</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-zinc-300 mb-2 block font-medium">Alineación</Label>
+                                        <div className="grid grid-cols-4 gap-1">
+                                            <Button
+                                                variant={((selectedObject as any).textAlign || 'left') === 'left' ? 'default' : 'outline'}
+                                                size="icon"
+                                                onClick={() => updateTextProperty('textAlign', 'left')}
+                                                className="h-10 text-black hover:text-black border-zinc-600"
+                                                title="Alinear a la izquierda"
+                                            >
+                                                <AlignLeft className="size-4" />
+                                            </Button>
+                                            <Button
+                                                variant={((selectedObject as any).textAlign || 'left') === 'center' ? 'default' : 'outline'}
+                                                size="icon"
+                                                onClick={() => updateTextProperty('textAlign', 'center')}
+                                                className="h-10 text-black hover:text-black border-zinc-600"
+                                                title="Centrar"
+                                            >
+                                                <AlignCenter className="size-4" />
+                                            </Button>
+                                            <Button
+                                                variant={((selectedObject as any).textAlign || 'left') === 'right' ? 'default' : 'outline'}
+                                                size="icon"
+                                                onClick={() => updateTextProperty('textAlign', 'right')}
+                                                className="h-10 text-black hover:text-black border-zinc-600"
+                                                title="Alinear a la derecha"
+                                            >
+                                                <AlignRight className="size-4" />
+                                            </Button>
+                                            <Button
+                                                variant={((selectedObject as any).textAlign || 'left') === 'justify' ? 'default' : 'outline'}
+                                                size="icon"
+                                                onClick={() => updateTextProperty('textAlign', 'justify')}
+                                                className="h-10 text-black hover:text-black border-zinc-600"
+                                                title="Justificar"
+                                            >
+                                                <AlignJustify className="size-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Shape Fill Color */}
+                            {selectedObject &&
+                                selectedObject.type !== 'text' &&
+                                selectedObject.type !== 'i-text' &&
+                                selectedObject.type !== 'textbox' &&
+                                selectedObject.type !== 'image' && (
+                                <div>
+                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Color</Label>
+                                    <Input
+                                        type="color"
+                                        value={(selectedObject as any).fill as string || '#667eea'}
+                                        onChange={(e) => updateFillColor(e.target.value)}
+                                        className="h-10 cursor-pointer bg-zinc-700 border-zinc-600 text-white"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {!selectedObject && (
-                        <div className="text-center text-zinc-500 text-xs py-8">
-                            Selecciona un objeto para editar sus propiedades
+                        <div className="text-center text-zinc-400 text-sm py-12 px-4">
+                            <p className="leading-relaxed">Selecciona un objeto en el canvas para editar sus propiedades</p>
                         </div>
                     )}
                 </div>

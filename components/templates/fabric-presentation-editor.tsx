@@ -318,126 +318,128 @@ export function FabricPresentationEditor({
                 </div>
             </div>
 
-            <div className="flex-1 flex overflow-hidden">
-                {/* Sidebar with slide thumbnails */}
-                <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
-                    <div className="p-4 border-b border-zinc-800">
-                        <Button
-                            className="w-full"
-                            onClick={addSlide}
-                        >
-                            <Plus className="size-4 mr-2" />
-                            Nuevo Slide
-                        </Button>
-                    </div>
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Sidebar with slide thumbnails */}
+                    <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+                        <div className="p-4 border-b border-zinc-800">
+                            <Button
+                                className="w-full"
+                                onClick={addSlide}
+                            >
+                                <Plus className="size-4 mr-2" />
+                                Nuevo Slide
+                            </Button>
+                        </div>
 
-                    <ScrollArea className="flex-1">
-                        <div className="p-4 space-y-2">
-                            {slides.map((slide, index) => {
-                                const objectCount = slide.data.objects?.length || 0
-                                return (
-                                    <div
-                                        key={`${slide.path}-${objectCount}`}
-                                        className={`
-                                            relative p-3 rounded-lg border-2 cursor-pointer transition-all
-                                            ${index === currentSlideIndex
-                                                ? 'border-blue-500 bg-blue-500/10'
-                                                : 'border-zinc-700 bg-zinc-800 hover:border-zinc-600'
-                                            }
-                                        `}
-                                        onClick={() => setCurrentSlideIndex(index)}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium text-white">
-                                                Slide {index + 1}
-                                            </span>
-                                            <div className="flex items-center gap-1">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        duplicateSlide(index)
-                                                    }}
-                                                >
-                                                    <Copy className="size-3" />
-                                                </Button>
-                                                {slides.length > 1 && (
+                        <ScrollArea className="flex-1">
+                            <div className="p-4 space-y-2">
+                                {slides.map((slide, index) => {
+                                    const objectCount = slide.data.objects?.length || 0
+                                    return (
+                                        <div
+                                            key={`${slide.path}-${objectCount}`}
+                                            className={`
+                                                relative p-3 rounded-lg border-2 cursor-pointer transition-all
+                                                ${index === currentSlideIndex
+                                                    ? 'border-blue-500 bg-blue-500/10'
+                                                    : 'border-zinc-700 bg-zinc-800 hover:border-zinc-600'
+                                                }
+                                            `}
+                                            onClick={() => setCurrentSlideIndex(index)}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-medium text-white">
+                                                    Slide {index + 1}
+                                                </span>
+                                                <div className="flex items-center gap-1">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                                        className="h-6 w-6 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
                                                         onClick={(e) => {
                                                             e.stopPropagation()
-                                                            deleteSlide(index)
+                                                            duplicateSlide(index)
                                                         }}
                                                     >
-                                                        <Trash2 className="size-3" />
+                                                        <Copy className="size-3" />
                                                     </Button>
-                                                )}
+                                                    {slides.length > 1 && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                deleteSlide(index)
+                                                            }}
+                                                        >
+                                                            <Trash2 className="size-3" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div
+                                                className="aspect-video rounded border border-zinc-700 flex items-center justify-center text-xs"
+                                                style={{ backgroundColor: slide.data.background || '#ffffff' }}
+                                            >
+                                                <span className="font-medium text-zinc-700">
+                                                    {objectCount} {objectCount === 1 ? 'objeto' : 'objetos'}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div
-                                            className="aspect-video rounded border border-zinc-700 flex items-center justify-center text-xs"
-                                            style={{ backgroundColor: slide.data.background || '#ffffff' }}
-                                        >
-                                            <span className="font-medium text-zinc-700">
-                                                {objectCount} {objectCount === 1 ? 'objeto' : 'objetos'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </ScrollArea>
+                                    )
+                                })}
+                            </div>
+                        </ScrollArea>
+                    </div>
+
+                    {/* Main editor area */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {showCode ? (
+                            // JSON view
+                            <div className="flex-1 overflow-auto p-6 bg-zinc-900">
+                                <pre className="bg-black p-4 rounded text-sm text-green-400 font-mono">
+                                    {JSON.stringify(currentSlide.data, null, 2)}
+                                </pre>
+                            </div>
+                        ) : (
+                            // Visual editor
+                            currentSlide && (
+                                <FabricSlideEditor
+                                    key={currentSlideIndex}
+                                    slideData={currentSlide.data}
+                                    onSlideChange={(newData) => updateSlide(currentSlideIndex, newData)}
+                                    slideNumber={currentSlideIndex + 1}
+                                />
+                            )
+                        )}
+                    </div>
                 </div>
 
-                {/* Main editor area */}
-                <div className="flex-1 flex flex-col">
-                    {showCode ? (
-                        // JSON view
-                        <div className="flex-1 overflow-auto p-6 bg-zinc-900">
-                            <pre className="bg-black p-4 rounded text-sm text-green-400 font-mono">
-                                {JSON.stringify(currentSlide.data, null, 2)}
-                            </pre>
-                        </div>
-                    ) : (
-                        // Visual editor
-                        currentSlide && (
-                            <FabricSlideEditor
-                                key={currentSlideIndex}
-                                slideData={currentSlide.data}
-                                onSlideChange={(newData) => updateSlide(currentSlideIndex, newData)}
-                                slideNumber={currentSlideIndex + 1}
-                            />
-                        )
-                    )}
+                {/* Navigation controls - Always visible at bottom */}
+                <div className="bg-zinc-900 border-t border-zinc-800 p-4 flex items-center justify-center gap-4 flex-shrink-0">
+                    <Button
+                        variant="outline"
+                        onClick={goToPreviousSlide}
+                        disabled={currentSlideIndex === 0}
+                    >
+                        <ChevronLeft className="size-4 mr-2" />
+                        Anterior
+                    </Button>
 
-                    {/* Navigation controls */}
-                    <div className="bg-zinc-900 border-t border-zinc-800 p-4 flex items-center justify-center gap-4">
-                        <Button
-                            variant="outline"
-                            onClick={goToPreviousSlide}
-                            disabled={currentSlideIndex === 0}
-                        >
-                            <ChevronLeft className="size-4 mr-2" />
-                            Anterior
-                        </Button>
+                    <span className="text-white font-medium">
+                        {currentSlideIndex + 1} / {slides.length}
+                    </span>
 
-                        <span className="text-white font-medium">
-                            {currentSlideIndex + 1} / {slides.length}
-                        </span>
-
-                        <Button
-                            variant="outline"
-                            onClick={goToNextSlide}
-                            disabled={currentSlideIndex === slides.length - 1}
-                        >
-                            Siguiente
-                            <ChevronRight className="size-4 ml-2" />
-                        </Button>
-                    </div>
+                    <Button
+                        variant="outline"
+                        onClick={goToNextSlide}
+                        disabled={currentSlideIndex === slides.length - 1}
+                    >
+                        Siguiente
+                        <ChevronRight className="size-4 ml-2" />
+                    </Button>
                 </div>
             </div>
         </div>
