@@ -98,6 +98,7 @@ export function FabricSlideEditor({
         // Export all objects with their complete state
         const objects = canvas.getObjects().map((obj, index) => {
             // Include all necessary properties for serialization
+            // @ts-expect-error - fabric.js toJSON accepts propertiesToInclude array
             const json = obj.toJSON([
                 'selectable',
                 'evented',
@@ -427,7 +428,7 @@ export function FabricSlideEditor({
         // Only enable after initial load is complete
         let saveTimeout: NodeJS.Timeout | null = null
         let isInitialLoad = true
-        let initialObjectCount = canvas.getObjects().length
+        const initialObjectCount = canvas.getObjects().length
 
         const debouncedSave = () => {
             console.log('⏱️ debouncedSave llamado - isInitialLoad:', isInitialLoad)
@@ -511,7 +512,7 @@ export function FabricSlideEditor({
 
             // Zoom to mouse position
             canvas.zoomToPoint(
-                { x: event.offsetX, y: event.offsetY },
+                { x: event.offsetX, y: event.offsetY } as any,
                 newZoom
             )
             setZoom(newZoom)
@@ -598,6 +599,7 @@ export function FabricSlideEditor({
             window.removeEventListener('resize', handleResize)
             hasInitializedRef.current = false
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Update background color
@@ -607,6 +609,7 @@ export function FabricSlideEditor({
             fabricCanvasRef.current.renderAll()
             saveCanvas()
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [backgroundColor])
 
     // Add text
@@ -647,6 +650,7 @@ export function FabricSlideEditor({
                 if (!canvas) return
 
                 const objects = canvas.getObjects().map(obj => {
+                    // @ts-expect-error - fabric.js toJSON accepts propertiesToInclude array
                     const json = obj.toJSON([
                         'selectable', 'evented', 'hasControls', 'hasBorders',
                         'lockScalingFlip', 'crossOrigin',
@@ -775,6 +779,7 @@ export function FabricSlideEditor({
         }
 
         // Serialize the object with all its properties
+        // @ts-expect-error - fabric.js toJSON accepts propertiesToInclude array
         const objectData = selectedObject.toJSON([
             'selectable', 'evented', 'hasControls', 'hasBorders',
             'lockScalingFlip', 'crossOrigin',
@@ -956,8 +961,6 @@ export function FabricSlideEditor({
 
         fabricCanvasRef.current.renderAll()
         saveCanvas()
-        // Force re-render to update button icon
-        setSelectedObject({ ...selectedObject })
     }
 
     // Change text properties
@@ -1236,7 +1239,8 @@ export function FabricSlideEditor({
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [selectedObject, copiedObjectRef.current])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedObject])
 
     return (
         <div className="h-full flex">

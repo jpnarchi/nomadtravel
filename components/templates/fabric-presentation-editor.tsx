@@ -73,7 +73,7 @@ export function FabricPresentationEditor({
 
         setSlides(slideFiles)
         setIsLoading(false)
-    }, [])
+    }, [initialFiles])
 
     // Update slide data - called from FabricSlideEditor when canvas changes
     // Use useCallback to prevent unnecessary re-renders

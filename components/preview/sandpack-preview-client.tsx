@@ -82,7 +82,7 @@ export function SandpackPreviewClient({ chatId }: { chatId: Id<"chats"> }) {
         });
 
         return stopListening;
-    }, [listen]);
+    }, [listen, handleSandpackMessage]);
 
     return (
         <SandpackPreview

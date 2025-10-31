@@ -28,7 +28,7 @@ export function ProjectsDb({
         if (accessToken) {
             getProjects();
         }
-    }, [accessToken]);
+    }, [accessToken, getProjects]);
 
     const handleProjectCreated = (projectId: string, projectName: string) => {
         // onSupabaseProjectSelect(projectId, projectName);

@@ -157,6 +157,7 @@ export function ChatContainer({
                 sendMessage({ text: content });
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -327,7 +328,7 @@ export function ChatContainer({
         if (messages && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant') {
             setShowSuggestions(true);
         }
-    }, [suggestions]);
+    }, [suggestions, messages]);
 
     useEffect(() => {
         if (isGeneratingSync && !isGenerating) {

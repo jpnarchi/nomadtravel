@@ -3,16 +3,17 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Id } from "@/convex/_generated/dataModel"
 
 export type SessionWithUser = {
-    _id: string
+    _id: Id<"sessions">
     _creationTime: number
-    userId: string
+    userId: Id<"users">
     date: string
     user: {
-        name: string
-        email: string
-        pictureUrl?: string
+        name: string | undefined
+        email: string | undefined
+        pictureUrl: string | undefined
     } | null
 }
 
@@ -42,11 +43,11 @@ export const columns: ColumnDef<SessionWithUser>[] = [
                 <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                         <AvatarImage src={user.pictureUrl} alt={user.name} />
-                        <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback>{user.name?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <span className="font-medium">{user.name}</span>
-                        <span className="text-sm text-muted-foreground lowercase">{user.email}</span>
+                        <span className="font-medium">{user.name || "Sin nombre"}</span>
+                        <span className="text-sm text-muted-foreground lowercase">{user.email || "Sin email"}</span>
                     </div>
                 </div>
             )
