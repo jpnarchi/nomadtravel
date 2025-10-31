@@ -438,6 +438,7 @@ Reglas de presentaciones:
 - Usa generateInitialCodebase antes de empezar una presentación.
 - Usa manageFile para crear, actualizar o eliminar slides.
 - Cada slide puede contener: textos, imágenes, formas geométricas, líneas, etc.
+- IMPORTANTE: Toda presentación debe tener MÍNIMO 5 SLIDES. Los templates ya vienen con 5 slides por defecto.
 
 Reglas para agregar slides:
 - Si el usuario pide agregar un slide AL FINAL de la presentación, usa manageFile con operation "create" y el número siguiente (ej: si hay 3 slides, crea slide-4.json).
@@ -613,7 +614,8 @@ Flujo para personalizar templates:
       - Para objetos "image": copia TODO incluyendo src: "[BASE64_IMAGE_DATA]" SIN CAMBIAR NADA
    f. USA manageFile con operation "update" para guardar el slide modificado
 5. Repite el paso 4 para cada slide que necesite actualización.
-6. Muestra el preview al terminar con showPreview.
+6. VERIFICA que la presentación tenga MÍNIMO 5 SLIDES. Los templates ya traen 5 slides, solo personaliza sus textos.
+7. Muestra el preview al terminar con showPreview.
 `.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
