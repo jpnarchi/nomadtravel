@@ -97,51 +97,51 @@ async function generateSuggestions(messages: string[]) {
         const { object } = await generateObject({
             model: openrouter('google/gemini-2.5-flash'),
             prompt: `
-Eres un experto en generar respuestas rápidas contextuales para un chat con Astri, un asistente que ayuda a crear presentaciones profesionales con Fabric.js paso a paso.
+You are an expert at generating contextual quick replies for a chat with Astri, an assistant that helps create professional presentations with Fabric.js step by step.
 
-CONTEXTO DE LA CONVERSACIÓN:
+CONVERSATION CONTEXT:
 ${messages.join('\n\n')}
 
-CAPACIDADES DE ASTRI:
-- Crear presentaciones impactantes con Fabric.js
-- Diseñar slides con textos, formas, imágenes
-- Buscar información en internet (negocios, referencias, datos)
-- Leer archivos que el usuario suba
-- Generar imágenes con IA
-- Hacer cambios y mejoras visuales en slides
+ASTRI'S CAPABILITIES:
+- Create impactful presentations with Fabric.js
+- Design slides with texts, shapes, images
+- Search for information on the internet (businesses, references, data)
+- Read files that the user uploads
+- Generate images with AI
+- Make changes and visual improvements to slides
 
-TU TAREA:
-Genera exactamente 3 sugerencias (máximo 40 caracteres cada una) que sean:
+YOUR TASK:
+Generate exactly 3 suggestions (maximum 40 characters each) that are:
 
-1. **Respuestas naturales** que un usuario real escribiría
-2. **Próximos pasos lógicos** en la conversación actual
-3. **Acciones concretas** relacionadas con lo que Astri puede hacer
-4. **Variadas** - mezcla diferentes tipos (confirmar, preguntar, pedir acción)
+1. **Natural responses** that a real user would write
+2. **Logical next steps** in the current conversation
+3. **Concrete actions** related to what Astri can do
+4. **Varied** - mix different types (confirm, ask, request action)
 
-REGLAS ESTRICTAS:
-❌ NO sugieras "Gracias" ni cortesías innecesarias
-❌ NO sugieras acciones imposibles (enviar emails, conectar bases de datos, integraciones)
-❌ NO sugieras "Ver página" o "Abrir enlace"
-❌ NO menciones nada técnico (código, archivos, nombres técnicos)
-✅ SÍ sugiere pasos siguientes del proyecto
-✅ SÍ sugiere búsquedas web si es relevante
-✅ SÍ sugiere cambios visuales o de diseño
-✅ SÍ sugiere agregar secciones o elementos nuevos
+STRICT RULES:
+❌ DO NOT suggest "Thanks" or unnecessary courtesies
+❌ DO NOT suggest impossible actions (send emails, connect databases, integrations)
+❌ DO NOT suggest "View page" or "Open link"
+❌ DO NOT mention anything technical (code, files, technical names)
+✅ DO suggest next project steps
+✅ DO suggest web searches if relevant
+✅ DO suggest visual or design changes
+✅ DO suggest adding new sections or elements
 
-EJEMPLOS BUENOS:
-- Si Astri preguntó algo → "Sí", "No", "Claro"
-- Si mostró una presentación → "Cambia color", "Más grande", "Agrega texto"
-- Si terminó algo → "Agrega slide", "Qué sigue?", "Búscalo"
-- Si mencionó un tema → "Búscalo", "Tengo logo", "Dame ideas"
+GOOD EXAMPLES:
+- If Astri asked something → "Yes", "No", "Sure"
+- If showed a presentation → "Change color", "Make bigger", "Add text"
+- If finished something → "Add slide", "What's next?", "Search it"
+- If mentioned a topic → "Search it", "I have logo", "Give ideas"
 
-EJEMPLOS MALOS:
-- "Gracias" (muy genérico)
-- "Ver código" (muy técnico)
-- "Conectar DB" (fuera de alcance, esto es solo para presentaciones)
-- "Editar JSON" (muy técnico)
+BAD EXAMPLES:
+- "Thanks" (too generic)
+- "View code" (too technical)
+- "Connect DB" (out of scope, this is only for presentations)
+- "Edit JSON" (too technical)
 
-Genera las 3 sugerencias más útiles y naturales para ESTE momento específico de la conversación.
-Usa lenguaje simple y conversacional, como si fueras el usuario respondiendo.
+Generate the 3 most useful and natural suggestions for THIS specific moment in the conversation.
+Use simple and conversational language, as if you were the user responding.
 `.trim(),
             schema: z.object({
                 suggestions: z.array(z.string().max(40)).length(3)
@@ -161,14 +161,14 @@ async function generateTitle(messages: string[]) {
         const { object } = await generateObject({
             model: openrouter('google/gemini-2.5-flash'),
             prompt: `
-Genera un título para esta conversación, debe ser de 1 a 3 palabras:
+Generate a title for this conversation, it should be 1 to 3 words:
 
-Mensajes: "${messages.join('\n\n')}"
+Messages: "${messages.join('\n\n')}"
 
-Haz el título relevante a la conversación.
+Make the title relevant to the conversation.
 `.trim(),
             schema: z.object({
-                title: z.string().describe('El título de la conversación en 1 a 3 palabras')
+                title: z.string().describe('The conversation title in 1 to 3 words')
             }),
             temperature: 0.9,
         });
@@ -280,12 +280,12 @@ http.route({
         // create supabase tools
         const supabaseTools: any = {
             connectToSupabase: {
-                description: 'Conecta a Supabase.',
+                description: 'Connect to Supabase.',
                 inputSchema: z.object({}),
                 execute: async function () {
                     return {
                         success: true,
-                        message: 'Esperando a que el usuario conecte Supabase...'
+                        message: 'Waiting for user to connect Supabase...'
                     };
                 },
             },
@@ -294,15 +294,15 @@ http.route({
         // Add supabaseSQLQuery tool only if Supabase is connected
         if (isSupabaseConnected) {
             supabaseTools.supabaseSQLQuery = {
-                description: 'Escribe una consulta SQL en Supabase.',
+                description: 'Execute an SQL query in Supabase.',
                 inputSchema: z.object({
-                    query: z.string().describe('La consulta SQL a ejecutar. Drop table if exists si lo necesitas. Usa mock data para nuevas tablas.'),
+                    query: z.string().describe('The SQL query to execute. Drop table if exists if you need. Use mock data for new tables.'),
                 }),
                 execute: async function ({ query }: any) {
                     if (!chat.supabaseProjectId) {
                         return {
                             success: false,
-                            message: 'Supabase no conectado'
+                            message: 'Supabase not connected'
                         };
                     }
 
@@ -314,7 +314,7 @@ http.route({
                     if (!result) {
                         return {
                             success: false,
-                            message: 'Error al ejecutar la consulta SQL'
+                            message: 'Error executing SQL query'
                         };
                     }
 
@@ -322,40 +322,40 @@ http.route({
                     if (result.success === false) {
                         return {
                             success: false,
-                            message: result.message || 'Error al ejecutar la consulta SQL'
+                            message: result.message || 'Error executing SQL query'
                         };
                     }
 
                     return {
                         success: true,
-                        message: result.message || 'Consulta SQL ejecutada exitosamente',
+                        message: result.message || 'SQL query executed successfully',
                         data: result.data
                     };
                 },
             };
 
             supabaseTools.connectToStripe = {
-                description: 'Conecta a Stripe.',
+                description: 'Connect to Stripe.',
                 inputSchema: z.object({}),
                 execute: async function () {
                     return {
                         success: true,
-                        message: 'Esperando a que el usuario conecte Stripe...'
+                        message: 'Waiting for user to connect Stripe...'
                     };
                 },
             };
 
             supabaseTools.deployEdgeFunction = {
-                description: 'Despliega una edge function en Supabase.',
+                description: 'Deploy an edge function to Supabase.',
                 inputSchema: z.object({
-                    functionName: z.string().describe('El nombre de la función a desplegar'),
-                    fileContent: z.string().describe('El contenido de la función a desplegar. El código debe ser en TypeScript.'),
+                    functionName: z.string().describe('The name of the function to deploy'),
+                    fileContent: z.string().describe('The content of the function to deploy. The code must be in TypeScript.'),
                 }),
                 execute: async function ({ functionName, fileContent }: any) {
                     if (!chat.supabaseProjectId) {
                         return {
                             success: false,
-                            message: 'Supabase no conectado'
+                            message: 'Supabase not connected'
                         };
                     }
 
@@ -369,26 +369,26 @@ http.route({
                         return {
                             success: false,
                             error: result.error,
-                            message: 'Error al desplegar la función'
+                            message: 'Error deploying function'
                         };
                     }
 
                     return {
                         success: true,
-                        message: result.message || 'Función desplegada exitosamente',
+                        message: result.message || 'Function deployed successfully',
                         data: result.data
                     };
                 },
             };
 
             supabaseTools.saveResendKeyInSecrets = {
-                description: 'Despliega una edge function en Supabase.',
+                description: 'Save Resend API key in Supabase secrets.',
                 inputSchema: z.object({}),
                 execute: async function () {
                     if (!chat.supabaseProjectId) {
                         return {
                             success: false,
-                            message: 'Supabase no conectado'
+                            message: 'Supabase not connected'
                         };
                     }
 
@@ -400,13 +400,13 @@ http.route({
                         return {
                             success: false,
                             error: result.error,
-                            message: 'Error al guardar la clave de Resend en Supabase'
+                            message: 'Error saving Resend key in Supabase'
                         };
                     }
 
                     return {
                         success: true,
-                        message: 'Clave de Resend (RESEND_API_KEY) guardada en Supabase secrets exitosamente',
+                        message: 'Resend key (RESEND_API_KEY) saved in Supabase secrets successfully',
                     };
                 },
             };
@@ -418,46 +418,46 @@ http.route({
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
             system: `
-Eres Astri, un asistente especializado en crear presentaciones profesionales usando Fabric.js (librería de canvas HTML5).
-Tu misión es ayudar al usuario a crear presentaciones impactantes paso a paso.
+You are Astri, an assistant specialized in creating professional presentations using Fabric.js (HTML5 canvas library).
+Your mission is to help users create impactful presentations step by step.
 
-Reglas de interacción:
-- Responde con frases muy cortas y claras (máximo 1 frase).
-- Nunca uses listas ni emojis.
-- Nunca hagas más de 1 pregunta a la vez.
-- Nunca menciones nada técnico ni nombres de archivos al usuario.
-- Siempre pide los datos reales que el usuario quiere usar. Nunca uses datos mock.
-- IMPORTANTE: Cuando hagas una pregunta, SIEMPRE espera la respuesta del usuario antes de continuar o usar herramientas.
-- IMPORTANTE: Después de crear, modificar o actualizar slides, SIEMPRE muestra una vista previa del resultado.
+Interaction rules:
+- Respond with very short and clear phrases (maximum 1 sentence).
+- Never use lists or emojis.
+- Never ask more than 1 question at a time.
+- Never mention anything technical or file names to the user.
+- Always ask for the real data the user wants to use. Never use mock data.
+- IMPORTANT: When you ask a question, ALWAYS wait for the user's response before continuing or using tools.
+- IMPORTANT: After creating, modifying, or updating slides, ALWAYS show a preview of the result.
 
-Reglas de presentaciones:
-- Cada presentación está compuesta por slides (diapositivas).
-- Cada slide es un archivo JSON que contiene objetos de Fabric.js.
-- Los slides se numeran: /slides/slide-1.json, /slides/slide-2.json, etc.
-- Formato de canvas: 1920x1080 (16:9) para presentaciones profesionales.
-- Usa generateInitialCodebase antes de empezar una presentación.
-- Usa manageFile para crear, actualizar o eliminar slides.
-- Cada slide puede contener: textos, imágenes, formas geométricas, líneas, etc.
-- IMPORTANTE: Toda presentación debe tener MÍNIMO 5 SLIDES. Los templates ya vienen con 5 slides por defecto.
+Presentation rules:
+- Each presentation is composed of slides.
+- Each slide is a JSON file containing Fabric.js objects.
+- Slides are numbered: /slides/slide-1.json, /slides/slide-2.json, etc.
+- Canvas format: 1920x1080 (16:9) for professional presentations.
+- Use generateInitialCodebase before starting a presentation.
+- Use manageFile to create, update, or delete slides.
+- Each slide can contain: text, images, geometric shapes, lines, etc.
+- IMPORTANT: Every presentation must have MINIMUM 5 SLIDES. Templates already come with 5 slides by default.
 
-Reglas para agregar slides:
-- Si el usuario pide agregar un slide AL FINAL de la presentación, usa manageFile con operation "create" y el número siguiente (ej: si hay 3 slides, crea slide-4.json).
-- Si el usuario pide agregar un slide EN MEDIO de la presentación (ej: "agrega un slide después del slide 1" o "inserta un slide entre el 2 y el 3"), USA insertSlideAtPosition.
-- insertSlideAtPosition renumerará automáticamente los slides existentes, no necesitas hacerlo manualmente.
-- Ejemplo: Si tienes slide-1, slide-2, slide-3 y quieres insertar después del slide-1:
-  - USA insertSlideAtPosition con position=2 (el nuevo slide será slide-2)
-  - La herramienta automáticamente renombrará slide-2→slide-3 y slide-3→slide-4
-- NUNCA intentes renumerar slides manualmente con múltiples llamadas a manageFile.
+Rules for adding slides:
+- If the user asks to add a slide AT THE END of the presentation, use manageFile with operation "create" and the next number (e.g., if there are 3 slides, create slide-4.json).
+- If the user asks to add a slide IN THE MIDDLE of the presentation (e.g., "add a slide after slide 1" or "insert a slide between 2 and 3"), USE insertSlideAtPosition.
+- insertSlideAtPosition will automatically renumber existing slides, you don't need to do it manually.
+- Example: If you have slide-1, slide-2, slide-3 and want to insert after slide-1:
+  - USE insertSlideAtPosition with position=2 (the new slide will be slide-2)
+  - The tool will automatically rename slide-2→slide-3 and slide-3→slide-4
+- NEVER try to renumber slides manually with multiple manageFile calls.
 
-REGLA CRÍTICA - Preservar diseño de templates:
-- Cuando uses generateInitialCodebase, el template YA tiene un diseño profesional completo.
-- TU ÚNICA TAREA es personalizar los TEXTOS con la información del usuario.
-- NUNCA cambies: posiciones (left/top), tamaños (width/height/fontSize), colores (fill/stroke), imágenes existentes, formas, o cualquier propiedad visual.
-- Solo modifica el campo "text" de los objetos tipo "text", "i-text" o "textbox".
-- Si hay una imagen con "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", DÉJALA tal cual. NO la elimines, NO la cambies.
-- El diseño del template es perfecto, solo actualiza los textos con los datos reales del usuario.
+CRITICAL RULE - Preserve template design:
+- When you use generateInitialCodebase, the template ALREADY has a complete professional design.
+- YOUR ONLY TASK is to customize the TEXTS with the user's information.
+- NEVER change: positions (left/top), sizes (width/height/fontSize), colors (fill/stroke), existing images, shapes, or any visual property.
+- Only modify the "text" field of objects type "text", "i-text" or "textbox".
+- If there's an image with "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", LEAVE IT as is. DO NOT delete it, DO NOT change it.
+- The template design is perfect, only update texts with the user's real data.
 
-Estructura de un slide JSON:
+JSON slide structure:
 {
   "version": "5.3.0",
   "objects": [
@@ -466,7 +466,7 @@ Estructura de un slide JSON:
       "left": 100,
       "top": 100,
       "fontSize": 60,
-      "text": "Título del Slide",
+      "text": "Slide Title",
       "fill": "#ffffff",
       "fontFamily": "Arial"
     },
@@ -482,148 +482,147 @@ Estructura de un slide JSON:
   "background": "#1a1a1a"
 }
 
-Tipos de objetos disponibles en Fabric.js:
-- text: Texto simple
-- i-text: Texto editable
-- textbox: Caja de texto con wrap
-- rect: Rectángulo
-- circle: Círculo
-- triangle: Triángulo
-- line: Línea
-- image: Imagen (requiere URL pública, NUNCA uses base64)
-- group: Grupo de objetos
+Available Fabric.js object types:
+- text: Simple text
+- i-text: Editable text
+- textbox: Text box with wrap
+- rect: Rectangle
+- circle: Circle
+- triangle: Triangle
+- line: Line
+- image: Image (requires public URL, NEVER use base64)
+- group: Group of objects
 
-IMPORTANTE sobre imágenes:
-- Las imágenes base64 han sido removidas de los archivos mostrados para ahorrar tokens.
-- Si ves "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]" significa que hay una imagen allí.
-- NUNCA elimines ni modifiques objetos tipo "image" que ya existen en el template.
-- Si un objeto image tiene src: "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", déjalo exactamente igual.
-- Para agregar NUEVAS imágenes (no reemplazar existentes), usa URLs públicas en el campo "src".
-- NUNCA uses imágenes base64 (data:image/...) porque son muy pesadas.
-- Si el usuario quiere agregar una imagen nueva, usa generateImageTool y luego usa la URL que devuelve.
+IMPORTANT about images:
+- Base64 images have been removed from displayed files to save tokens.
+- If you see "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]" it means there's an image there.
+- NEVER delete or modify "image" type objects that already exist in the template.
+- If an image object has src: "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", leave it exactly as is.
+- To add NEW images (not replace existing ones), use public URLs in the "src" field.
+- NEVER use base64 images (data:image/...) because they are very heavy.
+- If the user wants to add a new image, use generateImageTool and then use the URL it returns.
 
-Propiedades comunes:
-- left, top: Posición X, Y
-- width, height: Dimensiones
-- fill: Color de relleno
-- stroke: Color de borde
-- strokeWidth: Grosor de borde
-- opacity: Transparencia (0-1)
-- angle: Rotación en grados
-- scaleX, scaleY: Escala
+Common properties:
+- left, top: X, Y position
+- width, height: Dimensions
+- fill: Fill color
+- stroke: Border color
+- strokeWidth: Border thickness
+- opacity: Transparency (0-1)
+- angle: Rotation in degrees
+- scaleX, scaleY: Scale
 
-Para textos:
-- fontSize: Tamaño de fuente
-- fontFamily: Fuente (Arial, Times New Roman, etc.)
-- fontWeight: Peso (normal, bold)
-- textAlign: Alineación (left, center, right)
-- fill: Color del texto
+For texts:
+- fontSize: Font size
+- fontFamily: Font (Arial, Times New Roman, etc.)
+- fontWeight: Weight (normal, bold)
+- textAlign: Alignment (left, center, right)
+- fill: Text color
 
-Archivos existentes:
+Existing files:
 ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
 
 ${hasImagesInSlides ? `
-IMPORTANTE: Los archivos contienen imágenes. Para ver o modificar el contenido:
-- Lee el archivo actual desde la base de datos antes de modificarlo
-- NO copies contenido de memoria, siempre usa el contenido actual del archivo
-- Cuando actualices un slide, asegúrate de preservar TODAS las propiedades de TODOS los objetos
-- Las imágenes ya están guardadas correctamente, NO las modifiques
-` : `Archivos:
+IMPORTANT: Files contain images. To view or modify content:
+- Read the current file from the database before modifying it
+- DO NOT copy content from memory, always use the current file content
+- When updating a slide, make sure to preserve ALL properties of ALL objects
+- Images are already saved correctly, DO NOT modify them
+` : `Files:
 ${JSON.stringify(cleanedFiles, null, 2)}`}
 
-IMPORTANTE - NO disponibles para presentaciones:
-- NO uses Supabase (esto es solo para presentaciones visuales).
-- NO uses Stripe (esto es solo para presentaciones visuales).
-- NO uses bases de datos.
-- Enfócate únicamente en crear slides visuales impactantes.
+IMPORTANT - NOT available for presentations:
+- DO NOT use Supabase (this is only for visual presentations).
+- DO NOT use Stripe (this is only for visual presentations).
+- DO NOT use databases.
+- Focus only on creating impactful visual slides.
 
-Reglas de Supabase (DESHABILITADO):
+Supabase rules (DISABLED):
 ${isSupabaseConnected
-                    ? `- Supabase YA está conectado. Puedes usar supabaseSQLQuery para ejecutar consultas SQL.
-- Si el usuario quiere cambiar la conexión o conectar a otro proyecto, usa connectToSupabase.
+                    ? `- Supabase is ALREADY connected. You can use supabaseSQLQuery to execute SQL queries.
+- If the user wants to change the connection or connect to another project, use connectToSupabase.
 
-- Configuración de autenticación:
-  - Cuando hagas cualquier funcionalidad de autenticación (login, registro, verificación de email, etc.), DEBES implementar el flujo completo de Supabase Auth.
-  - La configuración de emailRedirectTo siempre debe usar: options: { emailRedirectTo: callback }
-  - El valor de callback siempre debe ser:
+- Authentication configuration:
+  - When implementing any authentication functionality (login, registration, email verification, etc.), you MUST implement the complete Supabase Auth flow.
+  - The emailRedirectTo configuration must always use: options: { emailRedirectTo: callback }
+  - The callback value must always be:
     const callback = /codesandbox\\.io/.test(window.location.href)
       ? '${redirectUrl}'
       : \`\${window.location.origin}/auth/supabase-auth-callback\`;
-  - SIEMPRE debes crear la ruta /auth/supabase-auth-callback con react router dom para manejar el redireccionamiento después de la verificación de email.
-  - SIEMPRE crea la ruta /auth/supabase-auth-callback con react router dom para manejar el redireccionamiento después de la verificación de email.
-  - Esto asegura que el redireccionamiento funcione automáticamente tanto en desarrollo como en producción.`
-                    : '- Supabase NO está conectado. Si el usuario quiere usar base de datos, primero usa connectToSupabase.'}
+  - You MUST always create the /auth/supabase-auth-callback route with react router dom to handle redirection after email verification.
+  - This ensures redirection works automatically in both development and production.`
+                    : '- Supabase is NOT connected. If the user wants to use a database, first use connectToSupabase.'}
 
-Reglas de Stripe:
+Stripe rules:
 ${isSupabaseConnected
-                    ? `- Supabase está conectado; puedes proceder con pagos.
-- Antes de pagos, verifica que existan las tablas necesarias (por ejemplo: payments). Si faltan, créalas con supabaseSQLQuery.
-- Conecta Stripe con connectToStripe si aún no está conectado.
-- Despliega una Edge Function con deployEdgeFunction.
-- No cobres hasta tener: tablas creadas + Stripe conectado + función desplegada.
-- Si falla algo, informa el error y detente.`
-                    : '- Supabase NO está conectado; antes de cualquier pago usa connectToSupabase y espera confirmación.'}
-				
-Reglas de Resend (Para enviar correos):
+                    ? `- Supabase is connected; you can proceed with payments.
+- Before payments, verify that necessary tables exist (e.g., payments). If missing, create them with supabaseSQLQuery.
+- Connect Stripe with connectToStripe if not already connected.
+- Deploy an Edge Function with deployEdgeFunction.
+- Don't charge until you have: tables created + Stripe connected + function deployed.
+- If something fails, report the error and stop.`
+                    : '- Supabase is NOT connected; before any payment use connectToSupabase and wait for confirmation.'}
+
+Resend rules (To send emails):
 ${isSupabaseConnected
-                    ? `- Supabase está conectado; puedes proceder con enviar correos con Resend.
-- Tu tienes la clave de Resend (RESEND_API_KEY) solo llama la herramienta saveResendKeyInSecrets para guardarla en Supabase secrets.
-- Despliega una Edge Function con deployEdgeFunction para enviar correos con "Astri <noreply@astri.dev>".
-- Si falla algo, informa el error y detente.`
-                    : '- Supabase NO está conectado; antes de enviar correos usa connectToSupabase y espera confirmación.'}
+                    ? `- Supabase is connected; you can proceed to send emails with Resend.
+- You have the Resend key (RESEND_API_KEY), just call the saveResendKeyInSecrets tool to save it in Supabase secrets.
+- Deploy an Edge Function with deployEdgeFunction to send emails with "Astri <noreply@astri.dev>".
+- If something fails, report the error and stop.`
+                    : '- Supabase is NOT connected; before sending emails use connectToSupabase and wait for confirmation.'}
 
-Reglas de herramientas adicionales:
-- Si el usuario menciona que ya tiene un negocio:
-  1. Pregunta si puedes buscarlo en internet y espera su respuesta.
-  2. Pide la información necesaria (nombre, ubicación, etc.) y espera su respuesta.
-  3. Usa webSearch para buscar.
-  4. Muestra los resultados encontrados al usuario.
-  5. Pregunta si la información es correcta y espera confirmación antes de continuar.
-- Si el usuario quiere buscar cualquier otra cosa en internet:
-  1. Explica que lo buscarás.
-  2. Usa webSearch.
-  3. Muestra siempre los resultados y espera confirmación si es necesario.
-- Si el usuario pide leer un archivo, usa readAttachment.
-- Si el usuario pide generar una imagen:
-  1. Pregunta primero si quiere subir su foto o generarla con IA y espera respuesta.
-  2. Si elige subir su foto, espera a que la suba y usa generateImageTool.
-  3. Si elige IA, usa generateImageTool y pregunta si es correcta antes de continuar.
+Additional tools rules:
+- If the user mentions they already have a business:
+  1. Ask if you can search for it on the internet and wait for their response.
+  2. Ask for the necessary information (name, location, etc.) and wait for their response.
+  3. Use webSearch to search.
+  4. Show the results found to the user.
+  5. Ask if the information is correct and wait for confirmation before continuing.
+- If the user wants to search for anything else on the internet:
+  1. Explain that you'll search for it.
+  2. Use webSearch.
+  3. Always show results and wait for confirmation if necessary.
+- If the user asks to read a file, use readAttachment.
+- If the user asks to generate an image:
+  1. First ask if they want to upload their photo or generate it with AI and wait for response.
+  2. If they choose to upload their photo, wait for them to upload it and use generateImageTool.
+  3. If they choose AI, use generateImageTool and ask if it's correct before continuing.
 
-Flujo de trabajo obligatorio:
-1. Haz UNA pregunta.
-2. ESPERA la respuesta del usuario (no uses herramientas hasta recibir respuesta).
-3. Procesa la respuesta.
-4. Si usas manageFile o modificas código, muestra SIEMPRE el preview al terminar.
-5. Repite desde el paso 1 si necesitas más información.
+Mandatory workflow:
+1. Ask ONE question.
+2. WAIT for the user's response (don't use tools until receiving response).
+3. Process the response.
+4. If you use manageFile or modify code, ALWAYS show the preview when finished.
+5. Repeat from step 1 if you need more information.
 
-Flujo para personalizar templates:
-1. Usa generateInitialCodebase para cargar el template.
-2. Pide al usuario la información para personalizar (nombre, eslogan, etc.).
-3. ESPERA la respuesta del usuario.
-4. Para actualizar los textos en los slides:
-   a. USA readFile para obtener el contenido actual del slide (ej: readFile con path "/slides/slide-1.json")
-   b. El readFile te devolverá el JSON del slide, donde verás:
-      - Objetos tipo "text" con su contenido actual
-      - Objetos tipo "image" con src: "[BASE64_IMAGE_DATA]" (NO los modifiques)
-      - Todas las formas, colores, posiciones, tamaños
-   c. Copia TODO el JSON que recibiste de readFile
-   d. Modifica SOLO el campo "text" de los objetos tipo text/i-text/textbox
-   e. Mantén TODO lo demás exactamente igual:
-      - Todos los objetos (textos, imágenes, formas, líneas, etc.)
-      - Todas las propiedades (left, top, fontSize, fill, fontFamily, fontWeight, width, height, etc.)
-      - Para objetos "image": copia TODO incluyendo src: "[BASE64_IMAGE_DATA]" SIN CAMBIAR NADA
-   f. USA manageFile con operation "update" para guardar el slide modificado
-5. Repite el paso 4 para cada slide que necesite actualización.
-6. VERIFICA que la presentación tenga MÍNIMO 5 SLIDES. Los templates ya traen 5 slides, solo personaliza sus textos.
-7. Muestra el preview al terminar con showPreview.
+Template customization workflow:
+1. Use generateInitialCodebase to load the template.
+2. Ask the user for information to customize (name, slogan, etc.).
+3. WAIT for the user's response.
+4. To update texts in slides:
+   a. USE readFile to get the current slide content (e.g., readFile with path "/slides/slide-1.json")
+   b. The readFile will return the slide JSON, where you'll see:
+      - "text" type objects with their current content
+      - "image" type objects with src: "[BASE64_IMAGE_DATA]" (DO NOT modify them)
+      - All shapes, colors, positions, sizes
+   c. Copy ALL the JSON you received from readFile
+   d. Modify ONLY the "text" field of text/i-text/textbox type objects
+   e. Keep EVERYTHING else exactly the same:
+      - All objects (texts, images, shapes, lines, etc.)
+      - All properties (left, top, fontSize, fill, fontFamily, fontWeight, width, height, etc.)
+      - For "image" objects: copy EVERYTHING including src: "[BASE64_IMAGE_DATA]" WITHOUT CHANGING ANYTHING
+   f. USE manageFile with operation "update" to save the modified slide
+5. Repeat step 4 for each slide that needs updating.
+6. VERIFY that the presentation has MINIMUM 5 SLIDES. Templates already come with 5 slides, just customize their texts.
+7. Show the preview when finished with showPreview.
 `.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
             tools: {
                 readFile: {
-                    description: 'Lee el contenido actual de un archivo específico de la presentación. Usa esto ANTES de actualizar un archivo para obtener su contenido completo.',
+                    description: 'Read the current content of a specific presentation file. Use this BEFORE updating a file to get its complete content.',
                     inputSchema: z.object({
-                        path: z.string().describe('Ruta del archivo a leer (ej: "/slides/slide-1.json")'),
+                        path: z.string().describe('Path of the file to read (e.g.: "/slides/slide-1.json")'),
                     }),
                     execute: async function ({ path }: any) {
                         try {
@@ -634,7 +633,7 @@ Flujo para personalizar templates:
                             if (!fileContent) {
                                 return {
                                     success: false,
-                                    error: `Archivo no encontrado: ${path}`
+                                    error: `File not found: ${path}`
                                 };
                             }
 
@@ -649,7 +648,7 @@ Flujo para personalizar templates:
                                                 return {
                                                     ...obj,
                                                     src: '[BASE64_IMAGE_DATA]',
-                                                    _note: 'Esta imagen tiene datos base64. Al actualizar el slide, copia este objeto COMPLETO pero deja el src como "[BASE64_IMAGE_DATA]" - NO lo cambies.'
+                                                    _note: 'This image has base64 data. When updating the slide, copy this COMPLETE object but leave the src as "[BASE64_IMAGE_DATA]" - DO NOT change it.'
                                                 };
                                             }
                                             return obj;
@@ -657,7 +656,7 @@ Flujo para personalizar templates:
                                         contentToReturn = JSON.stringify({ ...parsed, objects: cleanedObjects }, null, 2);
                                     }
                                 } catch {
-                                    // Si no se puede parsear, devolver contenido original
+                                    // If can't parse, return original content
                                 }
                             }
 
@@ -667,22 +666,22 @@ Flujo para personalizar templates:
                                 content: contentToReturn
                             };
                         } catch (error) {
-                            console.error(`Error leyendo archivo ${path}:`, error);
+                            console.error(`Error reading file ${path}:`, error);
                             return {
                                 success: false,
-                                error: `Error al leer ${path}`
+                                error: `Error reading ${path}`
                             };
                         }
                     },
                 },
 
                 manageFile: {
-                    description: 'Gestiona slides de la presentación en formato JSON. IMPORTANTE: Cada slide debe ser un archivo JSON separado.',
+                    description: 'Manage presentation slides in JSON format. IMPORTANT: Each slide must be a separate JSON file.',
                     inputSchema: z.object({
-                        operation: z.enum(['create', 'update', 'delete']).describe('Tipo de operación: create (nuevo slide), update (modificar slide existente), delete (eliminar slide)'),
-                        path: z.string().describe('Ruta del slide. DEBE seguir el formato: "/slides/slide-1.json", "/slides/slide-2.json", etc. Siempre empieza con /slides/ y termina con .json'),
-                        content: z.string().optional().describe('Contenido JSON del slide con estructura Fabric.js (requerido para create y update). Debe ser un JSON válido con version, objects y background'),
-                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios para usuarios no técnicos'),
+                        operation: z.enum(['create', 'update', 'delete']).describe('Operation type: create (new slide), update (modify existing slide), delete (remove slide)'),
+                        path: z.string().describe('Slide path. MUST follow format: "/slides/slide-1.json", "/slides/slide-2.json", etc. Always starts with /slides/ and ends with .json'),
+                        content: z.string().optional().describe('JSON content of the slide with Fabric.js structure (required for create and update). Must be valid JSON with version, objects and background'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words of changes for non-technical users'),
                     }),
                     execute: async function ({ operation, path, content, explanation }: any) {
                         try {
@@ -693,7 +692,7 @@ Flujo para personalizar templates:
                                     if (!content) {
                                         return {
                                             success: false,
-                                            error: 'El contenido es requerido para crear un archivo'
+                                            error: 'Content is required to create a file'
                                         };
                                     }
                                     await ctx.runMutation(api.files.create, {
@@ -708,7 +707,7 @@ Flujo para personalizar templates:
                                     if (!content) {
                                         return {
                                             success: false,
-                                            error: 'El contenido es requerido para actualizar un archivo'
+                                            error: 'Content is required to update a file'
                                         };
                                     }
 
@@ -786,21 +785,21 @@ Flujo para personalizar templates:
                                 message: explanation
                             };
                         } catch (error) {
-                            console.error(`Error en operación ${operation}:`, error);
+                            console.error(`Error in operation ${operation}:`, error);
                             return {
                                 success: false,
-                                error: `Error al ${operation === 'create' ? 'crear' : operation === 'update' ? 'actualizar' : 'eliminar'} ${path}`
+                                error: `Error ${operation === 'create' ? 'creating' : operation === 'update' ? 'updating' : 'deleting'} ${path}`
                             };
                         }
                     },
                 },
 
                 insertSlideAtPosition: {
-                    description: 'Inserta un nuevo slide en una posición específica de la presentación, renumerando automáticamente los slides existentes. Usa esto cuando el usuario pida agregar un slide en medio de la presentación.',
+                    description: 'Insert a new slide at a specific position in the presentation, automatically renumbering existing slides. Use this when the user asks to add a slide in the middle of the presentation.',
                     inputSchema: z.object({
-                        position: z.number().min(1).describe('Posición donde insertar el nuevo slide (1 = primer slide, 2 = segundo slide, etc.)'),
-                        content: z.string().describe('Contenido JSON del nuevo slide con estructura Fabric.js. Debe ser un JSON válido con version, objects y background'),
-                        explanation: z.string().describe('Explicación en 1 a 3 palabras de los cambios para usuarios no técnicos'),
+                        position: z.number().min(1).describe('Position where to insert the new slide (1 = first slide, 2 = second slide, etc.)'),
+                        content: z.string().describe('JSON content of the new slide with Fabric.js structure. Must be valid JSON with version, objects and background'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words of changes for non-technical users'),
                     }),
                     execute: async function ({ position, content, explanation }: any) {
                         try {
@@ -820,14 +819,14 @@ Flujo para personalizar templates:
                             if (position < 1) {
                                 return {
                                     success: false,
-                                    error: 'La posición debe ser mayor o igual a 1'
+                                    error: 'Position must be greater than or equal to 1'
                                 };
                             }
 
                             if (position > slidePaths.length + 1) {
                                 return {
                                     success: false,
-                                    error: `La posición ${position} es mayor al número de slides existentes (${slidePaths.length}). Usa posición ${slidePaths.length + 1} para agregar al final.`
+                                    error: `Position ${position} is greater than the number of existing slides (${slidePaths.length}). Use position ${slidePaths.length + 1} to add at the end.`
                                 };
                             }
 
@@ -890,17 +889,17 @@ Flujo para personalizar templates:
                                 slidesRenumbered: slidesToRenumber.length
                             };
                         } catch (error) {
-                            console.error(`Error insertando slide en posición ${position}:`, error);
+                            console.error(`Error inserting slide at position ${position}:`, error);
                             return {
                                 success: false,
-                                error: `Error al insertar slide en posición ${position}`
+                                error: `Error inserting slide at position ${position}`
                             };
                         }
                     },
                 },
 
                 generateInitialCodebase: {
-                    description: 'Genera el proyecto con los archivos iniciales.',
+                    description: 'Generate the project with initial files.',
                     inputSchema: z.object({
                         templateName: z.union(
                             templates.map(template =>
@@ -936,7 +935,7 @@ Flujo para personalizar templates:
 
                         // Return success message WITHOUT returning the files
                         // The files are now in the database and will be loaded from there
-                        const message = `Plantilla "${templateName}" creada con éxito`;
+                        const message = `Template "${templateName}" created successfully`;
                         const filesCreated = Object.keys(files).length;
                         return {
                             success: true,
@@ -947,7 +946,7 @@ Flujo para personalizar templates:
                 },
 
                 showPreview: {
-                    description: 'Muestra la vista previa del proyecto.',
+                    description: 'Show project preview.',
                     inputSchema: z.object({}),
                     execute: async function () {
                         const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
@@ -961,15 +960,15 @@ Flujo para personalizar templates:
                 },
 
                 webSearch: {
-                    description: 'Busca en internet para obtener información relevante.',
+                    description: 'Search the internet for relevant information.',
                     inputSchema: z.object({
-                        query: z.string().describe('La consulta a realizar en internet'),
+                        query: z.string().describe('The query to perform on the internet'),
                     }),
                     execute: async function ({ query }: any) {
                         try {
                             const { text } = await generateText({
                                 model: anthropic('claude-sonnet-4-20250514'),
-                                prompt: `Busca en internet: ${query}`,
+                                prompt: `Search the internet: ${query}`,
                                 tools: {
                                     web_search: webSearchTool,
                                 },
@@ -982,17 +981,17 @@ Flujo para personalizar templates:
                             console.error('Error searching in internet:', error);
                             return {
                                 success: false,
-                                message: `Error al buscar en internet: ${query}`
+                                message: `Error searching the internet: ${query}`
                             };
                         }
                     },
                 },
 
                 readAttachment: {
-                    description: 'Lee un archivo adjunto para obtener información relevante.',
+                    description: 'Read an attached file to get relevant information.',
                     inputSchema: z.object({
-                        question: z.string().describe('Pregunta que necesitas responder del archivo adjunto'),
-                        url: z.string().describe('URL del archivo adjunto a leer'),
+                        question: z.string().describe('Question you need to answer from the attached file'),
+                        url: z.string().describe('URL of the attached file to read'),
                         mimeType: z.union([
                             z.literal('application/pdf'),
                             z.literal('image/png'),
@@ -1006,7 +1005,7 @@ Flujo para personalizar templates:
                             z.literal('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'), // .xlsx
                             z.literal('application/vnd.ms-excel'), // .xls
                             z.literal('text/csv') // .csv
-                        ]).describe('Tipo de archivo'),
+                        ]).describe('File type'),
                     }),
                     execute: async function ({ question, url, mimeType }: any) {
                         try {
@@ -1038,23 +1037,23 @@ Flujo para personalizar templates:
                             console.error('Error reading attachment:', error);
                             return {
                                 success: false,
-                                message: `Error al leer el archivo adjunto: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                                message: `Error reading attached file: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },
                 },
 
                 generateImageTool: {
-                    description: 'Genera una imagen con IA (gpt-image-1)',
+                    description: 'Generate an image with AI (gpt-image-1)',
                     inputSchema: z.object({
-                        prompt: z.string().describe('Prompt para generar la imagen'),
+                        prompt: z.string().describe('Prompt to generate the image'),
                         size: z.union([
                             z.literal("256x256"),
                             z.literal("512x512"),
                             z.literal("1024x1024"),
                             z.literal("1024x1792"),
                             z.literal("1792x1024"),
-                        ]).describe('El tamaño de la imagen a generar'),
+                        ]).describe('The size of the image to generate'),
                     }),
                     execute: async function ({ prompt, size }: any) {
                         try {
@@ -1071,14 +1070,14 @@ Flujo para personalizar templates:
 
                             return {
                                 success: true,
-                                message: `Imagen generada exitosamente`,
+                                message: `Image generated successfully`,
                                 imageUrl: imageUrl
                             };
                         } catch (error) {
                             console.error('Error generating image:', error);
                             return {
                                 success: false,
-                                message: `Error al generar la imagen: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                                message: `Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },

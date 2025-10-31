@@ -200,15 +200,29 @@ export function FabricPresentationPreview({
                         case 'itext':  // IText se normaliza a 'itext' sin guión
                         case 'textbox':
                             console.log(`📝 Creando texto: "${obj.text}"`)
-                            fabricObj = new fabric.IText(obj.text || 'Text', {
-                                left: obj.left,
-                                top: obj.top,
-                                fontSize: obj.fontSize || 40,
-                                fill: obj.fill || '#000000',
-                                fontFamily: obj.fontFamily || 'Arial',
-                                fontWeight: obj.fontWeight || 'normal',
-                                textAlign: obj.textAlign || 'left',
-                            })
+                            // Use Textbox if width is defined for text wrapping, otherwise use IText
+                            if (obj.width) {
+                                fabricObj = new fabric.Textbox(obj.text || 'Text', {
+                                    left: obj.left,
+                                    top: obj.top,
+                                    width: obj.width,
+                                    fontSize: obj.fontSize || 40,
+                                    fill: obj.fill || '#000000',
+                                    fontFamily: obj.fontFamily || 'Arial',
+                                    fontWeight: obj.fontWeight || 'normal',
+                                    textAlign: obj.textAlign || 'left',
+                                })
+                            } else {
+                                fabricObj = new fabric.IText(obj.text || 'Text', {
+                                    left: obj.left,
+                                    top: obj.top,
+                                    fontSize: obj.fontSize || 40,
+                                    fill: obj.fill || '#000000',
+                                    fontFamily: obj.fontFamily || 'Arial',
+                                    fontWeight: obj.fontWeight || 'normal',
+                                    textAlign: obj.textAlign || 'left',
+                                })
+                            }
                             // Apply additional properties
                             if (obj.originX) fabricObj.set('originX', obj.originX)
                             if (obj.originY) fabricObj.set('originY', obj.originY)

@@ -121,7 +121,8 @@ export function FabricSlideEditor({
                 'lineHeight',
                 'charSpacing',
                 'styles',
-                'editable'
+                'editable',
+                'width' // Include width for Textbox objects (text wrapping)
             ])
 
             // Add z-index to preserve layer order
@@ -259,15 +260,29 @@ export function FabricSlideEditor({
                             case 'itext':  // IText se normaliza a 'itext' sin guión
                             case 'textbox':
                                 console.log(`📝 Creando texto: "${obj.text}"`)
-                                fabricObj = new fabric.IText(obj.text || 'Text', {
-                                    left: obj.left,
-                                    top: obj.top,
-                                    fontSize: obj.fontSize || 40,
-                                    fill: obj.fill || '#000000',
-                                    fontFamily: obj.fontFamily || 'Arial',
-                                    fontWeight: obj.fontWeight || 'normal',
-                                    textAlign: obj.textAlign || 'left',
-                                })
+                                // Use Textbox if width is defined, otherwise use IText for backward compatibility
+                                if (obj.width) {
+                                    fabricObj = new fabric.Textbox(obj.text || 'Text', {
+                                        left: obj.left,
+                                        top: obj.top,
+                                        width: obj.width, // Preserve width for text wrapping
+                                        fontSize: obj.fontSize || 40,
+                                        fill: obj.fill || '#000000',
+                                        fontFamily: obj.fontFamily || 'Arial',
+                                        fontWeight: obj.fontWeight || 'normal',
+                                        textAlign: obj.textAlign || 'left',
+                                    })
+                                } else {
+                                    fabricObj = new fabric.IText(obj.text || 'Text', {
+                                        left: obj.left,
+                                        top: obj.top,
+                                        fontSize: obj.fontSize || 40,
+                                        fill: obj.fill || '#000000',
+                                        fontFamily: obj.fontFamily || 'Arial',
+                                        fontWeight: obj.fontWeight || 'normal',
+                                        textAlign: obj.textAlign || 'left',
+                                    })
+                                }
                                 // Apply additional properties
                                 if (obj.originX) fabricObj.set('originX', obj.originX)
                                 if (obj.originY) fabricObj.set('originY', obj.originY)
@@ -622,9 +637,11 @@ export function FabricSlideEditor({
         isInitialLoadRef.current = false
         console.log('✅ Marcando carga inicial como completa (usuario agregó texto)')
 
-        const text = new fabric.IText('Haz clic para editar', {
+        // Use Textbox instead of IText to enable automatic text wrapping
+        const text = new fabric.Textbox('Haz clic para editar', {
             left: 100,
             top: 100,
+            width: 800, // Define width for text wrapping
             fontSize: 60,
             fill: '#ffffff',
             fontFamily: 'Arial',
@@ -658,7 +675,7 @@ export function FabricSlideEditor({
                         'lockScalingX', 'lockScalingY',
                         'text', 'fontSize', 'fontFamily', 'fontWeight',
                         'fontStyle', 'textAlign', 'lineHeight',
-                        'charSpacing', 'styles', 'editable'
+                        'charSpacing', 'styles', 'editable', 'width'
                     ])
                     return json
                 })
@@ -787,7 +804,7 @@ export function FabricSlideEditor({
             'lockScalingX', 'lockScalingY',
             'text', 'fontSize', 'fontFamily', 'fontWeight',
             'fontStyle', 'textAlign', 'lineHeight',
-            'charSpacing', 'styles', 'editable'
+            'charSpacing', 'styles', 'editable', 'width'
         ])
 
         copiedObjectRef.current = objectData
@@ -816,23 +833,45 @@ export function FabricSlideEditor({
                 case 'i-text':
                 case 'itext':
                 case 'textbox':
-                    newObj = new fabric.IText(objData.text || 'Text', {
-                        left: objData.left + 20,
-                        top: objData.top + 20,
-                        fontSize: objData.fontSize,
-                        fill: objData.fill,
-                        fontFamily: objData.fontFamily,
-                        fontWeight: objData.fontWeight,
-                        fontStyle: objData.fontStyle,
-                        textAlign: objData.textAlign,
-                        lineHeight: objData.lineHeight,
-                        charSpacing: objData.charSpacing,
-                        angle: objData.angle || 0,
-                        scaleX: objData.scaleX || 1,
-                        scaleY: objData.scaleY || 1,
-                        originX: objData.originX,
-                        originY: objData.originY,
-                    })
+                    // Use Textbox if width is defined, otherwise use IText
+                    if (objData.width) {
+                        newObj = new fabric.Textbox(objData.text || 'Text', {
+                            left: objData.left + 20,
+                            top: objData.top + 20,
+                            width: objData.width,
+                            fontSize: objData.fontSize,
+                            fill: objData.fill,
+                            fontFamily: objData.fontFamily,
+                            fontWeight: objData.fontWeight,
+                            fontStyle: objData.fontStyle,
+                            textAlign: objData.textAlign,
+                            lineHeight: objData.lineHeight,
+                            charSpacing: objData.charSpacing,
+                            angle: objData.angle || 0,
+                            scaleX: objData.scaleX || 1,
+                            scaleY: objData.scaleY || 1,
+                            originX: objData.originX,
+                            originY: objData.originY,
+                        })
+                    } else {
+                        newObj = new fabric.IText(objData.text || 'Text', {
+                            left: objData.left + 20,
+                            top: objData.top + 20,
+                            fontSize: objData.fontSize,
+                            fill: objData.fill,
+                            fontFamily: objData.fontFamily,
+                            fontWeight: objData.fontWeight,
+                            fontStyle: objData.fontStyle,
+                            textAlign: objData.textAlign,
+                            lineHeight: objData.lineHeight,
+                            charSpacing: objData.charSpacing,
+                            angle: objData.angle || 0,
+                            scaleX: objData.scaleX || 1,
+                            scaleY: objData.scaleY || 1,
+                            originX: objData.originX,
+                            originY: objData.originY,
+                        })
+                    }
                     break
                 case 'rect':
                 case 'rectangle':

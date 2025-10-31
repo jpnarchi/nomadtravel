@@ -545,6 +545,182 @@ const minimalistTemplate = {
             "objects": [
                 {
                     "type": "text",
+                    "left": 200,
+                    "top": 150,
+                    "fontSize": 64,
+                    "text": "Datos Clave",
+                    "fill": "#000000",
+                    "fontFamily": "Arial",
+                    "fontWeight": "bold"
+                },
+                {
+                    "type": "rect",
+                    "left": 200,
+                    "top": 300,
+                    "width": 400,
+                    "height": 300,
+                    "fill": "#f5f5f5",
+                    "stroke": "#000000",
+                    "strokeWidth": 2
+                },
+                {
+                    "type": "text",
+                    "left": 400,
+                    "top": 400,
+                    "fontSize": 72,
+                    "text": "85%",
+                    "fill": "#000000",
+                    "fontFamily": "Arial",
+                    "fontWeight": "bold",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "left": 400,
+                    "top": 500,
+                    "fontSize": 28,
+                    "text": "Métrica importante",
+                    "fill": "#666666",
+                    "fontFamily": "Arial",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "rect",
+                    "left": 700,
+                    "top": 300,
+                    "width": 400,
+                    "height": 300,
+                    "fill": "#f5f5f5",
+                    "stroke": "#000000",
+                    "strokeWidth": 2
+                },
+                {
+                    "type": "text",
+                    "left": 900,
+                    "top": 400,
+                    "fontSize": 72,
+                    "text": "2.5x",
+                    "fill": "#000000",
+                    "fontFamily": "Arial",
+                    "fontWeight": "bold",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "left": 900,
+                    "top": 500,
+                    "fontSize": 28,
+                    "text": "Crecimiento",
+                    "fill": "#666666",
+                    "fontFamily": "Arial",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "rect",
+                    "left": 1200,
+                    "top": 300,
+                    "width": 400,
+                    "height": 300,
+                    "fill": "#f5f5f5",
+                    "stroke": "#000000",
+                    "strokeWidth": 2
+                },
+                {
+                    "type": "text",
+                    "left": 1400,
+                    "top": 400,
+                    "fontSize": 72,
+                    "text": "100+",
+                    "fill": "#000000",
+                    "fontFamily": "Arial",
+                    "fontWeight": "bold",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "left": 1400,
+                    "top": 500,
+                    "fontSize": 28,
+                    "text": "Clientes",
+                    "fill": "#666666",
+                    "fontFamily": "Arial",
+                    "textAlign": "center",
+                    "originX": "center"
+                }
+            ],
+            "background": "#ffffff"
+        }),
+
+        "/slides/slide-4.json": JSON.stringify({
+            "version": "5.3.0",
+            "objects": [
+                {
+                    "type": "text",
+                    "left": 960,
+                    "top": 250,
+                    "fontSize": 64,
+                    "text": "Visión de Futuro",
+                    "fill": "#000000",
+                    "fontFamily": "Arial",
+                    "fontWeight": "bold",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "left": 960,
+                    "top": 450,
+                    "fontSize": 36,
+                    "text": "Nuestro objetivo es transformar la industria",
+                    "fill": "#333333",
+                    "fontFamily": "Arial",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "left": 960,
+                    "top": 550,
+                    "fontSize": 36,
+                    "text": "a través de la innovación constante",
+                    "fill": "#333333",
+                    "fontFamily": "Arial",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "text",
+                    "left": 960,
+                    "top": 650,
+                    "fontSize": 36,
+                    "text": "y el compromiso con la excelencia",
+                    "fill": "#333333",
+                    "fontFamily": "Arial",
+                    "textAlign": "center",
+                    "originX": "center"
+                },
+                {
+                    "type": "rect",
+                    "left": 660,
+                    "top": 720,
+                    "width": 600,
+                    "height": 4,
+                    "fill": "#000000"
+                }
+            ],
+            "background": "#ffffff"
+        }),
+
+        "/slides/slide-5.json": JSON.stringify({
+            "version": "5.3.0",
+            "objects": [
+                {
+                    "type": "text",
                     "left": 960,
                     "top": 500,
                     "fontSize": 80,

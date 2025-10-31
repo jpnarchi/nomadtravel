@@ -15,6 +15,7 @@ import { Skeleton } from "../ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
 import { ConnectOrg } from "../database/supabase/connect-org";
 import { ConnectStripe } from "../payments/connect-stripe";
+import { useProgressiveMessage } from "@/hooks/use-progressive-message";
 
 
 export function ChatMessage({
@@ -42,6 +43,15 @@ export function ChatMessage({
     onStripeConnected: (publishableKey: string) => void;
     disableConnectStripe: boolean;
 }) {
+    // Mensajes progresivos para crear slides
+    const slideMessages = [
+        "Creating slide...",
+        "Filling with text...",
+        "Adding styles...",
+        "Finalizing..."
+    ];
+    const currentSlideMessage = useProgressiveMessage(slideMessages, 1500, isLoading);
+
     return (
         <motion.div
             key={messageId}
@@ -116,7 +126,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<File className="size-4" />}
-                                        message={"Cargando..."}
+                                        message={currentSlideMessage}
                                         isLoading={true}
                                     />
                                 </div>

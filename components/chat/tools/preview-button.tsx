@@ -30,24 +30,24 @@ export function PreviewButton({
         <div className="flex flex-col gap-2 w-full">
             <Card className="group relative w-full flex flex-row items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:border-border/80 hover:shadow-sm transition-all duration-200">
 
-                {/* Contenido central */}
+                {/* Central content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                        <p className="font-semibold text-foreground">Versión {version}</p>
+                        <p className="font-semibold text-foreground">Version {version}</p>
                     </div>
                     <p className="text-sm text-muted-foreground">{formatCreationTime(creationTime)}</p>
                 </div>
 
-                {/* Botones de acción */}
+                {/* Action buttons */}
                 <div className="flex items-center gap-2">
-                    {/* Botón restaurar - solo mostrar si no es la versión actual */}
+                    {/* Restore button - only show if not the current version */}
                     {currentVersion !== undefined && currentVersion !== null && version !== (currentVersion - 1) && (
                         <Button
                             size="icon"
                             variant="ghost"
                             onClick={() => setIsRestoreDialogOpen(true)}
                             className="flex-shrink-0"
-                            title="Restaurar esta versión"
+                            title="Restore this version"
                         >
                             <RotateCcw className="w-4 h-4" />
                         </Button>
@@ -65,11 +65,11 @@ export function PreviewButton({
                         {isLoading ? (
                             <>
                                 <Loader className="w-4 h-4" />
-                                Cargando
+                                Loading
                             </>
                         ) : (
                             <>
-                                Ver Presentación
+                                View Presentation
                             </>
                         )}
                     </Button>
@@ -87,7 +87,7 @@ export function PreviewButton({
                 />
             </Card>
             <div className="flex flex-row items-center gap-2 text-xs text-muted-foreground italic">
-                <p>Tip: Haz clic en "Ver Presentación" para visualizar los slides.</p>
+                <p>Tip: Click "View Presentation" to visualize the slides.</p>
             </div>
         </div>
     )
