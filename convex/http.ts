@@ -935,7 +935,7 @@ Template customization workflow:
 
                         // Return success message WITHOUT returning the files
                         // The files are now in the database and will be loaded from there
-                        const message = `Template "${templateName}" created successfully`;
+                        const message = `Presentation "${templateName}" started successfully`;
                         const filesCreated = Object.keys(files).length;
                         return {
                             success: true,

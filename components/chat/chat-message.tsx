@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import Image from "next/image";
 import { UserIcon } from "@/components/global/icons";
-import { Database, File, Folders, Mail, SquareDashedMousePointer, SquareFunction } from "lucide-react";
+import { Database, File, Folders, Mail, SquareDashedMousePointer, SquareFunction, Presentation } from "lucide-react";
 import { Markdown } from "@/components/global/markdown";
 import { Attachments } from "./attachments";
 import { ToolMessage } from "./tools/tool-message";
@@ -50,7 +50,7 @@ export function ChatMessage({
         "Adding styles...",
         "Finalizing..."
     ];
-    const currentSlideMessage = useProgressiveMessage(slideMessages, 1500, isLoading);
+    const currentSlideMessage = useProgressiveMessage(slideMessages, 1500, isLoading, true);
 
     return (
         <motion.div
@@ -170,7 +170,7 @@ export function ChatMessage({
                             return (
                                 <div key={index}>
                                     <ToolMessage
-                                        icon={<Folders className="size-4" />}
+                                        icon={<Presentation className="size-4" />}
                                         message={message}
                                         isLoading={false}
                                     />
@@ -181,8 +181,8 @@ export function ChatMessage({
                             return (
                                 <div key={index}>
                                     <ToolMessage
-                                        icon={<Folders className="size-4" />}
-                                        message={"Obteniendo plantilla..."}
+                                        icon={<Presentation className="size-4" />}
+                                        message={"Creating presentation..."}
                                         isLoading={true}
                                     />
                                 </div>

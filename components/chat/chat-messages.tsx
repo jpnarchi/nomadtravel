@@ -124,7 +124,7 @@ export function ChatMessages({
                             <div className="flex-1 min-w-0 flex flex-row gap-2 items-center">
                                 <Loader className="size-4" />
                                 <div className="text-zinc-500 italic">
-                                    Pensando...
+                                    Thinking...
                                 </div>
                             </div>
                         </div>
@@ -155,7 +155,7 @@ export function ChatMessages({
                             <div className="flex-1 min-w-0 flex flex-row gap-2 items-center">
                                 <Loader className="size-4" />
                                 <div className="text-zinc-500 italic">
-                                    Generando...
+                                    Generating...
                                 </div>
                             </div>
                         </div>

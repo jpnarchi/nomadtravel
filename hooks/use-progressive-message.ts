@@ -14,11 +14,6 @@ export function useProgressiveMessage(
             return;
         }
 
-        // Si ya estamos en el último mensaje y no queremos loop, no hacemos nada
-        if (!loop && currentIndex >= messages.length - 1) {
-            return;
-        }
-
         const timer = setInterval(() => {
             setCurrentIndex((prevIndex) => {
                 if (loop) {
@@ -32,7 +27,7 @@ export function useProgressiveMessage(
         }, interval);
 
         return () => clearInterval(timer);
-    }, [messages, interval, isActive, loop, currentIndex]);
+    }, [messages, interval, isActive, loop]);
 
     return messages[currentIndex] || messages[0];
 }
