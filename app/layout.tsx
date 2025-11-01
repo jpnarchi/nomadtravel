@@ -26,15 +26,15 @@ const inter = Inter({
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ilovepresentations.ai";
 
 export const metadata = {
-  title: "I Love Presentations ",
-  description: "I Love Presentations es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada para cualquier negocio o proyecto.",
+  title: "iLovePresentations ",
+  description: "iLovePresentations is a platform powered by artificial intelligence that creates presentations automatically, quickly and optimized for any business or project.",
   icons: {
     icon: "/logo.svg"
   },
   openGraph: {
-    title: "I Love Presentations - Crea tu sitio web con IA",
+    title: "iLovePresentations - Create your presentation with AI",
     description:
-      "I Love Presentations es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
+      "iLovePresentations is a platform powered by artificial intelligence that creates presentations automatically, quickly and optimized for any business or project.",
     url: baseUrl,
     type: "website",
     images: [
@@ -42,15 +42,15 @@ export const metadata = {
         url: `${baseUrl}/marketing.jpeg`, // Dynamic URL
         width: 1200,
         height: 630,
-        alt: "I Love Presentations - Plataforma impulsada por IA",
+        alt: "iLovePresentations - Platform powered by AI",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "I Love Presentations - Crea tu sitio web con IA",
+    title: "iLovePresentations - Create your presentation with AI",
     description:
-      "I Love Presentations es una plataforma impulsada por inteligencia artificial que crea sitios web de manera automática, rápida y optimizada.",
+      "iLovePresentations is a platform powered by artificial intelligence that creates presentations automatically, quickly and optimized for any business or project.",
     images: [`${baseUrl}/marketing.jpeg`], // Dynamic URL
   },
 };
