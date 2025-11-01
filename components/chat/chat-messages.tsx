@@ -18,8 +18,6 @@ export function ChatMessages({
     showSuggestions,
     currentVersion,
     isGenerating = false,
-    onSupabaseProjectSelect,
-    onStripeConnected,
 }: {
     id: Id<"chats">,
     messages: UIMessage[],
@@ -30,8 +28,6 @@ export function ChatMessages({
     showSuggestions: boolean,
     currentVersion: number | null | undefined,
     isGenerating?: boolean,
-    onSupabaseProjectSelect: (projectId: string, projectName: string) => void,
-    onStripeConnected: (publishableKey: string) => void,
 }) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -89,10 +85,6 @@ export function ChatMessages({
                         messageId={messageId}
                         isLoading={isLoading}
                         currentVersion={currentVersion}
-                        onSupabaseProjectSelect={onSupabaseProjectSelect}
-                        disableConnectOrg={true}
-                        onStripeConnected={onStripeConnected}
-                        disableConnectStripe={true}
                     />
                 ))}
             </div>
@@ -109,10 +101,6 @@ export function ChatMessages({
                         isLoading={isLoading}
                         currentVersion={currentVersion}
                         isNewMessage={true}
-                        onSupabaseProjectSelect={onSupabaseProjectSelect}
-                        disableConnectOrg={false}
-                        onStripeConnected={onStripeConnected}
-                        disableConnectStripe={false}
                     />
                 ))}
 

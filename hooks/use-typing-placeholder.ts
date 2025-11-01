@@ -20,7 +20,7 @@ export function useTypingPlaceholder() {
     const [variantIndex, setVariantIndex] = useState(0);
     const [isTyping, setIsTyping] = useState(true);
     const [charIndex, setCharIndex] = useState(0);
-    const timeoutRef = useRef<NodeJS.Timeout>();
+    const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
     useEffect(() => {
         const currentVariant = PLACEHOLDER_VARIANTS[variantIndex];

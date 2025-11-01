@@ -13,8 +13,6 @@ import { ClipIcon, ErrorIcon } from "@/components/global/icons";
 import { PreviewButton } from "./tools/preview-button";
 import { Skeleton } from "../ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
-import { ConnectOrg } from "../database/supabase/connect-org";
-import { ConnectStripe } from "../payments/connect-stripe";
 import { useProgressiveMessage } from "@/hooks/use-progressive-message";
 
 
@@ -25,11 +23,7 @@ export function ChatMessage({
     role,
     isLoading,
     currentVersion,
-    isNewMessage = false,
-    onSupabaseProjectSelect,
-    disableConnectOrg,
-    onStripeConnected,
-    disableConnectStripe
+    isNewMessage = false
 }: {
     id: Id<"chats">;
     messageId: string;
@@ -38,10 +32,6 @@ export function ChatMessage({
     isLoading: boolean;
     currentVersion: number | null | undefined;
     isNewMessage?: boolean;
-    onSupabaseProjectSelect: (projectId: string, projectName: string) => void;
-    disableConnectOrg: boolean;
-    onStripeConnected: (publishableKey: string) => void;
-    disableConnectStripe: boolean;
 }) {
     // Mensajes progresivos para crear slides
     const slideMessages = [
@@ -277,32 +267,6 @@ export function ChatMessage({
                         }
                     }
 
-                    if (part.type === "tool-connectToSupabase") {
-                        if (part.output && part.state && part.state === 'output-available') {
-                            return (
-                                <div key={index} className="flex flex-row gap-3 pl-8 pb-4">
-                                    <ConnectOrg
-                                        id={id}
-                                        onSupabaseProjectSelect={onSupabaseProjectSelect}
-                                        showLoader={false}
-                                        disableConnectOrg={disableConnectOrg}
-                                    />
-                                </div>
-                            )
-                        }
-                        if (isLoading) {
-                            return (
-                                <div key={index} className="flex flex-row gap-3 pl-8 pb-4">
-                                    <ConnectOrg
-                                        id={id}
-                                        onSupabaseProjectSelect={onSupabaseProjectSelect}
-                                        showLoader={true}
-                                        disableConnectOrg={disableConnectOrg}
-                                    />
-                                </div>
-                            )
-                        }
-                    }
 
                     if (part.type === "tool-supabaseSQLQuery") {
                         if (part.output && part.state && part.state === 'output-available') {
@@ -331,32 +295,6 @@ export function ChatMessage({
                         }
                     }
 
-                    if (part.type === "tool-connectToStripe") {
-                        if (part.output && part.state && part.state === 'output-available') {
-                            const response = part.output as any;
-                            const message = response.message as string;
-                            return (
-                                <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
-                                    <ConnectStripe 
-                                        id={id} 
-                                        onStripeConnected={onStripeConnected}
-                                        disableConnectStripe={disableConnectStripe}
-                                    />
-                                </div>
-                            )
-                        }
-                        if (isLoading) {
-                            return (
-                                <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
-                                    <ConnectStripe 
-                                        id={id} 
-                                        onStripeConnected={onStripeConnected}
-                                        disableConnectStripe={disableConnectStripe}
-                                    />
-                                </div>
-                            )
-                        }
-                    }
 
                     if (part.type === "tool-deployEdgeFunction") {
                         if (part.output && part.state && part.state === 'output-available') {

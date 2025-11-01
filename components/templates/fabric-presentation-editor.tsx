@@ -19,7 +19,9 @@ import {
     Eye,
     Code,
     Save,
-    Copy
+    Copy,
+    ArrowUp,
+    ArrowDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Loader } from '../ai-elements/loader'
@@ -46,9 +48,10 @@ export function FabricPresentationEditor({
         const slideFiles = Object.entries(initialFiles)
             .filter(([path]) => path.startsWith('/slides/') && path.endsWith('.json'))
             .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([path, content]) => {
+            .map(([path, content], index) => {
                 try {
                     return {
+                        id: `slide-${Date.now()}-${index}`, // Unique ID that persists through reorders
                         path,
                         data: JSON.parse(content)
                     }
@@ -62,6 +65,7 @@ export function FabricPresentationEditor({
         // If no slides, create a default one
         if (slideFiles.length === 0) {
             slideFiles.push({
+                id: `slide-${Date.now()}-0`,
                 path: '/slides/slide-1.json',
                 data: {
                     version: '5.3.0',
@@ -124,6 +128,7 @@ export function FabricPresentationEditor({
     const addSlide = () => {
         const newSlideNumber = slides.length + 1
         const newSlide = {
+            id: `slide-${Date.now()}-${Math.random()}`,
             path: `/slides/slide-${newSlideNumber}.json`,
             data: {
                 version: '5.3.0',
@@ -151,6 +156,7 @@ export function FabricPresentationEditor({
         }
 
         const newSlide = {
+            id: `slide-${Date.now()}-${Math.random()}`, // New unique ID
             path: `/slides/slide-${newSlideNumber}.json`,
             data: duplicatedData
         }
@@ -198,6 +204,84 @@ export function FabricPresentationEditor({
 
         setHasUnsavedChanges(true)
         toast.success('Slide eliminado')
+    }
+
+    // Move slide up
+    const moveSlideUp = (index: number) => {
+        if (index === 0) return // Already at the top
+
+        setSlides(prevSlides => {
+            // Create deep copies of all slides to avoid reference sharing
+            const newSlides = prevSlides.map(slide => ({
+                id: slide.id, // Preserve unique ID
+                path: slide.path,
+                data: {
+                    version: slide.data.version || '5.3.0',
+                    objects: JSON.parse(JSON.stringify(slide.data.objects || [])),
+                    background: slide.data.background || '#ffffff'
+                }
+            }))
+
+            // Swap slides at index and index-1 using temp variable
+            const temp = newSlides[index]
+            newSlides[index] = newSlides[index - 1]
+            newSlides[index - 1] = temp
+
+            // Renumber paths
+            return newSlides.map((slide, i) => ({
+                ...slide,
+                path: `/slides/slide-${i + 1}.json`
+            }))
+        })
+
+        // Update current slide index to follow the moved slide
+        if (currentSlideIndex === index) {
+            setCurrentSlideIndex(index - 1)
+        } else if (currentSlideIndex === index - 1) {
+            setCurrentSlideIndex(index)
+        }
+
+        setHasUnsavedChanges(true)
+        toast.success('Slide movido hacia arriba')
+    }
+
+    // Move slide down
+    const moveSlideDown = (index: number) => {
+        if (index === slides.length - 1) return // Already at the bottom
+
+        setSlides(prevSlides => {
+            // Create deep copies of all slides to avoid reference sharing
+            const newSlides = prevSlides.map(slide => ({
+                id: slide.id, // Preserve unique ID
+                path: slide.path,
+                data: {
+                    version: slide.data.version || '5.3.0',
+                    objects: JSON.parse(JSON.stringify(slide.data.objects || [])),
+                    background: slide.data.background || '#ffffff'
+                }
+            }))
+
+            // Swap slides at index and index+1 using temp variable
+            const temp = newSlides[index]
+            newSlides[index] = newSlides[index + 1]
+            newSlides[index + 1] = temp
+
+            // Renumber paths
+            return newSlides.map((slide, i) => ({
+                ...slide,
+                path: `/slides/slide-${i + 1}.json`
+            }))
+        })
+
+        // Update current slide index to follow the moved slide
+        if (currentSlideIndex === index) {
+            setCurrentSlideIndex(index + 1)
+        } else if (currentSlideIndex === index + 1) {
+            setCurrentSlideIndex(index)
+        }
+
+        setHasUnsavedChanges(true)
+        toast.success('Slide movido hacia abajo')
     }
 
     // Save changes
@@ -322,7 +406,7 @@ export function FabricPresentationEditor({
                 <div className="flex-1 flex overflow-hidden">
                     {/* Sidebar with slide thumbnails */}
                     <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
-                        <div className="p-4 border-b border-zinc-800">
+                        <div className="p-4 border-b border-zinc-800 flex-shrink-0">
                             <Button
                                 className="w-full"
                                 onClick={addSlide}
@@ -332,13 +416,13 @@ export function FabricPresentationEditor({
                             </Button>
                         </div>
 
-                        <ScrollArea className="flex-1">
+                        <ScrollArea className="flex-1 h-0">
                             <div className="p-4 space-y-2">
                                 {slides.map((slide, index) => {
                                     const objectCount = slide.data.objects?.length || 0
                                     return (
                                         <div
-                                            key={`${slide.path}-${objectCount}`}
+                                            key={slide.id}
                                             className={`
                                                 relative p-3 rounded-lg border-2 cursor-pointer transition-all
                                                 ${index === currentSlideIndex
@@ -353,6 +437,36 @@ export function FabricPresentationEditor({
                                                     Slide {index + 1}
                                                 </span>
                                                 <div className="flex items-center gap-1">
+                                                    {/* Move up button */}
+                                                    {index > 0 && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                moveSlideUp(index)
+                                                            }}
+                                                            title="Mover arriba"
+                                                        >
+                                                            <ArrowUp className="size-3" />
+                                                        </Button>
+                                                    )}
+                                                    {/* Move down button */}
+                                                    {index < slides.length - 1 && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                moveSlideDown(index)
+                                                            }}
+                                                            title="Mover abajo"
+                                                        >
+                                                            <ArrowDown className="size-3" />
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -361,6 +475,7 @@ export function FabricPresentationEditor({
                                                             e.stopPropagation()
                                                             duplicateSlide(index)
                                                         }}
+                                                        title="Duplicar"
                                                     >
                                                         <Copy className="size-3" />
                                                     </Button>
@@ -373,6 +488,7 @@ export function FabricPresentationEditor({
                                                                 e.stopPropagation()
                                                                 deleteSlide(index)
                                                             }}
+                                                            title="Eliminar"
                                                         >
                                                             <Trash2 className="size-3" />
                                                         </Button>
@@ -407,7 +523,7 @@ export function FabricPresentationEditor({
                             // Visual editor
                             currentSlide && (
                                 <FabricSlideEditor
-                                    key={currentSlideIndex}
+                                    key={currentSlide.id}
                                     slideData={currentSlide.data}
                                     onSlideChange={(newData) => updateSlide(currentSlideIndex, newData)}
                                     slideNumber={currentSlideIndex + 1}
