@@ -258,7 +258,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<ClipIcon />}
-                                        message={"Archivo leído"}
+                                        message={"File read"}
                                         isLoading={false}
                                     />
                                 </div>
@@ -269,7 +269,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<ClipIcon />}
-                                        message={"Leyendo archivo..."}
+                                        message={"Reading file..."}
                                         isLoading={true}
                                     />
                                 </div>

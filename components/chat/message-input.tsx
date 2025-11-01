@@ -5,6 +5,7 @@ import { MicrophoneButton } from "../global/microphone-button";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
+
 const MAX_FILES = 5;
 
 export const MessageInput = ({
@@ -34,6 +35,8 @@ export const MessageInput = ({
     fileInputRef: React.RefObject<HTMLInputElement | null>,
     disabled: boolean,
 }) => {
+    
+
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();

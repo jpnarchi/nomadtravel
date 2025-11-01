@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTypingPlaceholder } from "@/hooks/use-typing-placeholder";
 
 const MAX_FILES = 5;
 
@@ -24,6 +25,8 @@ export function MessageInput({
     setFiles: React.Dispatch<React.SetStateAction<File[]>>,
     fileInputRef: React.RefObject<HTMLInputElement | null>,
 }) {
+    const placeholder = useTypingPlaceholder();
+
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
@@ -125,7 +128,7 @@ export function MessageInput({
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Send a message..."
+                            placeholder={placeholder}
                             className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[28px] max-h-[120px] placeholder:text-muted-foreground rounded-md flex-1 overflow-y-auto"
                             rows={1}
                             disabled={isLoading}

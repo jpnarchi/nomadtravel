@@ -226,80 +226,7 @@ export function ChatContainer({
         }
     };
 
-    const handleSupabaseProjectSelect = async (projectId: string, projectName: string) => {
-        // Check if user has reached version limit (server-side validation)
-        if (hasReachedLimit) {
-            setShowPricingPopup(true);
-            return;
-        }
 
-        setIsLoading(true);
-        setIsGeneratingSync(false);
-
-        // Set the project for the chat
-        await updateSupabaseProjectIdForChat({ supabaseProjectId: projectId, chatId: id });
-
-        // Save the redirect URL for the project
-        await saveRedirectUrl({
-            redirectUrl: process.env.NEXT_PUBLIC_BASE_URL + "/auth/supabase-auth-callback?chatId=" + id,
-            projectId
-        });
-
-        // Get the anon key for the project
-        const { anonKey } = await getSupabaseAnonKey({ projectId });
-        const supabaseUrl = `https://${projectId}.supabase.co`;
-
-        const text = `Supabase conectado! Proyecto: ${projectName}`
-        const keys = `
-        \n\nAnon Key: ${anonKey}\n\n
-        \n\nSupabase URL: ${supabaseUrl}\n\n
-        Usa estas credenciales para conectarte a Supabase.
-        `
-        sendMessage({ text: text + keys });
-        await createMessage({
-            chatId: id,
-            role: "user",
-            parts: [{ type: "text", text: text + keys }],
-        });
-        setInput('');
-        setShowSuggestions(false);
-        setFiles([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    const handleStripeConnected = async (publishableKey: string) => {
-        // Check if user has reached version limit (server-side validation)
-        if (hasReachedLimit) {
-            setShowPricingPopup(true);
-            return;
-        }
-
-        setIsLoading(true);
-        setIsGeneratingSync(false);
-
-        const text = `Stripe conectado! Las credenciales se han guardado correctamente.`
-        const keys = `
-        STRIPE_PUBLISHABLE_KEY: ${publishableKey}\n
-        STRIPE_SECRET_KEY
-        STRIPE_WEBHOOK_SECRET
-
-        Stripe secret key y Stripe webhook secret se guardaron en secrets.
-        `
-        sendMessage({ text: text + keys });
-        await createMessage({
-            chatId: id,
-            role: "user",
-            parts: [{ type: "text", text: text + keys }],
-        });
-        setInput('');
-        setShowSuggestions(false);
-        setFiles([]);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
 
     const handleSuggestionClick = async (suggestion: string) => {
         // Check if user has reached version limit (server-side validation)
@@ -378,8 +305,6 @@ export function ChatContainer({
                                 showSuggestions={showSuggestions}
                                 currentVersion={currentVersion}
                                 isGenerating={true}
-                                onSupabaseProjectSelect={handleSupabaseProjectSelect}
-                                onStripeConnected={handleStripeConnected}
                             />
                         </div>
                         <motion.div
@@ -430,8 +355,7 @@ export function ChatContainer({
                                 suggestions={suggestions || []}
                                 showSuggestions={showSuggestions}
                                 currentVersion={currentVersion}
-                                onSupabaseProjectSelect={handleSupabaseProjectSelect}
-                                onStripeConnected={handleStripeConnected}
+
                             />
                         </div>
                         <motion.div
