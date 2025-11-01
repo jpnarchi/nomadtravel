@@ -22,13 +22,13 @@ export const pay = action({
             throw new Error("User already has this plan");
         }
 
-        const stripe = new Stripe(process.env.NEXT_STRIPE_SECRET_KEY!, {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
             apiVersion: "2025-09-30.clover"
         });
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
 
-        const priceId = args.plan === "pro" ? process.env.STRIPE_SUBSCRIPTION_PRO_PRICE_ID! : process.env.STRIPE_SUBSCRIPTION_PREMIUM_PRICE_ID!;
+        const priceId = args.plan === "pro" ? process.env.STRIPE_PRO_PRICE_ID! : process.env.STRIPE_PREMIUM_PRICE_ID!;
 
         const session: Stripe.Response<Stripe.Checkout.Session> = await stripe.checkout.sessions.create(
             {
@@ -63,7 +63,7 @@ export const fulfill = internalAction({
         payload: v.string()
     },
     handler: async ({ runQuery, runMutation }, { signature, payload }) => {
-        const stripe = new Stripe(process.env.NEXT_STRIPE_SECRET_KEY!, {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
             apiVersion: "2025-09-30.clover",
         });
 
@@ -91,9 +91,9 @@ export const fulfill = internalAction({
 
                     let plan = subscription.items.data[0].plan.product as string;
 
-                    if (plan === process.env.STRIPE_SUBSCRIPTION_PRO_PRODUCT_ID!) {
+                    if (plan === process.env.STRIPE_PRO_PRODUCT_ID!) {
                         plan = "pro";
-                    } else if (plan === process.env.STRIPE_SUBSCRIPTION_PREMIUM_PRODUCT_ID!) {
+                    } else if (plan === process.env.STRIPE_PREMIUM_PRODUCT_ID!) {
                         plan = "premium";
                     }
 
@@ -144,7 +144,7 @@ export const billingPortal = action({
             throw new Error("User does not have a subscription");
         }
 
-        const stripe = new Stripe(process.env.NEXT_STRIPE_SECRET_KEY!, {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
             apiVersion: "2025-09-30.clover"
         });
 
