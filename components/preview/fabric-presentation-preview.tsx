@@ -13,9 +13,15 @@ import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { Loader } from '../ai-elements/loader'
 import * as fabric from 'fabric'
-import { ChevronLeft, ChevronRight, Maximize, Minimize, Grid3x3, Menu, X, ZoomIn, ZoomOut, RotateCcw, FileDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Grid3x3, Menu, X, ZoomIn, ZoomOut, RotateCcw, FileDown, Presentation, SkipForward, SkipBack } from 'lucide-react'
 import { Button } from '../ui/button'
 import { ScrollArea } from '../ui/scroll-area'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { jsPDF } from 'jspdf'
 import PptxGenJS from 'pptxgenjs'
 import { toast } from 'sonner'
@@ -718,86 +724,121 @@ export function FabricPresentationPreview({
     }
 
     return (
-        <div ref={fullscreenRef} className="h-full w-full flex bg-zinc-950 relative">
-            {/* Thumbnails Sidebar */}
-            {showThumbnails && !isFullscreen && (
-                <div className="w-56 bg-zinc-900 border-r border-zinc-800 flex flex-col">
-                    <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold text-white">Slides</h3>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setShowThumbnails(false)}
-                        >
-                            <X className="size-4" />
-                        </Button>
-                    </div>
+        <TooltipProvider>
+            <div ref={fullscreenRef} className="h-full w-full flex bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 relative">
+                {/* Thumbnails Sidebar */}
+                {showThumbnails && !isFullscreen && (
+                    <div className="w-64 bg-gradient-to-b from-zinc-900/95 to-zinc-950/95 backdrop-blur-xl border-r border-zinc-700/50 flex flex-col shadow-2xl animate-in slide-in-from-left duration-300">
+                        <div className="p-4 border-b border-zinc-700/50 flex items-center justify-between bg-zinc-800/30">
+                            <div className="flex items-center gap-2">
+                                <Presentation className="size-4 text-blue-400" />
+                                <h3 className="text-sm font-semibold text-white">Slides</h3>
+                            </div>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 hover:bg-white/10 transition-all"
+                                        onClick={() => setShowThumbnails(false)}
+                                    >
+                                        <X className="size-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                    <p>Ocultar miniaturas (T)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
 
                     <ScrollArea className="flex-1">
-                        <div className="p-3 space-y-2">
+                        <div className="p-3 space-y-3">
                             {slides.map((slide, index) => (
-                                <div
-                                    key={index}
-                                    onClick={() => {
-                                        setIsTransitioning(true)
-                                        setTimeout(() => {
-                                            setCurrentSlide(index)
-                                            setTimeout(() => setIsTransitioning(false), 300)
-                                        }, 150)
-                                    }}
-                                    className={`
-                                        relative cursor-pointer rounded-lg border-2 overflow-hidden transition-all
-                                        ${index === currentSlide
-                                            ? 'border-blue-500 ring-2 ring-blue-500/30'
-                                            : 'border-zinc-700 hover:border-zinc-600'
-                                        }
-                                    `}
-                                >
-                                    <div
-                                        className="aspect-video flex items-center justify-center text-xs font-medium"
-                                        style={{ backgroundColor: slide.background || '#ffffff' }}
-                                    >
-                                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
-                                            <span className="text-white text-xs font-bold">
-                                                {index + 1}
-                                            </span>
+                                <Tooltip key={index}>
+                                    <TooltipTrigger asChild>
+                                        <div
+                                            onClick={() => {
+                                                setIsTransitioning(true)
+                                                setTimeout(() => {
+                                                    setCurrentSlide(index)
+                                                    setTimeout(() => setIsTransitioning(false), 300)
+                                                }, 150)
+                                            }}
+                                            className={`
+                                                group relative cursor-pointer rounded-xl border-2 overflow-hidden transition-all duration-300
+                                                ${index === currentSlide
+                                                    ? 'border-blue-500 ring-2 ring-blue-500/50 shadow-lg shadow-blue-500/20 scale-105'
+                                                    : 'border-zinc-700/50 hover:border-blue-400/50 hover:shadow-lg hover:scale-102'
+                                                }
+                                            `}
+                                        >
+                                            <div
+                                                className="aspect-video flex items-center justify-center text-xs font-medium relative"
+                                                style={{ backgroundColor: slide.background || '#ffffff' }}
+                                            >
+                                                {/* Slide number badge */}
+                                                <div className="absolute top-2 left-2 bg-gradient-to-br from-blue-500 to-blue-600 backdrop-blur-sm rounded-lg px-2.5 py-1 shadow-lg">
+                                                    <span className="text-white text-xs font-bold">
+                                                        {index + 1}
+                                                    </span>
+                                                </div>
+
+                                                {/* Object count */}
+                                                <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1">
+                                                    <span className="text-zinc-200 text-[10px]">
+                                                        {slide.objects?.length || 0} obj
+                                                    </span>
+                                                </div>
+
+                                                {/* Hover overlay */}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                                {/* Center text */}
+                                                <span className="text-zinc-400 text-xs opacity-50 group-hover:opacity-100 transition-opacity">
+                                                    Click para ver
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span className="text-zinc-400 text-xs">
-                                            {slide.objects?.length || 0} {slide.objects?.length === 1 ? 'objeto' : 'objetos'}
-                                        </span>
-                                    </div>
-                                </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="right">
+                                        <p>Slide {index + 1} - {slide.objects?.length || 0} objetos</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             ))}
                         </div>
                     </ScrollArea>
 
-                    <div className="p-3 border-t border-zinc-800 text-xs text-zinc-400">
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">←</kbd>
-                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">→</kbd>
-                                <span>Navegar</span>
+                    <div className="p-4 border-t border-zinc-700/50 bg-zinc-800/30">
+                        <h4 className="text-xs font-semibold text-zinc-300 mb-3 flex items-center gap-2">
+                            <span className="text-blue-400">⌨️</span> Atajos de teclado
+                        </h4>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-1.5">
+                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">←</kbd>
+                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">→</kbd>
+                                </div>
+                                <span className="text-[11px] text-zinc-400">Navegar</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">F</kbd>
-                                <span>Pantalla completa</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">F</kbd>
+                                <span className="text-[11px] text-zinc-400">Pantalla completa</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">T</kbd>
-                                <span>Miniaturas</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">T</kbd>
+                                <span className="text-[11px] text-zinc-400">Miniaturas</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">Ctrl +</kbd>
-                                <span>Zoom in</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">Ctrl +</kbd>
+                                <span className="text-[11px] text-zinc-400">Zoom in</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">Ctrl -</kbd>
-                                <span>Zoom out</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">Ctrl -</kbd>
+                                <span className="text-[11px] text-zinc-400">Zoom out</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <kbd className="px-2 py-1 bg-zinc-800 rounded text-[10px]">Ctrl 0</kbd>
-                                <span>Reset zoom</span>
+                            <div className="flex items-center justify-between gap-3">
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">Ctrl 0</kbd>
+                                <span className="text-[11px] text-zinc-400">Reset zoom</span>
                             </div>
                         </div>
                     </div>
@@ -808,95 +849,149 @@ export function FabricPresentationPreview({
             <div className="flex-1 flex flex-col relative">
                 {/* Top Control Bar */}
                 {!isFullscreen && (
-                    <div className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4 z-50">
+                    <div className="h-16 bg-gradient-to-r from-zinc-900/95 via-zinc-900/90 to-zinc-900/95 backdrop-blur-xl border-b border-zinc-700/50 flex items-center justify-center px-6 z-50 shadow-lg relative">
+                        {/* Thumbnails button - positioned absolutely on the left */}
+                        {!showThumbnails && (
+                            <div className="absolute left-6">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setShowThumbnails(true)}
+                                            className="h-9 hover:bg-white/10 transition-all"
+                                        >
+                                            <Grid3x3 className="size-4 mr-2" />
+                                            Miniaturas
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Mostrar miniaturas (T)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+                        )}
+
+                        {/* Centered controls */}
                         <div className="flex items-center gap-3">
-                            {!showThumbnails && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setShowThumbnails(true)}
-                                    className="h-8"
-                                >
-                                    <Grid3x3 className="size-4 mr-2" />
-                                    Miniaturas
-                                </Button>
-                            )}
-                            <div className="h-6 w-px bg-zinc-700" />
-                            <span className="text-sm text-zinc-400">
-                                Slide <span className="text-white font-semibold">{currentSlide + 1}</span> de {slides.length}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Export Controls */}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleExportToPDF}
-                                className="h-8"
-                                title="Exportar a PDF"
-                            >
-                                <FileDown className="size-4 mr-2" />
-                                PDF
-                            </Button>
-
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleExportToPPT}
-                                className="h-8"
-                                title="Exportar a PowerPoint"
-                            >
-                                <FileDown className="size-4 mr-2" />
-                                PPT
-                            </Button>
-
-                            <div className="h-6 w-px bg-zinc-700" />
-
-                            {/* Zoom Controls */}
-                            <div className="flex items-center gap-1 border border-zinc-700 rounded-lg px-1">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={handleZoomOut}
-                                    disabled={zoomLevel <= 0.25}
-                                    className="h-7 w-7"
-                                    title="Alejar (Ctrl -)"
-                                >
-                                    <ZoomOut className="size-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleZoomReset}
-                                    className="h-7 px-2 text-xs font-medium min-w-[50px]"
-                                    title="Restablecer zoom (Ctrl 0)"
-                                >
-                                    {Math.round(zoomLevel * 100)}%
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={handleZoomIn}
-                                    disabled={zoomLevel >= 3}
-                                    className="h-7 w-7"
-                                    title="Acercar (Ctrl +)"
-                                >
-                                    <ZoomIn className="size-4" />
-                                </Button>
+                            {/* Slide counter */}
+                            <div className="flex items-center gap-2 bg-zinc-800/50 px-4 py-2 rounded-lg border border-zinc-700/50">
+                                <Presentation className="size-4 text-blue-400" />
+                                <span className="text-sm text-zinc-300">
+                                    Slide <span className="text-white font-bold">{currentSlide + 1}</span>
+                                    <span className="text-zinc-500 mx-1">/</span>
+                                    <span className="text-zinc-400">{slides.length}</span>
+                                </span>
                             </div>
 
-                            <div className="h-6 w-px bg-zinc-700" />
+                            <div className="h-8 w-px bg-zinc-700/50" />
 
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={toggleFullscreen}
-                                className="h-8"
-                            >
-                                <Maximize className="size-4 mr-2" />
-                                Pantalla Completa
-                            </Button>
+                            {/* Export Controls */}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleExportToPDF}
+                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all"
+                                    >
+                                        <FileDown className="size-4 mr-2" />
+                                        PDF
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Exportar presentación como PDF</p>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleExportToPPT}
+                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all"
+                                    >
+                                        <FileDown className="size-4 mr-2" />
+                                        PPT
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Exportar como PowerPoint</p>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <div className="h-8 w-px bg-zinc-700/50 mx-1" />
+
+                            {/* Zoom Controls */}
+                            <div className="flex items-center gap-1 bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-1 py-1">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleZoomOut}
+                                            disabled={zoomLevel <= 0.25}
+                                            className="h-8 w-8 hover:bg-white/10 disabled:opacity-30 transition-all"
+                                        >
+                                            <ZoomOut className="size-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Alejar (Ctrl -)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleZoomReset}
+                                            className="h-8 px-3 text-xs font-bold min-w-[55px] hover:bg-white/10 transition-all"
+                                        >
+                                            {Math.round(zoomLevel * 100)}%
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Restablecer zoom (Ctrl 0)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={handleZoomIn}
+                                            disabled={zoomLevel >= 3}
+                                            className="h-8 w-8 hover:bg-white/10 disabled:opacity-30 transition-all"
+                                        >
+                                            <ZoomIn className="size-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Acercar (Ctrl +)</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
+
+                            <div className="h-8 w-px bg-zinc-700/50 mx-1" />
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={toggleFullscreen}
+                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all"
+                                    >
+                                        <Maximize className="size-4 mr-2" />
+                                        Pantalla Completa
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Modo pantalla completa (F)</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
                 )}
@@ -905,9 +1000,9 @@ export function FabricPresentationPreview({
                 <div
                     ref={containerRef}
                     className={`
-                        flex-1 relative flex items-start justify-center bg-zinc-900 overflow-auto p-4 pb-24
-                        transition-opacity duration-300
-                        ${isTransitioning ? 'opacity-0' : 'opacity-100'}
+                        flex-1 relative flex items-start justify-center bg-zinc-900/50 overflow-auto p-6 pb-28
+                        transition-all duration-500
+                        ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
                     `}
                     style={{
                         cursor: isPanning ? 'grabbing' : (zoomLevel > 1 ? 'grab' : 'default'),
@@ -925,10 +1020,10 @@ export function FabricPresentationPreview({
                                 setCanvasElement(el)
                             }
                         }}
-                        className="shadow-2xl rounded-sm flex-shrink-0"
+                        className="shadow-2xl rounded-lg flex-shrink-0 ring-1 ring-white/10"
                         style={{
                             display: 'block',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                            boxShadow: '0 20px 60px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(59, 130, 246, 0.1)',
                         }}
                     />
                 </div>
@@ -936,130 +1031,224 @@ export function FabricPresentationPreview({
                 {/* Navigation Controls - Always visible */}
                 <div className={`
                     absolute bottom-8 left-1/2 transform -translate-x-1/2
-                    flex items-center gap-3 bg-black/80 backdrop-blur-xl rounded-full px-6 py-3
-                    shadow-2xl border border-white/10
+                    flex items-center gap-3 bg-gradient-to-r from-zinc-900/95 via-zinc-800/95 to-zinc-900/95 backdrop-blur-2xl rounded-2xl px-6 py-3
+                    shadow-2xl border border-zinc-700/50 animate-in slide-in-from-bottom duration-500
+                    hover:shadow-blue-500/10 hover:border-zinc-600/50 transition-all
                 `}>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={goToPreviousSlide}
-                        disabled={currentSlide === 0}
-                        className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        <ChevronLeft className="size-6" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCurrentSlide(0)}
+                                disabled={currentSlide === 0}
+                                className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            >
+                                <SkipBack className="size-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Primer slide (Home)</p>
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={goToPreviousSlide}
+                                disabled={currentSlide === 0}
+                                className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            >
+                                <ChevronLeft className="size-6" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Anterior (←)</p>
+                        </TooltipContent>
+                    </Tooltip>
 
                     {/* Progress indicators */}
-                    <div className="flex items-center gap-1.5 px-3">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-black/30 rounded-xl">
                         {slides.map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={() => {
-                                    setIsTransitioning(true)
-                                    setTimeout(() => {
-                                        setCurrentSlide(index)
-                                        setTimeout(() => setIsTransitioning(false), 300)
-                                    }, 150)
-                                }}
-                                className={`
-                                    h-2 rounded-full transition-all
-                                    ${index === currentSlide
-                                        ? 'w-8 bg-blue-500'
-                                        : 'w-2 bg-white/30 hover:bg-white/50'
-                                    }
-                                `}
-                                aria-label={`Ir al slide ${index + 1}`}
-                            />
+                            <Tooltip key={index}>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        onClick={() => {
+                                            setIsTransitioning(true)
+                                            setTimeout(() => {
+                                                setCurrentSlide(index)
+                                                setTimeout(() => setIsTransitioning(false), 300)
+                                            }, 150)
+                                        }}
+                                        className={`
+                                            h-2 rounded-full transition-all duration-300
+                                            ${index === currentSlide
+                                                ? 'w-10 bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/50'
+                                                : 'w-2 bg-white/30 hover:bg-white/60 hover:w-4'
+                                            }
+                                        `}
+                                        aria-label={`Ir al slide ${index + 1}`}
+                                    />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Slide {index + 1}</p>
+                                </TooltipContent>
+                            </Tooltip>
                         ))}
                     </div>
 
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={goToNextSlide}
-                        disabled={currentSlide === slides.length - 1}
-                        className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        <ChevronRight className="size-6" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={goToNextSlide}
+                                disabled={currentSlide === slides.length - 1}
+                                className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            >
+                                <ChevronRight className="size-6" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Siguiente (→)</p>
+                        </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCurrentSlide(slides.length - 1)}
+                                disabled={currentSlide === slides.length - 1}
+                                className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            >
+                                <SkipForward className="size-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Último slide (End)</p>
+                        </TooltipContent>
+                    </Tooltip>
 
                     {/* Divider */}
-                    <div className="h-8 w-px bg-white/20" />
+                    <div className="h-10 w-px bg-white/20 mx-1" />
 
                     {/* Export Controls */}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleExportToPDF}
-                        className="h-9 text-white hover:bg-white/20 px-3"
-                        title="Exportar a PDF"
-                    >
-                        <FileDown className="size-4 mr-2" />
-                        PDF
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleExportToPDF}
+                                className="h-10 text-white hover:bg-blue-500/20 hover:text-blue-400 px-4 rounded-xl transition-all"
+                            >
+                                <FileDown className="size-4 mr-2" />
+                                PDF
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Exportar a PDF</p>
+                        </TooltipContent>
+                    </Tooltip>
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleExportToPPT}
-                        className="h-9 text-white hover:bg-white/20 px-3"
-                        title="Exportar a PowerPoint"
-                    >
-                        <FileDown className="size-4 mr-2" />
-                        PPT
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleExportToPPT}
+                                className="h-10 text-white hover:bg-blue-500/20 hover:text-blue-400 px-4 rounded-xl transition-all"
+                            >
+                                <FileDown className="size-4 mr-2" />
+                                PPT
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Exportar a PowerPoint</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
 
                 {/* Fullscreen Exit Button */}
                 {isFullscreen && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={toggleFullscreen}
-                        className="absolute top-4 right-4 h-10 w-10 text-white hover:bg-white/20 bg-black/50 backdrop-blur-sm rounded-full"
-                    >
-                        <Minimize className="size-5" />
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={toggleFullscreen}
+                                className="absolute top-6 right-6 h-12 w-12 text-white hover:bg-white/20 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl transition-all hover:scale-105"
+                            >
+                                <Minimize className="size-5" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Salir de pantalla completa (Esc)</p>
+                        </TooltipContent>
+                    </Tooltip>
                 )}
 
                 {/* Slide Counter and Zoom in Fullscreen */}
                 {isFullscreen && (
                     <>
-                        <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
-                            <span className="text-white text-sm font-medium">
-                                {currentSlide + 1} / {slides.length}
-                            </span>
+                        <div className="absolute top-6 left-6 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl px-5 py-3 border border-white/10 shadow-xl">
+                            <div className="flex items-center gap-2">
+                                <Presentation className="size-4 text-blue-400" />
+                                <span className="text-white text-sm font-bold">
+                                    {currentSlide + 1}
+                                </span>
+                                <span className="text-zinc-500 text-sm">/</span>
+                                <span className="text-zinc-300 text-sm">
+                                    {slides.length}
+                                </span>
+                            </div>
                         </div>
 
                         {/* Zoom controls in fullscreen */}
-                        <div className="absolute top-4 right-16 flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-full px-2 py-2">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleZoomOut}
-                                disabled={zoomLevel <= 0.25}
-                                className="h-8 w-8 text-white hover:bg-white/20"
-                                title="Alejar (Ctrl -)"
-                            >
-                                <ZoomOut className="size-4" />
-                            </Button>
-                            <span className="text-white text-xs font-medium px-2 min-w-[45px] text-center">
+                        <div className="absolute top-6 right-20 flex items-center gap-1 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl px-2 py-2 border border-white/10 shadow-xl">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleZoomOut}
+                                        disabled={zoomLevel <= 0.25}
+                                        className="h-9 w-9 text-white hover:bg-white/20 disabled:opacity-30 rounded-xl transition-all"
+                                    >
+                                        <ZoomOut className="size-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Alejar (Ctrl -)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            <span className="text-white text-xs font-bold px-2 min-w-[50px] text-center">
                                 {Math.round(zoomLevel * 100)}%
                             </span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleZoomIn}
-                                disabled={zoomLevel >= 3}
-                                className="h-8 w-8 text-white hover:bg-white/20"
-                                title="Acercar (Ctrl +)"
-                            >
-                                <ZoomIn className="size-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={handleZoomIn}
+                                        disabled={zoomLevel >= 3}
+                                        className="h-9 w-9 text-white hover:bg-white/20 disabled:opacity-30 rounded-xl transition-all"
+                                    >
+                                        <ZoomIn className="size-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Acercar (Ctrl +)</p>
+                                </TooltipContent>
+                            </Tooltip>
                         </div>
                     </>
                 )}
             </div>
         </div>
+        </TooltipProvider>
     )
 }
