@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import Image from "next/image"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export function ChatHeader() {
     const router = useRouter();
@@ -33,7 +34,16 @@ export function ChatHeader() {
                     </Link>
                 </nav>
             </div>
-            <UserNav />
+            <div className="flex items-center gap-4">
+                {!isSignedIn && (
+                    <Button className="hidden sm:block justify-center gap-2">
+                        <Link href="/sign-in">
+                            Sign In
+                        </Link>
+                    </Button>
+                )}
+                <UserNav />
+            </div>
         </header>
     );
 }
