@@ -27,46 +27,6 @@ const openrouter = createOpenRouter({
 
 const http = httpRouter();
 
-// Helper function to clean base64 images from files before sending to API
-function cleanBase64FromFiles(files: Record<string, string>): Record<string, string> {
-    const cleaned: Record<string, string> = {};
-
-    for (const [path, content] of Object.entries(files)) {
-        try {
-            // Try to parse as JSON (most files will be JSON slides)
-            const parsed = JSON.parse(content);
-
-            // If it has objects array, filter out base64 images
-            if (parsed.objects && Array.isArray(parsed.objects)) {
-                parsed.objects = parsed.objects.map((obj: any) => {
-                    // If it's an image with base64 data, replace with placeholder
-                    if (obj.type === 'image' && obj.src && obj.src.startsWith('data:image')) {
-                        return {
-                            ...obj,
-                            src: '[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]'
-                        };
-                    }
-                    // For image type, also check other base64 fields
-                    if (obj.type === 'Image' && obj.src && obj.src.startsWith('data:image')) {
-                        return {
-                            ...obj,
-                            src: '[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]'
-                        };
-                    }
-                    return obj;
-                });
-            }
-
-            cleaned[path] = JSON.stringify(parsed, null, 2);
-        } catch {
-            // If not JSON or parsing fails, keep original content
-            cleaned[path] = content;
-        }
-    }
-
-    return cleaned;
-}
-
 // Helper function to upload image to storage within HTTP action context
 async function uploadFileToStorageFromHttpAction(
     ctx: any,
@@ -192,33 +152,8 @@ http.route({
 
         const { id, messages: allMessages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
 
-        // Take last 6 messages and clean base64 from them
-        const rawMessages = allMessages.slice(-6);
-
-        // Clean base64 from message history to save tokens
-        const messages = rawMessages.map(msg => {
-            // Process all message parts to clean base64 from tool outputs
-            const cleanedParts = msg.parts.map((part: any) => {
-                // Check if this is a tool result part (type starts with 'tool-')
-                if (part.type && part.type.startsWith('tool-') && part.output) {
-                    // Clean tool outputs that might contain files with base64
-                    try {
-                        const output = typeof part.output === 'string' ? JSON.parse(part.output) : part.output;
-                        if (output.files) {
-                            output.files = cleanBase64FromFiles(output.files);
-                        }
-                        return {
-                            ...part,
-                            output: typeof part.output === 'string' ? JSON.stringify(output) : output
-                        };
-                    } catch {
-                        return part;
-                    }
-                }
-                return part;
-            });
-            return { ...msg, parts: cleanedParts };
-        });
+        // Take last 6 messages
+        const messages = allMessages.slice(-6);
 
         // update is generating
         await ctx.runMutation(api.chats.updateIsGenerating, {
@@ -235,26 +170,6 @@ http.route({
 
         const files = await ctx.runQuery(api.files.getAll, { chatId: id, version: chat.currentVersion });
         const fileNames = Object.keys(files);
-
-        // Clean base64 images from files to save tokens (only for display in system prompt)
-        const cleanedFiles = cleanBase64FromFiles(files);
-
-        // Check if there are any slides with images to avoid showing cleaned content
-        const hasImagesInSlides = Object.entries(files).some(([path, content]) => {
-            if (path.startsWith('/slides/') && path.endsWith('.json')) {
-                try {
-                    const parsed = JSON.parse(content);
-                    return parsed.objects?.some((obj: any) =>
-                        (obj.type === 'image' || obj.type === 'Image') &&
-                        obj.src &&
-                        obj.src.startsWith('data:image')
-                    );
-                } catch {
-                    return false;
-                }
-            }
-            return false;
-        });
 
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
@@ -454,7 +369,7 @@ CRITICAL RULE - Preserve template design:
 - YOUR ONLY TASK is to customize the TEXTS with the user's information.
 - NEVER change: positions (left/top), sizes (width/height/fontSize), colors (fill/stroke), existing images, shapes, or any visual property.
 - Only modify the "text" field of objects type "text", "i-text" or "textbox".
-- If there's an image with "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", LEAVE IT as is. DO NOT delete it, DO NOT change it.
+- NEVER delete or modify existing image objects. Always preserve them exactly as they are.
 - The template design is perfect, only update texts with the user's real data.
 
 JSON slide structure:
@@ -494,13 +409,11 @@ Available Fabric.js object types:
 - group: Group of objects
 
 IMPORTANT about images:
-- Base64 images have been removed from displayed files to save tokens.
-- If you see "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]" it means there's an image there.
+- Images are stored as URLs from UploadThing or other storage services.
 - NEVER delete or modify "image" type objects that already exist in the template.
-- If an image object has src: "[BASE64_IMAGE_REMOVED_TO_SAVE_TOKENS]", leave it exactly as is.
-- To add NEW images (not replace existing ones), use public URLs in the "src" field.
-- NEVER use base64 images (data:image/...) because they are very heavy.
-- If the user wants to add a new image, use generateImageTool and then use the URL it returns.
+- Always preserve ALL properties of image objects when updating slides.
+- To add NEW images, use generateImageTool which returns a public URL, or let the user upload via UploadThing.
+- NEVER use base64 images (data:image/...) as they are very heavy.
 
 Common properties:
 - left, top: X, Y position
@@ -521,15 +434,6 @@ For texts:
 
 Existing files:
 ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
-
-${hasImagesInSlides ? `
-IMPORTANT: Files contain images. To view or modify content:
-- Read the current file from the database before modifying it
-- DO NOT copy content from memory, always use the current file content
-- When updating a slide, make sure to preserve ALL properties of ALL objects
-- Images are already saved correctly, DO NOT modify them
-` : `Files:
-${JSON.stringify(cleanedFiles, null, 2)}`}
 
 IMPORTANT - NOT available for presentations:
 - DO NOT use Supabase (this is only for visual presentations).
@@ -599,22 +503,44 @@ Template customization workflow:
 1. Use generateInitialCodebase to load the template.
 2. Ask the user for information to customize (name, slogan, etc.).
 3. WAIT for the user's response.
-4. To update texts in slides:
-   a. USE readFile to get the current slide content (e.g., readFile with path "/slides/slide-1.json")
-   b. The readFile will return the slide JSON, where you'll see:
-      - "text" type objects with their current content
-      - "image" type objects with src: "[BASE64_IMAGE_DATA]" (DO NOT modify them)
-      - All shapes, colors, positions, sizes
-   c. Copy ALL the JSON you received from readFile
-   d. Modify ONLY the "text" field of text/i-text/textbox type objects
-   e. Keep EVERYTHING else exactly the same:
-      - All objects (texts, images, shapes, lines, etc.)
-      - All properties (left, top, fontSize, fill, fontFamily, fontWeight, width, height, etc.)
-      - For "image" objects: copy EVERYTHING including src: "[BASE64_IMAGE_DATA]" WITHOUT CHANGING ANYTHING
-   f. USE manageFile with operation "update" to save the modified slide
-5. Repeat step 4 for each slide that needs updating.
-6. VERIFY that the presentation has MINIMUM 5 SLIDES. Templates already come with 5 slides, just customize their texts.
-7. Show the preview when finished with showPreview.
+4. CRITICAL - Choosing the right tool to update slides:
+
+   ⚡ DEFAULT: Use updateSlideTexts (99% of cases)
+   - User wants to change: titles, names, descriptions, slogans, any TEXT content
+   - User does NOT mention: colors, sizes, positions, shapes, images, design
+   - Examples: "Change title to X", "Update company name", "Add description", "Customize texts"
+   - Process:
+     a. USE readFile to get the current slide (e.g., "/slides/slide-1.json")
+     b. Look at the JSON and identify text objects (type: "text", "i-text", "textbox")
+     c. Note their index position in the objects array (0, 1, 2, etc.)
+     d. USE updateSlideTexts with:
+        - path: "/slides/slide-X.json"
+        - textUpdates: [{ objectIndex: 0, newText: "New Title" }, { objectIndex: 2, newText: "Subtitle" }]
+     e. This preserves ALL design automatically - MUCH faster and safer
+
+   🎨 ONLY USE manageFile update when user explicitly asks for DESIGN changes:
+   - User mentions: colors, sizes, positions, shapes, images, layout, add/remove objects
+   - Examples: "Change color to blue", "Make title bigger", "Add a circle", "Move text to the right"
+   - User says: "redesign", "change style", "modify layout", "add shape"
+   - Process:
+     a. USE readFile to get current content
+     b. Copy ALL JSON
+     c. Modify ONLY the design properties requested
+     d. USE manageFile with operation "update"
+
+5. DECISION RULE - Ask yourself before every update:
+   - Does the user want to change ONLY text content? → USE updateSlideTexts ✅
+   - Does the user want to change colors/sizes/positions/design? → USE manageFile update 🎨
+   - When in doubt, if they didn't mention design words → USE updateSlideTexts ✅
+
+6. Other operations:
+   - manageFile create: When creating a NEW slide from scratch
+   - manageFile delete: When removing a slide
+   - insertSlideAtPosition: When inserting a slide in the middle
+
+7. Repeat steps 4-5 for each slide that needs updating.
+8. VERIFY that the presentation has MINIMUM 5 SLIDES. Templates already come with 5 slides, just customize their texts.
+9. Show the preview when finished with showPreview.
 `.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
@@ -637,33 +563,10 @@ Template customization workflow:
                                 };
                             }
 
-                            // Clean base64 from response to save tokens, but keep structure
-                            let contentToReturn = fileContent;
-                            if (path.endsWith('.json')) {
-                                try {
-                                    const parsed = JSON.parse(fileContent);
-                                    if (parsed.objects && Array.isArray(parsed.objects)) {
-                                        const cleanedObjects = parsed.objects.map((obj: any) => {
-                                            if ((obj.type === 'image' || obj.type === 'Image') && obj.src && obj.src.startsWith('data:image')) {
-                                                return {
-                                                    ...obj,
-                                                    src: '[BASE64_IMAGE_DATA]',
-                                                    _note: 'This image has base64 data. When updating the slide, copy this COMPLETE object but leave the src as "[BASE64_IMAGE_DATA]" - DO NOT change it.'
-                                                };
-                                            }
-                                            return obj;
-                                        });
-                                        contentToReturn = JSON.stringify({ ...parsed, objects: cleanedObjects }, null, 2);
-                                    }
-                                } catch {
-                                    // If can't parse, return original content
-                                }
-                            }
-
                             return {
                                 success: true,
                                 path: path,
-                                content: contentToReturn
+                                content: fileContent
                             };
                         } catch (error) {
                             console.error(`Error reading file ${path}:`, error);
@@ -675,8 +578,91 @@ Template customization workflow:
                     },
                 },
 
+                updateSlideTexts: {
+                    description: '⚡ PRIMARY TOOL for updating slides. Use this to update text content (titles, names, descriptions, etc.) without touching design. This is the DEFAULT choice unless user explicitly asks for design changes (colors, sizes, positions, shapes). ALWAYS prefer this over manageFile for text-only updates.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
+                        textUpdates: z.array(z.object({
+                            objectIndex: z.number().describe('Index of the text object in the objects array (0-based)'),
+                            newText: z.string().describe('New text content')
+                        })).describe('Array of text updates with object index and new text'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words of changes for non-technical users'),
+                    }),
+                    execute: async function ({ path, textUpdates, explanation }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+
+                            const fileContent = allFiles[path];
+                            if (!fileContent) {
+                                return {
+                                    success: false,
+                                    error: `File not found: ${path}`
+                                };
+                            }
+
+                            // Parse the slide JSON
+                            const slideData = JSON.parse(fileContent);
+
+                            if (!slideData.objects || !Array.isArray(slideData.objects)) {
+                                return {
+                                    success: false,
+                                    error: `Invalid slide structure in ${path}`
+                                };
+                            }
+
+                            // Apply text updates
+                            for (const update of textUpdates) {
+                                const { objectIndex, newText } = update;
+
+                                if (objectIndex < 0 || objectIndex >= slideData.objects.length) {
+                                    return {
+                                        success: false,
+                                        error: `Invalid object index ${objectIndex}. Slide has ${slideData.objects.length} objects.`
+                                    };
+                                }
+
+                                const obj = slideData.objects[objectIndex];
+
+                                // Verify it's a text object (case-insensitive check)
+                                const objType = (obj.type || '').toLowerCase();
+                                if (!['text', 'i-text', 'textbox', 'itext'].includes(objType)) {
+                                    return {
+                                        success: false,
+                                        error: `Object at index ${objectIndex} is type "${obj.type}", not a text object`
+                                    };
+                                }
+
+                                // Update only the text property
+                                slideData.objects[objectIndex].text = newText;
+                            }
+
+                            // Save the updated slide
+                            const updatedContent = JSON.stringify(slideData, null, 2);
+                            await ctx.runMutation(api.files.updateByPath, {
+                                chatId: id,
+                                path,
+                                content: updatedContent,
+                                version: currentVersion ?? 0
+                            });
+
+                            return {
+                                success: true,
+                                message: explanation,
+                                textsUpdated: textUpdates.length
+                            };
+                        } catch (error) {
+                            console.error(`Error updating texts in ${path}:`, error);
+                            return {
+                                success: false,
+                                error: `Error updating texts in ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`
+                            };
+                        }
+                    },
+                },
+
                 manageFile: {
-                    description: 'Manage presentation slides in JSON format. IMPORTANT: Each slide must be a separate JSON file.',
+                    description: '🎨 DESIGN TOOL for slides. Use ONLY when user explicitly requests DESIGN changes (colors, sizes, positions, add/remove shapes/images). DO NOT use for simple text updates - use updateSlideTexts instead. Operations: create (new slide), update (design changes), delete (remove slide).',
                     inputSchema: z.object({
                         operation: z.enum(['create', 'update', 'delete']).describe('Operation type: create (new slide), update (modify existing slide), delete (remove slide)'),
                         path: z.string().describe('Slide path. MUST follow format: "/slides/slide-1.json", "/slides/slide-2.json", etc. Always starts with /slides/ and ends with .json'),
@@ -711,62 +697,10 @@ Template customization workflow:
                                         };
                                     }
 
-                                    // Restore base64 images before saving
-                                    let contentToSave = content;
-                                    if (path.endsWith('.json')) {
-                                        try {
-                                            // Get current file from database
-                                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
-                                            const currentContent = allFiles[path];
-
-                                            if (currentContent) {
-                                                const newData = JSON.parse(content);
-                                                const currentData = JSON.parse(currentContent);
-
-                                                // If both have objects arrays, restore base64 images
-                                                if (newData.objects && currentData.objects && Array.isArray(newData.objects) && Array.isArray(currentData.objects)) {
-                                                    // Create a map of current images by their index or properties
-                                                    const currentImages = new Map();
-                                                    currentData.objects.forEach((obj: any, idx: number) => {
-                                                        if ((obj.type === 'image' || obj.type === 'Image') && obj.src && obj.src.startsWith('data:image')) {
-                                                            currentImages.set(idx, obj.src);
-                                                        }
-                                                    });
-
-                                                    // Restore base64 in new data
-                                                    newData.objects = newData.objects.map((obj: any, idx: number) => {
-                                                        if ((obj.type === 'image' || obj.type === 'Image') && obj.src === '[BASE64_IMAGE_DATA]') {
-                                                            const originalSrc = currentImages.get(idx);
-                                                            if (originalSrc) {
-                                                                // Remove _note field if it exists
-                                                                const { _note, ...rest } = obj;
-                                                                return {
-                                                                    ...rest,
-                                                                    src: originalSrc
-                                                                };
-                                                            }
-                                                        }
-                                                        // Remove _note field if it exists
-                                                        if (obj._note) {
-                                                            const { _note, ...rest } = obj;
-                                                            return rest;
-                                                        }
-                                                        return obj;
-                                                    });
-
-                                                    contentToSave = JSON.stringify(newData, null, 2);
-                                                }
-                                            }
-                                        } catch (err) {
-                                            console.error('Error restoring base64 images:', err);
-                                            // If restoration fails, use original content
-                                        }
-                                    }
-
                                     await ctx.runMutation(api.files.updateByPath, {
                                         chatId: id,
                                         path,
-                                        content: contentToSave,
+                                        content,
                                         version: currentVersion ?? 0
                                     });
                                     break;

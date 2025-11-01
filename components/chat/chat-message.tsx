@@ -33,14 +33,22 @@ export function ChatMessage({
     currentVersion: number | null | undefined;
     isNewMessage?: boolean;
 }) {
-    // Mensajes progresivos para crear slides
-    const slideMessages = [
-        "Creating slide...",
-        "Filling with text...",
-        "Adding styles...",
+    // Mensajes progresivos para diferentes operaciones
+    const designMessages = [
+        "Applying design...",
+        "Updating styles...",
+        "Adjusting layout...",
         "Finalizing..."
     ];
-    const currentSlideMessage = useProgressiveMessage(slideMessages, 1500, isLoading, true);
+
+    const textMessages = [
+        "Updating texts...",
+        "Applying changes...",
+        "Almost done..."
+    ];
+
+    const currentDesignMessage = useProgressiveMessage(designMessages, 1500, isLoading, true);
+    const currentTextMessage = useProgressiveMessage(textMessages, 1000, isLoading, true);
 
     return (
         <motion.div
@@ -105,7 +113,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<File className="size-4" />}
-                                        message={message || "Actualizado"}
+                                        message={message || "Slide updated"}
                                         isLoading={false}
                                     />
                                 </div>
@@ -116,7 +124,34 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<File className="size-4" />}
-                                        message={currentSlideMessage}
+                                        message={currentDesignMessage}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-updateSlideTexts") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={message || "Texts updated"}
+                                        isLoading={false}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={currentTextMessage}
                                         isLoading={true}
                                     />
                                 </div>
@@ -221,7 +256,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<GoogleIcon />}
-                                        message={"Buscado en internet"}
+                                        message={"Searching on the internet..."}
                                         isLoading={false}
                                     />
                                 </div>
@@ -232,7 +267,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<GoogleIcon />}
-                                        message={"Buscado en internet..."}
+                                        message={"Searching on the internet..."}
                                         isLoading={true}
                                     />
                                 </div>

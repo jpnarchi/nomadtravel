@@ -90,21 +90,21 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                         <>
                             <Button
                                 size="sm"
-                                variant="outline"
+                                // variant="outline"
                                 className="cursor-pointer"
                                 onClick={handleStartEdit}
                             >
                                 <Pencil className="size-4 mr-2" />
                                 Editar
                             </Button>
-                            <Button
+                            {isAdmin && <Button
                                 size="sm"
                                 variant="outline"
                                 className="cursor-pointer"
                                 onClick={() => setShowCode(!showCode)}
                             >
                                 {showCode ? <Eye className="size-4" /> : <CodeXml className="size-4" />}
-                            </Button>
+                            </Button>}
                         </>
                     ) : (
                         <>
