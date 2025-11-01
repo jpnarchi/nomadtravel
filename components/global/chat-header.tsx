@@ -15,13 +15,13 @@ export function ChatHeader() {
         <header className="flex h-16 shrink-0 items-center gap-2 px-4 justify-between bg-white">
             <div className="flex items-center gap-6" >
                 {isSignedIn && <SidebarTrigger className="-ml-1" />}
-                <div className="flex items-center gap-2 cursor-pointer" onClick={() => router.push('/')}>
+                <div className="hidden sm:flex items-center gap-2 cursor-pointer shrink-0" onClick={() => router.push('/')}>
                     <Image
                     src="/logo.png"
                     width={80}
                     alt="I Love Presentations"
                     height={80}
-                    className="h-10"
+                    className="h-10 w-20 shrink-0"
                     />
                 </div>
                 <nav className="flex items-center gap-6">

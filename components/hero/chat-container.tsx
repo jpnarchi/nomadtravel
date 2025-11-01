@@ -12,6 +12,7 @@ import { Footer } from "../global/footer";
 import { createPromptWithAttachments } from "@/lib/utils";
 import { PricingPopup } from "../pricing/pricing-popup";
 
+
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
     const [input, setInput] = useState('')
@@ -125,7 +126,15 @@ export function ChatContainer() {
 
     return (
         <>
-            <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
+            <div
+                className="flex flex-col h-[calc(100dvh-4rem)] bg-background"
+                style={{
+                    backgroundImage: "url('/img/background2.svg')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                }}
+            >
                 <AnimatePresence mode="wait">
                     <motion.div
                         key="initial-state"
@@ -137,18 +146,21 @@ export function ChatContainer() {
                             transition: { duration: 0.3, ease: "easeInOut" }
                         }}
                     >
-                        <motion.p
-                            className="text-black text-4xl sm:text-5xl"
+                        <motion.div
+                            className="text-black text-3xl sm:text-4xl md:text-5xl font-inter font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 text-center"
                             exit={{
                                 y: -30,
                                 opacity: 0,
                                 transition: { duration: 0.2, ease: "easeInOut" }
                             }}
                         >
-                            Create your Presentation with AI
-                        </motion.p>
+                            <span>Your Presentation</span>
+                            <span className="flex items-center gap-2 sm:gap-3">
+                                with <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 inline-block" /> AI
+                            </span>
+                        </motion.div>
                         <motion.div
-                            className="w-full"
+                            className="w-full bg-transparent"
                             exit={{
                                 y: 20,
                                 opacity: 0,

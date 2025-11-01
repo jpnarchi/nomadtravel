@@ -361,12 +361,12 @@ export function ChatContainer({
                             transition: { duration: 0.4, ease: "easeOut" }
                         }}
                     >
-                        {/* <div className="flex flex-col h-full bg-background items-center justify-center">
+                        <div className="flex flex-col h-full bg-background items-center justify-center">
                             <div className="flex items-center gap-3">
                                 <Loader />
-                                <p>Generando...</p>
+                                <p>Creating...</p>
                             </div>
-                        </div> */}
+                        </div>
                         <div className="flex-1 min-h-0 overflow-hidden">
                             <ChatMessages
                                 id={id}

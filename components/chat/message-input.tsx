@@ -86,8 +86,8 @@ export const MessageInput = ({
     };
 
     return (
-        <div className="flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex justify-center p-4 pb-4">
+        <div className="flex-shrink-0 bg-transparent">
+            <div className="flex justify-center p-4 pb-4 bg-transparent">
                 <form onSubmit={handleSubmit} className="flex flex-row gap-2 relative items-end w-full max-w-lg">
                     <div className="relative flex-1 min-h-[44px] p-2 rounded-xl border-2 border-input bg-white dark:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20 transition-colors flex flex-col">
                         {/* Hidden file input */}
