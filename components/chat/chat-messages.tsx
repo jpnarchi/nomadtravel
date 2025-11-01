@@ -70,7 +70,13 @@ export function ChatMessages({
         : [];
 
     return (
-        <ScrollArea className="h-full w-full">
+        <ScrollArea className="h-full w-full"
+        style={{
+            backgroundImage: "url('/img/background.svg')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+        }}>
 
             {/* History messages */}
             <div className="flex flex-col gap-4 items-center py-2">

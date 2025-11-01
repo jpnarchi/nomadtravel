@@ -37,11 +37,18 @@ export function PricingContainer() {
     }
 
     return (
-        <section className="py-16">
+        <section className="py-16"
+            style={{
+                backgroundImage: "url('/img/background2.svg')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            }}
+            >
             <div className="mx-auto max-w-6xl px-6">
                 <div className="mx-auto max-w-2xl space-y-6 text-center">
-                    <h1 className="text-center text-4xl font-semibold lg:text-5xl">Precios</h1>
-                    <p>Escoge el plan que mejor se adapte a tus necesidades</p>
+                    <h1 className="text-center text-4xl font-semibold lg:text-5xl">Pricing</h1>
+                    <p>Choose the plan that best fits your needs</p>
                 </div>
 
                 {user?.subscriptionId && (
@@ -52,7 +59,7 @@ export function PricingContainer() {
                             onClick={handleBillingPortal}
 
                         >
-                            Gestionar suscripción
+                            Manage subscription
                         </Button>
                     </div>
                 )}
@@ -60,16 +67,16 @@ export function PricingContainer() {
                 <div className="mt-8 grid gap-6 md:mt-12 md:grid-cols-3">
                     <PricingCard
                         plan={{
-                            name: "Gratis",
-                            price: "$0 MXN / mes",
-                            description: "Para testear",
+                            name: "Free",
+                            price: "$0 MXN / month",
+                            description: "For testing",
                             features: [
-                                '1 proyecto',
-                                '4 versiones de tu proyecto',
-                                'Plantillas limitadas',
-                                'Comunidad de usuarios'
+                                '1 project',
+                                '4 versions of your project',
+                                'Limited templates',
+                                'User community'
                             ],
-                            buttonText: user?.plan === "free" ? "Plan actual" : "Empezar",
+                            buttonText: user?.plan === "free" ? "Current plan" : "Get started",
                             buttonVariant: "outline",
                             onButtonClick: () => { },
                             isDisabled: user?.plan === "free" || user?.plan === "pro" || user?.plan === "premium"
@@ -79,21 +86,21 @@ export function PricingContainer() {
                     <PricingCard
                         plan={{
                             name: "Pro",
-                            price: "$1,000 MXN / mes",
-                            description: "Para negocios",
+                            price: "$1,000 MXN / month",
+                            description: "For businesses",
                             features: [
-                                'Todo lo del plan gratis',
-                                'Llamada semanal con negocios',
-                                'Seminario con expertos',
-                                'Participa en votación semanal',
-                                'Proyectos ilimitados',
-                                '50 versiones de tu proyecto',
-                                'Plantillas ilimitadas',
-                                'Soporte prioritario',
+                                'Everything in the free plan',
+                                'Weekly call with businesses',
+                                'Seminars with experts',
+                                'Participate in weekly voting',
+                                'Unlimited projects',
+                                '50 versions of your project',
+                                'Unlimited templates',
+                                'Priority support',
                                 '2 Hostings'
                             ],
                             isPopular: true,
-                            buttonText: user?.plan === "pro" ? "Plan actual" : "Empezar",
+                            buttonText: user?.plan === "pro" ? "Current plan" : "Get started",
                             onButtonClick: () => handleUpgrade('pro'),
                             isDisabled: user?.plan === "pro"
                         }}
@@ -102,16 +109,16 @@ export function PricingContainer() {
                     <PricingCard
                         plan={{
                             name: "Premium",
-                            price: "$4,000 MXN / mes",
-                            description: "Para agencias",
+                            price: "$4,000 MXN / month",
+                            description: "For agencies",
                             features: [
-                                'Todo lo del plan pro',
-                                'Llamada semanal con agencias',
-                                'Proyectos ilimitados',
-                                'Versiones ilimitadas de tu proyecto',
-                                'Hostings ilimitados'
+                                'Everything in the pro plan',
+                                'Weekly call with agencies',
+                                'Unlimited projects',
+                                'Unlimited versions of your project',
+                                'Unlimited hosting'
                             ],
-                            buttonText: user?.plan === "premium" ? "Plan actual" : "Empezar",
+                            buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
                             buttonVariant: "outline",
                             onButtonClick: () => handleUpgrade('premium'),
                             isDisabled: user?.plan === "premium"
