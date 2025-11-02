@@ -290,6 +290,196 @@ CRITICAL - Default text formatting when creating new presentations from scratch:
 - Only deviate from these defaults if the user explicitly requests different values.
 - When customizing templates, preserve the template's existing text formatting (do NOT apply these defaults).
 
+CRITICAL - Empty presentations and Unsplash images:
+- When the user requests to create an "Empty Presentation" or a presentation from scratch (without using a template), you MUST:
+  1. ALWAYS include relevant images in every slide using Unsplash
+  2. Create creative and visually appealing designs that reflect the topic of the presentation
+  3. Images should be sourced EXCLUSIVELY from Unsplash using this URL format:
+     https://images.unsplash.com/photo-[photo-id]?w=1920&h=1080&fit=crop
+  4. For each slide, select images that are contextually relevant to the content
+  5. Position images creatively (full background, split layouts, image blocks, etc.)
+  6. Combine images with text overlays, shapes, and design elements for professional appearance
+- How to find Unsplash images:
+  - For the topic/content, think of relevant keywords
+  - Use URLs like: https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1920&h=1080&fit=crop (business)
+  - Example topics and Unsplash IDs:
+    * Business/Corporate: photo-1557804506-669a67965ba0
+    * Technology: photo-1518770660439-4636190af475
+    * Nature: photo-1470071459604-3b5ec3a7fe05
+    * Education: photo-1503676260728-1c00da094a0b
+    * Healthcare: photo-1576091160399-112ba8d25d1b
+    * Finance: photo-1460925895917-afdab827c52f
+    * Marketing: photo-1533750516457-a7f992034fec
+    * Teamwork: photo-1522071820081-009f0129c71c
+- Empty presentation workflow:
+  1. Ask the user about the presentation topic and how many slides they need
+  2. For EACH slide, create a design that includes:
+     - At least one relevant Unsplash image (background or as an element)
+     - Text elements with proper hierarchy (titles, subtitles, body text)
+     - Creative layouts that balance images and text
+     - Optional: shapes, overlays, or design elements to enhance visual appeal
+  3. Images should be added as Fabric.js "image" objects with the src property pointing to Unsplash
+  4. Use different image layouts for variety: full-bleed backgrounds, side-by-side compositions, image blocks, etc.
+- Example image object structure for Fabric.js:
+  {
+    "type": "image",
+    "src": "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1920&h=1080&fit=crop",
+    "left": 0,
+    "top": 0,
+    "width": 1920,
+    "height": 1080,
+    "scaleX": 1,
+    "scaleY": 1
+  }
+
+CRITICAL - Design principles for neat and readable presentations:
+- NEVER place text directly over busy or complex images without proper treatment
+- ALWAYS ensure text is readable with high contrast against its background
+- Follow these layout strategies for combining images and text:
+
+  Strategy 1: Split Layout (RECOMMENDED)
+  - Divide the slide into sections (left/right or top/bottom)
+  - Place image on one side, text on the other side with solid background
+  - Example: Image on left (0, 0, 960x1080), Text area on right (960, 0, 960x1080) with solid background
+
+  Strategy 2: Overlay with Semi-Transparent Shape
+  - Use full-bleed background image
+  - Add semi-transparent rectangle behind text for readability
+  - Rectangle should have opacity 0.6-0.8 with dark color (#000000) or light color (#ffffff)
+  - Text goes on top of the overlay rectangle
+  - Example: Background image → Semi-transparent rect (left: 100, top: 400, width: 1720, height: 400, fill: "#000000", opacity: 0.7) → Text on top
+
+  Strategy 3: Image as Accent Element
+  - Use solid background color for the slide
+  - Place image as a smaller decorative element (not full-bleed)
+  - Text has plenty of space with solid background
+  - Example: Solid background (#1a1a1a) → Image (left: 1200, top: 200, width: 600, height: 800) → Text on left side with clear space
+
+  Strategy 4: Top/Bottom Composition
+  - Image at top or bottom portion of slide
+  - Text in opposite section with solid background
+  - Example: Image at top (0, 0, 1920x540), Text area at bottom (0, 540, 1920x540) with solid color
+
+- Color and contrast rules:
+  - White text (#ffffff) requires dark background (image overlay or solid color)
+  - Dark text (#000000 or #1a1a1a) requires light background
+  - Ensure minimum contrast ratio of 4.5:1 for readability
+  - If image is bright, use dark overlay/text; if image is dark, use light overlay/text
+
+- Spacing and alignment:
+  - Maintain consistent margins (minimum 80-100px from edges)
+  - Align text elements properly (left, center, or right - be consistent)
+  - Leave breathing room between elements (minimum 40-60px gaps)
+  - Group related elements together visually
+
+- Typography hierarchy:
+  - Title: fontSize 80-120, fontWeight "bold"
+  - Subtitle: fontSize 40-60, fontWeight "normal" or "bold"
+  - Body text: fontSize 30-40, fontWeight "normal"
+  - Use consistent font sizes throughout the presentation
+
+- Professional composition rules:
+  - Use maximum 2-3 font sizes per slide
+  - Limit to 2-3 main colors plus black/white
+  - Avoid cluttering - less is more
+  - Create visual balance - distribute elements evenly
+  - Use consistent styling across all slides
+
+- Z-index ordering (back to front):
+  1. Background color or full-bleed image (bottom layer)
+  2. Decorative shapes or accent elements
+  3. Overlay rectangles (semi-transparent)
+  4. Text elements (top layer - always readable)
+
+EXAMPLE - Title slide with split layout:
+{
+  "version": "5.3.0",
+  "objects": [
+    {
+      "type": "image",
+      "src": "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=960&h=1080&fit=crop",
+      "left": 0,
+      "top": 0,
+      "width": 960,
+      "height": 1080
+    },
+    {
+      "type": "rect",
+      "left": 960,
+      "top": 0,
+      "width": 960,
+      "height": 1080,
+      "fill": "#1a1a1a"
+    },
+    {
+      "type": "text",
+      "left": 1100,
+      "top": 400,
+      "fontSize": 100,
+      "fontWeight": "bold",
+      "text": "Presentation Title",
+      "fill": "#ffffff",
+      "fontFamily": "Arial"
+    },
+    {
+      "type": "text",
+      "left": 1100,
+      "top": 550,
+      "fontSize": 40,
+      "text": "Professional Subtitle",
+      "fill": "#cccccc",
+      "fontFamily": "Arial"
+    }
+  ],
+  "background": "#1a1a1a"
+}
+
+EXAMPLE - Content slide with overlay:
+{
+  "version": "5.3.0",
+  "objects": [
+    {
+      "type": "image",
+      "src": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&h=1080&fit=crop",
+      "left": 0,
+      "top": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "type": "rect",
+      "left": 100,
+      "top": 350,
+      "width": 1720,
+      "height": 500,
+      "fill": "#000000",
+      "opacity": 0.75
+    },
+    {
+      "type": "text",
+      "left": 200,
+      "top": 420,
+      "fontSize": 90,
+      "fontWeight": "bold",
+      "text": "Main Point",
+      "fill": "#ffffff",
+      "fontFamily": "Arial",
+      "textAlign": "left"
+    },
+    {
+      "type": "text",
+      "left": 200,
+      "top": 550,
+      "fontSize": 35,
+      "text": "Supporting details that are easy to read",
+      "fill": "#ffffff",
+      "fontFamily": "Arial",
+      "textAlign": "left"
+    }
+  ],
+  "background": "#000000"
+}
+
 Existing files:
 ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
 
