@@ -14,8 +14,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { Id } from "./_generated/dataModel";
-import { api, internal } from "./_generated/api";
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { api } from "./_generated/api";
 
 const webSearchTool = anthropic.tools.webSearch_20250305({
     maxUses: 5,
@@ -173,160 +172,6 @@ http.route({
 
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
-        const DEFAULT_BASE_URL = 'https://api.hicap.ai/v2/openai';
-
-        const provider = createOpenAICompatible({
-            name: 'hicap',
-            baseURL: DEFAULT_BASE_URL,
-            headers: { 'api-key': process.env.PROVIDER_API_KEY || '' },
-            includeUsage: true,
-        });
-
-        // Redirect URL for Supabase auth callback
-        let redirectUrl = process.env.NEXT_PUBLIC_BASE_URL + "/auth/supabase-auth-callback?chatId=" + id;
-
-        if (chat.deploymentUrl) {
-            redirectUrl = chat.deploymentUrl + "/auth/supabase-auth-callback?chatId=" + id;
-        }
-
-        // check if supabase is connected 
-        const isSupabaseConnected = !!chat.supabaseProjectId;
-
-        // create supabase tools
-        const supabaseTools: any = {
-            connectToSupabase: {
-                description: 'Connect to Supabase.',
-                inputSchema: z.object({}),
-                execute: async function () {
-                    return {
-                        success: true,
-                        message: 'Waiting for user to connect Supabase...'
-                    };
-                },
-            },
-        };
-
-        // Add supabaseSQLQuery tool only if Supabase is connected
-        if (isSupabaseConnected) {
-            supabaseTools.supabaseSQLQuery = {
-                description: 'Execute an SQL query in Supabase.',
-                inputSchema: z.object({
-                    query: z.string().describe('The SQL query to execute. Drop table if exists if you need. Use mock data for new tables.'),
-                }),
-                execute: async function ({ query }: any) {
-                    if (!chat.supabaseProjectId) {
-                        return {
-                            success: false,
-                            message: 'Supabase not connected'
-                        };
-                    }
-
-                    const result = await ctx.runAction(api.supabase.executeSQLQuery, {
-                        query: query,
-                        projectId: chat.supabaseProjectId
-                    });
-
-                    if (!result) {
-                        return {
-                            success: false,
-                            message: 'Error executing SQL query'
-                        };
-                    }
-
-                    // Check if the result indicates an error
-                    if (result.success === false) {
-                        return {
-                            success: false,
-                            message: result.message || 'Error executing SQL query'
-                        };
-                    }
-
-                    return {
-                        success: true,
-                        message: result.message || 'SQL query executed successfully',
-                        data: result.data
-                    };
-                },
-            };
-
-            supabaseTools.connectToStripe = {
-                description: 'Connect to Stripe.',
-                inputSchema: z.object({}),
-                execute: async function () {
-                    return {
-                        success: true,
-                        message: 'Waiting for user to connect Stripe...'
-                    };
-                },
-            };
-
-            supabaseTools.deployEdgeFunction = {
-                description: 'Deploy an edge function to Supabase.',
-                inputSchema: z.object({
-                    functionName: z.string().describe('The name of the function to deploy'),
-                    fileContent: z.string().describe('The content of the function to deploy. The code must be in TypeScript.'),
-                }),
-                execute: async function ({ functionName, fileContent }: any) {
-                    if (!chat.supabaseProjectId) {
-                        return {
-                            success: false,
-                            message: 'Supabase not connected'
-                        };
-                    }
-
-                    const result = await ctx.runAction(api.supabase.deployEdgeFunction, {
-                        functionName: functionName,
-                        fileContent: fileContent,
-                        projectId: chat.supabaseProjectId
-                    });
-
-                    if (!result) {
-                        return {
-                            success: false,
-                            error: result.error,
-                            message: 'Error deploying function'
-                        };
-                    }
-
-                    return {
-                        success: true,
-                        message: result.message || 'Function deployed successfully',
-                        data: result.data
-                    };
-                },
-            };
-
-            supabaseTools.saveResendKeyInSecrets = {
-                description: 'Save Resend API key in Supabase secrets.',
-                inputSchema: z.object({}),
-                execute: async function () {
-                    if (!chat.supabaseProjectId) {
-                        return {
-                            success: false,
-                            message: 'Supabase not connected'
-                        };
-                    }
-
-                    const result = await ctx.runAction(api.supabase.saveResendKeyInSecrets, {
-                        projectId: chat.supabaseProjectId
-                    });
-
-                    if (!result) {
-                        return {
-                            success: false,
-                            error: result.error,
-                            message: 'Error saving Resend key in Supabase'
-                        };
-                    }
-
-                    return {
-                        success: true,
-                        message: 'Resend key (RESEND_API_KEY) saved in Supabase secrets successfully',
-                    };
-                },
-            };
-        }
-
         const result = streamText({
             model: openrouter('anthropic/claude-sonnet-4.5'),
             // model: provider('claude-sonnet-4'),
@@ -353,7 +198,7 @@ Presentation rules:
 - Use generateInitialCodebase before starting a presentation.
 - Use manageFile to create, update, or delete slides.
 - Each slide can contain: text, images, geometric shapes, lines, etc.
-- IMPORTANT: Every presentation must have MINIMUM 5 SLIDES. Templates already come with 5 slides by default.
+- Templates come with 10 slides by default, but the user chooses how many slides they need identify how many they want and remove the unused slides.
 
 Rules for adding slides:
 - If the user asks to add a slide AT THE END of the presentation, use manageFile with operation "create" and the next number (e.g., if there are 3 slides, create slide-4.json).
@@ -432,48 +277,21 @@ For texts:
 - textAlign: Alignment (left, center, right)
 - fill: Text color
 
+CRITICAL - Default text formatting when creating new presentations from scratch:
+- When creating a new presentation and adding text from scratch (NOT using templates), ALWAYS use these default values:
+  - fontSize: 60 (MINIMUM default, never go smaller unless user explicitly requests it)
+  - fontWeight: "bold"
+  - fontFamily: "Arial"
+  - fontStyle: "normal"
+  - lineHeight: 1.16
+  - textAlign: "center"
+  - fill: "#ffffff"
+- These values ensure professional, readable presentations.
+- Only deviate from these defaults if the user explicitly requests different values.
+- When customizing templates, preserve the template's existing text formatting (do NOT apply these defaults).
+
 Existing files:
 ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
-
-IMPORTANT - NOT available for presentations:
-- DO NOT use Supabase (this is only for visual presentations).
-- DO NOT use Stripe (this is only for visual presentations).
-- DO NOT use databases.
-- Focus only on creating impactful visual slides.
-
-Supabase rules (DISABLED):
-${isSupabaseConnected
-                    ? `- Supabase is ALREADY connected. You can use supabaseSQLQuery to execute SQL queries.
-- If the user wants to change the connection or connect to another project, use connectToSupabase.
-
-- Authentication configuration:
-  - When implementing any authentication functionality (login, registration, email verification, etc.), you MUST implement the complete Supabase Auth flow.
-  - The emailRedirectTo configuration must always use: options: { emailRedirectTo: callback }
-  - The callback value must always be:
-    const callback = /codesandbox\\.io/.test(window.location.href)
-      ? '${redirectUrl}'
-      : \`\${window.location.origin}/auth/supabase-auth-callback\`;
-  - You MUST always create the /auth/supabase-auth-callback route with react router dom to handle redirection after email verification.
-  - This ensures redirection works automatically in both development and production.`
-                    : '- Supabase is NOT connected. If the user wants to use a database, first use connectToSupabase.'}
-
-Stripe rules:
-${isSupabaseConnected
-                    ? `- Supabase is connected; you can proceed with payments.
-- Before payments, verify that necessary tables exist (e.g., payments). If missing, create them with supabaseSQLQuery.
-- Connect Stripe with connectToStripe if not already connected.
-- Deploy an Edge Function with deployEdgeFunction.
-- Don't charge until you have: tables created + Stripe connected + function deployed.
-- If something fails, report the error and stop.`
-                    : '- Supabase is NOT connected; before any payment use connectToSupabase and wait for confirmation.'}
-
-Resend rules (To send emails):
-${isSupabaseConnected
-                    ? `- Supabase is connected; you can proceed to send emails with Resend.
-- You have the Resend key (RESEND_API_KEY), just call the saveResendKeyInSecrets tool to save it in Supabase secrets.
-- Deploy an Edge Function with deployEdgeFunction to send emails with "Astri <noreply@astri.dev>".
-- If something fails, report the error and stop.`
-                    : '- Supabase is NOT connected; before sending emails use connectToSupabase and wait for confirmation.'}
 
 Additional tools rules:
 - If the user mentions they already have a business:
@@ -501,9 +319,14 @@ Mandatory workflow:
 
 Template customization workflow:
 1. Use generateInitialCodebase to load the template.
-2. Ask the user for information to customize (name, slogan, etc.).
-3. WAIT for the user's response.
-4. CRITICAL - Choosing the right tool to update slides:
+2. CRITICAL - ALWAYS ask the user how many slides they want in their presentation and WAIT for their response.
+3. After receiving the number of slides, if the number is LESS than the template slides (templates have 10 by default):
+   - You MUST delete the excess slides using manageFile with operation "delete"
+   - Example: User wants 5 slides → delete slide-6.json through slide-10.json
+   - ALWAYS clean up unused slides before customizing content
+4. Ask the user for information to customize (name, slogan, etc.).
+5. WAIT for the user's response.
+6. CRITICAL - Choosing the right tool to update slides:
 
    ⚡ DEFAULT: Use updateSlideTexts (99% of cases)
    - User wants to change: titles, names, descriptions, slogans, any TEXT content
@@ -528,19 +351,18 @@ Template customization workflow:
      c. Modify ONLY the design properties requested
      d. USE manageFile with operation "update"
 
-5. DECISION RULE - Ask yourself before every update:
+7. DECISION RULE - Ask yourself before every update:
    - Does the user want to change ONLY text content? → USE updateSlideTexts ✅
    - Does the user want to change colors/sizes/positions/design? → USE manageFile update 🎨
    - When in doubt, if they didn't mention design words → USE updateSlideTexts ✅
 
-6. Other operations:
+8. Other operations:
    - manageFile create: When creating a NEW slide from scratch
    - manageFile delete: When removing a slide
    - insertSlideAtPosition: When inserting a slide in the middle
 
-7. Repeat steps 4-5 for each slide that needs updating.
-8. VERIFY that the presentation has MINIMUM 5 SLIDES. Templates already come with 5 slides, just customize their texts.
-9. Show the preview when finished with showPreview.
+9. Repeat steps 6-7 for each slide that needs updating.
+10. Show the preview when finished with showPreview.
 `.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
@@ -1016,8 +838,6 @@ Template customization workflow:
                         }
                     },
                 },
-
-                ...supabaseTools,
             },
             async onError(error) {
                 console.error("streamText error:", error);
@@ -1128,27 +948,6 @@ http.route({
             });
         } else {
             return new Response();
-        }
-    }),
-});
-
-http.route({
-    path: "/api/stripe",
-    method: "POST",
-    handler: httpAction(async (ctx, request) => {
-        const signature: string = request.headers.get("stripe-signature") as string;
-        const result = await ctx.runAction(internal.stripe.fulfill, {
-            signature,
-            payload: await request.text(),
-        });
-        if (result.success) {
-            return new Response(null, {
-                status: 200,
-            });
-        } else {
-            return new Response("Webhook Error", {
-                status: 400,
-            });
         }
     }),
 });
