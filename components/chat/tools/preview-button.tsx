@@ -26,6 +26,11 @@ export function PreviewButton({
     const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
     const router = useRouter();
     const restoreVersion = useMutation(api.messages.restoreVersion);
+
+    // CRITICAL: Always redirect to currentVersion (latest), not the specific version
+    // This ensures users edit the latest version that the AI will use
+    const versionToView = currentVersion ?? version;
+
     return (
         <div className="flex flex-col gap-2 w-full">
             <Card className="group relative w-full flex flex-row items-center gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:border-border/80 hover:shadow-sm transition-all duration-200">
@@ -34,6 +39,11 @@ export function PreviewButton({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                         <p className="font-semibold text-foreground">Version {version}</p>
+                        {version !== currentVersion && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
+                                Old Version
+                            </span>
+                        )}
                     </div>
                     <p className="text-sm text-muted-foreground">{formatCreationTime(creationTime)}</p>
                 </div>
@@ -57,7 +67,7 @@ export function PreviewButton({
                         size="sm"
                         onClick={() => {
                             setIsLoading(true);
-                            router.push(`/chat/${id}/preview/${version}`);
+                            router.push(`/chat/${id}/preview/${versionToView}`);
                         }}
                         disabled={isLoading}
                         className="bg-primary hover:bg-primary-200 text-white cursor-pointer"

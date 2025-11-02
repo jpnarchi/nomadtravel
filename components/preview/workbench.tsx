@@ -19,6 +19,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     const [isSaving, setIsSaving] = useState(false);
     const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
     const files = useQuery(api.files.getAll, { chatId: id, version });
+    const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId: id });
     const updateFile = useMutation(api.files.updateByPath);
     const router = useRouter();
 
@@ -26,14 +27,18 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     const handleSaveChanges = async (filesToSave: Record<string, string>) => {
         setIsSaving(true);
         try {
-            // Update each modified file
+            // CRITICAL: Always save to currentVersion, not the version being viewed
+            // This ensures manual edits are always on the latest version that the AI will use
+            const versionToSave = currentVersion ?? version;
+
+            // Update each modified file in the CURRENT version
             const updatePromises = Object.entries(filesToSave).map(([path, content]) =>
-                updateFile({ chatId: id, path, content, version })
+                updateFile({ chatId: id, path, content, version: versionToSave })
             );
 
             await Promise.all(updatePromises);
 
-            toast.success('Cambios guardados exitosamente');
+            toast.success('Cambios guardados en la versión actual');
             setEditedFiles({});
             setIsEditing(false);
         } catch (error) {

@@ -707,9 +707,11 @@ Template customization workflow:
                     execute: async function () {
                         const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
                         const result = await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
+                        // Return the NEW version number (currentVersion + 1), not the old one
+                        const newVersion = (currentVersion ?? 0) + 1;
                         return {
                             success: true,
-                            version: currentVersion,
+                            version: newVersion,
                             creationTime: result.creationTime,
                         };
                     },
