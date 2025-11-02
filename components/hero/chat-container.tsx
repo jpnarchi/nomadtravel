@@ -10,7 +10,6 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Footer } from "../global/footer";
 import { createPromptWithAttachments } from "@/lib/utils";
-import { CreatePresentation } from "../hero/create-presentations"
 import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
 
