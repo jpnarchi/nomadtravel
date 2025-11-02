@@ -186,7 +186,7 @@ export function ChatContainer() {
                         </motion.div>
                     </motion.div>
 
-                    <CreatePresentation/>
+                    
                 </AnimatePresence>
                 <Footer />
                 <DragDropOverlay files={files} setFiles={setFiles} />
