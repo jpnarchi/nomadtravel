@@ -28,6 +28,7 @@ export function PreviewTemplate({
     const [showEditor, setShowEditor] = useState(false);
     const initialFiles = useQuery(api.templates.getFilesByTemplateId, { templateId: id });
     const [isSaving, setIsSaving] = useState(false);
+    const [editorKey, setEditorKey] = useState(0);
     const router = useRouter();
 
     const saveTemplateFiles = useMutation(api.templates.saveTemplateFiles);
@@ -43,6 +44,10 @@ export function PreviewTemplate({
     }
 
     const handleSave = async (currentFiles: Record<string, string>) => {
+        console.log('🔵 handleSave llamado');
+        console.log('📂 InitialFiles paths:', Object.keys(initialFiles).sort());
+        console.log('📂 CurrentFiles paths:', Object.keys(currentFiles).sort());
+
         setIsSaving(true);
         try {
             // Calculate differences
@@ -66,16 +71,29 @@ export function PreviewTemplate({
                 }
             });
 
+            console.log('📝 Cambios:', {
+                added: added.map(f => f.path),
+                updated: updated.map(f => f.path),
+                deleted
+            });
+
             await saveTemplateFiles({
                 templateId: id,
                 files: { added, updated, deleted }
             });
 
+            console.log('✅ Guardado exitoso, esperando a que Convex actualice...');
             toast.success('Cambios guardados exitosamente');
-            router.refresh();
+
+            // Wait for Convex to update the reactive query, then force remount
+            setTimeout(() => {
+                console.log('🔄 Incrementando editorKey para forzar remount');
+                setEditorKey(prev => prev + 1);
+            }, 500);
+
         } catch (error) {
             toast.error('Error al guardar cambios');
-            console.error(error);
+            console.error('❌ Error guardando:', error);
         } finally {
             setIsSaving(false);
         }
@@ -120,6 +138,7 @@ export function PreviewTemplate({
             <div className="flex-1 border rounded-lg overflow-hidden mt-4">
                 {showEditor ? (
                     <FabricPresentationEditor
+                        key={`editor-${editorKey}`}
                         initialFiles={initialFiles}
                         onSave={handleSave}
                         isSaving={isSaving}

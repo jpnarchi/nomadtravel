@@ -72,7 +72,12 @@ export function FabricPresentationPreview({
                 console.log(`🔍 Verificando ${path}: ${isSlide}`)
                 return isSlide
             })
-            .sort((a, b) => a[0].localeCompare(b[0]))
+            .sort((a, b) => {
+                // Extract slide number from path (e.g., /slides/slide-5.json -> 5)
+                const numA = parseInt(a[0].match(/slide-(\d+)\.json$/)?.[1] || '0');
+                const numB = parseInt(b[0].match(/slide-(\d+)\.json$/)?.[1] || '0');
+                return numA - numB; // Sort numerically instead of alphabetically
+            })
             .map(([path, content]) => {
                 try {
                     console.log(`✅ Parseando ${path}`, content.substring(0, 100))
@@ -577,13 +582,13 @@ export function FabricPresentationPreview({
     // Export to PDF
     const handleExportToPDF = async () => {
         if (!fabricCanvasRef.current || slides.length === 0) {
-            toast.error('No hay slides para exportar')
+            toast.error('No slides to export')
             return
         }
 
-        try {
-            toast.loading('Exportando a PDF...')
+        const loadingToast = toast.loading('Downloading PDF...')
 
+        try {
             // Create PDF with 16:9 aspect ratio (matching slide dimensions)
             // Using custom page size to match 16:9 exactly
             const slideAspectRatio = 16 / 9
@@ -613,7 +618,7 @@ export function FabricPresentationPreview({
                 const dataUrl = fabricCanvasRef.current.toDataURL({
                     format: 'png',
                     quality: 1,
-                    multiplier: 2 // Higher resolution
+                    multiplier: 1 // 1920x1080 resolution (reduced from 2 to decrease file size)
                 })
 
                 // Add page if not first slide
@@ -630,23 +635,27 @@ export function FabricPresentationPreview({
 
             // Save PDF
             pdf.save('presentacion.pdf')
-            toast.success('PDF exportado exitosamente')
+
+            // Dismiss loading toast and show success
+            toast.dismiss(loadingToast)
+            toast.success('PDF exported successfully')
         } catch (error) {
             console.error('Error exporting to PDF:', error)
-            toast.error('Error al exportar a PDF')
+            toast.dismiss(loadingToast)
+            toast.error('Error exporting to PDF')
         }
     }
 
     // Export to PPT
     const handleExportToPPT = async () => {
         if (!fabricCanvasRef.current || slides.length === 0) {
-            toast.error('No hay slides para exportar')
+            toast.error('No slides to export')
             return
         }
 
-        try {
-            toast.loading('Exportando a PowerPoint...')
+        const loadingToast = toast.loading('Downloading to PowerPoint...')
 
+        try {
             const pptx = new PptxGenJS()
 
             // Set presentation size to 16:9
@@ -671,7 +680,7 @@ export function FabricPresentationPreview({
                 const dataUrl = fabricCanvasRef.current.toDataURL({
                     format: 'png',
                     quality: 1,
-                    multiplier: 2 // Higher resolution
+                    multiplier: 1 // 1920x1080 resolution (reduced from 2 to decrease file size)
                 })
 
                 // Add slide to presentation
@@ -692,10 +701,14 @@ export function FabricPresentationPreview({
 
             // Save PowerPoint
             await pptx.writeFile({ fileName: 'presentacion.pptx' })
-            toast.success('PowerPoint exportado exitosamente')
+
+            // Dismiss loading toast and show success
+            toast.dismiss(loadingToast)
+            toast.success('PowerPoint exported successfully')
         } catch (error) {
             console.error('Error exporting to PowerPoint:', error)
-            toast.error('Error al exportar a PowerPoint')
+            toast.dismiss(loadingToast)
+            toast.error('Error exporting to PowerPoint')
         }
     }
 
@@ -704,7 +717,7 @@ export function FabricPresentationPreview({
             <div className="h-full flex items-center justify-center bg-zinc-900">
                 <div className="flex flex-col items-center gap-2 text-white">
                     <Loader />
-                    <p>Cargando presentación...</p>
+                    <p>Loading presentation...</p>
                 </div>
             </div>
         )
@@ -714,9 +727,9 @@ export function FabricPresentationPreview({
         return (
             <div className="h-full flex items-center justify-center bg-zinc-900">
                 <div className="text-white text-center p-8">
-                    <p className="text-xl mb-4">No se encontraron slides</p>
-                    <p className="text-sm text-gray-400">
-                        Asegúrate de que la IA haya generado archivos en /slides/
+                    <p className="text-xl mb-4">No slides found</p>
+                    <p className="text-sm text-white">
+                        Make sure the AI has generated files in /slides/
                     </p>
                 </div>
             </div>
@@ -742,11 +755,11 @@ export function FabricPresentationPreview({
                                         className="h-8 w-8 hover:bg-white/10 transition-all"
                                         onClick={() => setShowThumbnails(false)}
                                     >
-                                        <X className="size-4" />
+                                        <X className="size-4 text-white" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="right">
-                                    <p>Ocultar miniaturas (T)</p>
+                                    <p>Hide thumbnails (T)</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -794,14 +807,14 @@ export function FabricPresentationPreview({
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                                                 {/* Center text */}
-                                                <span className="text-zinc-400 text-xs opacity-50 group-hover:opacity-100 transition-opacity">
-                                                    Click para ver
+                                                <span className="text-white text-xs opacity-50 group-hover:opacity-100 transition-opacity">
+                                                    Click to view
                                                 </span>
                                             </div>
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent side="right">
-                                        <p>Slide {index + 1} - {slide.objects?.length || 0} objetos</p>
+                                        <p>Slide {index + 1} - {slide.objects?.length || 0} objects</p>
                                     </TooltipContent>
                                 </Tooltip>
                             ))}
@@ -809,36 +822,36 @@ export function FabricPresentationPreview({
                     </ScrollArea>
 
                     <div className="p-4 border-t border-zinc-700/50 bg-zinc-800/30">
-                        <h4 className="text-xs font-semibold text-zinc-300 mb-3 flex items-center gap-2">
-                            <span className="text-blue-400">⌨️</span> Atajos de teclado
+                        <h4 className="text-xs font-semibold text-white mb-3 flex items-center gap-2">
+                            <span className="text-blue-400">⌨️</span> Keyboard Shortcuts
                         </h4>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-1.5">
-                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">←</kbd>
-                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">→</kbd>
+                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">←</kbd>
+                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">→</kbd>
                                 </div>
-                                <span className="text-[11px] text-zinc-400">Navegar</span>
+                                <span className="text-[11px] text-white">Navigate</span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">F</kbd>
-                                <span className="text-[11px] text-zinc-400">Pantalla completa</span>
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">F</kbd>
+                                <span className="text-[11px] text-white">Fullscreen</span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">T</kbd>
-                                <span className="text-[11px] text-zinc-400">Miniaturas</span>
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">T</kbd>
+                                <span className="text-[11px] text-white">Thumbnails</span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">Ctrl +</kbd>
-                                <span className="text-[11px] text-zinc-400">Zoom in</span>
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">Ctrl +</kbd>
+                                <span className="text-[11px] text-white">Zoom in</span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">Ctrl -</kbd>
-                                <span className="text-[11px] text-zinc-400">Zoom out</span>
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">Ctrl -</kbd>
+                                <span className="text-[11px] text-white">Zoom out</span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-zinc-300 shadow-sm border border-zinc-600">Ctrl 0</kbd>
-                                <span className="text-[11px] text-zinc-400">Reset zoom</span>
+                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">Ctrl 0</kbd>
+                                <span className="text-[11px] text-white">Reset zoom</span>
                             </div>
                         </div>
                     </div>
@@ -859,14 +872,14 @@ export function FabricPresentationPreview({
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setShowThumbnails(true)}
-                                            className="h-9 hover:bg-white/10 transition-all"
+                                            className="h-9 hover:bg-white/10 transition-all text-white"
                                         >
-                                            <Grid3x3 className="size-4 mr-2" />
-                                            Miniaturas
+                                            <Grid3x3 className="size-4 mr-2 text-white" />
+                                            Thumbnails
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Mostrar miniaturas (T)</p>
+                                        <p>Show thumbnails (T)</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
@@ -893,14 +906,14 @@ export function FabricPresentationPreview({
                                         variant="ghost"
                                         size="sm"
                                         onClick={handleExportToPDF}
-                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all"
+                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all text-white"
                                     >
-                                        <FileDown className="size-4 mr-2" />
+                                        <FileDown className="size-4 mr-2 text-white" />
                                         PDF
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Exportar presentación como PDF</p>
+                                    <p>Export presentation as PDF</p>
                                 </TooltipContent>
                             </Tooltip>
 
@@ -910,14 +923,14 @@ export function FabricPresentationPreview({
                                         variant="ghost"
                                         size="sm"
                                         onClick={handleExportToPPT}
-                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all"
+                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all text-white"
                                     >
-                                        <FileDown className="size-4 mr-2" />
+                                        <FileDown className="size-4 mr-2 text-white" />
                                         PPT
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Exportar como PowerPoint</p>
+                                    <p>Export as PowerPoint</p>
                                 </TooltipContent>
                             </Tooltip>
 
@@ -934,11 +947,11 @@ export function FabricPresentationPreview({
                                             disabled={zoomLevel <= 0.25}
                                             className="h-8 w-8 hover:bg-white/10 disabled:opacity-30 transition-all"
                                         >
-                                            <ZoomOut className="size-4" />
+                                            <ZoomOut className="size-4 text-white" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Alejar (Ctrl -)</p>
+                                        <p>Zoom out (Ctrl -)</p>
                                     </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
@@ -947,13 +960,13 @@ export function FabricPresentationPreview({
                                             variant="ghost"
                                             size="sm"
                                             onClick={handleZoomReset}
-                                            className="h-8 px-3 text-xs font-bold min-w-[55px] hover:bg-white/10 transition-all"
+                                            className="h-8 px-3 text-xs text-white font-bold min-w-[55px] hover:bg-white/10 hover:text-white transition-all"
                                         >
                                             {Math.round(zoomLevel * 100)}%
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Restablecer zoom (Ctrl 0)</p>
+                                        <p>Reset zoom (Ctrl 0)</p>
                                     </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
@@ -965,11 +978,11 @@ export function FabricPresentationPreview({
                                             disabled={zoomLevel >= 3}
                                             className="h-8 w-8 hover:bg-white/10 disabled:opacity-30 transition-all"
                                         >
-                                            <ZoomIn className="size-4" />
+                                            <ZoomIn className="size-4 text-white" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>Acercar (Ctrl +)</p>
+                                        <p>Zoom in (Ctrl +)</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </div>
@@ -982,14 +995,14 @@ export function FabricPresentationPreview({
                                         variant="ghost"
                                         size="sm"
                                         onClick={toggleFullscreen}
-                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all"
+                                        className="h-9 hover:bg-blue-500/10 hover:text-blue-400 text-white transition-all"
                                     >
-                                        <Maximize className="size-4 mr-2" />
-                                        Pantalla Completa
+                                        <Maximize className="size-4 mr-2 text-white" />
+                                        Fullscreen
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Modo pantalla completa (F)</p>
+                                    <p>Fullscreen mode (F)</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
@@ -1044,11 +1057,11 @@ export function FabricPresentationPreview({
                                 disabled={currentSlide === 0}
                                 className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                             >
-                                <SkipBack className="size-5" />
+                                <SkipBack className="size-5 text-white" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Primer slide (Home)</p>
+                            <p>First slide (Home)</p>
                         </TooltipContent>
                     </Tooltip>
 
@@ -1061,11 +1074,11 @@ export function FabricPresentationPreview({
                                 disabled={currentSlide === 0}
                                 className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                             >
-                                <ChevronLeft className="size-6" />
+                                <ChevronLeft className="size-6 text-white" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Anterior (←)</p>
+                            <p>Previous (←)</p>
                         </TooltipContent>
                     </Tooltip>
 
@@ -1108,11 +1121,11 @@ export function FabricPresentationPreview({
                                 disabled={currentSlide === slides.length - 1}
                                 className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                             >
-                                <ChevronRight className="size-6" />
+                                <ChevronRight className="size-6 text-white" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Siguiente (→)</p>
+                            <p>Next (→)</p>
                         </TooltipContent>
                     </Tooltip>
 
@@ -1125,11 +1138,11 @@ export function FabricPresentationPreview({
                                 disabled={currentSlide === slides.length - 1}
                                 className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                             >
-                                <SkipForward className="size-5" />
+                                <SkipForward className="size-5 text-white" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Último slide (End)</p>
+                            <p>Last slide (End)</p>
                         </TooltipContent>
                     </Tooltip>
 
@@ -1145,12 +1158,12 @@ export function FabricPresentationPreview({
                                 onClick={handleExportToPDF}
                                 className="h-10 text-white hover:bg-blue-500/20 hover:text-blue-400 px-4 rounded-xl transition-all"
                             >
-                                <FileDown className="size-4 mr-2" />
+                                <FileDown className="size-4 mr-2 text-white" />
                                 PDF
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Exportar a PDF</p>
+                            <p>Export to PDF</p>
                         </TooltipContent>
                     </Tooltip>
 
@@ -1162,12 +1175,12 @@ export function FabricPresentationPreview({
                                 onClick={handleExportToPPT}
                                 className="h-10 text-white hover:bg-blue-500/20 hover:text-blue-400 px-4 rounded-xl transition-all"
                             >
-                                <FileDown className="size-4 mr-2" />
+                                <FileDown className="size-4 mr-2 text-white" />
                                 PPT
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Exportar a PowerPoint</p>
+                            <p>Export to PowerPoint</p>
                         </TooltipContent>
                     </Tooltip>
                 </div>
@@ -1182,11 +1195,11 @@ export function FabricPresentationPreview({
                                 onClick={toggleFullscreen}
                                 className="absolute top-6 right-6 h-12 w-12 text-white hover:bg-white/20 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl transition-all hover:scale-105"
                             >
-                                <Minimize className="size-5" />
+                                <Minimize className="size-5 text-white" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Salir de pantalla completa (Esc)</p>
+                            <p>Exit fullscreen (Esc)</p>
                         </TooltipContent>
                     </Tooltip>
                 )}
@@ -1218,11 +1231,11 @@ export function FabricPresentationPreview({
                                         disabled={zoomLevel <= 0.25}
                                         className="h-9 w-9 text-white hover:bg-white/20 disabled:opacity-30 rounded-xl transition-all"
                                     >
-                                        <ZoomOut className="size-4" />
+                                        <ZoomOut className="size-4 text-white" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Alejar (Ctrl -)</p>
+                                    <p>Zoom out (Ctrl -)</p>
                                 </TooltipContent>
                             </Tooltip>
                             <span className="text-white text-xs font-bold px-2 min-w-[50px] text-center">
@@ -1237,11 +1250,11 @@ export function FabricPresentationPreview({
                                         disabled={zoomLevel >= 3}
                                         className="h-9 w-9 text-white hover:bg-white/20 disabled:opacity-30 rounded-xl transition-all"
                                     >
-                                        <ZoomIn className="size-4" />
+                                        <ZoomIn className="size-4 text-white" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Acercar (Ctrl +)</p>
+                                    <p>Zoom in (Ctrl +)</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>

@@ -45,15 +45,25 @@ export function FabricPresentationEditor({
 
     // Load slides from initial files
     useEffect(() => {
+        console.log('🟢 FabricPresentationEditor: Cargando slides desde initialFiles');
+        console.log('📂 Paths encontrados:', Object.keys(initialFiles).filter(p => p.startsWith('/slides/')).sort());
+
         const slideFiles = Object.entries(initialFiles)
             .filter(([path]) => path.startsWith('/slides/') && path.endsWith('.json'))
-            .sort((a, b) => a[0].localeCompare(b[0]))
+            .sort((a, b) => {
+                // Extract slide number from path (e.g., /slides/slide-5.json -> 5)
+                const numA = parseInt(a[0].match(/slide-(\d+)\.json$/)?.[1] || '0');
+                const numB = parseInt(b[0].match(/slide-(\d+)\.json$/)?.[1] || '0');
+                return numA - numB; // Sort numerically instead of alphabetically
+            })
             .map(([path, content], index) => {
                 try {
+                    const parsed = JSON.parse(content);
+                    console.log(`  📄 ${path}: ${parsed.objects?.length || 0} objetos`);
                     return {
                         id: `slide-${Date.now()}-${index}`, // Unique ID that persists through reorders
                         path,
-                        data: JSON.parse(content)
+                        data: parsed
                     }
                 } catch (error) {
                     console.error(`Error parsing ${path}:`, error)
@@ -75,6 +85,7 @@ export function FabricPresentationEditor({
             })
         }
 
+        console.log(`✅ ${slideFiles.length} slides cargados en el editor`);
         setSlides(slideFiles)
         setIsLoading(false)
     }, [initialFiles])
