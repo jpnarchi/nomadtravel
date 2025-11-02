@@ -100,6 +100,12 @@ export function FabricPresentationEditor({
         })
 
         setSlides(prevSlides => {
+            // Bounds check to prevent errors
+            if (index < 0 || index >= prevSlides.length) {
+                console.log('⚠️ Index out of bounds, skipping update:', { index, slidesLength: prevSlides.length })
+                return prevSlides
+            }
+
             const updatedSlides = [...prevSlides]
             const currentData = updatedSlides[index].data
 

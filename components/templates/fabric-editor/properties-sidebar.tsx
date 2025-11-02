@@ -96,12 +96,38 @@ export function PropertiesSidebar({
                                         <SelectTrigger className="h-10 bg-zinc-700 border-zinc-600 text-white">
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-800 border-zinc-700">
+                                        <SelectContent className="bg-zinc-800 border-zinc-700 max-h-80">
+                                            {/* Sans-serif fonts */}
                                             <SelectItem value="Arial" className="text-white hover:bg-zinc-700">Arial</SelectItem>
-                                            <SelectItem value="Times New Roman" className="text-white hover:bg-zinc-700">Times New Roman</SelectItem>
-                                            <SelectItem value="Courier New" className="text-white hover:bg-zinc-700">Courier New</SelectItem>
-                                            <SelectItem value="Georgia" className="text-white hover:bg-zinc-700">Georgia</SelectItem>
+                                            <SelectItem value="Helvetica" className="text-white hover:bg-zinc-700">Helvetica</SelectItem>
                                             <SelectItem value="Verdana" className="text-white hover:bg-zinc-700">Verdana</SelectItem>
+                                            <SelectItem value="Tahoma" className="text-white hover:bg-zinc-700">Tahoma</SelectItem>
+                                            <SelectItem value="Trebuchet MS" className="text-white hover:bg-zinc-700">Trebuchet MS</SelectItem>
+                                            <SelectItem value="Lucida Sans Unicode" className="text-white hover:bg-zinc-700">Lucida Sans</SelectItem>
+                                            <SelectItem value="Impact" className="text-white hover:bg-zinc-700">Impact</SelectItem>
+                                            <SelectItem value="Comic Sans MS" className="text-white hover:bg-zinc-700">Comic Sans MS</SelectItem>
+
+                                            {/* Serif fonts */}
+                                            <SelectItem value="Times New Roman" className="text-white hover:bg-zinc-700">Times New Roman</SelectItem>
+                                            <SelectItem value="Georgia" className="text-white hover:bg-zinc-700">Georgia</SelectItem>
+                                            <SelectItem value="Garamond" className="text-white hover:bg-zinc-700">Garamond</SelectItem>
+                                            <SelectItem value="Palatino Linotype" className="text-white hover:bg-zinc-700">Palatino</SelectItem>
+                                            <SelectItem value="Book Antiqua" className="text-white hover:bg-zinc-700">Book Antiqua</SelectItem>
+
+                                            {/* Monospace fonts */}
+                                            <SelectItem value="Courier New" className="text-white hover:bg-zinc-700">Courier New</SelectItem>
+                                            <SelectItem value="Consolas" className="text-white hover:bg-zinc-700">Consolas</SelectItem>
+                                            <SelectItem value="Monaco" className="text-white hover:bg-zinc-700">Monaco</SelectItem>
+                                            <SelectItem value="Lucida Console" className="text-white hover:bg-zinc-700">Lucida Console</SelectItem>
+
+                                            {/* Modern web fonts */}
+                                            <SelectItem value="Roboto" className="text-white hover:bg-zinc-700">Roboto</SelectItem>
+                                            <SelectItem value="Open Sans" className="text-white hover:bg-zinc-700">Open Sans</SelectItem>
+                                            <SelectItem value="Montserrat" className="text-white hover:bg-zinc-700">Montserrat</SelectItem>
+                                            <SelectItem value="Poppins" className="text-white hover:bg-zinc-700">Poppins</SelectItem>
+                                            <SelectItem value="Lato" className="text-white hover:bg-zinc-700">Lato</SelectItem>
+                                            <SelectItem value="Inter" className="text-white hover:bg-zinc-700">Inter</SelectItem>
+                                            <SelectItem value="Raleway" className="text-white hover:bg-zinc-700">Raleway</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
