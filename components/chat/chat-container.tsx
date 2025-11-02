@@ -16,6 +16,7 @@ import { Loader } from '../ai-elements/loader';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { PricingPopup } from '../pricing/pricing-popup';
+import { DragDropOverlay } from '../global/drag-drop-overlay';
 
 export function ChatContainer({
     id,
@@ -327,6 +328,7 @@ export function ChatContainer({
                         </motion.div>
                     </motion.div>
                 </AnimatePresence>
+                <DragDropOverlay files={files} setFiles={setFiles} />
             </div>
         )
     }
@@ -384,6 +386,7 @@ export function ChatContainer({
                         </motion.div>
                     </motion.div>
                 </AnimatePresence>
+                <DragDropOverlay files={files} setFiles={setFiles} />
             </div>
             <PricingPopup
                 isOpen={showPricingPopup}

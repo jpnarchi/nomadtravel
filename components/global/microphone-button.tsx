@@ -42,13 +42,13 @@ export function MicrophoneButton({ isDisabled }: { isDisabled: boolean }) {
             type="button"
             size="icon"
             variant="ghost"
-            className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+            className="h-12 w-12 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
             disabled={isDisabled}
         >
             {listening ? (
-                <MicOff className="w-5 h-5 text-red-500" />
+                <MicOff className="w-6 h-6 text-red-500" />
             ) : (
-                <Mic className="w-5 h-5 text-gray" />
+                <Mic className="w-6 h-6 text-gray" />
             )}
         </Button>
     );

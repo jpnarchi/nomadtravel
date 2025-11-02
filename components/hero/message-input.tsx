@@ -5,6 +5,7 @@ import { Textarea } from "../ui/textarea";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTypingPlaceholder } from "@/hooks/use-typing-placeholder";
+import { DragDropOverlay } from "../global/drag-drop-overlay";
 
 const MAX_FILES = 5;
 
@@ -81,7 +82,7 @@ export function MessageInput({
     return (
         <div className="flex-shrink-0 ">
             <div className="flex justify-center p-4 pb-4 bg-transparent">
-                <form onSubmit={handleSubmit} className="flex flex-row gap-2 relative items-end w-full max-w-lg">
+                <form onSubmit={handleSubmit} className="flex flex-row gap-2 relative items-end w-full max-w-3xl">
                     <div className="relative flex-1 min-h-[44px] p-2 rounded-xl border-2 border-input bg-white dark:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20 transition-colors flex flex-col">
                         {/* Hidden file input */}
                         <input
@@ -129,70 +130,77 @@ export function MessageInput({
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder={placeholder}
-                            className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[28px] max-h-[120px] placeholder:text-muted-foreground rounded-md flex-1 overflow-y-auto"
+                            className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[80px] max-h-[240px] placeholder:text-muted-foreground rounded-lg flex-1 overflow-y-auto !text-lg md:!text-xl"
                             rows={1}
                             disabled={isLoading}
                         />
-                        <div className="flex gap-2 justify-end items-center mt-2 flex-shrink-0">
+                        <div className="flex gap-2 justify-between items-center mt-2 flex-shrink-0">
+                            {/* Left side - Files button */}
+                            <div>
+                                {files.length >= MAX_FILES ? (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="inline-flex">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    className="h-12 px-4 rounded-full text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-2"
+                                                    onClick={handleFileClick}
+                                                    disabled
+                                                >
+                                                    <ClipIcon/>
+                                                    <span>Files</span>
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            Máximo {MAX_FILES} archivos
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="h-12 px-4 rounded-full text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-2"
+                                        onClick={handleFileClick}
+                                        disabled={isLoading}
+                                    >
+                                        <ClipIcon />
+                                        <span>Files</span>
+                                    </Button>
+                                )}
+                            </div>
 
-                            <MicrophoneButton isDisabled={isLoading} />
+                            {/* Right side - Submit/Loader button */}
+                            <div>
+                                {/* <MicrophoneButton isDisabled={isLoading} /> */}
 
-                            {files.length >= MAX_FILES ? (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="inline-flex">
-                                            <Button
-                                                type="button"
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
-                                                onClick={handleFileClick}
-                                                disabled
-                                            >
-                                                <ClipIcon />
-                                            </Button>
-                                        </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                        Máximo {MAX_FILES} archivos
-                                    </TooltipContent>
-                                </Tooltip>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
-                                    onClick={handleFileClick}
-                                    disabled={isLoading}
-                                >
-                                    <ClipIcon />
-                                </Button>
-                            )}
-
-                            {isLoading ? (
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={true}
-                                >
-                                    <LoaderIcon />
-                                </Button>
-                            ) : (
-                                <Button
-                                    type="submit"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={(!input.trim() && files.length === 0) || isLoading}
-                                >
-                                    <ArrowUpIcon />
-                                </Button>
-                            )}
+                                {isLoading ? (
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        className="h-12 w-12 rounded-full cursor-pointer"
+                                        disabled={true}
+                                    >
+                                        <LoaderIcon />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        size="icon"
+                                        className="h-12 w-12 rounded-full cursor-pointer"
+                                        disabled={(!input.trim() && files.length === 0) || isLoading}
+                                    >
+                                        <ArrowUpIcon />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </form>
             </div>
+
+            <DragDropOverlay files={files} setFiles={setFiles} />
         </div>
     )
 }

@@ -35,6 +35,7 @@ export function Chat({
                     id={id}
                     initialMessages={initialMessages}
                 />
+                
             </SidebarInset>
         </SidebarProvider>
     )
