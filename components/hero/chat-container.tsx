@@ -154,10 +154,16 @@ export function ChatContainer() {
                                 transition: { duration: 0.2, ease: "easeInOut" }
                             }}
                         >
-                            <span>Your Presentation</span>
+                            <span>I Love</span>
                             <span className="flex items-center gap-2 sm:gap-3">
-                                with <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 inline-block" /> AI
+                                 <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 inline-block" /> Presentations
                             </span>
+                        </motion.div>
+                        <motion.div>
+                            <p className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 text-center"
+                            >
+                                Create amazing presentations by chatting with AI
+                            </p>
                         </motion.div>
                         <motion.div
                             className="w-full bg-transparent"
