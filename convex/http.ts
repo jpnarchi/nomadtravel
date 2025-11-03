@@ -173,7 +173,8 @@ http.route({
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
         const result = streamText({
-            model: openrouter('anthropic/claude-sonnet-4.5'),
+            model: openrouter('x-ai/grok-4-fast'),
+            // model: openrouter('anthropic/claude-sonnet-4.5'),
             // model: provider('claude-sonnet-4'),
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),

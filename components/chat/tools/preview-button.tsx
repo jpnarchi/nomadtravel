@@ -27,9 +27,8 @@ export function PreviewButton({
     const router = useRouter();
     const restoreVersion = useMutation(api.messages.restoreVersion);
 
-    // CRITICAL: Always redirect to currentVersion (latest), not the specific version
-    // This ensures users edit the latest version that the AI will use
-    const versionToView = currentVersion ?? version;
+    // Show the SPECIFIC version that the user clicked on
+    const versionToView = version;
 
     return (
         <div className="flex flex-col gap-2 w-full">
@@ -51,7 +50,7 @@ export function PreviewButton({
                 {/* Action buttons */}
                 <div className="flex items-center gap-2">
                     {/* Restore button - only show if not the current version */}
-                    {currentVersion !== undefined && currentVersion !== null && version !== (currentVersion - 1) && (
+                    {currentVersion !== undefined && currentVersion !== null && version !== currentVersion && (
                         <Button
                             size="icon"
                             variant="ghost"
