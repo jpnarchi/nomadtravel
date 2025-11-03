@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MessageInput } from "./message-input"
 import { useAuth } from "@clerk/nextjs";
+import { CTASection } from "./cta-section"
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -232,6 +233,7 @@ export function ChatContainer() {
 
                 {/* How It Works Section - Below hero, requires scroll */}
                 <HowSection />
+                <CTASection/>
 
                 {/* Footer */}
                 <Footer />
