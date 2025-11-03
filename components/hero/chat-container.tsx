@@ -12,7 +12,7 @@ import { Footer } from "../global/footer";
 import { createPromptWithAttachments } from "@/lib/utils";
 import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
-
+import { HowSection } from "./how-section"
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
@@ -128,69 +128,118 @@ export function ChatContainer() {
     return (
         <>
             <div
-                className="flex flex-col h-[calc(100dvh-4rem)] bg-background"
+                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-background"
                 style={{
                     backgroundImage: "url('/img/background2.svg')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat'
+                    backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed'
                 }}
             >
-                <AnimatePresence mode="wait">
+                {/* Hero Section - Full viewport height */}
+                <div className="flex flex-col min-h-[calc(100dvh-4rem)] w-full relative">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key="initial-state"
+                            className="flex-1 flex flex-col items-center justify-center gap-4 pb-8 px-4"
+                            initial={{ opacity: 1 }}
+                            exit={{
+                                opacity: 0,
+                                y: -20,
+                                transition: { duration: 0.3, ease: "easeInOut" }
+                            }}
+                        >
+                            <motion.div
+                                className="text-black text-3xl sm:text-4xl md:text-5xl font-inter font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
+                                exit={{
+                                    y: -30,
+                                    opacity: 0,
+                                    transition: { duration: 0.2, ease: "easeInOut" }
+                                }}
+                            >
+                                <span>I Love</span>
+                                <span className="flex items-center gap-2 sm:gap-3">
+                                     <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 inline-block" /> Presentations
+                                </span>
+                            </motion.div>
+                            <motion.div>
+                                <p className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
+                                >
+                                    Create amazing presentations by chatting with AI
+                                </p>
+                            </motion.div>
+                            <motion.div
+                                className="w-full bg-transparent max-w-4xl mx-auto"
+                                exit={{
+                                    y: 20,
+                                    opacity: 0,
+                                    transition: { duration: 0.3, delay: 0.1, ease: "easeInOut" }
+                                }}
+                            >
+                                <MessageInput
+                                    input={input}
+                                    setInput={setInput}
+                                    handleSubmit={handleSubmit}
+                                    isLoading={isLoading}
+                                    files={files}
+                                    setFiles={setFiles}
+                                    fileInputRef={fileInputRef}
+                                />
+                            </motion.div>
+                        </motion.div>
+                    </AnimatePresence>
+
+                    {/* Scroll Indicator */}
                     <motion.div
-                        key="initial-state"
-                        className="flex-1 flex flex-col items-center justify-center gap-4 pb-8"
-                        initial={{ opacity: 1 }}
-                        exit={{
-                            opacity: 0,
-                            y: -20,
-                            transition: { duration: 0.3, ease: "easeInOut" }
+                        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
+                        initial={{ opacity: 0 }}
+                        animate={{
+                            opacity: 1,
+                            y: [0, 10, 0]
+                        }}
+                        transition={{
+                            opacity: { delay: 1, duration: 0.5 },
+                            y: {
+                                repeat: Infinity,
+                                duration: 1.5,
+                                ease: "easeInOut"
+                            }
+                        }}
+                        onClick={() => {
+                            window.scrollTo({
+                                top: window.innerHeight - 64,
+                                behavior: 'smooth'
+                            });
                         }}
                     >
-                        <motion.div
-                            className="text-black text-3xl sm:text-4xl md:text-5xl font-inter font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 text-center"
-                            exit={{
-                                y: -30,
-                                opacity: 0,
-                                transition: { duration: 0.2, ease: "easeInOut" }
-                            }}
+                        <span className="text-black text-sm font-medium">Scroll to explore</span>
+                        <svg
+                            className="w-6 h-6 text-black"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                         >
-                            <span>I Love</span>
-                            <span className="flex items-center gap-2 sm:gap-3">
-                                 <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-12 inline-block" /> Presentations
-                            </span>
-                        </motion.div>
-                        <motion.div>
-                            <p className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 text-center"
-                            >
-                                Create amazing presentations by chatting with AI
-                            </p>
-                        </motion.div>
-                        <motion.div
-                            className="w-full bg-transparent"
-                            exit={{
-                                y: 20,
-                                opacity: 0,
-                                transition: { duration: 0.3, delay: 0.1, ease: "easeInOut" }
-                            }}
-                        >
-                            <MessageInput
-                                input={input}
-                                setInput={setInput}
-                                handleSubmit={handleSubmit}
-                                isLoading={isLoading}
-                                files={files}
-                                setFiles={setFiles}
-                                fileInputRef={fileInputRef}
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
                             />
-                        </motion.div>
+                        </svg>
                     </motion.div>
+                </div>
 
-                    
-                </AnimatePresence>
+                {/* How It Works Section - Below hero, requires scroll */}
+                <HowSection />
+
+                {/* Footer */}
                 <Footer />
+
+                {/* Drag Drop Overlay */}
                 <DragDropOverlay files={files} setFiles={setFiles} />
             </div>
+
             <PricingPopup
                 isOpen={showPricingPopup}
                 onOpenChange={setShowPricingPopup}
