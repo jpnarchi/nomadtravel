@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Roboto, Open_Sans, Montserrat, Poppins, Lato, Raleway } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -20,6 +20,39 @@ const geistMono = Geist_Mono({
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const roboto = Roboto({
+  variable: "--font-roboto",
+  weight: ['100', '300', '400', '500', '700', '900'],
+  subsets: ["latin"],
+});
+
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
+  subsets: ["latin"],
+});
+
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin"],
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  weight: ['100', '300', '400', '500', '700', '900'],
+  subsets: ["latin"],
+});
+
+const lato = Lato({
+  variable: "--font-lato",
+  weight: ['100', '300', '400', '700', '900'],
+  subsets: ["latin"],
+});
+
+const raleway = Raleway({
+  variable: "--font-raleway",
   subsets: ["latin"],
 });
 
@@ -64,7 +97,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${montserrat.variable} ${poppins.variable} ${lato.variable} ${raleway.variable} antialiased`}
       >
         <ClerkProvider
           appearance={{
