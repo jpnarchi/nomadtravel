@@ -14,6 +14,7 @@ import { createPromptWithAttachments } from "@/lib/utils";
 import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { HowSection } from "./how-section"
+import { ProjectsPreviewHero } from "../preview/projects-preview-hero"
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
@@ -192,6 +193,7 @@ export function ChatContainer() {
                     </AnimatePresence>
 
                     {/* Scroll Indicator */}
+                    {!isSignedIn && ( 
                     <motion.div
                         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
                         initial={{ opacity: 0 }}
@@ -228,12 +230,18 @@ export function ChatContainer() {
                                 d="M19 9l-7 7-7-7"
                             />
                         </svg>
-                    </motion.div>
+                    </motion.div>)}
                 </div>
 
                 {/* How It Works Section - Below hero, requires scroll */}
-                <HowSection />
-                <CTASection/>
+                {isSignedIn && <ProjectsPreviewHero />}
+                
+                {!isSignedIn && <HowSection />}
+
+                {/* Recent Presentations Panel - Only shown when user is signed in */}
+
+
+                {!isSignedIn && <CTASection/>}
 
                 {/* Footer */}
                 <Footer />

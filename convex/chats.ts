@@ -798,3 +798,48 @@ export const getChatLimitInfo = query({
         }
     },
 });
+
+// Query to get ALL presentations with their first slides
+export const getAllPresentationsWithFirstSlide = query({
+    args: {},
+    handler: async (ctx) => {
+        try {
+            const user = await getCurrentUser(ctx);
+
+            // Get ALL chats ordered by creation time (desc)
+            const allChats = await ctx.db
+                .query("chats")
+                .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+                .order("desc")
+                .collect();
+
+            // For each chat, get the first slide (slide-1.json)
+            const presentations = await Promise.all(
+                allChats.map(async (chat) => {
+                    // Get the first slide file
+                    const files = await ctx.db
+                        .query("files")
+                        .withIndex("by_chat_id", (q) => q.eq("chatId", chat._id))
+                        .collect();
+
+                    // Find slide-1.json
+                    const firstSlide = files.find((file) =>
+                        file.path.includes('/slides/slide-1.json')
+                    );
+
+                    return {
+                        chatId: chat._id,
+                        title: chat.title || "Untitled",
+                        firstSlideContent: firstSlide?.content || null,
+                        createdAt: chat._creationTime,
+                    };
+                })
+            );
+
+            return presentations;
+        } catch (error) {
+            // Return empty array for unauthenticated users or errors
+            return [];
+        }
+    },
+});
