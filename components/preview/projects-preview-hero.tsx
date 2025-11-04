@@ -294,13 +294,13 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             onClick={handleClick}
-            className="group relative  rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10"
+            className="group relative rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-[0.98]"
         >
             {/* Canvas Container */}
             <div className="relative aspect-video bg-zinc-900/50 flex items-center justify-center overflow-hidden">
                 {!isLoaded && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
                     </div>
                 )}
                 <canvas
@@ -313,30 +313,30 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }
                 />
 
                 {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <div className="flex items-center gap-2 text-white font-medium">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-white font-medium text-sm sm:text-base">
                         <span>Open presentation...</span>
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </div>
             </div>
 
             {/* Info Section */}
-            <div className="p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                    <Avatar className="w-10 h-10 shrink-0">
+            <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                <div className="flex items-start gap-2 sm:gap-3">
+                    <Avatar className="w-8 h-8 sm:w-10 sm:h-10 shrink-0">
                         <AvatarImage src={userInfo?.pictureUrl} alt={userInfo?.name || 'User'} />
-                        <AvatarFallback className="bg-blue-500 text-white font-semibold text-sm">
+                        <AvatarFallback className="bg-blue-500 text-white font-semibold text-xs sm:text-sm">
                             {userInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
                         </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0  text-black">
-                        <h3 className="text-base line-clamp-1 group-hover:text-blue-400 transition-colors">
+                    <div className="flex-1 min-w-0 text-black">
+                        <h3 className="text-sm sm:text-base line-clamp-1 group-hover:text-blue-400 transition-colors font-medium">
                             {title}
                         </h3>
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{formatDate(createdAt)}</span>
+                        <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-zinc-400 mt-0.5 sm:mt-1">
+                            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                            <span className="line-clamp-1">{formatDate(createdAt)}</span>
                         </div>
                     </div>
                 </div>
@@ -373,10 +373,10 @@ export function ProjectsPreviewHero() {
 
     if (!allPresentations) {
         return (
-            <div className="w-full py-16 px-4">
+            <div className="w-full py-8 sm:py-16 px-3 sm:px-4">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex items-center justify-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                    <div className="flex items-center justify-center py-8 sm:py-12">
+                        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-500"></div>
                     </div>
                 </div>
             </div>
@@ -385,14 +385,14 @@ export function ProjectsPreviewHero() {
 
     if (allPresentations.length === 0) {
         return (
-            <div className="w-full py-16 px-4">
+            <div className="w-full py-8 sm:py-16 px-3 sm:px-4">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center py-12">
-                        <Presentation className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold text-zinc-700 mb-2">
+                    <div className="text-center py-8 sm:py-12">
+                        <Presentation className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-600 mx-auto mb-3 sm:mb-4" />
+                        <h3 className="text-lg sm:text-xl font-semibold text-zinc-700 mb-2 px-4">
                             No hay presentaciones aún
                         </h3>
-                        <p className="text-zinc-500">
+                        <p className="text-sm sm:text-base text-zinc-500 px-4">
                             Crea tu primera presentación para verla aquí
                         </p>
                     </div>
@@ -402,56 +402,58 @@ export function ProjectsPreviewHero() {
     }
 
     return (
-        <div className="w-full px-4 -mt-32">
-            <div className="max-w-7xl mx-auto bg-white p-8 rounded-2xl">
+        <div className="w-full px-3 sm:px-4 -mt-32 sm:-mt-32">
+            <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="mb-12"
+                    className="mb-6 sm:mb-8 md:mb-12"
                 >
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center font-semibold">
+                    <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
+                        <div className="text-black text-lg sm:text-xl md:text-2xl flex flex-wrap items-center gap-2 font-semibold">
                             <span>Your last</span>
-                                <span className="flex items-center gap-2 sm:gap-3">
-                                     <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-8 inline-block" /> Presentations
-                                </span>
+                            <span className="flex items-center gap-2">
+                                <img src="/logo.svg" alt="Logo" className="h-6 sm:h-8 inline-block" /> Presentations
+                            </span>
                         </div>
                         <p className="flex text-sm text-black/70 items-center cursor-pointer hover:text-blue-500 transition-colors">
-                            View all
-                            <ChevronRight className='h-5 w-5 ml-1'/>
+                            <span className="hidden sm:inline">View all</span>
+                            <ChevronRight className='h-5 w-5 sm:ml-1'/>
                         </p>
                     </div>
 
                     {/* Search and Sort Controls */}
-                    <div className="flex items-center gap-4 mb-6">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                         {/* Search Input */}
-                        <div className="relative flex-1 max-w-md">
+                        <div className="relative flex-1 w-full sm:max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400" />
                             <Input
                                 type="text"
                                 placeholder="Search presentations..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 bg-zinc-50 border-zinc-200 focus:border-blue-500 focus:ring-blue-500"
+                                className="pl-10 bg-zinc-50 border-zinc-200 focus:border-blue-500 focus:ring-blue-500 w-full"
                             />
                         </div>
 
                         {/* Sort Dropdown - Custom Implementation */}
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                             <Button
                                 variant="outline"
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                                className="gap-2 bg-zinc-50 border-zinc-200 hover:bg-zinc-100 shrink-0"
+                                className="gap-2 bg-zinc-50 border-zinc-200 hover:bg-zinc-100 w-full sm:w-auto justify-between sm:justify-start"
                             >
-                                <ArrowUpDown className="h-4 w-4" />
-                                <span className="hidden sm:inline">Sort by:</span>
-                                <span className="font-semibold">
-                                    {sortBy === 'lastEdited' && 'Last edited'}
-                                    {sortBy === 'dateCreated' && 'Date created'}
-                                    {sortBy === 'alphabetical' && 'Alphabetical'}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <ArrowUpDown className="h-4 w-4" />
+                                    <span className="hidden sm:inline">Sort by:</span>
+                                    <span className="font-semibold">
+                                        {sortBy === 'lastEdited' && 'Last edited'}
+                                        {sortBy === 'dateCreated' && 'Date created'}
+                                        {sortBy === 'alphabetical' && 'Alphabetical'}
+                                    </span>
+                                </div>
                             </Button>
 
                             <AnimatePresence>
@@ -469,7 +471,7 @@ export function ProjectsPreviewHero() {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ duration: 0.15 }}
-                                            className="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-lg shadow-lg z-50 overflow-hidden"
+                                            className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-full sm:w-48 bg-white border border-zinc-200 rounded-lg shadow-lg z-50 overflow-hidden"
                                         >
                                             <div className="py-1">
                                                 <button
@@ -520,12 +522,12 @@ export function ProjectsPreviewHero() {
 
                 {/* Grid */}
                 {filteredAndSortedPresentations.length === 0 ? (
-                    <div className="text-center py-12">
-                        <Search className="w-12 h-12 text-zinc-400 mx-auto mb-3" />
-                        <p className="text-zinc-500 text-lg">No presentations found matching "{searchQuery}"</p>
+                    <div className="text-center py-8 sm:py-12">
+                        <Search className="w-10 h-10 sm:w-12 sm:h-12 text-zinc-400 mx-auto mb-3" />
+                        <p className="text-zinc-500 text-base sm:text-lg px-4">No presentations found matching "{searchQuery}"</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {filteredAndSortedPresentations.map((presentation, index) => (
                             <SlideCanvas
                                 key={presentation.chatId}

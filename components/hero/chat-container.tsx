@@ -168,7 +168,7 @@ export function ChatContainer() {
                             <motion.div>
                                 <p className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
                                 >
-                                    Create amazing presentations by chatting with AI
+                                    Create amazing presentations <br className="sm:hidden" />by chatting with AI
                                 </p>
                             </motion.div>
                             <motion.div
