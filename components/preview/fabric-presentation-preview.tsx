@@ -118,13 +118,29 @@ export function FabricPresentationPreview({
         console.log('🎨 Inicializando Fabric.js canvas con elemento:', canvasElement)
 
         try {
-            // Initialize fabric canvas with original dimensions
+            // Calculate scale to fit container (matching editor approach)
+            const container = containerRef.current
+            const containerWidth = container.clientWidth - 32
+            const containerHeight = container.clientHeight - 112
+
+            const scaleX = containerWidth / 1920
+            const scaleY = containerHeight / 1080
+            const baseScale = Math.min(scaleX, scaleY)
+
+            const displayWidth = 1920 * baseScale
+            const displayHeight = 1080 * baseScale
+
+            // Initialize canvas with scaled dimensions (matching editor)
             const canvas = new fabric.Canvas(canvasElement, {
-                width: 1920,
-                height: 1080,
+                width: displayWidth,
+                height: displayHeight,
                 backgroundColor: '#1a1a1a',
                 selection: false,
             })
+
+            // Apply viewport transform (matching editor)
+            canvas.setZoom(baseScale)
+            canvas.viewportTransform = [baseScale, 0, 0, baseScale, 0, 0]
 
             fabricCanvasRef.current = canvas
             setCanvasReady(true)
@@ -221,7 +237,15 @@ export function FabricPresentationPreview({
                                     fill: obj.fill || '#000000',
                                     fontFamily: obj.fontFamily || 'Arial',
                                     fontWeight: obj.fontWeight || 'normal',
+                                    fontStyle: obj.fontStyle || 'normal',
                                     textAlign: obj.textAlign || 'left',
+                                    lineHeight: obj.lineHeight,
+                                    charSpacing: obj.charSpacing,
+                                    originX: obj.originX,
+                                    originY: obj.originY,
+                                    angle: obj.angle || 0,
+                                    scaleX: obj.scaleX || 1,
+                                    scaleY: obj.scaleY || 1,
                                 })
                             } else {
                                 fabricObj = new fabric.IText(obj.text || 'Text', {
@@ -231,15 +255,17 @@ export function FabricPresentationPreview({
                                     fill: obj.fill || '#000000',
                                     fontFamily: obj.fontFamily || 'Arial',
                                     fontWeight: obj.fontWeight || 'normal',
+                                    fontStyle: obj.fontStyle || 'normal',
                                     textAlign: obj.textAlign || 'left',
+                                    lineHeight: obj.lineHeight,
+                                    charSpacing: obj.charSpacing,
+                                    originX: obj.originX,
+                                    originY: obj.originY,
+                                    angle: obj.angle || 0,
+                                    scaleX: obj.scaleX || 1,
+                                    scaleY: obj.scaleY || 1,
                                 })
                             }
-                            // Apply additional properties
-                            if (obj.originX) fabricObj.set('originX', obj.originX)
-                            if (obj.originY) fabricObj.set('originY', obj.originY)
-                            if (obj.angle !== undefined) fabricObj.set('angle', obj.angle)
-                            if (obj.scaleX !== undefined) fabricObj.set('scaleX', obj.scaleX)
-                            if (obj.scaleY !== undefined) fabricObj.set('scaleY', obj.scaleY)
                             break
                         case 'rect':
                         case 'rectangle':
@@ -354,42 +380,40 @@ export function FabricPresentationPreview({
         loadSlideObjects()
     }, [currentSlide, slides, canvasReady])
 
-    // Apply zoom and scale to fit container
+    // Apply zoom changes using viewport transform
     useEffect(() => {
         if (!canvasElement || !containerRef.current || !fabricCanvasRef.current) return
 
         const container = containerRef.current
-        // Get actual available space, accounting for padding (p-4 = 16px, pb-24 = 96px)
-        const containerWidth = container.clientWidth - 32 // 16px left + 16px right
-        const containerHeight = container.clientHeight - 112 // 16px top + 96px bottom
+        const containerWidth = container.clientWidth - 32
+        const containerHeight = container.clientHeight - 112
 
-        // Calculate scale to fit 1920x1080 in container (this ensures slides fill the container)
         const scaleX = containerWidth / 1920
         const scaleY = containerHeight / 1080
-        const baseFitScale = Math.min(scaleX, scaleY) // Scale to fit container perfectly
+        const baseScale = Math.min(scaleX, scaleY)
 
-        // Apply zoom level on top of the base fit scale
-        const finalScale = baseFitScale * zoomLevel
+        // Apply zoom level on top of base scale
+        const finalScale = baseScale * zoomLevel
 
-        // Calculate final display dimensions
         const displayWidth = 1920 * finalScale
         const displayHeight = 1080 * finalScale
 
-        // Apply CSS scaling to make canvas fit the desired size
-        canvasElement.style.width = `${displayWidth}px`
-        canvasElement.style.height = `${displayHeight}px`
+        // Update canvas dimensions and viewport transform
+        fabricCanvasRef.current.setWidth(displayWidth)
+        fabricCanvasRef.current.setHeight(displayHeight)
+        fabricCanvasRef.current.setZoom(finalScale)
+        fabricCanvasRef.current.viewportTransform = [finalScale, 0, 0, finalScale, 0, 0]
 
         console.log('🔍 Zoom aplicado:', {
             containerWidth,
             containerHeight,
-            baseFitScale,
+            baseScale,
             zoomLevel,
             finalScale,
             displayWidth,
             displayHeight
         })
 
-        // Re-render canvas to reflect any changes
         fabricCanvasRef.current.renderAll()
     }, [canvasElement, zoomLevel, showThumbnails, isFullscreen])
 
@@ -399,22 +423,22 @@ export function FabricPresentationPreview({
 
         const handleResize = () => {
             const container = containerRef.current
-            if (!container || !canvasElement) return
+            if (!container || !fabricCanvasRef.current) return
 
-            // Get actual available space, accounting for padding (p-4 = 16px, pb-24 = 96px)
             const containerWidth = container.clientWidth - 32
             const containerHeight = container.clientHeight - 112
             const scaleX = containerWidth / 1920
             const scaleY = containerHeight / 1080
-            const baseFitScale = Math.min(scaleX, scaleY)
-            const finalScale = baseFitScale * zoomLevel
+            const baseScale = Math.min(scaleX, scaleY)
+            const finalScale = baseScale * zoomLevel
             const displayWidth = 1920 * finalScale
             const displayHeight = 1080 * finalScale
 
-            canvasElement.style.width = `${displayWidth}px`
-            canvasElement.style.height = `${displayHeight}px`
-
-            fabricCanvasRef.current?.renderAll()
+            fabricCanvasRef.current.setWidth(displayWidth)
+            fabricCanvasRef.current.setHeight(displayHeight)
+            fabricCanvasRef.current.setZoom(finalScale)
+            fabricCanvasRef.current.viewportTransform = [finalScale, 0, 0, finalScale, 0, 0]
+            fabricCanvasRef.current.renderAll()
         }
 
         window.addEventListener('resize', handleResize)

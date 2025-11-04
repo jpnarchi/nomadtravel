@@ -11,18 +11,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import * as fabric from 'fabric'
 import { useRouter } from 'next/navigation'
-import { Presentation, Clock, ArrowRight, ChevronRight, Search, ArrowUpDown } from 'lucide-react'
-import { motion } from 'framer-motion'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Presentation, Clock, ArrowRight, ChevronRight, Search, ArrowUpDown, Check } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Doc } from "@/convex/_generated/dataModel"
 
 interface SlideCanvasProps {
     slideContent: string | null
@@ -30,13 +26,26 @@ interface SlideCanvasProps {
     chatId: Id<"chats">
     createdAt: number
     index: number
+    userInfo: Doc<"users"> | null
 }
 
-function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCanvasProps) {
+
+function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }: SlideCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const [isLoaded, setIsLoaded] = useState(false)
     const router = useRouter()
+
+    // Debug: Log user info to check pictureUrl
+    useEffect(() => {
+        if (userInfo) {
+            console.log('User Info:', {
+                name: userInfo.name,
+                pictureUrl: userInfo.pictureUrl,
+                email: userInfo.email
+            })
+        }
+    }, [userInfo])
 
     useEffect(() => {
         if (!canvasRef.current || !slideContent) return
@@ -50,13 +59,22 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCan
             return
         }
 
-        // Initialize canvas
+        // Match editor's approach: scale factor for 384x216 preview
+        const scale = 384 / 1920 // 0.2
+        const displayWidth = 1920 * scale  // 384
+        const displayHeight = 1080 * scale // 216
+
+        // Initialize canvas with scaled dimensions (same as editor)
         const canvas = new fabric.Canvas(canvasRef.current, {
-            width: 384, // 24rem in pixels (scaled down from 1920)
-            height: 216, // 13.5rem in pixels (scaled down from 1080, maintaining 16:9)
+            width: displayWidth,
+            height: displayHeight,
             backgroundColor: slideData.background || '#1a1a1a',
             selection: false,
         })
+
+        // Apply viewport transform (same as editor)
+        canvas.setZoom(scale)
+        canvas.viewportTransform = [scale, 0, 0, scale, 0, 0]
 
         fabricCanvasRef.current = canvas
 
@@ -81,101 +99,110 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCan
                     const objType = (obj.type || '').toLowerCase()
                     let fabricObj: fabric.FabricObject | null = null
 
-                    // Scale factor from 1920x1080 to 384x216
-                    const scale = 384 / 1920
-
                     switch (objType) {
                         case 'text':
                         case 'i-text':
                         case 'itext':
                         case 'textbox':
+                            // Use original coordinates - viewport transform will scale them
                             if (obj.width) {
                                 fabricObj = new fabric.Textbox(obj.text || 'Text', {
-                                    left: (obj.left || 0) * scale,
-                                    top: (obj.top || 0) * scale,
-                                    width: (obj.width || 100) * scale,
-                                    fontSize: (obj.fontSize || 40) * scale,
+                                    left: obj.left || 0,
+                                    top: obj.top || 0,
+                                    width: obj.width || 100,
+                                    fontSize: obj.fontSize || 40,
                                     fill: obj.fill || '#000000',
                                     fontFamily: obj.fontFamily || 'Arial',
                                     fontWeight: obj.fontWeight || 'normal',
+                                    fontStyle: obj.fontStyle || 'normal',
                                     textAlign: obj.textAlign || 'left',
+                                    lineHeight: obj.lineHeight,
+                                    charSpacing: obj.charSpacing,
+                                    originX: obj.originX,
+                                    originY: obj.originY,
+                                    angle: obj.angle || 0,
+                                    scaleX: obj.scaleX || 1,
+                                    scaleY: obj.scaleY || 1,
                                 })
                             } else {
                                 fabricObj = new fabric.IText(obj.text || 'Text', {
-                                    left: (obj.left || 0) * scale,
-                                    top: (obj.top || 0) * scale,
-                                    fontSize: (obj.fontSize || 40) * scale,
+                                    left: obj.left || 0,
+                                    top: obj.top || 0,
+                                    fontSize: obj.fontSize || 40,
                                     fill: obj.fill || '#000000',
                                     fontFamily: obj.fontFamily || 'Arial',
                                     fontWeight: obj.fontWeight || 'normal',
+                                    fontStyle: obj.fontStyle || 'normal',
                                     textAlign: obj.textAlign || 'left',
+                                    lineHeight: obj.lineHeight,
+                                    charSpacing: obj.charSpacing,
+                                    originX: obj.originX,
+                                    originY: obj.originY,
+                                    angle: obj.angle || 0,
+                                    scaleX: obj.scaleX || 1,
+                                    scaleY: obj.scaleY || 1,
                                 })
                             }
-                            if (obj.originX) fabricObj.set('originX', obj.originX)
-                            if (obj.originY) fabricObj.set('originY', obj.originY)
-                            if (obj.angle !== undefined) fabricObj.set('angle', obj.angle)
-                            if (obj.scaleX !== undefined) fabricObj.set('scaleX', obj.scaleX * scale)
-                            if (obj.scaleY !== undefined) fabricObj.set('scaleY', obj.scaleY * scale)
                             break
 
                         case 'rect':
                         case 'rectangle':
                             fabricObj = new fabric.Rect({
-                                left: (obj.left || 0) * scale,
-                                top: (obj.top || 0) * scale,
-                                width: (obj.width || 100) * scale,
-                                height: (obj.height || 100) * scale,
+                                left: obj.left || 0,
+                                top: obj.top || 0,
+                                width: obj.width || 100,
+                                height: obj.height || 100,
                                 fill: obj.fill || '#000000',
                                 stroke: obj.stroke,
-                                strokeWidth: (obj.strokeWidth || 0) * scale,
-                                rx: (obj.rx || 0) * scale,
-                                ry: (obj.ry || 0) * scale,
+                                strokeWidth: obj.strokeWidth || 0,
+                                rx: obj.rx || 0,
+                                ry: obj.ry || 0,
                                 angle: obj.angle || 0,
-                                scaleX: (obj.scaleX || 1) * scale,
-                                scaleY: (obj.scaleY || 1) * scale,
+                                scaleX: obj.scaleX || 1,
+                                scaleY: obj.scaleY || 1,
                             })
                             break
 
                         case 'circle':
                             fabricObj = new fabric.Circle({
-                                left: (obj.left || 0) * scale,
-                                top: (obj.top || 0) * scale,
-                                radius: (obj.radius || 50) * scale,
+                                left: obj.left || 0,
+                                top: obj.top || 0,
+                                radius: obj.radius || 50,
                                 fill: obj.fill || '#000000',
                                 stroke: obj.stroke,
-                                strokeWidth: (obj.strokeWidth || 0) * scale,
+                                strokeWidth: obj.strokeWidth || 0,
                                 angle: obj.angle || 0,
-                                scaleX: (obj.scaleX || 1) * scale,
-                                scaleY: (obj.scaleY || 1) * scale,
+                                scaleX: obj.scaleX || 1,
+                                scaleY: obj.scaleY || 1,
                             })
                             break
 
                         case 'triangle':
                             fabricObj = new fabric.Triangle({
-                                left: (obj.left || 0) * scale,
-                                top: (obj.top || 0) * scale,
-                                width: (obj.width || 100) * scale,
-                                height: (obj.height || 100) * scale,
+                                left: obj.left || 0,
+                                top: obj.top || 0,
+                                width: obj.width || 100,
+                                height: obj.height || 100,
                                 fill: obj.fill || '#000000',
                                 stroke: obj.stroke,
-                                strokeWidth: (obj.strokeWidth || 0) * scale,
+                                strokeWidth: obj.strokeWidth || 0,
                                 angle: obj.angle || 0,
-                                scaleX: (obj.scaleX || 1) * scale,
-                                scaleY: (obj.scaleY || 1) * scale,
+                                scaleX: obj.scaleX || 1,
+                                scaleY: obj.scaleY || 1,
                             })
                             break
 
                         case 'line':
                             fabricObj = new fabric.Line(
                                 [
-                                    (obj.x1 || 0) * scale,
-                                    (obj.y1 || 0) * scale,
-                                    (obj.x2 || 100) * scale,
-                                    (obj.y2 || 100) * scale
+                                    obj.x1 || 0,
+                                    obj.y1 || 0,
+                                    obj.x2 || 100,
+                                    obj.y2 || 100
                                 ],
                                 {
                                     stroke: obj.stroke || '#000000',
-                                    strokeWidth: (obj.strokeWidth || 1) * scale,
+                                    strokeWidth: obj.strokeWidth || 1,
                                 }
                             )
                             break
@@ -184,12 +211,15 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCan
                             if (obj.src) {
                                 try {
                                     const img = await fabric.FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' })
-                                    if (obj.left !== undefined) img.set('left', obj.left * scale)
-                                    if (obj.top !== undefined) img.set('top', obj.top * scale)
-                                    if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX * scale)
-                                    if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY * scale)
-                                    if (obj.angle !== undefined) img.set('angle', obj.angle)
-                                    img.set({ selectable: false, evented: false })
+                                    img.set({
+                                        left: obj.left,
+                                        top: obj.top,
+                                        scaleX: obj.scaleX,
+                                        scaleY: obj.scaleY,
+                                        angle: obj.angle,
+                                        selectable: false,
+                                        evented: false,
+                                    })
                                     fabricObj = img
                                 } catch (err) {
                                     console.error('Error loading image:', err)
@@ -244,14 +274,19 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCan
         const date = new Date(timestamp)
         const now = new Date()
         const diffMs = now.getTime() - date.getTime()
+        const diffMinutes = Math.floor(diffMs / (1000 * 60))
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
 
-        if (diffDays === 0) return 'Hoy'
-        if (diffDays === 1) return 'Ayer'
-        if (diffDays < 7) return `Hace ${diffDays} días`
-        if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`
-        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+        if (diffMinutes < 1) return 'Last edited just now'
+        if (diffMinutes < 60) return `Last edited ${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+        if (diffHours < 24) return `Last edited ${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+        if (diffDays === 1) return 'Last edited yesterday'
+        if (diffDays < 7) return `Last edited ${diffDays} days ago`
+        if (diffDays < 30) return `Last edited ${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) === 1 ? '' : 's'} ago`
+        return `Last edited on ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
     }
+
 
     return (
         <motion.div
@@ -259,7 +294,7 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCan
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             onClick={handleClick}
-            className="group relative bg-gradient-to-br from-zinc-900/95 to-zinc-950/95 rounded-2xl overflow-hidden border border-zinc-800/50 hover:border-blue-500/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10"
+            className="group relative  rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10"
         >
             {/* Canvas Container */}
             <div className="relative aspect-video bg-zinc-900/50 flex items-center justify-center overflow-hidden">
@@ -280,32 +315,31 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCan
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <div className="flex items-center gap-2 text-white font-medium">
-                        <span>Abrir presentación</span>
+                        <span>Open presentation...</span>
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </div>
             </div>
 
             {/* Info Section */}
-            <div className="p-4 space-y-2">
-                <h3 className="text-white font-semibold text-base line-clamp-1 group-hover:text-blue-400 transition-colors">
-                    {title}
-                </h3>
-                <div className="flex items-center justify-between text-xs text-zinc-400">
-                    <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{formatDate(createdAt)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-blue-400">
-                        <Presentation className="w-3.5 h-3.5" />
-                        <span>Ver detalles</span>
+            <div className="p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                    <Avatar className="w-10 h-10 shrink-0">
+                        <AvatarImage src={userInfo?.pictureUrl} alt={userInfo?.name || 'User'} />
+                        <AvatarFallback className="bg-blue-500 text-white font-semibold text-sm">
+                            {userInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0  text-black">
+                        <h3 className="text-base line-clamp-1 group-hover:text-blue-400 transition-colors">
+                            {title}
+                        </h3>
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>{formatDate(createdAt)}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            {/* Corner Badge */}
-            <div className="absolute top-3 right-3 bg-blue-500/90 backdrop-blur-sm rounded-lg px-2.5 py-1 shadow-lg">
-                <span className="text-white text-xs font-bold">#{index + 1}</span>
             </div>
         </motion.div>
     )
@@ -313,8 +347,10 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index }: SlideCan
 
 export function ProjectsPreviewHero() {
     const allPresentations = useQuery(api.chats.getAllPresentationsWithFirstSlide)
+    const userInfo = useQuery(api.users.getUserInfo)
     const [searchQuery, setSearchQuery] = useState('')
     const [sortBy, setSortBy] = useState<'lastEdited' | 'dateCreated' | 'alphabetical'>('lastEdited')
+    const [dropdownOpen, setDropdownOpen] = useState(false)
 
     // Filter and sort presentations
     const filteredAndSortedPresentations = allPresentations
@@ -376,13 +412,13 @@ export function ProjectsPreviewHero() {
                     className="mb-12"
                 >
                     <div className="flex items-center justify-between mb-6">
-                        <div className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center font-bold">
+                        <div className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center font-semibold">
                             <span>Your last</span>
                                 <span className="flex items-center gap-2 sm:gap-3">
                                      <img src="/logo.svg" alt="Logo" className="h-8 sm:h-10 md:h-8 inline-block" /> Presentations
                                 </span>
                         </div>
-                        <p className="flex text-xl text-black/70 items-center cursor-pointer hover:text-blue-500 transition-colors">
+                        <p className="flex text-sm text-black/70 items-center cursor-pointer hover:text-blue-500 transition-colors">
                             View all
                             <ChevronRight className='h-5 w-5 ml-1'/>
                         </p>
@@ -402,40 +438,82 @@ export function ProjectsPreviewHero() {
                             />
                         </div>
 
-                        {/* Sort Dropdown */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="gap-2 bg-zinc-50 border-zinc-200 hover:bg-zinc-100 shrink-0">
-                                    <ArrowUpDown className="h-4 w-4" />
-                                    <span className="hidden sm:inline">Sort by:</span>
-                                    <span className="font-semibold">
-                                        {sortBy === 'lastEdited' && 'Last edited'}
-                                        {sortBy === 'dateCreated' && 'Date created'}
-                                        {sortBy === 'alphabetical' && 'Alphabetical'}
-                                    </span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 bg-white border border-zinc-200 shadow-lg z-[9999]">
-                                <DropdownMenuItem
-                                    onClick={() => setSortBy('lastEdited')}
-                                    className={`cursor-pointer ${sortBy === 'lastEdited' ? 'bg-blue-50 text-blue-600' : ''}`}
-                                >
-                                    Last edited
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setSortBy('dateCreated')}
-                                    className={`cursor-pointer ${sortBy === 'dateCreated' ? 'bg-blue-50 text-blue-600' : ''}`}
-                                >
-                                    Date created
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setSortBy('alphabetical')}
-                                    className={`cursor-pointer ${sortBy === 'alphabetical' ? 'bg-blue-50 text-blue-600' : ''}`}
-                                >
-                                    Alphabetical
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        {/* Sort Dropdown - Custom Implementation */}
+                        <div className="relative">
+                            <Button
+                                variant="outline"
+                                onClick={() => setDropdownOpen(!dropdownOpen)}
+                                className="gap-2 bg-zinc-50 border-zinc-200 hover:bg-zinc-100 shrink-0"
+                            >
+                                <ArrowUpDown className="h-4 w-4" />
+                                <span className="hidden sm:inline">Sort by:</span>
+                                <span className="font-semibold">
+                                    {sortBy === 'lastEdited' && 'Last edited'}
+                                    {sortBy === 'dateCreated' && 'Date created'}
+                                    {sortBy === 'alphabetical' && 'Alphabetical'}
+                                </span>
+                            </Button>
+
+                            <AnimatePresence>
+                                {dropdownOpen && (
+                                    <>
+                                        {/* Backdrop to close dropdown */}
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setDropdownOpen(false)}
+                                        />
+
+                                        {/* Dropdown Menu */}
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute right-0 mt-2 w-48 bg-white border border-zinc-200 rounded-lg shadow-lg z-50 overflow-hidden"
+                                        >
+                                            <div className="py-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setSortBy('lastEdited')
+                                                        setDropdownOpen(false)
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-100 transition-colors flex items-center justify-between ${
+                                                        sortBy === 'lastEdited' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                    }`}
+                                                >
+                                                    <span>Last edited</span>
+                                                    {sortBy === 'lastEdited' && <Check className="h-4 w-4" />}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setSortBy('dateCreated')
+                                                        setDropdownOpen(false)
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-100 transition-colors flex items-center justify-between ${
+                                                        sortBy === 'dateCreated' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                    }`}
+                                                >
+                                                    <span>Date created</span>
+                                                    {sortBy === 'dateCreated' && <Check className="h-4 w-4" />}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setSortBy('alphabetical')
+                                                        setDropdownOpen(false)
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-100 transition-colors flex items-center justify-between ${
+                                                        sortBy === 'alphabetical' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                    }`}
+                                                >
+                                                    <span>Alphabetical</span>
+                                                    {sortBy === 'alphabetical' && <Check className="h-4 w-4" />}
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
 
                 </motion.div>
@@ -456,6 +534,7 @@ export function ProjectsPreviewHero() {
                                 chatId={presentation.chatId}
                                 createdAt={presentation.createdAt}
                                 index={index}
+                                userInfo={userInfo || null}
                             />
                         ))}
                     </div>
