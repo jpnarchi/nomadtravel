@@ -1,5 +1,5 @@
 /**
- * Properties Sidebar - Barra lateral de propiedades
+ * Properties Sidebar
  */
 
 import * as fabric from 'fabric'
@@ -45,7 +45,7 @@ export function PropertiesSidebar({
                 <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
                     <h4 className="text-xs font-semibold text-white uppercase mb-3 tracking-wide">Slide</h4>
                     <div>
-                        <Label className="text-xs text-zinc-300 mb-2 block font-medium">Color de fondo</Label>
+                        <Label className="text-xs text-zinc-300 mb-2 block font-medium">Background color</Label>
                         <Input
                             type="color"
                             value={backgroundColor}
@@ -59,18 +59,18 @@ export function PropertiesSidebar({
                 {selectedObject && (
                     <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
                         <h4 className="text-xs font-semibold text-white uppercase mb-3 tracking-wide">
-                            {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Texto' :
-                             selectedObject.type === 'rect' ? 'Rectángulo' :
-                             selectedObject.type === 'circle' ? 'Círculo' :
-                             selectedObject.type === 'triangle' ? 'Triángulo' :
-                             selectedObject.type === 'image' ? 'Imagen' : 'Objeto'}
+                            {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Text' :
+                             selectedObject.type === 'rect' ? 'Rectangle' :
+                             selectedObject.type === 'circle' ? 'Circle' :
+                             selectedObject.type === 'triangle' ? 'Triangle' :
+                             selectedObject.type === 'image' ? 'Image' : 'Object'}
                         </h4>
 
                         {/* Text Properties */}
                         {isTextType && (
                             <div className="space-y-3">
                                 <div>
-                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Tamaño</Label>
+                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Size</Label>
                                     <Input
                                         type="number"
                                         value={(selectedObject as any).fontSize || 60}
@@ -88,7 +88,7 @@ export function PropertiesSidebar({
                                     />
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Fuente</Label>
+                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Font</Label>
                                     <Select
                                         value={(selectedObject as any).fontFamily || 'Arial'}
                                         onValueChange={(value) => onUpdateTextProperty('fontFamily', value)}
@@ -132,7 +132,7 @@ export function PropertiesSidebar({
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Peso</Label>
+                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Weight</Label>
                                     <Select
                                         value={(selectedObject as any).fontWeight || 'normal'}
                                         onValueChange={(value) => onUpdateTextProperty('fontWeight', value)}
@@ -142,7 +142,7 @@ export function PropertiesSidebar({
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-800 border-zinc-700">
                                             <SelectItem value="normal" className="text-white hover:bg-zinc-700">Normal</SelectItem>
-                                            <SelectItem value="bold" className="text-white hover:bg-zinc-700">Negrita</SelectItem>
+                                            <SelectItem value="bold" className="text-white hover:bg-zinc-700">Bold</SelectItem>
                                             <SelectItem value="100" className="text-white hover:bg-zinc-700">Thin</SelectItem>
                                             <SelectItem value="300" className="text-white hover:bg-zinc-700">Light</SelectItem>
                                             <SelectItem value="500" className="text-white hover:bg-zinc-700">Medium</SelectItem>
@@ -152,14 +152,14 @@ export function PropertiesSidebar({
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Alineación</Label>
+                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Alignment</Label>
                                     <div className="grid grid-cols-4 gap-1">
                                         <Button
                                             variant={((selectedObject as any).textAlign || 'left') === 'left' ? 'default' : 'outline'}
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'left')}
                                             className="h-10 text-black hover:text-black border-zinc-600"
-                                            title="Alinear a la izquierda"
+                                            title="Align left"
                                         >
                                             <AlignLeft className="size-4" />
                                         </Button>
@@ -168,7 +168,7 @@ export function PropertiesSidebar({
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'center')}
                                             className="h-10 text-black hover:text-black border-zinc-600"
-                                            title="Centrar"
+                                            title="Center"
                                         >
                                             <AlignCenter className="size-4" />
                                         </Button>
@@ -177,7 +177,7 @@ export function PropertiesSidebar({
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'right')}
                                             className="h-10 text-black hover:text-black border-zinc-600"
-                                            title="Alinear a la derecha"
+                                            title="Align right"
                                         >
                                             <AlignRight className="size-4" />
                                         </Button>
@@ -186,7 +186,7 @@ export function PropertiesSidebar({
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'justify')}
                                             className="h-10 text-black hover:text-black border-zinc-600"
-                                            title="Justificar"
+                                            title="Justify"
                                         >
                                             <AlignJustify className="size-4" />
                                         </Button>
@@ -216,7 +216,7 @@ export function PropertiesSidebar({
 
                 {!selectedObject && (
                     <div className="text-center text-zinc-400 text-sm py-12 px-4">
-                        <p className="leading-relaxed">Selecciona un objeto en el canvas para editar sus propiedades</p>
+                        <p className="leading-relaxed">Select an object on the canvas to edit its properties</p>
                     </div>
                 )}
             </div>

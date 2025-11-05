@@ -38,12 +38,12 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
 
             await Promise.all(updatePromises);
 
-            toast.success('Cambios guardados en la versión actual');
+            toast.success('Changes saved to current version');
             setEditedFiles({});
             setIsEditing(false);
         } catch (error) {
-            console.error('Error guardando cambios:', error);
-            toast.error('Error al guardar cambios');
+            console.error('Error saving changes:', error);
+            toast.error('Error saving changes');
         } finally {
             setIsSaving(false);
         }
@@ -53,13 +53,13 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     const handleCancelEdit = () => {
         setEditedFiles({});
         setIsEditing(false);
-        toast.info('Edición cancelada');
+        toast.info('Edit cancelled');
     };
 
     // Handle start editing
     const handleStartEdit = () => {
         setIsEditing(true);
-        toast.info('Modo de edición activado');
+        toast.info('Edit mode activated');
     };
 
     if (!files) {
@@ -85,7 +85,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                     }}
                 >
                     {isBackButtonLoading ? (<Loader />) : (<ArrowLeftIcon className="size-4" />)}
-                    {isBackButtonLoading ? "Cargando" : "Volver a Chat"}
+                    {isBackButtonLoading ? "Loading" : "Return to Chat"}
                 </Button>
 
                 <div className="flex gap-2">
@@ -100,7 +100,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                                 onClick={handleStartEdit}
                             >
                                 <Pencil className="size-4 mr-2" />
-                                Editar
+                                Edit
                             </Button>
                             {isAdmin && <Button
                                 size="sm"
@@ -121,7 +121,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                                 disabled={isSaving}
                             >
                                 <X className="size-4 mr-2" />
-                                Cancelar
+                                Cancel
                             </Button>
                         </>
                     )}
@@ -138,7 +138,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                     <FabricPresentationPreview chatId={id} version={version} />
                 ) : (
                     <div className="h-full overflow-auto p-6 bg-zinc-900 text-white">
-                        <h2 className="text-xl font-bold mb-4">Archivos de la Presentación</h2>
+                        <h2 className="text-xl font-bold mb-4">Presentation Files</h2>
                         <div className="space-y-4">
                             {Object.entries(files)
                                 .filter(([path]) => path.startsWith('/slides/'))
@@ -152,7 +152,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                                     </div>
                                 ))}
                             {Object.entries(files).filter(([path]) => path.startsWith('/slides/')).length === 0 && (
-                                <p className="text-gray-400">No se encontraron slides en esta presentación.</p>
+                                <p className="text-gray-400">No slides found in this presentation.</p>
                             )}
                         </div>
                     </div>

@@ -10,6 +10,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { FabricSlideEditor } from './fabric-slide-editor'
 import { Button } from '../ui/button'
+import { api } from "@/convex/_generated/api";
 import { ScrollArea } from '../ui/scroll-area'
 import {
     ChevronLeft,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Loader } from '../ai-elements/loader'
+import { useQuery, useMutation } from "convex/react";
 
 interface FabricPresentationEditorProps {
     initialFiles: Record<string, string>
@@ -38,6 +40,7 @@ export function FabricPresentationEditor({
     isSaving
 }: FabricPresentationEditorProps) {
     const [slides, setSlides] = useState<any[]>([])
+    const isAdmin = useQuery(api.users.isAdmin);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
     const [showCode, setShowCode] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
@@ -389,14 +392,15 @@ export function FabricPresentationEditor({
                             Cambios sin guardar
                         </span>
                     )}
-                    {/* <Button
+                    {isAdmin && (
+                        <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowCode(!showCode)}
                     >
                         {showCode ? <Eye className="size-4 mr-2" /> : <Code className="size-4 mr-2" />}
                         {showCode ? 'Editor' : 'Ver JSON'}
-                    </Button> */}
+                    </Button>)}
                     <Button
                         variant="default"
                         size="sm"
