@@ -174,7 +174,8 @@ http.route({
 
         const result = streamText({
             // model: openrouter('deepseek/deepseek-chat-v3-0324'), 
-           model: openrouter('anthropic/claude-haiku-4.5'),
+        //    model: openrouter('anthropic/claude-haiku-4.5'),
+           model: anthropic('claude-sonnet-4-20250514'),
            // model: openrouter('x-ai/grok-4-fast'), very good cheap as fuck
             // model: openrouter('anthropic/claude-sonnet-4.5'),
             // model: provider('claude-sonnet-4'),

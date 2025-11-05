@@ -27,18 +27,17 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     const handleSaveChanges = async (filesToSave: Record<string, string>) => {
         setIsSaving(true);
         try {
-            // CRITICAL: Always save to currentVersion, not the version being viewed
-            // This ensures manual edits are always on the latest version that the AI will use
-            const versionToSave = currentVersion ?? version;
+            // Save to the version being viewed
+            const versionToSave = version;
 
-            // Update each modified file in the CURRENT version
+            // Update each modified file in the viewed version
             const updatePromises = Object.entries(filesToSave).map(([path, content]) =>
                 updateFile({ chatId: id, path, content, version: versionToSave })
             );
 
             await Promise.all(updatePromises);
 
-            toast.success('Changes saved to current version');
+            toast.success(`Changes saved to version ${versionToSave}`);
             setEditedFiles({});
             setIsEditing(false);
         } catch (error) {

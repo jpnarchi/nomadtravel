@@ -813,13 +813,16 @@ export const getAllPresentationsWithFirstSlide = query({
                 .order("desc")
                 .collect();
 
-            // For each chat, get the first slide (slide-1.json)
+            // For each chat, get the first slide (slide-1.json) from the current version
             const presentations = await Promise.all(
                 allChats.map(async (chat) => {
-                    // Get the first slide file
+                    // Use the current version for this chat (default to 1 if not set)
+                    const version = chat.currentVersion ?? 1;
+
+                    // Get the first slide file for the current version
                     const files = await ctx.db
                         .query("files")
-                        .withIndex("by_chat_id", (q) => q.eq("chatId", chat._id))
+                        .withIndex("by_chat_version", (q) => q.eq("chatId", chat._id).eq("version", version))
                         .collect();
 
                     // Find slide-1.json

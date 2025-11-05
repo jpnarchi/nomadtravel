@@ -41,7 +41,7 @@ function SlideThumbnail({ chatId, version }: { chatId: Id<"chats">, version: num
         if (!canvasElement || !firstSlide || fabricCanvasRef.current) return;
 
         const canvas = new fabric.Canvas(canvasElement, {
-            width: 450,  // 16:9 aspect ratio thumbnail
+            width: 370,  // 16:9 aspect ratio thumbnail
             height: 200,
             backgroundColor: firstSlide.background || '#1a1a1a',
             selection: false,
@@ -272,18 +272,18 @@ export function PreviewButton({
 
     return (
         <div className="flex flex-col gap-2 w-full">
-            {/* Thumbnail Preview */}
-            <div
-                className="w-full flex items-center justify-center px-4 py-3 rounded-lg cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                onClick={() => {
-                    setIsLoading(true);
-                    router.push(`/chat/${id}/preview/${versionToView}`);
-                }}
-            >
-                <SlideThumbnail chatId={id} version={version} />
-            </div>
+            <Card className="group relative w-full flex flex-col gap-4 p-4 rounded-lg border border-border bg-card hover:border-border/80 hover:shadow-sm transition-all duration-200">
+                {/* Thumbnail Preview */}
+                <div
+                    className="w-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                    onClick={() => {
+                        setIsLoading(true);
+                        router.push(`/chat/${id}/preview/${versionToView}`);
+                    }}
+                >
+                    <SlideThumbnail chatId={id} version={version} />
+                </div>
 
-            <Card className="group relative w-full flex flex-row items-center justify-between gap-4 px-4 py-3 rounded-lg border border-border bg-card hover:border-border/80 hover:shadow-sm transition-all duration-200">
                 {/* Version info and actions */}
                 <div className="flex flex-row items-center justify-between gap-4 w-full">
                     {/* Version info */}
