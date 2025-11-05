@@ -389,14 +389,14 @@ export function FabricPresentationEditor({
                             Cambios sin guardar
                         </span>
                     )}
-                    <Button
+                    {/* <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowCode(!showCode)}
                     >
                         {showCode ? <Eye className="size-4 mr-2" /> : <Code className="size-4 mr-2" />}
                         {showCode ? 'Editor' : 'Ver JSON'}
-                    </Button>
+                    </Button> */}
                     <Button
                         variant="default"
                         size="sm"
