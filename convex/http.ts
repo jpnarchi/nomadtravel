@@ -174,8 +174,7 @@ http.route({
 
         const result = streamText({
             // model: openrouter('deepseek/deepseek-chat-v3-0324'), 
-        //    model: openrouter('anthropic/claude-haiku-4.5'),
-           model: anthropic('claude-sonnet-4-20250514'),
+          model: openrouter('anthropic/claude-haiku-4.5'),
            // model: openrouter('x-ai/grok-4-fast'), very good cheap as fuck
             // model: openrouter('anthropic/claude-sonnet-4.5'),
             // model: provider('claude-sonnet-4'),
@@ -359,7 +358,13 @@ Existing files:
                     execute: async function ({ path, textUpdates, explanation }: any) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+
+                            // Create new version BEFORE making any changes to preserve the previous version
+                            await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
+                            const newVersion = (currentVersion ?? 0) + 1;
+
+                            // Now get files from the NEW version
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: newVersion });
 
                             const fileContent = allFiles[path];
                             if (!fileContent) {
@@ -405,13 +410,13 @@ Existing files:
                                 slideData.objects[objectIndex].text = newText;
                             }
 
-                            // Save the updated slide
+                            // Save the updated slide in the NEW version
                             const updatedContent = JSON.stringify(slideData, null, 2);
                             await ctx.runMutation(api.files.updateByPath, {
                                 chatId: id,
                                 path,
                                 content: updatedContent,
-                                version: currentVersion ?? 0
+                                version: newVersion
                             });
 
                             return {
@@ -449,6 +454,7 @@ Existing files:
                                             error: 'Content is required to create a file'
                                         };
                                     }
+                                    // For create, we still use current version (no need to create new version yet)
                                     await ctx.runMutation(api.files.create, {
                                         chatId: id,
                                         path,
@@ -465,19 +471,27 @@ Existing files:
                                         };
                                     }
 
+                                    // Create new version BEFORE updating to preserve the previous version
+                                    await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
+                                    const newVersion = (currentVersion ?? 0) + 1;
+
                                     await ctx.runMutation(api.files.updateByPath, {
                                         chatId: id,
                                         path,
                                         content,
-                                        version: currentVersion ?? 0
+                                        version: newVersion
                                     });
                                     break;
 
                                 case 'delete':
+                                    // For delete, we also create new version to preserve history
+                                    await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
+                                    const newVersionDelete = (currentVersion ?? 0) + 1;
+
                                     await ctx.runMutation(api.files.deleteByPath, {
                                         chatId: id,
                                         path,
-                                        version: currentVersion ?? 0
+                                        version: newVersionDelete
                                     });
                                     break;
                             }
@@ -506,7 +520,13 @@ Existing files:
                     execute: async function ({ position, content, explanation }: any) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+
+                            // Create new version BEFORE making any changes to preserve the previous version
+                            await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
+                            const newVersion = (currentVersion ?? 0) + 1;
+
+                            // Now get files from the NEW version
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: newVersion });
 
                             // Get all existing slide paths and sort them
                             const slidePaths = Object.keys(allFiles)
@@ -539,7 +559,7 @@ Existing files:
                                     chatId: id,
                                     path: newPath,
                                     content,
-                                    version: currentVersion ?? 0
+                                    version: newVersion
                                 });
 
                                 return {
@@ -563,7 +583,7 @@ Existing files:
                                 await ctx.runMutation(api.files.deleteByPath, {
                                     chatId: id,
                                     path: oldPath,
-                                    version: currentVersion ?? 0
+                                    version: newVersion
                                 });
 
                                 // Create with new name
@@ -571,7 +591,7 @@ Existing files:
                                     chatId: id,
                                     path: newPath,
                                     content: allFiles[oldPath],
-                                    version: currentVersion ?? 0
+                                    version: newVersion
                                 });
                             }
 
@@ -581,7 +601,7 @@ Existing files:
                                 chatId: id,
                                 path: newPath,
                                 content,
-                                version: currentVersion ?? 0
+                                version: newVersion
                             });
 
                             return {
@@ -648,17 +668,18 @@ Existing files:
                 },
 
                 showPreview: {
-                    description: 'Show project preview.',
+                    description: 'Show project preview. Note: A new version is automatically created when changes are made, so this tool just shows the current version without creating a new one.',
                     inputSchema: z.object({}),
                     execute: async function () {
                         const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                        const result = await ctx.runMutation(api.files.createNewVersion, { chatId: id, previousVersion: currentVersion ?? 0 });
-                        // Return the NEW version number (currentVersion + 1), not the old one
-                        const newVersion = (currentVersion ?? 0) + 1;
+
+                        // Simply return the current version - no need to create a new one since
+                        // the modification tools (updateSlideTexts, manageFile, insertSlideAtPosition)
+                        // already create new versions before making changes
                         return {
                             success: true,
-                            version: newVersion,
-                            creationTime: result.creationTime,
+                            version: currentVersion,
+                            creationTime: new Date().toISOString(),
                         };
                     },
                 },
