@@ -10,17 +10,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as fabric from 'fabric'
 import { toast } from 'sonner'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
+
 
 // Import utilities and components
 import { createText, createRectangle, createCircle, createTriangle, addImageToCanvas } from './fabric-editor/shape-factory'
@@ -43,6 +33,7 @@ import {
 import { ToolsSidebar } from './fabric-editor/tools-sidebar'
 import { PropertiesSidebar } from './fabric-editor/properties-sidebar'
 import { EditorToolbar } from './fabric-editor/editor-toolbar'
+import {UploadButton, UploadDropzone, UploadButtonDialog} from "./fabric-editor/uploadthing-button"
 
 interface FabricSlideEditorProps {
     slideData: any
@@ -63,6 +54,7 @@ export function FabricSlideEditor({
     const isInitialLoadRef = useRef(true)
     const baseScaleRef = useRef(1)
     const copiedObjectRef = useRef<any>(null)
+
 
     // State
     const [selectedObject, setSelectedObject] = useState<fabric.FabricObject | null>(null)
@@ -540,47 +532,29 @@ export function FabricSlideEditor({
         return () => window.removeEventListener('paste', handlePaste)
     }, [])
 
+    // Drag and drop is now handled globally by the parent FabricPresentationEditor
+    // This component only listens for the global 'addImageToSlide' event
+
+    // Listen for global image addition events from parent
     useEffect(() => {
-        const handleDragOver = (e: DragEvent) => {
-            e.preventDefault()
-            e.stopPropagation()
-        }
+        const handleGlobalImageAdd = (e: Event) => {
+            const customEvent = e as CustomEvent
+            const { imageUrl, slideIndex } = customEvent.detail
 
-        const handleDrop = (e: DragEvent) => {
-            e.preventDefault()
-            e.stopPropagation()
-
-            const files = e.dataTransfer?.files
-            if (!files || files.length === 0) return
-
-            const file = files[0]
-            if (!file.type.startsWith('image/')) {
-                toast.error('Por favor arrastra un archivo de imagen')
-                return
+            // Only process if this is the current slide
+            if (slideIndex === slideNumber - 1 && fabricCanvasRef.current) {
+                addImageToCanvas(fabricCanvasRef.current, imageUrl)
+                    .then(() => toast.success('Imagen agregada'))
+                    .catch(() => toast.error('Error al cargar la imagen.'))
             }
-
-            const reader = new FileReader()
-            reader.onload = (event) => {
-                const imgUrl = event.target?.result as string
-                handleAddImage(imgUrl)
-                toast.success('Imagen agregada por drag & drop')
-            }
-            reader.readAsDataURL(file)
         }
 
-        const canvas = canvasRef.current
-        if (canvas) {
-            canvas.addEventListener('dragover', handleDragOver)
-            canvas.addEventListener('drop', handleDrop)
-        }
+        window.addEventListener('addImageToSlide', handleGlobalImageAdd)
 
         return () => {
-            if (canvas) {
-                canvas.removeEventListener('dragover', handleDragOver)
-                canvas.removeEventListener('drop', handleDrop)
-            }
+            window.removeEventListener('addImageToSlide', handleGlobalImageAdd)
         }
-    }, [])
+    }, [slideNumber])
 
     // ============================================================================
     // RENDER
@@ -628,6 +602,7 @@ export function FabricSlideEditor({
                             margin: '0 auto',
                         }}
                     />
+
                     <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-2 py-1.5 rounded backdrop-blur-sm">
                         <p className="text-[10px] text-zinc-300">Shift+Arrastrar para mover | Rueda para zoom</p>
                     </div>
@@ -643,45 +618,12 @@ export function FabricSlideEditor({
                 onUpdateFillColor={handleUpdateFillColor}
             />
 
-            {/* Image URL Dialog */}
-            <Dialog open={showImageUrlDialog} onOpenChange={setShowImageUrlDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Agregar Imagen desde URL</DialogTitle>
-                        <DialogDescription>
-                            Ingresa la URL de una imagen para agregarla al slide
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Label className="mb-2">URL de la Imagen</Label>
-                        <Input
-                            type="url"
-                            placeholder="https://ejemplo.com/imagen.jpg"
-                            value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleAddImageFromUrl()
-                                }
-                            }}
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setShowImageUrlDialog(false)
-                                setImageUrl('')
-                            }}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button onClick={handleAddImageFromUrl}>
-                            Agregar Imagen
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Image Upload Dialog */}
+            <UploadButtonDialog
+                open={showImageUrlDialog}
+                onOpenChange={setShowImageUrlDialog}
+                onUploadComplete={handleAddImage}
+            />
         </div>
     )
 }

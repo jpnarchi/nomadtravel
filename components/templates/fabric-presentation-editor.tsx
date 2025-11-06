@@ -7,7 +7,7 @@
  * Permite crear, eliminar, reordenar y editar slides
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { FabricSlideEditor } from './fabric-slide-editor'
 import { Button } from '../ui/button'
 import { api } from "@/convex/_generated/api";
@@ -22,7 +22,8 @@ import {
     Save,
     Copy,
     ArrowUp,
-    ArrowDown
+    ArrowDown,
+    Upload
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Loader } from '../ai-elements/loader'
@@ -45,6 +46,9 @@ export function FabricPresentationEditor({
     const [showCode, setShowCode] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    const [isDraggingOver, setIsDraggingOver] = useState(false)
+    const editorContainerRef = useRef<HTMLDivElement>(null)
+    const slideEditorRef = useRef<any>(null)
 
     // Load slides from initial files
     useEffect(() => {
@@ -353,6 +357,55 @@ export function FabricPresentationEditor({
         }
     }
 
+    // Handle image addition to current slide
+    const handleAddImageToCurrentSlide = useCallback((imageUrl: string) => {
+        // Trigger image addition to the current slide via the slide editor
+        // We'll dispatch a custom event that the FabricSlideEditor will listen to
+        const event = new CustomEvent('addImageToSlide', {
+            detail: { imageUrl, slideIndex: currentSlideIndex }
+        })
+        window.dispatchEvent(event)
+    }, [currentSlideIndex])
+
+    // Drag and drop handlers using React events
+    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDraggingOver(true)
+    }, [])
+
+    const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault()
+        e.stopPropagation()
+        // Only hide if leaving the main container
+        if (e.currentTarget === e.target) {
+            setIsDraggingOver(false)
+        }
+    }, [])
+
+    const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setIsDraggingOver(false)
+
+        const files = Array.from(e.dataTransfer.files)
+        if (files.length === 0) return
+
+        const file = files[0]
+        if (!file.type.startsWith('image/')) {
+            toast.error('Por favor arrastra un archivo de imagen')
+            return
+        }
+
+        const reader = new FileReader()
+        reader.onload = (event) => {
+            const imgUrl = event.target?.result as string
+            handleAddImageToCurrentSlide(imgUrl)
+            toast.success('Imagen agregada al slide actual')
+        }
+        reader.readAsDataURL(file)
+    }, [handleAddImageToCurrentSlide])
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center bg-black">
@@ -367,7 +420,13 @@ export function FabricPresentationEditor({
     const currentSlide = slides[currentSlideIndex]
 
     return (
-        <div className="h-full flex flex-col bg-zinc-950">
+        <div
+            ref={editorContainerRef}
+            className="h-full flex flex-col bg-zinc-950 relative"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
             {/* Top toolbar */}
             <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -579,6 +638,24 @@ export function FabricPresentationEditor({
                     </Button>
                 </div>
             </div>
+
+            {/* Global Drag and Drop Overlay */}
+            {isDraggingOver && (
+                <div className="absolute inset-0 bg-blue-500/30 backdrop-blur-md flex items-center justify-center z-[9999]">
+                    <div className="bg-white rounded-2xl shadow-2xl p-12 text-center border-4 border-blue-500 border-dashed animate-pulse pointer-events-none">
+                        <Upload className="w-24 h-24 text-blue-500 mx-auto mb-6" />
+                        <h3 className="text-3xl font-bold text-gray-800 mb-3">
+                            Suelta la imagen aquí
+                        </h3>
+                        <p className="text-lg text-gray-600 mb-2">
+                            Se agregará al Slide {currentSlideIndex + 1}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                            Arrastra imágenes desde cualquier lugar sobre el editor
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

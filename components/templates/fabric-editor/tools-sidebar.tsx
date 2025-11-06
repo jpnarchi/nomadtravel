@@ -80,7 +80,7 @@ export function ToolsSidebar({
 
             <div className="h-px w-8 bg-zinc-700 my-2" />
 
-            <Button
+            {/* <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => fileInputRef.current?.click()}
@@ -88,7 +88,7 @@ export function ToolsSidebar({
                 title="Subir Imagen"
             >
                 <Upload className="size-5" />
-            </Button>
+            </Button> */}
             <Button
                 variant="ghost"
                 size="icon"

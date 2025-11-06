@@ -9,6 +9,18 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/api/storage/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'utfs.io',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.ufs.sh',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
