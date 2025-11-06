@@ -273,9 +273,9 @@ export function PreviewButton({
     return (
         <div className="flex flex-col gap-2 w-full">
             <Card className="group relative w-full flex flex-col gap-4 p-4 rounded-lg border border-border bg-card hover:border-border/80 hover:shadow-sm transition-all duration-200">
-                {/* Thumbnail Preview */}
+                {/* Thumbnail Preview - Hidden on mobile */}
                 <div
-                    className="w-full flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                    className="w-full hidden md:flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity duration-200"
                     onClick={() => {
                         setIsLoading(true);
                         router.push(`/chat/${id}/preview/${versionToView}`);

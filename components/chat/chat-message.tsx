@@ -221,7 +221,7 @@ export function ChatMessage({
                             const version = response.version as number;
                             const creationTime = response.creationTime as string;
                             return (
-                                <div key={index} className="flex flex-row gap-3 pt-2 pb-4 pl-8">
+                                <div key={index} className="flex flex-row gap-3 pt-2 pb-4">
                                     <PreviewButton
                                         id={id}
                                         version={version || 1}
