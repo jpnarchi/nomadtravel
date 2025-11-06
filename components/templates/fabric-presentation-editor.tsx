@@ -12,6 +12,7 @@ import { FabricSlideEditor } from './fabric-slide-editor'
 import { Button } from '../ui/button'
 import { api } from "@/convex/_generated/api";
 import { ScrollArea } from '../ui/scroll-area'
+import { DragDropOverlay } from '../global/drag-drop-overlay'
 import {
     ChevronLeft,
     ChevronRight,
@@ -22,8 +23,7 @@ import {
     Save,
     Copy,
     ArrowUp,
-    ArrowDown,
-    Upload
+    ArrowDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Loader } from '../ai-elements/loader'
@@ -42,11 +42,13 @@ export function FabricPresentationEditor({
 }: FabricPresentationEditorProps) {
     const [slides, setSlides] = useState<any[]>([])
     const isAdmin = useQuery(api.users.isAdmin);
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+    const saveImage = useMutation(api.files.saveImage);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
     const [showCode, setShowCode] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-    const [isDraggingOver, setIsDraggingOver] = useState(false)
+    const [isUploading, setIsUploading] = useState(false)
     const editorContainerRef = useRef<HTMLDivElement>(null)
     const slideEditorRef = useRef<any>(null)
 
@@ -367,77 +369,55 @@ export function FabricPresentationEditor({
         window.dispatchEvent(event)
     }, [currentSlideIndex])
 
-    // Drag and drop handlers using React events
-    const dragCounterRef = useRef(0)
-
-    const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault()
-        e.stopPropagation()
-        dragCounterRef.current++
-        setIsDraggingOver(true)
-    }, [])
-
-    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault()
-        e.stopPropagation()
-    }, [])
-
-    const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault()
-        e.stopPropagation()
-        dragCounterRef.current--
-
-        if (dragCounterRef.current === 0) {
-            setIsDraggingOver(false)
-        }
-    }, [])
-
-    const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault()
-        e.stopPropagation()
-        dragCounterRef.current = 0
-        setIsDraggingOver(false)
-
-        const files = Array.from(e.dataTransfer.files)
+    // Handle file upload to Convex
+    const handleUploadFiles = useCallback(async (files: File[]) => {
         if (files.length === 0) return
 
-        const file = files[0]
-        if (!file.type.startsWith('image/')) {
-            toast.error('Por favor arrastra un archivo de imagen')
+        const imageFiles = files.filter(file => file.type.startsWith('image/'))
+
+        if (imageFiles.length === 0) {
+            toast.error('Por favor arrastra archivos de imagen')
             return
         }
 
-        const reader = new FileReader()
-        reader.onload = (event) => {
-            const imgUrl = event.target?.result as string
-            handleAddImageToCurrentSlide(imgUrl)
-            toast.success('Imagen agregada al slide actual')
-        }
-        reader.readAsDataURL(file)
-    }, [handleAddImageToCurrentSlide])
+        setIsUploading(true)
 
-    // Handle drag end globally to hide overlay when user cancels drag
-    useEffect(() => {
-        const handleDragEnd = () => {
-            dragCounterRef.current = 0
-            setIsDraggingOver(false)
-        }
+        try {
+            // Upload the first image (for now, we handle one at a time)
+            const file = imageFiles[0]
 
-        const handleWindowDrop = () => {
-            dragCounterRef.current = 0
-            setIsDraggingOver(false)
-        }
+            toast.info('Adding image...')
 
-        window.addEventListener('dragend', handleDragEnd)
-        window.addEventListener('drop', handleWindowDrop)
-        window.addEventListener('mouseup', handleDragEnd)
+            // Generate upload URL
+            const uploadUrl = await generateUploadUrl()
 
-        return () => {
-            window.removeEventListener('dragend', handleDragEnd)
-            window.removeEventListener('drop', handleWindowDrop)
-            window.removeEventListener('mouseup', handleDragEnd)
+            // Upload file to Convex storage
+            const result = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            })
+
+            if (!result.ok) {
+                throw new Error('Failed to upload file')
+            }
+
+            const { storageId } = await result.json()
+
+            // Get the public URL from Convex
+            const { url } = await saveImage({ storageId })
+
+            // Add image to current slide
+            handleAddImageToCurrentSlide(url)
+
+            toast.success('Imagen subida y agregada al slide')
+        } catch (error) {
+            console.error('Error uploading image:', error)
+            toast.error('Error al subir la imagen')
+        } finally {
+            setIsUploading(false)
         }
-    }, [])
+    }, [generateUploadUrl, saveImage, handleAddImageToCurrentSlide])
 
     if (isLoading) {
         return (
@@ -456,10 +436,6 @@ export function FabricPresentationEditor({
         <div
             ref={editorContainerRef}
             className="h-full flex flex-col bg-zinc-950 relative"
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
         >
             {/* Top toolbar */}
             <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex items-center justify-between">
@@ -665,25 +641,8 @@ export function FabricPresentationEditor({
                 </div>
             </div>
 
-            {/* Global Drag and Drop Overlay */}
-            {isDraggingOver && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-[9999] pointer-events-none">
-                    <div className="relative">
-                        {/* Animated glow rings */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-48 h-48 rounded-full bg-gradient-to-r from-red-500/30 to-rose-500/30 blur-3xl animate-pulse"></div>
-                        </div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-32 h-32 rounded-full border-4 border-red-500/50 border-dashed animate-spin" style={{ animationDuration: '3s' }}></div>
-                        </div>
-
-                        {/* Icon container */}
-                        <div className="relative  rounded-2xl p-8 ">
-                            <Upload className="w-24 h-24 text-white" strokeWidth={2} />
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* DragDropOverlay for file uploads */}
+            <DragDropOverlay onUpload={handleUploadFiles} />
         </div>
     )
 }

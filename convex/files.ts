@@ -2,6 +2,31 @@ import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
 import { getCurrentUser } from "./users";
 
+// Generic upload URL generation for images
+export const generateUploadUrl = mutation({
+    handler: async (ctx) => {
+        await getCurrentUser(ctx); // Verify user is authenticated
+        return await ctx.storage.generateUploadUrl();
+    },
+});
+
+// Save uploaded image and return its URL
+export const saveImage = mutation({
+    args: {
+        storageId: v.id("_storage"),
+    },
+    handler: async (ctx, args) => {
+        await getCurrentUser(ctx); // Verify user is authenticated
+
+        const url = await ctx.storage.getUrl(args.storageId);
+        if (!url) {
+            throw new Error("Failed to get storage URL");
+        }
+
+        return { url };
+    },
+});
+
 export const getAll = query({
     args: {
         chatId: v.optional(v.id("chats")),

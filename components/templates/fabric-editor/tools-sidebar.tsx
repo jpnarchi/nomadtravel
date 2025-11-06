@@ -9,7 +9,6 @@ import {
     Square,
     Circle,
     Triangle,
-    Upload,
     Image as ImageIcon,
     Shapes,
     Star,
@@ -32,7 +31,7 @@ interface ToolsSidebarProps {
     onAddTriangle: () => void
     onAddLine?: () => void
     onFileSelect: (file: File) => void
-    onShowImageUrlDialog: () => void
+    onShowUploadDialog?: () => void
 }
 
 export function ToolsSidebar({
@@ -42,7 +41,7 @@ export function ToolsSidebar({
     onAddTriangle,
     onAddLine,
     onFileSelect,
-    onShowImageUrlDialog,
+    onShowUploadDialog,
 }: ToolsSidebarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -116,24 +115,17 @@ export function ToolsSidebar({
 
             <div className="h-px w-8 bg-zinc-700 my-2" />
 
-            {/* <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => fileInputRef.current?.click()}
-                className="h-12 w-12 text-white hover:text-white hover:bg-zinc-800"
-                title="Subir Imagen"
-            >
-                <Upload className="size-5" />
-            </Button> */}
-            <Button
-                variant="ghost"
-                size="icon"
-                onClick={onShowImageUrlDialog}
-                className="h-12 w-12 text-white hover:text-white hover:bg-zinc-800"
-                title="Imagen desde URL"
-            >
-                <ImageIcon className="size-5" />
-            </Button>
+            {onShowUploadDialog && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onShowUploadDialog}
+                    className="h-12 w-12 text-white hover:text-white hover:bg-zinc-800"
+                    title="Subir Imagen"
+                >
+                    <ImageIcon className="size-5" />
+                </Button>
+            )}
 
             <input
                 ref={fileInputRef}

@@ -5,18 +5,20 @@ import { Upload } from "lucide-react"
 const MAX_FILES = 5;
 
 interface DragDropOverlayProps {
-    files: File[];
-    setFiles: React.Dispatch<React.SetStateAction<File[]>>;
+    files?: File[];
+    setFiles?: React.Dispatch<React.SetStateAction<File[]>>;
+    onUpload?: (files: File[]) => void | Promise<void>;
+    maxFiles?: number;
 }
 
-export function DragDropOverlay({ files, setFiles }: DragDropOverlayProps) {
+export function DragDropOverlay({ files, setFiles, onUpload, maxFiles = MAX_FILES }: DragDropOverlayProps) {
     const [isDragging, setIsDragging] = useState(false);
     const dragCounter = useRef(0);
-    const filesRef = useRef(files);
+    const filesRef = useRef(files || []);
 
     // Keep files ref up to date
     useEffect(() => {
-        filesRef.current = files;
+        filesRef.current = files || [];
     }, [files]);
 
     const handleDragEnter = useCallback((e: DragEvent) => {
@@ -50,21 +52,31 @@ export function DragDropOverlay({ files, setFiles }: DragDropOverlayProps) {
 
         if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
             const droppedFiles = Array.from(e.dataTransfer.files);
-            const remainingSlots = MAX_FILES - filesRef.current.length;
+
+            // If onUpload is provided, use it (for presentation editor)
+            if (onUpload) {
+                onUpload(droppedFiles);
+                return;
+            }
+
+            // Otherwise use the setFiles approach (for chat)
+            if (!setFiles) return;
+
+            const remainingSlots = maxFiles - filesRef.current.length;
 
             if (remainingSlots <= 0) {
-                toast.error(`Máximo ${MAX_FILES} archivos.`);
+                toast.error(`Máximo ${maxFiles} archivos.`);
                 return;
             }
 
             if (droppedFiles.length > remainingSlots) {
-                toast.error(`Solo puedes adjuntar ${MAX_FILES} archivos.`);
+                toast.error(`Solo puedes adjuntar ${maxFiles} archivos.`);
             }
 
             const filesToAdd = droppedFiles.slice(0, remainingSlots);
             setFiles(prev => [...prev, ...filesToAdd]);
         }
-    }, [setFiles]);
+    }, [setFiles, onUpload, maxFiles]);
 
     useEffect(() => {
         const div = document.body;
@@ -91,9 +103,11 @@ export function DragDropOverlay({ files, setFiles }: DragDropOverlayProps) {
                 </div>
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Drop files here</h2>
                 <p className="text-gray-600 dark:text-gray-400 mt-2">Release to upload your files</p>
-                <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
-                    Maximum {MAX_FILES} files
-                </p>
+                {!onUpload && (
+                    <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
+                        Maximum {maxFiles} files
+                    </p>
+                )}
             </div>
         </div>
     );

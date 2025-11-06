@@ -10,17 +10,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as fabric from 'fabric'
 import { toast } from 'sonner'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
+import { useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 
 // Import utilities and components
 import { createText, createRectangle, createCircle, createTriangle, createLine, addImageToCanvas } from './fabric-editor/shape-factory'
@@ -43,7 +34,7 @@ import {
 import { ToolsSidebar } from './fabric-editor/tools-sidebar'
 import { PropertiesSidebar } from './fabric-editor/properties-sidebar'
 import { EditorToolbar } from './fabric-editor/editor-toolbar'
-import {UploadButton, UploadDropzone, UploadButtonDialog} from "./fabric-editor/uploadthing-button"
+import {UploadButtonDialog} from "./fabric-editor/uploadthing-button"
 
 interface FabricSlideEditorProps {
     slideData: any
@@ -66,12 +57,16 @@ export function FabricSlideEditor({
     const copiedObjectRef = useRef<any>(null)
 
 
+    // Convex mutations
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    const saveImage = useMutation(api.files.saveImage)
+
     // State
     const [selectedObject, setSelectedObject] = useState<fabric.FabricObject | null>(null)
     const [backgroundColor, setBackgroundColor] = useState(slideData?.background || '#ffffff')
     const [zoom, setZoom] = useState(1)
-    const [showImageUrlDialog, setShowImageUrlDialog] = useState(false)
-    const [imageUrl, setImageUrl] = useState('')
+    const [showUploadDialog, setShowUploadDialog] = useState(false)
+    const [isUploading, setIsUploading] = useState(false)
 
     // ============================================================================
     // SAVE CANVAS FUNCTION
@@ -314,37 +309,37 @@ export function FabricSlideEditor({
         if (!fabricCanvasRef.current) return
         isInitialLoadRef.current = false
         createText(fabricCanvasRef.current)
-        toast.success('Texto agregado - Escribe para editar')
+        
     }
 
     const handleAddRectangle = () => {
         if (!fabricCanvasRef.current) return
         createRectangle(fabricCanvasRef.current)
-        toast.success('Rectángulo agregado')
+        
     }
 
     const handleAddCircle = () => {
         if (!fabricCanvasRef.current) return
         createCircle(fabricCanvasRef.current)
-        toast.success('Círculo agregado')
+        
     }
 
     const handleAddTriangle = () => {
         if (!fabricCanvasRef.current) return
         createTriangle(fabricCanvasRef.current)
-        toast.success('Triángulo agregado')
+        
     }
 
     const handleAddLine = () => {
         if (!fabricCanvasRef.current) return
         createLine(fabricCanvasRef.current)
-        toast.success('Línea agregada')
+        
     }
 
     // ============================================================================
     // IMAGE HANDLERS
     // ============================================================================
-    const handleFileSelect = (file: File) => {
+    const handleFileSelect = async (file: File) => {
         if (!fabricCanvasRef.current) return
 
         if (!file.type.startsWith('image/')) {
@@ -352,29 +347,44 @@ export function FabricSlideEditor({
             return
         }
 
-        const reader = new FileReader()
-        reader.onload = (event) => {
-            const imgUrl = event.target?.result as string
-            handleAddImage(imgUrl)
-        }
-        reader.readAsDataURL(file)
-    }
+        setIsUploading(true)
+        toast.info('Adding image...')
 
-    const handleAddImageFromUrl = () => {
-        if (!imageUrl.trim()) {
-            toast.error('Por favor ingresa una URL válida')
-            return
+        try {
+            // Generate upload URL
+            const uploadUrl = await generateUploadUrl()
+
+            // Upload file to Convex storage
+            const result = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            })
+
+            if (!result.ok) {
+                throw new Error('Failed to upload file')
+            }
+
+            const { storageId } = await result.json()
+
+            // Get the public URL from Convex
+            const { url } = await saveImage({ storageId })
+
+            // Add image to canvas
+            handleAddImage(url)
+        } catch (error) {
+            console.error('Error uploading image:', error)
+            toast.error('Error al subir la imagen')
+        } finally {
+            setIsUploading(false)
         }
-        handleAddImage(imageUrl)
-        setShowImageUrlDialog(false)
-        setImageUrl('')
     }
 
     const handleAddImage = (imgSrc: string) => {
         if (!fabricCanvasRef.current) return
 
         addImageToCanvas(fabricCanvasRef.current, imgSrc)
-            .then(() => toast.success('Imagen agregada'))
+            .then(() => toast.success('Image added'))
             .catch(() => toast.error('Error al cargar la imagen. Verifica la URL.'))
     }
 
@@ -386,13 +396,13 @@ export function FabricSlideEditor({
         fabricCanvasRef.current.remove(selectedObject)
         fabricCanvasRef.current.renderAll()
         setSelectedObject(null)
-        toast.success('Objeto eliminado')
+        
     }
 
     const handleCopyObject = () => {
         if (!selectedObject) return
         copiedObjectRef.current = copyObjectToJSON(selectedObject)
-        toast.success('Objeto copiado')
+        
     }
 
     const handlePasteObject = async () => {
@@ -400,9 +410,9 @@ export function FabricSlideEditor({
 
         try {
             await pasteObjectFromJSON(fabricCanvasRef.current, copiedObjectRef.current)
-            toast.success('Objeto pegado')
+        
         } catch (error) {
-            toast.error('Error al pegar objeto')
+            toast.error('Error pasting object')
         }
     }
 
@@ -410,7 +420,7 @@ export function FabricSlideEditor({
         if (!fabricCanvasRef.current || !selectedObject) return
         const isLocked = toggleObjectLock(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        toast.success(isLocked ? 'Objeto bloqueado' : 'Objeto desbloqueado')
+        toast.success(isLocked ? 'Object blocked' : 'Object unblocked')
     }
 
     // ============================================================================
@@ -435,28 +445,28 @@ export function FabricSlideEditor({
         if (!fabricCanvasRef.current || !selectedObject) return
         bringObjectToFront(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        toast.success('Objeto movido al frente')
+        
     }
 
     const handleSendToBack = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
         sendObjectToBack(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        toast.success('Objeto movido al fondo')
+        
     }
 
     const handleBringForward = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
         bringObjectForward(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        toast.success('Objeto movido hacia adelante')
+        
     }
 
     const handleSendBackward = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
         sendObjectBackward(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        toast.success('Objeto movido hacia atrás')
+        
     }
 
     // ============================================================================
@@ -522,7 +532,7 @@ export function FabricSlideEditor({
     // CLIPBOARD & DRAG-DROP
     // ============================================================================
     useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
+        const handlePaste = async (e: ClipboardEvent) => {
             const items = e.clipboardData?.items
             if (!items) return
 
@@ -531,14 +541,41 @@ export function FabricSlideEditor({
                     const blob = items[i].getAsFile()
                     if (!blob) continue
 
-                    const reader = new FileReader()
-                    reader.onload = (event) => {
-                        const imgUrl = event.target?.result as string
-                        handleAddImage(imgUrl)
-                        toast.success('Imagen pegada desde el portapapeles')
-                    }
-                    reader.readAsDataURL(blob)
                     e.preventDefault()
+
+                    setIsUploading(true)
+                    toast.info('Subiendo imagen desde portapapeles...')
+
+                    try {
+                        // Generate upload URL
+                        const uploadUrl = await generateUploadUrl()
+
+                        // Upload file to Convex storage
+                        const result = await fetch(uploadUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': blob.type },
+                            body: blob,
+                        })
+
+                        if (!result.ok) {
+                            throw new Error('Failed to upload file')
+                        }
+
+                        const { storageId } = await result.json()
+
+                        // Get the public URL from Convex
+                        const { url } = await saveImage({ storageId })
+
+                        // Add image to canvas
+                        handleAddImage(url)
+                        toast.success('Imagen paste')
+                    } catch (error) {
+                        console.error('Error uploading pasted image:', error)
+                        toast.error('Error al subir la imagen')
+                    } finally {
+                        setIsUploading(false)
+                    }
+
                     break
                 }
             }
@@ -546,6 +583,7 @@ export function FabricSlideEditor({
 
         window.addEventListener('paste', handlePaste)
         return () => window.removeEventListener('paste', handlePaste)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Drag and drop is now handled globally by the parent FabricPresentationEditor
@@ -560,7 +598,7 @@ export function FabricSlideEditor({
             // Only process if this is the current slide
             if (slideIndex === slideNumber - 1 && fabricCanvasRef.current) {
                 addImageToCanvas(fabricCanvasRef.current, imageUrl)
-                    .then(() => toast.success('Imagen agregada'))
+                    .then(() => toast.success('Image added'))
                     .catch(() => toast.error('Error al cargar la imagen.'))
             }
         }
@@ -585,7 +623,7 @@ export function FabricSlideEditor({
                 onAddTriangle={handleAddTriangle}
                 onAddLine={handleAddLine}
                 onFileSelect={handleFileSelect}
-                onShowImageUrlDialog={() => setShowImageUrlDialog(true)}
+                onShowUploadDialog={() => setShowUploadDialog(true)}
             />
 
             {/* Center - Canvas Area */}
@@ -634,52 +672,13 @@ export function FabricSlideEditor({
                 onUpdateTextProperty={handleUpdateTextProperty}
                 onUpdateFillColor={handleUpdateFillColor}
             />
-             <Dialog open={showImageUrlDialog} onOpenChange={setShowImageUrlDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Agregar Imagen desde URL</DialogTitle>
-                        <DialogDescription>
-                            Ingresa la URL de una imagen para agregarla al slide
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Label className="mb-2">URL de la Imagen</Label>
-                        <Input
-                            type="url"
-                            placeholder="https://ejemplo.com/imagen.jpg"
-                            value={imageUrl}
-                            onChange={(e) => setImageUrl(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    handleAddImageFromUrl()
-                                }
-                            }}
-                        />
-                    </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setShowImageUrlDialog(false)
-                                setImageUrl('')
-                            }}
-                        >
-                            Cancelar
-                        </Button>
-                        <Button onClick={handleAddImageFromUrl}>
-                            Agregar Imagen
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
 
             {/* Image Upload Dialog */}
-            {/* <UploadButtonDialog
-                open={showImageUrlDialog}
-                onOpenChange={setShowImageUrlDialog}
+            <UploadButtonDialog
+                open={showUploadDialog}
+                onOpenChange={setShowUploadDialog}
                 onUploadComplete={handleAddImage}
-            /> */}
-        
+            />
         </div>
     )
 }

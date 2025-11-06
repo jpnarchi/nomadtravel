@@ -11,20 +11,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Upload, Loader2 } from 'lucide-react'
 
-import {
-    generateUploadButton,
-    generateUploadDropzone,
-    generateReactHelpers,
-  } from "@uploadthing/react";
-
-import type { OurFileRouter } from "@/app/api/uploadthing/core";
-
-export const UploadButton = generateUploadButton<OurFileRouter>();
-export const UploadDropzone = generateUploadDropzone<OurFileRouter>();
-
-const { useUploadThing } = generateReactHelpers<OurFileRouter>({
-    url: "/api/uploadthing",
-});
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 interface UploadButtonDialogProps {
     open: boolean
@@ -37,50 +25,52 @@ export function UploadButtonDialog({ open, onOpenChange, onUploadComplete }: Upl
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+    const saveImage = useMutation(api.files.saveImage);
+
     const handleFileChange = useCallback(async (files: File[]) => {
         if (files.length === 0) return;
 
         const file = files[0];
         if (!file.type.startsWith('image/')) {
-            toast.error('Por favor selecciona un archivo de imagen');
+            toast.error('Please select an image file');
             return;
         }
 
         setIsUploading(true);
-        toast.info('Procesando imagen...');
+        toast.info('Uploading image to Convex...');
 
         try {
-            // Read the file as a data URL
-            const reader = new FileReader();
+            // Generate upload URL
+            const uploadUrl = await generateUploadUrl();
 
-            reader.onload = (e) => {
-                const imageUrl = e.target?.result as string;
+            // Upload file to Convex storage
+            const result = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            });
 
-                if (imageUrl) {
-                    console.log("Image loaded successfully");
-                    onUploadComplete?.(imageUrl);
-                    toast.success('Imagen agregada al slide');
-                    onOpenChange(false);
-                } else {
-                    toast.error('No se pudo cargar la imagen');
-                }
+            if (!result.ok) {
+                throw new Error('Failed to upload file');
+            }
 
-                setIsUploading(false);
-            };
+            const { storageId } = await result.json();
 
-            reader.onerror = () => {
-                console.error("Error reading file");
-                toast.error('Error al leer el archivo');
-                setIsUploading(false);
-            };
+            // Get the public URL from Convex
+            const { url } = await saveImage({ storageId });
 
-            reader.readAsDataURL(file);
+            console.log("✅ Image uploaded successfully:", url);
+            onUploadComplete?.(url);
+            toast.success('Image uploaded and added to slide');
+            onOpenChange(false);
         } catch (error) {
-            console.error("Error processing file:", error);
-            toast.error('Error al procesar la imagen');
+            console.error("Error uploading file:", error);
+            toast.error('Error uploading image');
+        } finally {
             setIsUploading(false);
         }
-    }, [onUploadComplete, onOpenChange]);
+    }, [generateUploadUrl, saveImage, onUploadComplete, onOpenChange]);
 
     const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -107,9 +97,9 @@ export function UploadButtonDialog({ open, onOpenChange, onUploadComplete }: Upl
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Subir Imagen</DialogTitle>
+                    <DialogTitle>Upload Image</DialogTitle>
                     <DialogDescription>
-                        Selecciona o arrastra una imagen para subirla y agregarla al slide
+                        Select or drag an image to upload and add to the slide
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
@@ -129,17 +119,17 @@ export function UploadButtonDialog({ open, onOpenChange, onUploadComplete }: Upl
                         {isUploading ? (
                             <>
                                 <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                                <p className="text-sm text-gray-600">Subiendo imagen...</p>
+                                <p className="text-sm text-gray-600">Uploading image...</p>
                             </>
                         ) : (
                             <>
                                 <Upload className="w-12 h-12 text-gray-400" />
                                 <div className="text-center">
                                     <p className="text-sm font-medium text-gray-700">
-                                        Haz clic o arrastra una imagen aquí
+                                        Click or drag an image here
                                     </p>
                                     <p className="text-xs text-gray-500 mt-1">
-                                        PNG, JPG hasta 4MB
+                                        PNG, JPG up to 4MB
                                     </p>
                                 </div>
                             </>
@@ -163,7 +153,7 @@ export function UploadButtonDialog({ open, onOpenChange, onUploadComplete }: Upl
                         onClick={() => onOpenChange(false)}
                         disabled={isUploading}
                     >
-                        Cancelar
+                        Cancel
                     </Button>
                 </DialogFooter>
             </DialogContent>
