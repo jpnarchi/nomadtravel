@@ -125,7 +125,7 @@ export function TemplatesContainer() {
 
     const handleCreateTemplate = async () => {
         if (!newTemplateName.trim() || !newTemplateDescription.trim()) {
-            toast.error("Por favor completa el nombre y la descripción");
+            toast.error("Please complete the name and description");
             return;
         }
 
@@ -137,14 +137,14 @@ export function TemplatesContainer() {
                 sourceTemplateId: selectedSourceTemplateId !== "none" ? selectedSourceTemplateId : undefined,
             });
 
-            toast.success("Plantilla creada exitosamente");
+            toast.success("Template created successfully");
             setIsCreateDialogOpen(false);
             setNewTemplateName("");
             setNewTemplateDescription("");
             setSelectedSourceTemplateId("none");
         } catch (error) {
             console.error("Error creating template:", error);
-            toast.error(error instanceof Error ? error.message : "Error al crear la plantilla");
+            toast.error(error instanceof Error ? error.message : "Error creating template");
         } finally {
             setIsCreating(false);
         }
@@ -161,12 +161,12 @@ export function TemplatesContainer() {
         setIsDeleting(true);
         try {
             await deleteTemplate({ name: templateToDelete.name });
-            toast.success("Plantilla eliminada exitosamente");
+            toast.success("Template deleted successfully");
             setIsDeleteDialogOpen(false);
             setTemplateToDelete(null);
         } catch (error) {
             console.error("Error deleting template:", error);
-            toast.error(error instanceof Error ? error.message : "Error al eliminar la plantilla");
+            toast.error(error instanceof Error ? error.message : "Error deleting template");
         } finally {
             setIsDeleting(false);
         }
@@ -186,18 +186,18 @@ export function TemplatesContainer() {
                     <>
                         <Button size="sm" onClick={() => handleSave(template._id)}>
                             <SaveIcon />
-                            <span className="ml-2">Guardar</span>
+                            <span className="ml-2">Save</span>
                         </Button>
                         <Button size="sm" variant="outline" onClick={handleCancel}>
                             <CancelIcon />
-                            <span className="ml-2">Cancelar</span>
+                            <span className="ml-2">Cancel</span>
                         </Button>
                     </>
                 ) : (
                     <>
                         <Button size="sm" variant="outline" onClick={() => handlePreview(template._id)}>
                             <PreviewIcon />
-                            <span className="ml-1">Vista Previa</span>
+                            <span className="ml-1">Presentation preview</span>
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(template)}>
                             <EditIcon />
@@ -219,14 +219,14 @@ export function TemplatesContainer() {
     const columns: ColumnDef<Template>[] = [
         {
             accessorKey: "name",
-            header: "Nombre",
+            header: "Name",
             cell: ({ row }) => {
                 const template = row.original as any;
                 const isEditing = editingId === template._id;
                 return (
                     <div className="min-w-[220px]">
                         {isEditing ? (
-                            <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Nombre de la plantilla" />
+                            <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Template name" />
                         ) : (
                             <span className="font-medium">{template.name}</span>
                         )}
@@ -236,7 +236,7 @@ export function TemplatesContainer() {
         },
         {
             accessorKey: "description",
-            header: "Descripción",
+            header: "Description",
             cell: ({ row }) => {
                 const template = row.original as any;
                 const isEditing = editingId === template._id;
@@ -246,7 +246,7 @@ export function TemplatesContainer() {
                             <Textarea
                                 value={editDescription}
                                 onChange={(e) => setEditDescription(e.target.value)}
-                                placeholder="Descripción de la plantilla"
+                                placeholder="Template description"
                                 rows={3}
                                 className="resize-none"
                             />
@@ -259,17 +259,17 @@ export function TemplatesContainer() {
         },
         {
             accessorKey: "_creationTime",
-            header: "Creado",
+            header: "Created",
             cell: ({ row }) => {
                 const timestamp = row.getValue("_creationTime") as number;
                 const date = new Date(timestamp);
-                return <div className="text-sm text-muted-foreground">{date.toLocaleDateString("es-ES")}</div>;
+                return <div className="text-sm text-muted-foreground">{date.toLocaleDateString("en-US")}</div>;
             },
         },
         {
             id: "actions",
             enableHiding: false,
-            header: "Acciones",
+            header: "Actions",
             cell: ({ row }) => {
                 const template = row.original as any;
                 return <ActionsCell template={template} />;
@@ -299,13 +299,13 @@ export function TemplatesContainer() {
                 <h1 className="text-xl sm:text-2xl font-bold">Templates</h1>
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                     <PlusIcon className="size-4" />
-                    <span className="ml-2">Crear Nueva</span>
+                    <span className="ml-2">Create New</span>
                 </Button>
             </div>
             <div className="flex items-center justify-between py-4">
                 <div className="flex items-center gap-4">
                     <Input
-                        placeholder="Buscar por nombre..."
+                        placeholder="Search by name..."
                         value={searchTerm}
                         onChange={(event) => setSearchTerm(event.target.value)}
                         className="max-w-md"
@@ -315,7 +315,7 @@ export function TemplatesContainer() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">
-                                Columnas <ChevronDown />
+                                Columns <ChevronDown />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -372,7 +372,7 @@ export function TemplatesContainer() {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    No hay resultados.
+                                    No results.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -381,7 +381,7 @@ export function TemplatesContainer() {
             </div>
             <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                    {(templates?.length ?? 0)} plantilla{(templates?.length ?? 0) !== 1 ? "s" : ""} en total
+                    {(templates?.length ?? 0)} template{(templates?.length ?? 0) !== 1 ? "s" : ""} total
                 </div>
             </div>
 
@@ -389,30 +389,30 @@ export function TemplatesContainer() {
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Crear Nueva Plantilla</DialogTitle>
+                        <DialogTitle>Create New Template</DialogTitle>
                         <DialogDescription>
-                            Crea una nueva plantilla. Opcionalmente, puedes copiar los archivos de una plantilla existente.
+                            Create a new template. Optionally, you can copy files from an existing template.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <label htmlFor="new-template-name" className="text-sm font-medium">
-                                Nombre de la Plantilla
+                                Template Name
                             </label>
                             <Input
                                 id="new-template-name"
-                                placeholder="Ej: Todo App"
+                                placeholder="e.g., Todo App"
                                 value={newTemplateName}
                                 onChange={(e) => setNewTemplateName(e.target.value)}
                             />
                         </div>
                         <div className="grid gap-2">
                             <label htmlFor="new-template-description" className="text-sm font-medium">
-                                Descripción
+                                Description
                             </label>
                             <Textarea
                                 id="new-template-description"
-                                placeholder="Describe qué hace esta plantilla..."
+                                placeholder="Describe what this template does..."
                                 value={newTemplateDescription}
                                 onChange={(e) => setNewTemplateDescription(e.target.value)}
                                 rows={3}
@@ -420,17 +420,17 @@ export function TemplatesContainer() {
                         </div>
                         <div className="grid gap-2">
                             <label htmlFor="source-template" className="text-sm font-medium">
-                                Copiar archivos de plantilla existente (Opcional)
+                                Copy files from existing template (Optional)
                             </label>
                             <Select
                                 value={selectedSourceTemplateId}
                                 onValueChange={(value) => setSelectedSourceTemplateId(value as Id<"templates"> | "none")}
                             >
                                 <SelectTrigger id="source-template" className="w-full">
-                                    <SelectValue placeholder="Selecciona una plantilla (opcional)" />
+                                    <SelectValue placeholder="Select a template (optional)" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="none">Ninguna (plantilla vacía)</SelectItem>
+                                    <SelectItem value="none">None (empty template)</SelectItem>
                                     {templates?.map((template: any) => (
                                         <SelectItem key={template._id} value={template._id}>
                                             {template.name}
@@ -440,7 +440,7 @@ export function TemplatesContainer() {
                             </Select>
                             {selectedSourceTemplateId !== "none" && (
                                 <p className="text-xs text-muted-foreground">
-                                    Los archivos de la plantilla seleccionada serán copiados a la nueva plantilla.
+                                    Files from the selected template will be copied to the new template.
                                 </p>
                             )}
                         </div>
@@ -456,7 +456,7 @@ export function TemplatesContainer() {
                             }}
                             disabled={isCreating}
                         >
-                            Cancelar
+                            Cancel
                         </Button>
                         <Button
                             onClick={handleCreateTemplate}
@@ -465,12 +465,12 @@ export function TemplatesContainer() {
                             {isCreating ? (
                                 <>
                                     <Loader2 className="size-4 mr-2 animate-spin" />
-                                    Creando...
+                                    Creating...
                                 </>
                             ) : (
                                 <>
                                     <PlusIcon className="size-4" />
-                                    Crear Plantilla
+                                    Create Template
                                 </>
                             )}
                         </Button>
@@ -482,9 +482,9 @@ export function TemplatesContainer() {
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent className="sm:max-w-[400px]">
                     <DialogHeader>
-                        <DialogTitle>Confirmar Eliminación</DialogTitle>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
                         <DialogDescription>
-                            ¿Estás seguro de que quieres eliminar la plantilla "{templateToDelete?.name}"? Esta acción no se puede deshacer.
+                            Are you sure you want to delete the template "{templateToDelete?.name}"? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -493,7 +493,7 @@ export function TemplatesContainer() {
                             onClick={handleCancelDelete}
                             disabled={isDeleting}
                         >
-                            Cancelar
+                            Cancel
                         </Button>
                         <Button
                             variant="destructive"
@@ -503,12 +503,12 @@ export function TemplatesContainer() {
                             {isDeleting ? (
                                 <>
                                     <Loader2 className="size-4 mr-2 animate-spin" />
-                                    Eliminando...
+                                    Deleting...
                                 </>
                             ) : (
                                 <>
                                     <TrashIcon />
-                                    <span className="ml-2">Eliminar</span>
+                                    <span className="ml-2">Delete</span>
                                 </>
                             )}
                         </Button>

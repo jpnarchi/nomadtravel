@@ -14,6 +14,9 @@ import { PreviewButton } from "./tools/preview-button";
 import { Skeleton } from "../ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
 import { useProgressiveMessage } from "@/hooks/use-progressive-message";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 
 export function ChatMessage({
@@ -50,6 +53,11 @@ export function ChatMessage({
     const currentDesignMessage = useProgressiveMessage(designMessages, 1500, isLoading, true);
     const currentTextMessage = useProgressiveMessage(textMessages, 1000, isLoading, true);
 
+    // Get current user for profile picture
+    const user = useQuery(api.users.getUserInfo);
+    const userName = user?.name || user?.email || "User";
+    const userInitial = userName.charAt(0).toUpperCase();
+
     return (
         <motion.div
             key={messageId}
@@ -82,9 +90,10 @@ export function ChatMessage({
                                         </div>
                                     )}
                                     {role === 'user' && (
-                                        <div className="size-[24px] border rounded-sm p-1 flex flex-col justify-center items-center shrink-0 text-zinc-500">
-                                            <UserIcon />
-                                        </div>
+                                        <Avatar className="h-6 w-6 shrink-0">
+                                            <AvatarImage src={user?.pictureUrl} alt={userName} />
+                                            <AvatarFallback className="text-xs">{userInitial}</AvatarFallback>
+                                        </Avatar>
                                     )}
                                     <div className="flex-1 min-w-0 break-words overflow-wrap-anywhere">
                                         {role === "user" && displayText.includes("Selected Element:") ? (
@@ -240,7 +249,7 @@ export function ChatMessage({
                                     <div className="flex flex-row gap-2 items-center">
                                         <Loader />
                                         <div className="text-zinc-500 italic">
-                                            Cargando vista previa...
+                                            Loading presentation...
                                         </div>
                                     </div>
                                 </div>

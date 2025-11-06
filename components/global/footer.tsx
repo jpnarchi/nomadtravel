@@ -4,15 +4,15 @@ import { Twitter, Linkedin, Github, Instagram } from 'lucide-react'
 
 const links = [
     {
-        title: 'Inicio',
+        title: 'Home',
         href: '/',
     },
     {
-        title: 'Precios',
+        title: 'Pricing',
         href: '/pricing',
     },
     {
-        title: 'Soporte',
+        title: 'Support',
         href: '/support',
     },
     {
@@ -75,13 +75,13 @@ export function Footer() {
                                 </Link>
                             ))}
                             <span className="text-muted-foreground text-xs mt-4">
-                                © 2025 Nerd.lat, Todos los derechos reservados
+                                © 2025 iLovePresentations, All rights reserved
                             </span>
                         </div>
 
                         {/* Column 2: Social Media */}
                         <div className="flex flex-col gap-3">
-                            <h3 className="text-sm font-semibold text-foreground">Síguenos</h3>
+                            <h3 className="text-sm font-semibold text-foreground">Follow us</h3>
                             <div className="flex gap-4">
                                 {socialLinks.map((social, index) => {
                                     const Icon = social.icon

@@ -111,7 +111,7 @@ export function PreviewTemplate({
                     }}
                 >
                     {isBackButtonLoading ? (<Loader />) : (<ArrowLeftIcon className="size-4" />)}
-                    {isBackButtonLoading ? "Cargando" : "Volver"}
+                    {isBackButtonLoading ? "Loading" : "Return to chat"}
                 </Button>
 
                 <div className="flex gap-2">
@@ -123,7 +123,7 @@ export function PreviewTemplate({
                         {showEditor ? (
                             <>
                                 <Eye className="size-4 mr-2" />
-                                Vista Previa
+                                Preview
                             </>
                         ) : (
                             <>
