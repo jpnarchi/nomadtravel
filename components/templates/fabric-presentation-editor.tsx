@@ -368,17 +368,26 @@ export function FabricPresentationEditor({
     }, [currentSlideIndex])
 
     // Drag and drop handlers using React events
+    const dragCounterRef = useRef(0)
+
+    const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault()
+        e.stopPropagation()
+        dragCounterRef.current++
+        setIsDraggingOver(true)
+    }, [])
+
     const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
         e.stopPropagation()
-        setIsDraggingOver(true)
     }, [])
 
     const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
         e.stopPropagation()
-        // Only hide if leaving the main container
-        if (e.currentTarget === e.target) {
+        dragCounterRef.current--
+
+        if (dragCounterRef.current === 0) {
             setIsDraggingOver(false)
         }
     }, [])
@@ -386,6 +395,7 @@ export function FabricPresentationEditor({
     const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
         e.stopPropagation()
+        dragCounterRef.current = 0
         setIsDraggingOver(false)
 
         const files = Array.from(e.dataTransfer.files)
@@ -406,6 +416,29 @@ export function FabricPresentationEditor({
         reader.readAsDataURL(file)
     }, [handleAddImageToCurrentSlide])
 
+    // Handle drag end globally to hide overlay when user cancels drag
+    useEffect(() => {
+        const handleDragEnd = () => {
+            dragCounterRef.current = 0
+            setIsDraggingOver(false)
+        }
+
+        const handleWindowDrop = () => {
+            dragCounterRef.current = 0
+            setIsDraggingOver(false)
+        }
+
+        window.addEventListener('dragend', handleDragEnd)
+        window.addEventListener('drop', handleWindowDrop)
+        window.addEventListener('mouseup', handleDragEnd)
+
+        return () => {
+            window.removeEventListener('dragend', handleDragEnd)
+            window.removeEventListener('drop', handleWindowDrop)
+            window.removeEventListener('mouseup', handleDragEnd)
+        }
+    }, [])
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center bg-black">
@@ -423,6 +456,7 @@ export function FabricPresentationEditor({
         <div
             ref={editorContainerRef}
             className="h-full flex flex-col bg-zinc-950 relative"
+            onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -641,19 +675,8 @@ export function FabricPresentationEditor({
 
             {/* Global Drag and Drop Overlay */}
             {isDraggingOver && (
-                <div className="absolute inset-0 bg-blue-500/30 backdrop-blur-md flex items-center justify-center z-[9999]">
-                    <div className="bg-white rounded-2xl shadow-2xl p-12 text-center border-4 border-blue-500 border-dashed animate-pulse pointer-events-none">
-                        <Upload className="w-24 h-24 text-blue-500 mx-auto mb-6" />
-                        <h3 className="text-3xl font-bold text-gray-800 mb-3">
-                            Suelta la imagen aquí
-                        </h3>
-                        <p className="text-lg text-gray-600 mb-2">
-                            Se agregará al Slide {currentSlideIndex + 1}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                            Arrastra imágenes desde cualquier lugar sobre el editor
-                        </p>
-                    </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-red-500/40 via-rose-500/40 to-pink-500/40 backdrop-blur-lg flex items-center justify-center z-[9999] pointer-events-none">
+                    <Upload className="w-32 h-32 text-white drop-shadow-2xl" strokeWidth={2.5} />
                 </div>
             )}
         </div>
