@@ -675,8 +675,21 @@ export function FabricPresentationEditor({
 
             {/* Global Drag and Drop Overlay */}
             {isDraggingOver && (
-                <div className="absolute inset-0 bg-gradient-to-br from-red-500/40 via-rose-500/40 to-pink-500/40 backdrop-blur-lg flex items-center justify-center z-[9999] pointer-events-none">
-                    <Upload className="w-32 h-32 text-white drop-shadow-2xl" strokeWidth={2.5} />
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-[9999] pointer-events-none">
+                    <div className="relative">
+                        {/* Animated glow rings */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-48 h-48 rounded-full bg-gradient-to-r from-red-500/30 to-rose-500/30 blur-3xl animate-pulse"></div>
+                        </div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-32 h-32 rounded-full border-4 border-red-500/50 border-dashed animate-spin" style={{ animationDuration: '3s' }}></div>
+                        </div>
+
+                        {/* Icon container */}
+                        <div className="relative  rounded-2xl p-8 ">
+                            <Upload className="w-24 h-24 text-white" strokeWidth={2} />
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

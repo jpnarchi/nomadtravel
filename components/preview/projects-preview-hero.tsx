@@ -8,17 +8,19 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useQuery } from 'convex/react'
+import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import * as fabric from 'fabric'
 import { useRouter } from 'next/navigation'
-import { Presentation, Clock, ArrowRight, ChevronRight, Search, ArrowUpDown, Check } from 'lucide-react'
+import { Presentation, Clock, ArrowRight, ChevronRight, Search, ArrowUpDown, Check, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Doc } from "@/convex/_generated/dataModel"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 interface SlideCanvasProps {
     slideContent: string | null
@@ -27,13 +29,16 @@ interface SlideCanvasProps {
     createdAt: number
     index: number
     userInfo: Doc<"users"> | null
+    onRename: (chatId: Id<"chats">, currentTitle: string) => void
+    onDelete: (chatId: Id<"chats">, title: string) => void
 }
 
 
-function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }: SlideCanvasProps) {
+function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, onRename, onDelete }: SlideCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const [isLoaded, setIsLoaded] = useState(false)
+    const [menuOpen, setMenuOpen] = useState(false)
     const router = useRouter()
 
     // Debug: Log user info to check pictureUrl
@@ -293,11 +298,10 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            onClick={handleClick}
-            className="group relative rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 active:scale-[0.98]"
+            className="group relative rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
         >
             {/* Canvas Container */}
-            <div className="relative aspect-video bg-zinc-900/50 flex items-center justify-center overflow-hidden">
+            <div className="relative aspect-video bg-zinc-900/50 flex items-center justify-center overflow-hidden cursor-pointer rounded-t-xl sm:rounded-t-2xl" onClick={handleClick}>
                 {!isLoaded && (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
@@ -313,7 +317,7 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }
                 />
 
                 {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
                     <div className="flex items-center gap-2 text-white font-medium text-sm sm:text-base">
                         <span>Open presentation...</span>
                         <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
@@ -322,7 +326,7 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }
             </div>
 
             {/* Info Section */}
-            <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+            <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 bg-white rounded-b-xl sm:rounded-b-2xl">
                 <div className="flex items-start gap-2 sm:gap-3">
                     <Avatar className="w-8 h-8 sm:w-10 sm:h-10 shrink-0">
                         <AvatarImage src={userInfo?.pictureUrl} alt={userInfo?.name || 'User'} />
@@ -339,6 +343,72 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }
                             <span className="line-clamp-1">{formatDate(createdAt)}</span>
                         </div>
                     </div>
+
+                    {/* 3-dot menu button */}
+                    <div className="relative self-end">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-zinc-100"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setMenuOpen(!menuOpen)
+                            }}
+                        >
+                            <MoreVertical className="h-4 w-4 text-zinc-500" />
+                        </Button>
+
+                        {/* Dropdown Menu */}
+                        <AnimatePresence>
+                            {menuOpen && (
+                                <>
+                                    {/* Backdrop to close menu */}
+                                    <div
+                                        className="fixed inset-0 z-40"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setMenuOpen(false)
+                                        }}
+                                    />
+
+                                    {/* Menu */}
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.1 }}
+                                        className="absolute top-10 right-0 w-48 bg-white border border-zinc-200 rounded-lg shadow-xl z-[999] overflow-hidden"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="py-1">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setMenuOpen(false)
+                                                    onRename(chatId, title)
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-sm hover:bg-zinc-100 transition-colors flex items-center gap-2 text-zinc-700"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                                <span>Rename presentation</span>
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setMenuOpen(false)
+                                                    onDelete(chatId, title)
+                                                }}
+                                                className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 transition-colors flex items-center gap-2 text-red-600"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                <span>Delete</span>
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
         </motion.div>
@@ -348,9 +418,62 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo }
 export function ProjectsPreviewHero() {
     const allPresentations = useQuery(api.chats.getAllPresentationsWithFirstSlide)
     const userInfo = useQuery(api.users.getUserInfo)
+    const updateTitle = useMutation(api.chats.updateTitle)
+    const deleteChat = useMutation(api.chats.deleteChat)
+
     const [searchQuery, setSearchQuery] = useState('')
     const [sortBy, setSortBy] = useState<'lastEdited' | 'dateCreated' | 'alphabetical'>('lastEdited')
     const [dropdownOpen, setDropdownOpen] = useState(false)
+
+    // Rename dialog state
+    const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+    const [renameChatId, setRenameChatId] = useState<Id<"chats"> | null>(null)
+    const [renameCurrentTitle, setRenameCurrentTitle] = useState('')
+    const [newTitle, setNewTitle] = useState('')
+
+    // Delete dialog state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [deleteChatId, setDeleteChatId] = useState<Id<"chats"> | null>(null)
+    const [deleteTitle, setDeleteTitle] = useState('')
+
+    // Handler to open rename dialog
+    const handleRename = (chatId: Id<"chats">, currentTitle: string) => {
+        setRenameChatId(chatId)
+        setRenameCurrentTitle(currentTitle)
+        setNewTitle(currentTitle)
+        setRenameDialogOpen(true)
+    }
+
+    // Handler to confirm rename
+    const handleConfirmRename = async () => {
+        if (renameChatId && newTitle.trim() && newTitle !== renameCurrentTitle) {
+            try {
+                await updateTitle({ chatId: renameChatId, title: newTitle })
+                setRenameDialogOpen(false)
+            } catch (error) {
+                console.error('Error renaming presentation:', error)
+            }
+        }
+    }
+
+    // Handler to open delete dialog
+    const handleDelete = (chatId: Id<"chats">, title: string) => {
+        setDeleteChatId(chatId)
+        setDeleteTitle(title)
+        setDeleteDialogOpen(true)
+    }
+
+    // Handler to confirm delete
+    const handleConfirmDelete = async () => {
+        if (deleteChatId) {
+            try {
+                await deleteChat({ chatId: deleteChatId })
+                setDeleteDialogOpen(false)
+            } catch (error) {
+                console.error('Error deleting presentation:', error)
+            }
+        }
+    }
 
     // Filter and sort presentations
     const filteredAndSortedPresentations = allPresentations
@@ -537,11 +660,73 @@ export function ProjectsPreviewHero() {
                                 createdAt={presentation.createdAt}
                                 index={index}
                                 userInfo={userInfo || null}
+                                onRename={handleRename}
+                                onDelete={handleDelete}
                             />
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* Rename Dialog */}
+            <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Presentation</DialogTitle>
+                        <DialogDescription>
+                            Enter a new name for "{renameCurrentTitle}"
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="rename">New Name</Label>
+                            <Input
+                                id="rename"
+                                placeholder={renameCurrentTitle}
+                                value={newTitle}
+                                onChange={(e) => setNewTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && newTitle.trim()) {
+                                        handleConfirmRename()
+                                    }
+                                }}
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleConfirmRename}
+                            disabled={!newTitle.trim() || newTitle === renameCurrentTitle}
+                        >
+                            Rename
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete "{deleteTitle}"</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this presentation? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleConfirmDelete}>
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
