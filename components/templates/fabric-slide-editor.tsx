@@ -10,7 +10,17 @@
 import { useEffect, useRef, useState } from 'react'
 import * as fabric from 'fabric'
 import { toast } from 'sonner'
-
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
 
 // Import utilities and components
 import { createText, createRectangle, createCircle, createTriangle, createLine, addImageToCanvas } from './fabric-editor/shape-factory'
@@ -624,13 +634,52 @@ export function FabricSlideEditor({
                 onUpdateTextProperty={handleUpdateTextProperty}
                 onUpdateFillColor={handleUpdateFillColor}
             />
+             <Dialog open={showImageUrlDialog} onOpenChange={setShowImageUrlDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Agregar Imagen desde URL</DialogTitle>
+                        <DialogDescription>
+                            Ingresa la URL de una imagen para agregarla al slide
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label className="mb-2">URL de la Imagen</Label>
+                        <Input
+                            type="url"
+                            placeholder="https://ejemplo.com/imagen.jpg"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleAddImageFromUrl()
+                                }
+                            }}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowImageUrlDialog(false)
+                                setImageUrl('')
+                            }}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button onClick={handleAddImageFromUrl}>
+                            Agregar Imagen
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {/* Image Upload Dialog */}
-            <UploadButtonDialog
+            {/* <UploadButtonDialog
                 open={showImageUrlDialog}
                 onOpenChange={setShowImageUrlDialog}
                 onUploadComplete={handleAddImage}
-            />
+            /> */}
+        
         </div>
     )
 }
