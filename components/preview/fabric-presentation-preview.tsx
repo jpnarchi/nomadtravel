@@ -349,6 +349,7 @@ export function FabricPresentationPreview({
                         fabricObj.set({
                             selectable: false,
                             evented: false,
+                            opacity: obj.opacity ?? 1,
                         })
                         console.log(`✅ Objeto ${index} creado`)
                         return fabricObj
@@ -788,7 +789,7 @@ export function FabricPresentationPreview({
                             </Tooltip>
                         </div>
 
-                    <ScrollArea className="flex-1">
+                    <ScrollArea className="flex-1 min-h-0">
                         <div className="p-3 space-y-3">
                             {slides.map((slide, index) => (
                                 <Tooltip key={index}>
@@ -845,7 +846,7 @@ export function FabricPresentationPreview({
                         </div>
                     </ScrollArea>
 
-                    <div className="p-4 border-t border-zinc-700/50 bg-zinc-800/30">
+                    {/* <div className="p-4 border-t border-zinc-700/50 bg-zinc-800/30">
                         <h4 className="text-xs font-semibold text-white mb-3 flex items-center gap-2">
                             <span className="text-blue-400">⌨️</span> Keyboard Shortcuts
                         </h4>
@@ -878,7 +879,7 @@ export function FabricPresentationPreview({
                                 <span className="text-[11px] text-white">Reset zoom</span>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             )}
 
@@ -1171,10 +1172,10 @@ export function FabricPresentationPreview({
                     </Tooltip>
 
                     {/* Divider */}
-                    <div className="h-10 w-px bg-white/20 mx-1" />
+                    {/* <div className="h-10 w-px bg-white/20 mx-1" /> */}
 
                     {/* Export Controls */}
-                    <Tooltip>
+                    {/* <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
@@ -1189,9 +1190,9 @@ export function FabricPresentationPreview({
                         <TooltipContent>
                             <p>Export to PDF</p>
                         </TooltipContent>
-                    </Tooltip>
+                    </Tooltip> */}
 
-                    <Tooltip>
+                    {/* <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
                                 variant="ghost"
@@ -1206,7 +1207,7 @@ export function FabricPresentationPreview({
                         <TooltipContent>
                             <p>Export to PowerPoint</p>
                         </TooltipContent>
-                    </Tooltip>
+                    </Tooltip> */}
                 </div>
 
                 {/* Fullscreen Exit Button */}

@@ -66,7 +66,7 @@ export function FabricPresentationEditor({
             .map(([path, content], index) => {
                 try {
                     const parsed = JSON.parse(content);
-                    console.log(`  📄 ${path}: ${parsed.objects?.length || 0} objetos`);
+                    console.log(`  📄 ${path}: ${parsed.objects?.length || 0} objects`);
                     return {
                         id: `slide-${Date.now()}-${index}`, // Unique ID that persists through reorders
                         path,
@@ -464,25 +464,17 @@ export function FabricPresentationEditor({
             {/* Top toolbar */}
             <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-xl font-bold text-white">Editor de Presentación</h2>
+                    <h2 className="text-xl font-bold text-white">Presentation Editor</h2>
                     <span className="text-sm text-zinc-400">
-                        Slide {currentSlideIndex + 1} de {slides.length}
+                        Slide {currentSlideIndex + 1} of {slides.length}
                     </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => duplicateSlide(currentSlideIndex)}
-                    >
-                        <Copy className="size-4 mr-2" />
-                        Duplicar Slide
-                    </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
                     {hasUnsavedChanges && !isSaving && (
                         <span className="text-sm text-yellow-400 flex items-center gap-1">
                             <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse"></span>
-                            Cambios sin guardar
+                            Unsaved changes
                         </span>
                     )}
                     {isAdmin && (
@@ -499,7 +491,7 @@ export function FabricPresentationEditor({
                         size="sm"
                         onClick={handleSave}
                         disabled={isSaving || !hasUnsavedChanges}
-                        className={hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                        className={hasUnsavedChanges ? 'relative overflow-hidden bg-gradient-to-r from-[#E5332D] via-[#db3f42] to-[#BD060A] bg-[length:200%_100%] animate-gradient-x hover:shadow-lg hover:shadow-[#E5332D]/50 transition-all duration-300' : ''}
                     >
                         {isSaving ? (
                             <>
@@ -509,7 +501,7 @@ export function FabricPresentationEditor({
                         ) : (
                             <>
                                 <Save className="size-4 mr-2" />
-                                {hasUnsavedChanges ? 'Guardar Cambios' : 'Todo Guardado'}
+                                {hasUnsavedChanges ? 'Save Changes' : 'All Saved'}
                             </>
                         )}
                     </Button>
@@ -526,7 +518,7 @@ export function FabricPresentationEditor({
                                 onClick={addSlide}
                             >
                                 <Plus className="size-4 mr-2" />
-                                Nuevo Slide
+                                New Slide
                             </Button>
                         </div>
 
@@ -614,7 +606,7 @@ export function FabricPresentationEditor({
                                                 style={{ backgroundColor: slide.data.background || '#ffffff' }}
                                             >
                                                 <span className="font-medium text-zinc-700">
-                                                    {objectCount} {objectCount === 1 ? 'objeto' : 'objetos'}
+                                                    {objectCount} {objectCount === 1 ? 'object' : 'objects'}
                                                 </span>
                                             </div>
                                         </div>
@@ -655,7 +647,7 @@ export function FabricPresentationEditor({
                         disabled={currentSlideIndex === 0}
                     >
                         <ChevronLeft className="size-4 mr-2" />
-                        Anterior
+                        Previous
                     </Button>
 
                     <span className="text-white font-medium">
@@ -667,7 +659,7 @@ export function FabricPresentationEditor({
                         onClick={goToNextSlide}
                         disabled={currentSlideIndex === slides.length - 1}
                     >
-                        Siguiente
+                        Next
                         <ChevronRight className="size-4 ml-2" />
                     </Button>
                 </div>

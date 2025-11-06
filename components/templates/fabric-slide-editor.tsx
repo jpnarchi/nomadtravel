@@ -13,7 +13,7 @@ import { toast } from 'sonner'
 
 
 // Import utilities and components
-import { createText, createRectangle, createCircle, createTriangle, addImageToCanvas } from './fabric-editor/shape-factory'
+import { createText, createRectangle, createCircle, createTriangle, createLine, addImageToCanvas } from './fabric-editor/shape-factory'
 import { loadObjectsToCanvas } from './fabric-editor/object-loader'
 import {
     serializeCanvas,
@@ -325,6 +325,12 @@ export function FabricSlideEditor({
         toast.success('Triángulo agregado')
     }
 
+    const handleAddLine = () => {
+        if (!fabricCanvasRef.current) return
+        createLine(fabricCanvasRef.current)
+        toast.success('Línea agregada')
+    }
+
     // ============================================================================
     // IMAGE HANDLERS
     // ============================================================================
@@ -567,6 +573,7 @@ export function FabricSlideEditor({
                 onAddRectangle={handleAddRectangle}
                 onAddCircle={handleAddCircle}
                 onAddTriangle={handleAddTriangle}
+                onAddLine={handleAddLine}
                 onFileSelect={handleFileSelect}
                 onShowImageUrlDialog={() => setShowImageUrlDialog(true)}
             />
@@ -604,7 +611,7 @@ export function FabricSlideEditor({
                     />
 
                     <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-2 py-1.5 rounded backdrop-blur-sm">
-                        <p className="text-[10px] text-zinc-300">Shift+Arrastrar para mover | Rueda para zoom</p>
+                        <p className="text-[10px] text-zinc-300">Shift+Drag to move | Wheel to zoom</p>
                     </div>
                 </div>
             </div>

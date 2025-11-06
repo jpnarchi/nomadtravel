@@ -367,12 +367,12 @@ export function WorkbenchFileExplorer({
                             {isSaving ? (
                                 <>
                                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                                    Guardando...
+                                    Saving...
                                 </>
                             ) : (
                                 <>
                                     <SaveIcon className="mr-1 h-4 w-4" />
-                                    Guardar Cambios
+                                    Save Changes
                                 </>
                             )}
                         </Button>

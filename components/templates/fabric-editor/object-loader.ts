@@ -217,6 +217,7 @@ const applyCommonProperties = (fabricObj: fabric.FabricObject, obj: any) => {
         lockRotation: obj.lockRotation || false,
         lockScalingX: obj.lockScalingX || false,
         lockScalingY: obj.lockScalingY || false,
+        opacity: obj.opacity ?? 1,
     })
 }
 

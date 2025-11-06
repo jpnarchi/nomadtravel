@@ -192,6 +192,19 @@ export function PropertiesSidebar({
                                         </Button>
                                     </div>
                                 </div>
+                                <div>
+                                    <Label className="text-xs text-zinc-300 mb-2 block font-medium">Line height</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.1"
+                                        min="0.5"
+                                        max="3"
+                                        value={(selectedObject as any).lineHeight || 1.16}
+                                        onChange={(e) => onUpdateTextProperty('lineHeight', parseFloat(e.target.value))}
+                                        className="h-10 bg-zinc-700 border-zinc-600 text-white"
+                                    />
+                                    <p className="text-[10px] text-zinc-400 mt-1">1.0 = single spacing, 1.5 = 1.5x spacing</p>
+                                </div>
                             </div>
                         )}
 
@@ -211,6 +224,25 @@ export function PropertiesSidebar({
                                 />
                             </div>
                         )}
+
+                        {/* Opacity Control - Available for all objects */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs text-zinc-300 font-medium">Opacity</Label>
+                                <span className="text-xs text-zinc-400 font-medium">
+                                    {Math.round(((selectedObject as any).opacity ?? 1) * 100)}%
+                                </span>
+                            </div>
+                            <Input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                value={(selectedObject as any).opacity ?? 1}
+                                onChange={(e) => onUpdateTextProperty('opacity', parseFloat(e.target.value))}
+                                className="w-full h-2 cursor-pointer accent-blue-500"
+                            />
+                        </div>
                     </div>
                 )}
 

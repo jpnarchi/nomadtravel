@@ -513,10 +513,10 @@ export function ProjectsPreviewHero() {
                     <div className="text-center py-8 sm:py-12">
                         <Presentation className="w-12 h-12 sm:w-16 sm:h-16 text-zinc-600 mx-auto mb-3 sm:mb-4" />
                         <h3 className="text-lg sm:text-xl font-semibold text-zinc-700 mb-2 px-4">
-                            No hay presentaciones aún
+                            You don't have presentations yet
                         </h3>
                         <p className="text-sm sm:text-base text-zinc-500 px-4">
-                            Crea tu primera presentación para verla aquí
+                            Create your first presentation to see it here
                         </p>
                     </div>
                 </div>

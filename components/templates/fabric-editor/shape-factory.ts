@@ -12,6 +12,7 @@ export const createText = (canvas: fabric.Canvas) => {
         fontSize: 60,
         fill: '#ffffff',
         fontFamily: 'Arial',
+        lineHeight: 1.16,
         editable: true,
         selectable: true,
         evented: true,
@@ -91,6 +92,24 @@ export const createTriangle = (canvas: fabric.Canvas) => {
     canvas.renderAll()
 
     return triangle
+}
+
+export const createLine = (canvas: fabric.Canvas) => {
+    const line = new fabric.Line([100, 100, 500, 100], {
+        stroke: '#ffffff',
+        strokeWidth: 4,
+        selectable: true,
+        evented: true,
+        hasControls: true,
+        hasBorders: true,
+        strokeLineCap: 'round',
+    })
+
+    canvas.add(line)
+    canvas.setActiveObject(line)
+    canvas.renderAll()
+
+    return line
 }
 
 export const addImageToCanvas = async (canvas: fabric.Canvas, imgSrc: string) => {

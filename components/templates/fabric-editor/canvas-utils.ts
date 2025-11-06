@@ -23,6 +23,7 @@ export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) 
             'lockRotation',
             'lockScalingX',
             'lockScalingY',
+            'opacity',
             // Text-specific properties
             'text',
             'fontSize',
@@ -70,7 +71,7 @@ export const copyObjectToJSON = (obj: fabric.FabricObject) => {
         'selectable', 'evented', 'hasControls', 'hasBorders',
         'lockScalingFlip', 'crossOrigin',
         'lockMovementX', 'lockMovementY', 'lockRotation',
-        'lockScalingX', 'lockScalingY',
+        'lockScalingX', 'lockScalingY', 'opacity',
         'text', 'fontSize', 'fontFamily', 'fontWeight',
         'fontStyle', 'textAlign', 'lineHeight',
         'charSpacing', 'styles', 'editable', 'width'
@@ -213,6 +214,7 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
                 evented: true,
                 hasControls: true,
                 hasBorders: true,
+                opacity: objData.opacity ?? 1,
             })
 
             canvas.add(newObj)
