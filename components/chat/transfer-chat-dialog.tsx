@@ -92,7 +92,7 @@ export function TransferChatDialog({
 
     return (
         <Dialog open={isTransferDialogOpen} onOpenChange={setIsTransferDialogOpen}>
-            <DialogTrigger asChild className="hover:bg-[#3A3A3A]">
+            <DialogTrigger asChild className="hover:bg-[#f5f5f5]">
                 <Button variant="ghost" size="sm" className="gap-1 cursor-pointer w-full flex justify-start">
                     <UserPlus className="h-4 w-4" />
                     Transfer
@@ -100,15 +100,15 @@ export function TransferChatDialog({
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Transferir Chat</DialogTitle>
+                    <DialogTitle>Transfer Chat</DialogTitle>
                     <DialogDescription>
-                        Transfiere la propiedad del chat "{chatTitle}" a otro usuario.
+                        Transfer the property of the chat"{chatTitle}" to another user.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                         <label htmlFor="new-owner-email" className="text-sm font-medium">
-                            Email del nuevo propietario
+                            Email of new user
                         </label>
                         <div className="relative">
                             <Input
@@ -131,17 +131,17 @@ export function TransferChatDialog({
                         </div>
                         {emailValidation?.isValid && emailValidation.userInfo && (
                             <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                                ✓ Usuario encontrado: {emailValidation.userInfo.name}
+                                ✓ User found: {emailValidation.userInfo.name}
                             </div>
                         )}
                         {emailValidation?.isValid === false && (
                             <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                                ✗ Usuario no encontrado
+                                ✗ User not found
                             </div>
                         )}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                        Esta acción transferirá permanentemente el chat y todos sus archivos, mensajes y sugerencias al nuevo propietario.
+                    This action will permanently transfer the chat and all its files, messages, and suggestions to the new owner.
                     </div>
                 </div>
                 <DialogFooter>
@@ -150,7 +150,7 @@ export function TransferChatDialog({
                         onClick={handleCancel}
                         disabled={isTransferring}
                     >
-                        Cancelar
+                        Cancel
                     </Button>
                     <Button
                         onClick={handleTransferChat}
@@ -159,10 +159,10 @@ export function TransferChatDialog({
                         {isTransferring ? (
                             <>
                                 <Loader2 className="size-4 mr-2 animate-spin" />
-                                Transferiendo...
+                                Transfering...
                             </>
                         ) : (
-                            "Transferir Chat"
+                            "Transfer chat"
                         )}
                     </Button>
                 </DialogFooter>

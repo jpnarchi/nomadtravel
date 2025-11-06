@@ -221,7 +221,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             onClick={() => handleEditStart(item._id, item.title || "")}
                             className="gap-2 cursor-pointer"
                           >
-                            <Edit2 className="h-4 w-4 text-white" />
+                            <Edit2 className="h-4 w-4 text-black" />
                             Rename
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -230,9 +230,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             disabled={isDuplicating}
                           >
                             {isDuplicating ? (
-                              <Loader2 className="h-4 w-4 text-white animate-spin" />
+                              <Loader2 className="h-4 w-4 text-black animate-spin" />
                             ) : (
-                              <Copy className="h-4 w-4 text-white" />
+                              <Copy className="h-4 w-4 text-black" />
                             )}
                             {isDuplicating ? "Duplicating" : "Duplicate"}
                           </DropdownMenuItem>

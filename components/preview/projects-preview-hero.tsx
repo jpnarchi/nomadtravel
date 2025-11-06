@@ -298,26 +298,33 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
-            className="group relative rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+            onClick={handleClick}
+            className="group relative rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer"
         >
             {/* Canvas Container */}
-            <div className="relative aspect-video bg-zinc-900/50 flex items-center justify-center overflow-hidden cursor-pointer rounded-t-xl sm:rounded-t-2xl" onClick={handleClick}>
+            <div className="relative aspect-video bg-white flex items-center justify-center overflow-hidden rounded-t-xl sm:rounded-t-2xl">
                 {!isLoaded && (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
                     </div>
                 )}
                 <canvas
                     ref={canvasRef}
-                    className={`transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    className={`transition-opacity duration-300 pointer-events-none ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                     style={{
                         maxWidth: '100%',
                         maxHeight: '100%',
                     }}
                 />
 
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                {/* Clickable overlay to ensure clicks work on mobile */}
+                <div
+                    className="absolute inset-0 cursor-pointer z-10"
+                    onClick={handleClick}
+                />
+
+                {/* Hover Overlay - visible on tap for mobile */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none z-20">
                     <div className="flex items-center gap-2 text-white font-medium text-sm sm:text-base">
                         <span>Open presentation...</span>
                         <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
@@ -326,15 +333,15 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
             </div>
 
             {/* Info Section */}
-            <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 bg-white rounded-b-xl sm:rounded-b-2xl">
+            <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 bg-white rounded-b-xl sm:rounded-b-2xl cursor-pointer">
                 <div className="flex items-start gap-2 sm:gap-3">
-                    <Avatar className="w-8 h-8 sm:w-10 sm:h-10 shrink-0">
+                    <Avatar className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 pointer-events-none">
                         <AvatarImage src={userInfo?.pictureUrl} alt={userInfo?.name || 'User'} />
                         <AvatarFallback className="bg-blue-500 text-white font-semibold text-xs sm:text-sm">
                             {userInfo?.name?.charAt(0)?.toUpperCase() || 'U'}
                         </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0 text-black">
+                    <div className="flex-1 min-w-0 text-black pointer-events-none">
                         <h3 className="text-sm sm:text-base line-clamp-1 group-hover:text-blue-400 transition-colors font-medium">
                             {title}
                         </h3>
@@ -345,7 +352,7 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
                     </div>
 
                     {/* 3-dot menu button */}
-                    <div className="relative self-end">
+                    <div className="relative self-end z-10">
                         <Button
                             variant="ghost"
                             size="sm"
