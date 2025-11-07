@@ -56,7 +56,7 @@ const raleway = Raleway({
   subsets: ["latin"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ilovepresentations.ai";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ilovepresentations.io";
 
 export const metadata = {
   title: "iLovePresentations ",
