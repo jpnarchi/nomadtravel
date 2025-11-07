@@ -137,7 +137,7 @@ export function FabricSlideEditor({
             return
         }
 
-        const json = fabricCanvasRef.current.toJSON(['selectable', 'evented', 'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY', 'hasControls', 'hasBorders', 'opacity', 'src', 'left', 'top', 'scaleX', 'scaleY', 'angle', 'width', 'height', 'originX', 'originY'])
+        const json = (fabricCanvasRef.current as any).toJSON(['selectable', 'evented', 'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY', 'hasControls', 'hasBorders', 'opacity', 'src', 'left', 'top', 'scaleX', 'scaleY', 'angle', 'width', 'height', 'originX', 'originY'])
         const state = {
             json,
             backgroundColor
@@ -648,7 +648,7 @@ export function FabricSlideEditor({
             })
 
             // Paste all objects with relative positioning maintained
-            const pastedObjects = []
+            const pastedObjects: fabric.FabricObject[] = []
             for (const objData of objectsToPaste) {
                 // Create a copy of objData with offset applied
                 const offsetObjData = {
