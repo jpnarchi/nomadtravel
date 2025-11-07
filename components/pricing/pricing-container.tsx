@@ -127,12 +127,13 @@ export function PricingContainer() {
                     />
                     <PricingCard
                         plan={{
-                            name: "Premium",
+                            name: "Ultra",
                             price: "49 USD",
                             description: "For agencies",
                             features: [
                                 'Everything in the premium plan',
                                 'Unlimited presentations',
+                                'Create your own templates',
                                 'Personalized templates',
                                 'Unlimited versions of your presentations',
                                 'Export to Power Point and Google Slides'

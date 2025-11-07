@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
 export function PricingPopup({
     isOpen,
@@ -16,6 +17,7 @@ export function PricingPopup({
     const { isSignedIn } = useAuth();
     const user = useQuery(api.users.getUserInfo);
     const upgrade = useAction(api.stripe.pay);
+    const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
 
     const handleUpgrade = async (plan: "pro" | "premium") => {
@@ -25,6 +27,18 @@ export function PricingPopup({
         }
 
         const url = await upgrade({ plan });
+        if (url) {
+            router.push(url);
+        }
+    }
+
+    const handleBillingPortal = async () => {
+        if (!isSignedIn) {
+            router.push('/sign-in');
+            return;
+        }
+
+        const url = await billingPortal();
         if (url) {
             router.push(url);
         }
@@ -82,25 +96,37 @@ export function PricingPopup({
                 {/* Content */}
                 <div className="p-8 md:p-10 lg:p-12">
                     <div className="text-center space-y-3 mb-10">
-                        <h2 className="text-3xl md:text-4xl font-semibold">Precios</h2>
+                        <h2 className="text-3xl md:text-4xl font-semibold">Pricing</h2>
                         <p className="text-muted-foreground text-base md:text-lg">
-                            Escoge el plan que mejor se adapte a tus necesidades
+                            Choose the plan that best fits your needs
                         </p>
                     </div>
 
-                    <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {user?.subscriptionId && (
+                        <div className="flex justify-center mb-8">
+                            <Button
+                                variant="outline"
+                                className="w-fit cursor-pointer"
+                                onClick={handleBillingPortal}
+                            >
+                                Manage subscription
+                            </Button>
+                        </div>
+                    )}
+
+                    <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                         <PricingCard
                             plan={{
-                                name: "Gratis",
-                                price: "$0 MXN / mes",
-                                description: "Para testear",
+                                name: "Free",
+                                price: "$0 USD",
+                                description: "For a quick presentation",
                                 features: [
-                                    '1 proyecto',
-                                    '4 versiones de tu proyecto',
-                                    'Plantillas limitadas',
-                                    'Comunidad de usuarios'
+                                    '2 presentations',
+                                    '4 versions of your presentations',
+                                    'Unlimited templates',
+                                    'User community'
                                 ],
-                                buttonText: user?.plan === "free" ? "Plan actual" : "Empezar",
+                                buttonText: user?.plan === "free" ? "Current plan" : "Get started",
                                 buttonVariant: "outline",
                                 onButtonClick: () => { },
                                 isDisabled: user?.plan === "free" || user?.plan === "pro" || user?.plan === "premium"
@@ -110,22 +136,22 @@ export function PricingPopup({
                         <PricingCard
                             plan={{
                                 name: "Pro",
-                                price: "$1,000 MXN / mes",
-                                description: "Para negocios",
+                                price: "$7 USD",
+                                description: "For passionate creators",
                                 features: [
-                                    'Todo lo del plan gratis',
-                                    'Llamada semanal con negocios',
-                                    'Seminario con expertos',
-                                    'Participa en votación semanal',
-                                    'Proyectos ilimitados',
-                                    '50 versiones de tu proyecto',
-                                    'Plantillas ilimitadas',
-                                    'Soporte prioritario',
-                                    '2 Hostings'
+                                    'Everything in the free plan',
+                                    'Weekly call with businesses',
+                                    'Participate in weekly voting',
+                                    '10 presentations per month',
+                                    '30 versions per presentation',
+                                    'Unlimited templates',
+                                    'Priority support',
+                                    'Export to Power Point and Google Slides'
                                 ],
-                                isPopular: true,
-                                buttonText: user?.plan === "pro" ? "Plan actual" : "Empezar",
+
+                                buttonText: user?.plan === "pro" ? "Current plan" : "Get started",
                                 onButtonClick: () => handleUpgrade('pro'),
+                                buttonVariant: "outline",
                                 isDisabled: user?.plan === "pro"
                             }}
                         />
@@ -133,16 +159,36 @@ export function PricingPopup({
                         <PricingCard
                             plan={{
                                 name: "Premium",
-                                price: "$4,000 MXN / mes",
-                                description: "Para agencias",
+                                description: "For presentations lovers",
+                                price: "20 USD",
+
                                 features: [
-                                    'Todo lo del plan pro',
-                                    'Llamada semanal con agencias',
-                                    'Proyectos ilimitados',
-                                    'Versiones ilimitadas de tu proyecto',
-                                    'Hostings ilimitados'
+                                    'Everything in the pro plan',
+                                    '35 presentations per month',
+                                    'Unlimited versions per presentations',
+                                    'Export to Power Point and Google Slides'
                                 ],
-                                buttonText: user?.plan === "premium" ? "Plan actual" : "Empezar",
+                                buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
+                                isPopular: true,
+                                buttonVariant:"gradient",
+                                onButtonClick: () => handleUpgrade('premium'),
+                                isDisabled: user?.plan === "premium"
+                            }}
+                        />
+                        <PricingCard
+                            plan={{
+                                name: "Ultra",
+                                price: "49 USD",
+                                description: "For agencies",
+                                features: [
+                                    'Everything in the premium plan',
+                                    'Unlimited presentations',
+                                    'Create your own templates',
+                                    'Personalized templates',
+                                    'Unlimited versions of your presentations',
+                                    'Export to Power Point and Google Slides'
+                                ],
+                                buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
                                 buttonVariant: "outline",
                                 onButtonClick: () => handleUpgrade('premium'),
                                 isDisabled: user?.plan === "premium"
