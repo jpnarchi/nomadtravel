@@ -45,7 +45,7 @@ export function PricingContainer() {
                 backgroundRepeat: 'no-repeat'
             }}
             >
-            <div className="mx-auto max-w-6xl px-6">
+            <div className="mx-auto max-w-[140rem] px-6">
                 <div className="mx-auto max-w-2xl space-y-6 text-center">
                     <h1 className="text-center text-4xl font-semibold lg:text-5xl">Pricing</h1>
                     <p>Choose the plan that best fits your needs</p>
@@ -64,16 +64,16 @@ export function PricingContainer() {
                     </div>
                 )}
 
-                <div className="mt-8 grid gap-6 md:mt-12 md:grid-cols-3">
+                <div className="mx-auto max-w-[80rem] mt-8 grid gap-6 md:mt-12 md:grid-cols-4">
                     <PricingCard
                         plan={{
                             name: "Free",
-                            price: "$0 MXN / month",
-                            description: "For testing",
+                            price: "$0 USD",
+                            description: "For a quick presentation",
                             features: [
-                                '1 project',
-                                '4 versions of your project',
-                                'Limited templates',
+                                '2 presentations',
+                                '4 versions of your presentations',
+                                'Unlimited templates',
                                 'User community'
                             ],
                             buttonText: user?.plan === "free" ? "Current plan" : "Get started",
@@ -86,22 +86,22 @@ export function PricingContainer() {
                     <PricingCard
                         plan={{
                             name: "Pro",
-                            price: "$1,000 MXN / month",
-                            description: "For businesses",
+                            price: "$7 USD",
+                            description: "For passionate creators",
                             features: [
                                 'Everything in the free plan',
-                                'Weekly call with businesses',
-                                'Seminars with experts',
+                                'Weekly call with businesses', 
                                 'Participate in weekly voting',
-                                'Unlimited projects',
-                                '50 versions of your project',
+                                '10 presentations per month',
+                                '30 versions per presentation',
                                 'Unlimited templates',
                                 'Priority support',
-                                '2 Hostings'
+                                'Export to Power Point and Google Slides'
                             ],
-                            isPopular: true,
+                            
                             buttonText: user?.plan === "pro" ? "Current plan" : "Get started",
                             onButtonClick: () => handleUpgrade('pro'),
+                            buttonVariant: "outline",
                             isDisabled: user?.plan === "pro"
                         }}
                     />
@@ -109,14 +109,33 @@ export function PricingContainer() {
                     <PricingCard
                         plan={{
                             name: "Premium",
-                            price: "$4,000 MXN / month",
-                            description: "For agencies",
+                            description: "For presentations lovers",
+                            price: "20 USD",
+                            
                             features: [
                                 'Everything in the pro plan',
-                                'Weekly call with agencies',
-                                'Unlimited projects',
-                                'Unlimited versions of your project',
-                                'Unlimited hosting'
+                                '35 presentations per month',
+                                'Unlimited versions per presentations',
+                                'Export to Power Point and Google Slides'
+                            ],
+                            buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
+                            isPopular: true,
+                            buttonVariant:"gradient",
+                            onButtonClick: () => handleUpgrade('premium'),
+                            isDisabled: user?.plan === "premium"
+                        }}
+                    />
+                    <PricingCard
+                        plan={{
+                            name: "Premium",
+                            price: "49 USD",
+                            description: "For agencies",
+                            features: [
+                                'Everything in the premium plan',
+                                'Unlimited presentations',
+                                'Personalized templates',
+                                'Unlimited versions of your presentations',
+                                'Export to Power Point and Google Slides'
                             ],
                             buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
                             buttonVariant: "outline",

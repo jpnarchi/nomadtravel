@@ -197,7 +197,7 @@ export function TemplatesContainer() {
                     <>
                         <Button size="sm" variant="outline" onClick={() => handlePreview(template._id)}>
                             <PreviewIcon />
-                            <span className="ml-1">Presentation preview</span>
+                            <span className="ml-1">Preview</span>
                         </Button>
                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(template)}>
                             <EditIcon />

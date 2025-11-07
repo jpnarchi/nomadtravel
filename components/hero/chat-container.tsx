@@ -14,7 +14,7 @@ import { createPromptWithAttachments } from "@/lib/utils";
 import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { HowSection } from "./how-section"
-import { ProjectsPreviewHero } from "../preview/projects-preview-hero"
+import { ProjectsPreviewHero } from "./projects-preview-hero"
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();

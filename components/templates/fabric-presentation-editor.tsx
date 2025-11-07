@@ -51,6 +51,7 @@ export function FabricPresentationEditor({
     const [isUploading, setIsUploading] = useState(false)
     const editorContainerRef = useRef<HTMLDivElement>(null)
     const slideEditorRef = useRef<any>(null)
+    const copiedObjectRef = useRef<any>(null) // Global clipboard for all slides
 
     // Load slides from initial files
     useEffect(() => {
@@ -106,6 +107,12 @@ export function FabricPresentationEditor({
             index,
             objectsCount: newData.objects?.length,
             background: newData.background
+        })
+
+        // Log each object's position
+        console.log('📦 Objetos recibidos en updateSlide:')
+        newData.objects?.forEach((obj: any, i: number) => {
+            console.log(`  ${i}. ${obj.type} at (${obj.left}, ${obj.top}) scale(${obj.scaleX}, ${obj.scaleY})`)
         })
 
         setSlides(prevSlides => {
@@ -419,6 +426,19 @@ export function FabricPresentationEditor({
         }
     }, [generateUploadUrl, saveImage, handleAddImageToCurrentSlide])
 
+    // Global copy/paste handlers
+    const handleCopyObject = useCallback((objectData: any) => {
+        copiedObjectRef.current = objectData
+        const count = Array.isArray(objectData) ? objectData.length : 1
+        console.log(`📋 ${count} objeto(s) copiado(s) al portapapeles global:`, objectData)
+        toast.success(`${count} object${count > 1 ? 's' : ''} copied`)
+    }, [])
+
+    const handlePasteObject = useCallback(() => {
+        console.log('📋 Intentando pegar desde portapapeles global:', copiedObjectRef.current)
+        return copiedObjectRef.current
+    }, [])
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center bg-black">
@@ -609,6 +629,8 @@ export function FabricPresentationEditor({
                                     slideData={currentSlide.data}
                                     onSlideChange={(newData) => updateSlide(currentSlideIndex, newData)}
                                     slideNumber={currentSlideIndex + 1}
+                                    onCopyObject={handleCopyObject}
+                                    onPasteObject={handlePasteObject}
                                 />
                             )
                         )}

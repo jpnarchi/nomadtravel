@@ -34,18 +34,22 @@ import {
 import { ToolsSidebar } from './fabric-editor/tools-sidebar'
 import { PropertiesSidebar } from './fabric-editor/properties-sidebar'
 import { EditorToolbar } from './fabric-editor/editor-toolbar'
-import {UploadButtonDialog} from "./fabric-editor/uploadthing-button"
+import {UploadButtonDialog} from "./fabric-editor/image-upload-button"
 
 interface FabricSlideEditorProps {
     slideData: any
     onSlideChange: (slideData: any) => void
     slideNumber: number
+    onCopyObject: (objectData: any) => void
+    onPasteObject: () => any
 }
 
 export function FabricSlideEditor({
     slideData,
     onSlideChange,
-    slideNumber
+    slideNumber,
+    onCopyObject,
+    onPasteObject
 }: FabricSlideEditorProps) {
     // Refs
     const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -54,7 +58,6 @@ export function FabricSlideEditor({
     const saveCanvasRef = useRef<() => void>(() => {})
     const isInitialLoadRef = useRef(true)
     const baseScaleRef = useRef(1)
-    const copiedObjectRef = useRef<any>(null)
 
 
     // Convex mutations
@@ -67,6 +70,11 @@ export function FabricSlideEditor({
     const [zoom, setZoom] = useState(1)
     const [showUploadDialog, setShowUploadDialog] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
+
+    // History management for undo/redo
+    const historyRef = useRef<any[]>([])
+    const historyStepRef = useRef<number>(-1)
+    const isUndoRedoRef = useRef<boolean>(false)
 
     // ============================================================================
     // SAVE CANVAS FUNCTION
@@ -84,6 +92,19 @@ export function FabricSlideEditor({
             return
         }
 
+        // Log current canvas objects before serialization
+        console.log('📊 Objetos en canvas ANTES de serializar:')
+        const objects = fabricCanvasRef.current.getObjects()
+        objects.forEach((obj, index) => {
+            console.log(`  ${index}. ${obj.type} at (${obj.left}, ${obj.top}) scale(${obj.scaleX}, ${obj.scaleY})`)
+
+            // Warn about suspicious coordinates (likely ActiveSelection bug)
+            if (obj.left < -100 || obj.top < -100) {
+                console.warn(`⚠️ ADVERTENCIA: Objeto ${index} tiene coordenadas sospechosas: (${obj.left}, ${obj.top})`)
+                console.warn('   Esto puede indicar que el objeto está en un grupo ActiveSelection')
+            }
+        })
+
         const slideJSON = serializeCanvas(fabricCanvasRef.current, backgroundColor)
 
         console.log('💾 Guardando slide:', {
@@ -92,7 +113,13 @@ export function FabricSlideEditor({
             background: backgroundColor,
         })
 
-        console.log('🔄 Llamando onSlideChange con:', slideJSON)
+        // Log what's being saved
+        console.log('📦 Datos que se guardarán:')
+        slideJSON.objects.forEach((obj, index) => {
+            console.log(`  ${index}. ${obj.type} at (${obj.left}, ${obj.top}) scale(${obj.scaleX}, ${obj.scaleY})`)
+        })
+
+        console.log('🔄 Llamando onSlideChange con:', JSON.stringify(slideJSON, null, 2))
         onSlideChange(slideJSON)
         console.log('✅ onSlideChange llamado exitosamente')
     }
@@ -103,14 +130,101 @@ export function FabricSlideEditor({
     })
 
     // ============================================================================
+    // HISTORY (UNDO/REDO) FUNCTIONS
+    // ============================================================================
+    const saveStateToHistory = () => {
+        if (!fabricCanvasRef.current || isUndoRedoRef.current || isInitialLoadRef.current) {
+            return
+        }
+
+        const json = fabricCanvasRef.current.toJSON(['selectable', 'evented', 'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY', 'hasControls', 'hasBorders', 'opacity', 'src', 'left', 'top', 'scaleX', 'scaleY', 'angle', 'width', 'height', 'originX', 'originY'])
+        const state = {
+            json,
+            backgroundColor
+        }
+
+        // Remove any states after current step (if we're not at the end)
+        historyRef.current = historyRef.current.slice(0, historyStepRef.current + 1)
+
+        // Add new state
+        historyRef.current.push(state)
+        historyStepRef.current++
+
+        // Limit history to 50 steps
+        if (historyRef.current.length > 50) {
+            historyRef.current.shift()
+            historyStepRef.current--
+        }
+
+        console.log('💾 Estado guardado en historial. Step:', historyStepRef.current, 'Total:', historyRef.current.length)
+    }
+
+    const undo = async () => {
+        if (historyStepRef.current <= 0 || !fabricCanvasRef.current) {
+            console.log('⏮️ No hay más estados para deshacer')
+            return
+        }
+
+        isUndoRedoRef.current = true
+        historyStepRef.current--
+
+        const state = historyRef.current[historyStepRef.current]
+
+        fabricCanvasRef.current.clear()
+        await fabricCanvasRef.current.loadFromJSON(state.json)
+
+        setBackgroundColor(state.backgroundColor)
+        fabricCanvasRef.current.backgroundColor = state.backgroundColor
+        fabricCanvasRef.current.renderAll()
+
+        saveCanvas()
+
+        setTimeout(() => {
+            isUndoRedoRef.current = false
+        }, 100)
+
+        console.log('⏮️ Undo. Step:', historyStepRef.current)
+        toast.success('Undo')
+    }
+
+    const redo = async () => {
+        if (historyStepRef.current >= historyRef.current.length - 1 || !fabricCanvasRef.current) {
+            console.log('⏭️ No hay más estados para rehacer')
+            return
+        }
+
+        isUndoRedoRef.current = true
+        historyStepRef.current++
+
+        const state = historyRef.current[historyStepRef.current]
+
+        fabricCanvasRef.current.clear()
+        await fabricCanvasRef.current.loadFromJSON(state.json)
+
+        setBackgroundColor(state.backgroundColor)
+        fabricCanvasRef.current.backgroundColor = state.backgroundColor
+        fabricCanvasRef.current.renderAll()
+
+        saveCanvas()
+
+        setTimeout(() => {
+            isUndoRedoRef.current = false
+        }, 100)
+
+        console.log('⏭️ Redo. Step:', historyStepRef.current)
+        toast.success('Redo')
+    }
+
+    // ============================================================================
     // INITIALIZE CANVAS
     // ============================================================================
     useEffect(() => {
         if (!canvasRef.current || !containerRef.current) return
 
         const container = containerRef.current
-        const containerWidth = container.clientWidth - 32
-        const containerHeight = container.clientHeight - 32
+        // Account for padding (16px on each side = 32px total)
+        const containerWidth = container.clientWidth - 64
+        const containerHeight = container.clientHeight - 64
 
         const scaleX = containerWidth / 1920
         const scaleY = containerHeight / 1080
@@ -146,6 +260,9 @@ export function FabricSlideEditor({
         setTimeout(() => {
             isInitialLoadRef.current = false
             console.log('✅ Carga inicial completa, auto-guardado habilitado')
+
+            // Save initial state to history
+            saveStateToHistory()
         }, 1500)
 
         // Handle resize
@@ -153,8 +270,9 @@ export function FabricSlideEditor({
             if (!canvasRef.current || !containerRef.current || !fabricCanvasRef.current) return
 
             const container = containerRef.current
-            const containerWidth = container.clientWidth - 32
-            const containerHeight = container.clientHeight - 32
+            // Account for padding (16px on each side = 32px total)
+            const containerWidth = container.clientWidth - 64
+            const containerHeight = container.clientHeight - 64
 
             const scaleX = containerWidth / 1920
             const scaleY = containerHeight / 1080
@@ -177,6 +295,16 @@ export function FabricSlideEditor({
         return () => {
             if (fabricCanvasRef.current) {
                 console.log('🧹 Limpiando canvas y guardando estado final...')
+
+                // CRITICAL: Clear any active selection before cleanup save
+                // This prevents saving objects with group-relative coordinates
+                const activeObject = fabricCanvasRef.current.getActiveObject()
+                if (activeObject && activeObject.type === 'activeSelection') {
+                    console.log('⚠️ ActiveSelection detectada durante cleanup - limpiando selección')
+                    fabricCanvasRef.current.discardActiveObject()
+                    fabricCanvasRef.current.renderAll()
+                }
+
                 saveCanvasRef.current()
             }
             canvas.dispose()
@@ -218,11 +346,21 @@ export function FabricSlideEditor({
             isInitialLoad = false
         }, 1500)
 
-        canvas.on('object:modified', () => debouncedSave())
-        canvas.on('object:added', (e) => {
-            if (!isInitialLoad) debouncedSave()
+        // Save state to history on meaningful changes
+        canvas.on('object:modified', () => {
+            saveStateToHistory()
+            debouncedSave()
         })
-        canvas.on('object:removed', () => debouncedSave())
+        canvas.on('object:added', (e) => {
+            if (!isInitialLoad) {
+                saveStateToHistory()
+                debouncedSave()
+            }
+        })
+        canvas.on('object:removed', () => {
+            saveStateToHistory()
+            debouncedSave()
+        })
         canvas.on('object:scaling', () => debouncedSave())
         canvas.on('object:rotating', () => debouncedSave())
         canvas.on('object:moving', () => debouncedSave())
@@ -230,26 +368,10 @@ export function FabricSlideEditor({
             if (!isInitialLoad) debouncedSave()
         })
         canvas.on('text:editing:exited', (e) => {
-            if (!isInitialLoad) debouncedSave()
-        })
-
-        // Zoom with mouse wheel
-        canvas.on('mouse:wheel', (opt) => {
-            const event = opt.e as WheelEvent
-            const delta = event.deltaY
-            let newZoom = canvas.getZoom()
-            newZoom *= 0.999 ** delta
-
-            if (newZoom > 5) newZoom = 5
-            if (newZoom < 0.1) newZoom = 0.1
-
-            canvas.zoomToPoint(
-                { x: event.offsetX, y: event.offsetY } as any,
-                newZoom
-            )
-            setZoom(newZoom)
-            event.preventDefault()
-            event.stopPropagation()
+            if (!isInitialLoad) {
+                saveStateToHistory()
+                debouncedSave()
+            }
         })
 
         // Panning
@@ -297,6 +419,7 @@ export function FabricSlideEditor({
         if (fabricCanvasRef.current && !isInitialLoadRef.current) {
             fabricCanvasRef.current.backgroundColor = backgroundColor
             fabricCanvasRef.current.renderAll()
+            saveStateToHistory()
             saveCanvas()
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -392,26 +515,207 @@ export function FabricSlideEditor({
     // OBJECT OPERATIONS
     // ============================================================================
     const handleDeleteSelected = () => {
-        if (!fabricCanvasRef.current || !selectedObject) return
-        fabricCanvasRef.current.remove(selectedObject)
+        if (!fabricCanvasRef.current) return
+
+        const activeObjects = fabricCanvasRef.current.getActiveObjects()
+
+        if (activeObjects.length === 0) return
+
+        // Remove all selected objects
+        activeObjects.forEach(obj => {
+            fabricCanvasRef.current?.remove(obj)
+        })
+
+        fabricCanvasRef.current.discardActiveObject()
         fabricCanvasRef.current.renderAll()
         setSelectedObject(null)
-        
+        saveCanvas()
+
+        toast.success(`${activeObjects.length} object${activeObjects.length > 1 ? 's' : ''} deleted`)
     }
 
     const handleCopyObject = () => {
-        if (!selectedObject) return
-        copiedObjectRef.current = copyObjectToJSON(selectedObject)
-        
+        if (!fabricCanvasRef.current) return
+
+        const activeSelection = fabricCanvasRef.current.getActiveObject()
+
+        if (!activeSelection) {
+            toast.error('No objects selected to copy')
+            return
+        }
+
+        const activeObjects = fabricCanvasRef.current.getActiveObjects()
+
+        if (activeObjects.length === 0) {
+            toast.error('No objects selected to copy')
+            return
+        }
+
+        // Copy all selected objects
+        const objectsData = activeObjects.map(obj => {
+            const data = copyObjectToJSON(obj)
+
+            // CRITICAL FIX: Get TRUE canvas position using calcTransformMatrix + qrDecompose
+            // This correctly extracts absolute canvas coordinates even when object is in an ActiveSelection group
+            const matrix = obj.calcTransformMatrix()
+            const decomposed = fabric.util.qrDecompose(matrix)
+
+            console.log(`📋 Copying ${obj.type}:`, {
+                groupRelative: { left: obj.left, top: obj.top },
+                trueCanvasPosition: { left: decomposed.translateX, top: decomposed.translateY }
+            })
+
+            // Override with TRUE canvas coordinates
+            data.left = decomposed.translateX
+            data.top = decomposed.translateY
+
+            return data
+        })
+
+        // Store as array if multiple, single object if one
+        const dataToStore = objectsData.length === 1 ? objectsData[0] : objectsData
+
+        onCopyObject(dataToStore) // Parent will show success toast
+
+        console.log(`📋 ${objectsData.length} objeto(s) copiado(s) con posiciones absolutas`)
     }
 
     const handlePasteObject = async () => {
-        if (!fabricCanvasRef.current || !copiedObjectRef.current) return
+        if (!fabricCanvasRef.current) return
+
+        const copiedData = onPasteObject()
+        if (!copiedData) {
+            toast.error('No object to paste')
+            return
+        }
 
         try {
-            await pasteObjectFromJSON(fabricCanvasRef.current, copiedObjectRef.current)
-        
+            // Check if it's an array (multiple objects) or single object
+            const objectsToPaste = Array.isArray(copiedData) ? copiedData : [copiedData]
+
+            console.log(`📋 Pegando ${objectsToPaste.length} objeto(s)`)
+
+            // Calculate bounding box of all objects
+            let minLeft = Infinity
+            let minTop = Infinity
+            let maxRight = -Infinity
+            let maxBottom = -Infinity
+
+            objectsToPaste.forEach(obj => {
+                const left = obj.left || 0
+                const top = obj.top || 0
+                const width = (obj.width || 100) * (obj.scaleX || 1)
+                const height = (obj.height || 100) * (obj.scaleY || 1)
+
+                minLeft = Math.min(minLeft, left)
+                minTop = Math.min(minTop, top)
+                maxRight = Math.max(maxRight, left + width)
+                maxBottom = Math.max(maxBottom, top + height)
+            })
+
+            const groupWidth = maxRight - minLeft
+            const groupHeight = maxBottom - minTop
+
+            console.log('📏 Bounding box original:', {
+                minLeft, minTop, maxRight, maxBottom, groupWidth, groupHeight,
+                objects: objectsToPaste.map(o => ({ left: o.left, top: o.top, width: o.width, height: o.height }))
+            })
+
+            // If objects are off-screen (negative or too large), paste at canvas center
+            // Otherwise paste with 50px offset
+            let targetLeft, targetTop
+
+            if (minLeft < 0 || minTop < 0 || minLeft > 1920 || minTop > 1080) {
+                // Objects are off-screen, paste at center
+                targetLeft = (1920 - groupWidth) / 2
+                targetTop = (1080 - groupHeight) / 2
+                console.log('📍 Objetos fuera de pantalla, pegando en centro:', { targetLeft, targetTop })
+            } else {
+                // Objects are on-screen, paste with offset
+                targetLeft = minLeft + 50
+                targetTop = minTop + 50
+                console.log('📍 Pegando con offset de 50px:', { targetLeft, targetTop })
+            }
+
+            // Calculate the offset to apply to all objects
+            const offsetX = targetLeft - minLeft
+            const offsetY = targetTop - minTop
+
+            console.log('📐 Offset calculation:', {
+                targetLeft, targetTop,
+                minLeft, minTop,
+                offsetX, offsetY
+            })
+
+            // Paste all objects with relative positioning maintained
+            const pastedObjects = []
+            for (const objData of objectsToPaste) {
+                // Create a copy of objData with offset applied
+                const offsetObjData = {
+                    ...objData,
+                    left: objData.left + offsetX,
+                    top: objData.top + offsetY
+                }
+
+                console.log('📋 Pegando objeto:', {
+                    type: offsetObjData.type,
+                    originalLeft: objData.left,
+                    originalTop: objData.top,
+                    newLeft: offsetObjData.left,
+                    newTop: offsetObjData.top
+                })
+
+                const pastedObj = await pasteObjectFromJSON(fabricCanvasRef.current, offsetObjData)
+                if (pastedObj) {
+                    pastedObjects.push(pastedObj)
+                }
+            }
+
+            // Log positions before selection
+            console.log('📍 Posiciones ANTES de selección:')
+            pastedObjects.forEach((obj, i) => {
+                console.log(`  ${i}. ${obj.type} at (${obj.left}, ${obj.top})`)
+            })
+
+            // Select all pasted objects if multiple
+            // CRITICAL: Use setActiveObject with an ActiveSelection WITHOUT transforming coordinates
+            // We need to let Fabric handle the selection naturally
+            if (pastedObjects.length > 0 && fabricCanvasRef.current) {
+                if (pastedObjects.length === 1) {
+                    // Single object - just select it
+                    fabricCanvasRef.current.setActiveObject(pastedObjects[0])
+                } else {
+                    // Multiple objects - let user see them but don't force a selection
+                    // Creating an ActiveSelection here would transform coordinates
+                    fabricCanvasRef.current.discardActiveObject()
+                }
+                fabricCanvasRef.current.renderAll()
+            }
+
+            // Log positions after selection
+            console.log('📍 Posiciones DESPUÉS de selección:')
+            pastedObjects.forEach((obj, i) => {
+                console.log(`  ${i}. ${obj.type} at (${obj.left}, ${obj.top})`)
+            })
+
+            // Save AFTER selection is complete
+            setTimeout(() => {
+                console.log('📍 Posiciones ANTES de saveCanvas:')
+                pastedObjects.forEach((obj, i) => {
+                    console.log(`  ${i}. ${obj.type} at (${obj.left}, ${obj.top})`)
+                })
+
+                // CRITICAL: Force save even if initial load hasn't completed
+                // This ensures cross-slide paste operations are saved
+                const wasInitialLoad = isInitialLoadRef.current
+                isInitialLoadRef.current = false
+                saveCanvas()
+                console.log(`🔧 Force-disabled isInitialLoad for paste save (was: ${wasInitialLoad})`)
+            }, 50)
+
+            toast.success(`${pastedObjects.length} object${pastedObjects.length > 1 ? 's' : ''} pasted`)
         } catch (error) {
+            console.error('Error pasting objects:', error)
             toast.error('Error pasting object')
         }
     }
@@ -474,13 +778,13 @@ export function FabricSlideEditor({
     // ============================================================================
     const handleZoomIn = () => {
         if (!fabricCanvasRef.current) return
-        const newZoom = zoomIn(fabricCanvasRef.current, zoom)
+        const newZoom = zoomIn(fabricCanvasRef.current, zoom, baseScaleRef.current)
         setZoom(newZoom)
     }
 
     const handleZoomOut = () => {
         if (!fabricCanvasRef.current) return
-        const newZoom = zoomOut(fabricCanvasRef.current, zoom)
+        const newZoom = zoomOut(fabricCanvasRef.current, zoom, baseScaleRef.current)
         setZoom(newZoom)
     }
 
@@ -517,6 +821,14 @@ export function FabricSlideEditor({
                 handlePasteObject()
             }
 
+            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+                e.preventDefault()
+                redo()
+            } else if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+                e.preventDefault()
+                undo()
+            }
+
             if ((e.key === 'Delete' || e.key === 'Backspace') && !isTextInput) {
                 e.preventDefault()
                 handleDeleteSelected()
@@ -526,7 +838,7 @@ export function FabricSlideEditor({
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedObject])
+    }, [selectedObject, handleCopyObject, handlePasteObject, handleDeleteSelected, undo, redo])
 
     // ============================================================================
     // CLIPBOARD & DRAG-DROP
@@ -627,7 +939,7 @@ export function FabricSlideEditor({
             />
 
             {/* Center - Canvas Area */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 min-w-0 flex flex-col">
                 {/* Top Toolbar */}
                 <EditorToolbar
                     slideNumber={slideNumber}
@@ -647,19 +959,18 @@ export function FabricSlideEditor({
                 {/* Canvas */}
                 <div
                     ref={containerRef}
-                    className="flex-1 bg-zinc-800 flex items-center justify-center overflow-hidden relative"
+                    className="flex-1 bg-zinc-800 flex items-start justify-center overflow-auto relative p-4"
                 >
                     <canvas
                         ref={canvasRef}
-                        className="shadow-2xl border-2 border-zinc-600 rounded-sm"
+                        className="shadow-2xl border-2 border-zinc-600 rounded-sm flex-shrink-0"
                         style={{
                             display: 'block',
-                            margin: '0 auto',
                         }}
                     />
 
                     <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-2 py-1.5 rounded backdrop-blur-sm">
-                        <p className="text-[10px] text-zinc-300">Shift+Drag to move | Wheel to zoom</p>
+                        <p className="text-[10px] text-zinc-300">Shift+Drag to move</p>
                     </div>
                 </div>
             </div>

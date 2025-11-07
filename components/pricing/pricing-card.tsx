@@ -10,7 +10,7 @@ interface PricingCardProps {
         features: string[]
         isPopular?: boolean
         buttonText: string
-        buttonVariant?: "default" | "outline"
+        buttonVariant?: "default" | "outline" | "gradient"
         onButtonClick: () => void
         isDisabled?: boolean
     }
@@ -18,20 +18,22 @@ interface PricingCardProps {
 
 export function PricingCard({ plan }: PricingCardProps) {
     return (
-        <Card className={`h-full flex flex-col ${plan.isPopular ? "relative" : ""}`}>
+        <Card className={`h-full flex flex-col ${plan.isPopular ? "relative border-2 border-[#E5332D]" : ""}`}>
             {plan.isPopular && (
-                <span className="bg-linear-to-br/increasing absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full from-purple-400 to-amber-300 px-3 py-1 text-xs font-medium text-amber-950 ring-1 ring-inset ring-white/20 ring-offset-1 ring-offset-gray-950/5">
-                    Popular
+                <span className="bg-gradient-to-r from-[#E5332D] via-[#db3f42] to-[#BD060A] bg-[length:200%_100%]  absolute inset-x-0 -top-3 mx-auto flex h-6 w-fit items-center rounded-full px-3 py-1 text-xs font-medium text-white ring-offset-1 ring-offset-gray-950/5">
+                    Most Popular
                 </span>
             )}
 
             <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold">{plan.name}</CardTitle>
-                <span className="my-4 block text-3xl font-bold">{plan.price}</span>
                 <CardDescription className="text-base">{plan.description}</CardDescription>
+                <span className="my-4 block text-5xl font-bold">{plan.price}</span>
+                <CardDescription className="text-sm -mt-4">/ billed monthly</CardDescription>
+                
                 <Button
                     variant={plan.buttonVariant || "default"}
-                    className="mt-6 w-full cursor-pointer h-11"
+                    className="mt-6 w-full cursor-pointer h-11 rounded-4xl text-2sm"
                     onClick={plan.onButtonClick}
                     disabled={plan.isDisabled}
                 >

@@ -541,15 +541,6 @@ export function FabricPresentationPreview({
             } else if (e.key === 't' || e.key === 'T') {
                 e.preventDefault()
                 setShowThumbnails(!showThumbnails)
-            } else if ((e.key === '+' || e.key === '=') && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault()
-                handleZoomIn()
-            } else if ((e.key === '-' || e.key === '_') && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault()
-                handleZoomOut()
-            } else if (e.key === '0' && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault()
-                handleZoomReset()
             }
         }
 
@@ -846,40 +837,6 @@ export function FabricPresentationPreview({
                         </div>
                     </ScrollArea>
 
-                    {/* <div className="p-4 border-t border-zinc-700/50 bg-zinc-800/30">
-                        <h4 className="text-xs font-semibold text-white mb-3 flex items-center gap-2">
-                            <span className="text-blue-400">⌨️</span> Keyboard Shortcuts
-                        </h4>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="flex items-center gap-1.5">
-                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">←</kbd>
-                                    <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">→</kbd>
-                                </div>
-                                <span className="text-[11px] text-white">Navigate</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">F</kbd>
-                                <span className="text-[11px] text-white">Fullscreen</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">T</kbd>
-                                <span className="text-[11px] text-white">Thumbnails</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">Ctrl +</kbd>
-                                <span className="text-[11px] text-white">Zoom in</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">Ctrl -</kbd>
-                                <span className="text-[11px] text-white">Zoom out</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                                <kbd className="px-2 py-1 bg-zinc-700 rounded-md text-[10px] font-mono text-white shadow-sm border border-zinc-600">Ctrl 0</kbd>
-                                <span className="text-[11px] text-white">Reset zoom</span>
-                            </div>
-                        </div>
-                    </div> */}
                 </div>
             )}
 
