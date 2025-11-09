@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { query, mutation, QueryCtx, MutationCtx, internalMutation } from "./_generated/server";
+import { query, mutation, QueryCtx, MutationCtx, internalMutation, internalQuery } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 
 // Helper function to get today's date in YYYY-MM-DD format
@@ -444,6 +444,33 @@ export const updateSubscriptionById = internalMutation({
 
         await ctx.db.patch(user._id, {
             endsOn: endsOn
+        });
+    },
+});
+
+export const getUserBySubscriptionId = internalQuery({
+    args: {
+        subscriptionId: v.string(),
+    },
+    handler: async (ctx, { subscriptionId }) => {
+        const user = await ctx.db.query("users")
+            .withIndex("by_subscriptionId", (q) => q.eq("subscriptionId", subscriptionId))
+            .unique();
+
+        return user;
+    },
+});
+
+export const cancelSubscription = internalMutation({
+    args: {
+        userId: v.id("users"),
+    },
+    handler: async (ctx, { userId }) => {
+        await ctx.db.patch(userId, {
+            plan: "free",
+            subscriptionId: undefined,
+            customerId: undefined,
+            endsOn: undefined,
         });
     },
 });

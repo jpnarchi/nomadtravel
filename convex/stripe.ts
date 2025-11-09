@@ -82,44 +82,78 @@ export const fulfill = internalAction({
                 signature,
                 webhookSecret
             );
-            const completedEvent = event.data.object as Stripe.Checkout.Session & {
-                metadata: Metadata;
-            }
-
             if (event.type === "checkout.session.completed") {
-                const subscription = await stripe.subscriptions.retrieve(
-                    completedEvent.subscription as string
-                )
+                const completedEvent = event.data.object as Stripe.Checkout.Session & {
+                    metadata: Metadata;
+                };
+                // Verificar que la sesión tenga una suscripción
+                if (!completedEvent.subscription) {
+                    console.log("No subscription found in checkout session - this is OK, will be handled by invoice.payment_succeeded");
+                    return { success: true };
+                }
 
-                if (subscription.items && subscription.items.data && subscription.items.data.length > 0) {
-                    const firstSubscriptionItem = subscription.items.data[0];
-                    const currentPeriodEnd = firstSubscriptionItem.current_period_end;
+                try {
+                    // Expandir el objeto subscription con line_items para obtener el producto
+                    const subscription = await stripe.subscriptions.retrieve(
+                        completedEvent.subscription as string,
+                        {
+                            expand: ['items.data.price.product']
+                        }
+                    )
 
-                    const userId = completedEvent.metadata.userId;
+                    if (subscription.items && subscription.items.data && subscription.items.data.length > 0) {
+                        const firstSubscriptionItem = subscription.items.data[0];
+                        const currentPeriodEnd = firstSubscriptionItem.current_period_end;
 
-                    let plan = subscription.items.data[0].plan.product as string;
+                        const userId = completedEvent.metadata.userId;
 
-                    if (plan === process.env.STRIPE_PRO_PRODUCT_ID!) {
-                        plan = "pro";
-                    } else if (plan === process.env.STRIPE_PREMIUM_PRODUCT_ID!) {
-                        plan = "premium";
-                    } else if (plan === process.env.STRIPE_ULTRA_PRODUCT_ID!) {
-                        plan = "ultra";
+                        // Obtener el Product ID del price
+                        // Si está expandido, es un objeto; si no, es un string
+                        const product = subscription.items.data[0].price.product;
+                        const productId = typeof product === 'string' ? product : product.id;
+
+                        console.log("Product ID detected:", productId);
+
+                        // Convertir Product ID a plan name
+                        let plan: "pro" | "premium" | "ultra" | string = productId;
+
+                        if (productId === process.env.STRIPE_PRO_PRODUCT_ID!) {
+                            plan = "pro";
+                        } else if (productId === process.env.STRIPE_PREMIUM_PRODUCT_ID!) {
+                            plan = "premium";
+                        } else if (productId === process.env.STRIPE_ULTRA_PRODUCT_ID!) {
+                            plan = "ultra";
+                        } else {
+                            console.log(`Unknown product ID: ${productId}`);
+                            return { success: false, error: `Unknown product ID: ${productId}` };
+                        }
+
+                        await runMutation(internal.users.updateSubscription, {
+                            userId,
+                            subscriptionId: subscription.id,
+                            customerId: subscription.customer as string,
+                            endsOn: currentPeriodEnd * 1000,
+                            plan: plan,
+                        });
                     }
-
-                    await runMutation(internal.users.updateSubscription, {
-                        userId,
-                        subscriptionId: subscription.id,
-                        customerId: subscription.customer as string,
-                        endsOn: currentPeriodEnd * 1000,
-                        plan: plan,
-                    });
+                } catch (error) {
+                    // Si falla en checkout.session.completed, no es crítico
+                    // porque invoice.payment_succeeded lo manejará
+                    console.log("Error in checkout.session.completed (will be handled by invoice.payment_succeeded):", error);
+                    return { success: true };
                 }
             }
 
             if (event.type === "invoice.payment_succeeded") {
+                const invoice = event.data.object as any;
+
+                if (!invoice.subscription) {
+                    console.log("No subscription in invoice");
+                    return { success: true };
+                }
+
                 const subscription = await stripe.subscriptions.retrieve(
-                    completedEvent.subscription as string
+                    invoice.subscription as string
                 );
 
                 if (subscription.items && subscription.items.data && subscription.items.data.length > 0) {
@@ -130,6 +164,22 @@ export const fulfill = internalAction({
                         subscriptionId: subscription.id,
                         endsOn: currentPeriodEnd * 1000,
                     });
+                }
+            }
+
+            if (event.type === "customer.subscription.deleted") {
+                const subscription = event.data.object as Stripe.Subscription;
+
+                // Buscar el usuario por subscriptionId y resetear a plan free
+                const user = await runQuery(internal.users.getUserBySubscriptionId, {
+                    subscriptionId: subscription.id,
+                });
+
+                if (user) {
+                    await runMutation(internal.users.cancelSubscription, {
+                        userId: user._id,
+                    });
+                    console.log(`Subscription ${subscription.id} cancelled for user ${user._id}`);
                 }
             }
 

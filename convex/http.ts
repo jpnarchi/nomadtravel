@@ -14,7 +14,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import { Id } from "./_generated/dataModel";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const webSearchTool = anthropic.tools.webSearch_20250305({
     maxUses: 5,
@@ -920,6 +920,38 @@ http.route({
             });
         } else {
             return new Response();
+        }
+    }),
+});
+
+// Stripe webhook endpoint
+http.route({
+    path: "/stripe",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+        const signature = request.headers.get("stripe-signature");
+
+        if (!signature) {
+            return new Response("No signature", { status: 400 });
+        }
+
+        const body = await request.text();
+
+        const result = await ctx.runAction(internal.stripe.fulfill, {
+            signature,
+            payload: body,
+        });
+
+        if (result.success) {
+            return new Response(JSON.stringify({ received: true }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            });
+        } else {
+            return new Response(JSON.stringify({ error: result.error }), {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+            });
         }
     }),
 });
