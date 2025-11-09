@@ -183,11 +183,12 @@ export const getUsersByPlan = query({
             v.literal("free"),
             v.literal("pro"),
             v.literal("premium"),
+            v.literal("ultra"),
         ),
     },
     handler: async (ctx, args) => {
         const users = await ctx.db.query("users")
-            .withIndex("by_plan", (q) => q.eq("plan", args.plan as "free" | "pro" | "premium"))
+            .withIndex("by_plan", (q) => q.eq("plan", args.plan as "free" | "pro" | "premium" | "ultra"))
             .collect();
         return users;
     },
@@ -265,6 +266,7 @@ export const updatePlanAsAdmin = mutation({
             v.literal("free"),
             v.literal("premium"),
             v.literal("pro"),
+            v.literal("ultra"),
         ),
     },
     handler: async (ctx, args) => {
@@ -421,7 +423,7 @@ export const updateSubscription = internalMutation({
             subscriptionId: subscriptionId,
             customerId: customerId,
             endsOn: endsOn,
-            plan: plan as "free" | "pro" | "premium"
+            plan: plan as "free" | "pro" | "premium" | "ultra"
         });
     },
 });
@@ -451,6 +453,7 @@ const VERSION_LIMITS = {
     free: 5,
     pro: 51,
     premium: 8000, // High limit for premium users
+    ultra: 8000, // Unlimited versions for ultra users
     admin: 8000, // Very high limit for admins
 } as const;
 
@@ -467,6 +470,8 @@ export const getVersionLimit = (user: { plan?: string; role?: string }): number 
             return VERSION_LIMITS.pro;
         case "premium":
             return VERSION_LIMITS.premium;
+        case "ultra":
+            return VERSION_LIMITS.ultra;
         default:
             return VERSION_LIMITS.free;
     }

@@ -12,6 +12,7 @@ export default defineSchema({
                 v.literal("free"),
                 v.literal("pro"),
                 v.literal("premium"),
+                v.literal("ultra"),
             )
         ),
         role: v.optional(v.union(

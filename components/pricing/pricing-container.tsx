@@ -12,7 +12,7 @@ export function PricingContainer() {
     const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
 
-    const handleUpgrade = async (plan: "pro" | "premium") => {
+    const handleUpgrade = async (plan: "pro" | "premium" | "ultra") => {
         if (!isSignedIn) {
             router.push('/sign-in');
             return;
@@ -128,7 +128,7 @@ export function PricingContainer() {
                     <PricingCard
                         plan={{
                             name: "Ultra",
-                            price: "49 USD",
+                            price: "$49 USD",
                             description: "For agencies",
                             features: [
                                 'Everything in the premium plan',
@@ -138,10 +138,10 @@ export function PricingContainer() {
                                 'Unlimited versions of your presentations',
                                 'Export to Power Point and Google Slides'
                             ],
-                            buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
+                            buttonText: user?.plan === "ultra" ? "Current plan" : "Get started",
                             buttonVariant: "outline",
-                            onButtonClick: () => handleUpgrade('premium'),
-                            isDisabled: user?.plan === "premium"
+                            onButtonClick: () => handleUpgrade('ultra'),
+                            isDisabled: user?.plan === "ultra"
                         }}
                     />
                 </div>

@@ -24,22 +24,22 @@ const links = [
 const socialLinks = [
     {
         name: 'Twitter',
-        href: 'https://twitter.com/nerdlat',
+        href: 'https://twitter.com/ilovepresentations.io',
         icon: Twitter,
     },
     {
         name: 'LinkedIn',
-        href: 'https://linkedin.com/company/nerdlat',
+        href: 'https://linkedin.com/company/ilovepresentations.io',
         icon: Linkedin,
     },
     {
         name: 'Instagram',
-        href: 'https://instagram.com/nerdlat',
+        href: 'https://instagram.com/ilovepresentations.io',
         icon: Instagram,
     },
     {
         name: 'Github',
-        href: 'https://github.com/nerdlat',
+        href: 'https://github.com/ilovepresentations.io',
         icon: Github,
     },
 ]

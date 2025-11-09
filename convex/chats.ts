@@ -8,6 +8,7 @@ const CHAT_LIMITS = {
     free: 1,
     pro: 8000,
     premium: 8000,
+    ultra: 8000,
     admin: 8000,
 } as const;
 
@@ -24,6 +25,8 @@ const getChatLimit = (user: { plan?: string; role?: string }): number => {
             return CHAT_LIMITS.pro;
         case "premium":
             return CHAT_LIMITS.premium;
+        case "ultra":
+            return CHAT_LIMITS.ultra;
         default:
             return CHAT_LIMITS.free;
     }

@@ -9,6 +9,7 @@ export const pay = action({
         plan: v.union(
             v.literal("pro"),
             v.literal("premium"),
+            v.literal("ultra"),
         ),
     },
     handler: async (ctx, args) => {
@@ -26,9 +27,16 @@ export const pay = action({
             apiVersion: "2025-09-30.clover"
         });
 
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
+        const baseUrl = process.env.BASE_URL!;
 
-        const priceId = args.plan === "pro" ? process.env.STRIPE_PRO_PRICE_ID! : process.env.STRIPE_PREMIUM_PRICE_ID!;
+        let priceId: string;
+        if (args.plan === "pro") {
+            priceId = process.env.STRIPE_PRO_PRICE_ID!;
+        } else if (args.plan === "premium") {
+            priceId = process.env.STRIPE_PREMIUM_PRICE_ID!;
+        } else {
+            priceId = process.env.STRIPE_ULTRA_PRICE_ID!;
+        }
 
         const session: Stripe.Response<Stripe.Checkout.Session> = await stripe.checkout.sessions.create(
             {
@@ -95,6 +103,8 @@ export const fulfill = internalAction({
                         plan = "pro";
                     } else if (plan === process.env.STRIPE_PREMIUM_PRODUCT_ID!) {
                         plan = "premium";
+                    } else if (plan === process.env.STRIPE_ULTRA_PRODUCT_ID!) {
+                        plan = "ultra";
                     }
 
                     await runMutation(internal.users.updateSubscription, {
@@ -148,7 +158,7 @@ export const billingPortal = action({
             apiVersion: "2025-09-30.clover"
         });
 
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
+        const baseUrl = process.env.BASE_URL!;
 
         const session = await stripe.billingPortal.sessions.create({
             locale: "es",

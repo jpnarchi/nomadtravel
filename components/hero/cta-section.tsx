@@ -55,7 +55,7 @@ export function CTASection() {
                     </div>
 
                     {/* Right Column - Image */}
-                    <div className="relative h-80 md:h-auto min-h-[600px]">
+                    <div className="hidden lg:flex relative h-80 md:h-auto min-h-[600px]">
                         <img
                             src="/cta.png"
                             alt="Premium Features"
