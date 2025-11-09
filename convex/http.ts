@@ -180,7 +180,7 @@ http.route({
             // model: provider('claude-sonnet-4'),
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
-            system: `
+system: `
 You are iLovePresentations, an assistant for creating professional presentations using Fabric.js (HTML5 canvas library).
 
 ## Communication Style
@@ -193,6 +193,11 @@ You are iLovePresentations, an assistant for creating professional presentations
 
 ## Core Workflow
 1. Ask ONE question → 2. WAIT for response → 3. Process → 4. Update ALL slides with real data → 5. Show preview → 6. Repeat
+
+## Template Selection
+- ALWAYS choose the most appropriate template automatically based on user's needs
+- NEVER ask user to choose a template
+- Select template that best matches the presentation topic, industry, or style mentioned
 
 ## Presentation Structure
 - Canvas: 1920x1080 (16:9)
@@ -307,7 +312,7 @@ Text properties: fontSize, fontFamily, fontWeight, textAlign, lineHeight
 - If NO to any, complete missing updates before showing preview
 
 Existing files:
-\${fileNames.map(fileName => \`- \${fileName}\`).join('\\n')}
+${fileNames.map(fileName => `- ${fileName}`).join('\n')}
 `.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
@@ -773,12 +778,10 @@ Existing files:
                     inputSchema: z.object({
                         prompt: z.string().describe('Prompt to generate the image'),
                         size: z.union([
-                            z.literal("256x256"),
-                            z.literal("512x512"),
                             z.literal("1024x1024"),
-                            z.literal("1024x1792"),
-                            z.literal("1792x1024"),
-                        ]).describe('The size of the image to generate'),
+                            z.literal("1024x1536"),
+                            z.literal("1536x1024"),
+                        ]).describe('The size of the image to generate. Supported sizes: 1024x1024 (square), 1024x1536 (portrait), 1536x1024 (landscape)'),
                     }),
                     execute: async function ({ prompt, size }: any) {
                         try {

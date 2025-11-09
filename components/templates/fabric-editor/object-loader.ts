@@ -72,6 +72,7 @@ const createTextObject = (obj: any): fabric.FabricObject => {
             fontFamily: obj.fontFamily || 'Arial',
             fontWeight: obj.fontWeight || 'normal',
             textAlign: obj.textAlign || 'left',
+            lineHeight: obj.lineHeight || 1.16,
         })
 
         // Apply additional properties
@@ -91,6 +92,7 @@ const createTextObject = (obj: any): fabric.FabricObject => {
             fontFamily: obj.fontFamily || 'Arial',
             fontWeight: obj.fontWeight || 'normal',
             textAlign: obj.textAlign || 'left',
+            lineHeight: obj.lineHeight || 1.16,
         })
 
         // Apply additional properties
