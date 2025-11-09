@@ -28,12 +28,12 @@ interface UpdatePlanDialogProps {
 }
 
 export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialogProps) {
-    const [selectedPlan, setSelectedPlan] = useState<"free" | "pro" | "premium">(user.plan || "free")
+    const [selectedPlan, setSelectedPlan] = useState<"free" | "pro" | "premium" | "ultra">(user.plan || "free")
     const [isUpdatingPlan, setIsUpdatingPlan] = useState(false)
     const updatePlan = useMutation(api.users.updatePlanAsAdmin)
 
     const handlePlanSelect = (value: string) => {
-        setSelectedPlan(value as "free" | "pro" | "premium")
+        setSelectedPlan(value as "free" | "pro" | "premium" | "ultra")
     }
 
     const handlePlanChange = async () => {
@@ -41,7 +41,7 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
         try {
             await updatePlan({
                 userId: user._id,
-                plan: selectedPlan as "free" | "pro" | "premium"
+                plan: selectedPlan as "free" | "pro" | "premium" | "ultra"
             })
             toast.success(`Plan actualizado a ${selectedPlan}`)
             onOpenChange(false)
@@ -66,7 +66,7 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                         <label htmlFor="plan" className="text-sm font-medium w-24">
                             Plan actual:
                         </label>
-                        <Badge variant={(user.plan === "pro" || user.plan === "premium") ? "default" : "secondary"} className="capitalize">
+                        <Badge variant={(user.plan === "pro" || user.plan === "premium" || user.plan === "ultra") ? "default" : "secondary"} className="capitalize">
                             {user.plan || "free"}
                         </Badge>
                     </div>
@@ -82,6 +82,7 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                                 <SelectItem value="free">Free</SelectItem>
                                 <SelectItem value="pro">Pro</SelectItem>
                                 <SelectItem value="premium">Premium</SelectItem>
+                                <SelectItem value="ultra">Ultra</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
