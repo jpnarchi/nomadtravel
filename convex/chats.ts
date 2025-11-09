@@ -490,61 +490,6 @@ export const getUserChatsCountAsAdmin = query({
     },
 });
 
-export const updateSupabaseProjectIdForChat = mutation({
-    args: {
-        chatId: v.id("chats"),
-        supabaseProjectId: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const user = await getCurrentUser(ctx);
-
-        if (!args.supabaseProjectId) {
-            throw new Error("Supabase project id is required");
-        }
-
-        const chat = await ctx.db.get(args.chatId);
-
-        if (!chat) {
-            throw new Error("Chat not found");
-        }
-
-        if (chat.userId !== user._id && user.role !== "admin") {
-            throw new Error("Access denied");
-        }
-
-        await ctx.db.patch(args.chatId, {
-            supabaseProjectId: args.supabaseProjectId,
-        });
-
-        return args.chatId;
-    },
-});
-
-export const getSupabaseProjectId = query({
-    args: {
-        chatId: v.id("chats"),
-    },
-    handler: async (ctx, args) => {
-        const user = await getCurrentUser(ctx);
-
-        if (!args.chatId) {
-            return null;
-        }
-
-        const chat = await ctx.db.get(args.chatId);
-
-        if (!chat) {
-            return null;
-        }
-
-        if (chat.userId !== user._id && user.role !== "admin") {
-            throw new Error("Access denied");
-        }
-
-        return chat.supabaseProjectId;
-    },
-});
-
 export const updateVercelProjectId = mutation({
     args: {
         chatId: v.id("chats"),

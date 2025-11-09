@@ -6,6 +6,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
 import { FabricPresentationPreview } from "./fabric-presentation-preview";
+import { FabricPresentationPreviewMobile } from "./fabric-presentation-preview-mobile";
 import { FabricPresentationEditor } from "../templates/fabric-presentation-editor";
 import { api } from "@/convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
@@ -18,10 +19,21 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
+    const [isMobile, setIsMobile] = useState(false);
     const files = useQuery(api.files.getAll, { chatId: id, version });
     const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId: id });
     const updateFile = useMutation(api.files.updateByPath);
     const router = useRouter();
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Handle save changes
     const handleSaveChanges = async (filesToSave: Record<string, string>) => {
@@ -92,15 +104,17 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
 
                     {!isEditing ? (
                         <>
-                            <Button
-                                size="sm"
-                                // variant="outline"
-                                className="cursor-pointer"
-                                onClick={handleStartEdit}
-                            >
-                                <Pencil className="size-4 mr-2" />
-                                Edit
-                            </Button>
+                            {!isMobile && (
+                                <Button
+                                    size="sm"
+                                    // variant="outline"
+                                    className="cursor-pointer"
+                                    onClick={handleStartEdit}
+                                >
+                                    <Pencil className="size-4 mr-2" />
+                                    Edit
+                                </Button>
+                            )}
                             {isAdmin && <Button
                                 size="sm"
                                 variant="outline"
@@ -134,7 +148,11 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
                         isSaving={isSaving}
                     />
                 ) : !showCode ? (
-                    <FabricPresentationPreview chatId={id} version={version} />
+                    isMobile ? (
+                        <FabricPresentationPreviewMobile chatId={id} version={version} />
+                    ) : (
+                        <FabricPresentationPreview chatId={id} version={version} />
+                    )
                 ) : (
                     <div className="h-full overflow-auto p-6 bg-zinc-900 text-white">
                         <h2 className="text-xl font-bold mb-4">Presentation Files</h2>

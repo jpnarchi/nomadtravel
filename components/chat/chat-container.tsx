@@ -37,9 +37,6 @@ export function ChatContainer({
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
     const updateIsGenerating = useMutation(api.chats.updateIsGenerating);
-    const updateSupabaseProjectIdForChat = useMutation(api.chats.updateSupabaseProjectIdForChat);
-    const saveRedirectUrl = useAction(api.supabase.saveRedirectUrl);
-    const getSupabaseAnonKey = useAction(api.supabase.getSupabaseAnonKey);
     const suggestions = useQuery(api.suggestions.getAll, { chatId: id });
     const isGenerating = useQuery(api.chats.getIsGenerating, { chatId: id });
     const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId: id });

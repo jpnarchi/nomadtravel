@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import Image from "next/image";
 import { UserIcon } from "@/components/global/icons";
-import { Database, File, Folders, Mail, SquareDashedMousePointer, SquareFunction, Presentation } from "lucide-react";
+import { File, Folders, Mail, SquareDashedMousePointer, SquareFunction, Presentation } from "lucide-react";
 import { Markdown } from "@/components/global/markdown";
 import { Attachments } from "./attachments";
 import { ToolMessage } from "./tools/tool-message";
@@ -74,12 +74,9 @@ export function ChatMessage({
                     // console.log(part)
                     if (part.type === "text") {
                         const { files, displayText: originalText } = parseAttachmentsFromText(part.text);
-                        const displayText = originalText.includes("Anon Key:")
-                            ? originalText.slice(0, originalText.indexOf("Anon Key:"))
-                            : originalText.includes("STRIPE_PUBLISHABLE_KEY:")
+                        const displayText = originalText.includes("STRIPE_PUBLISHABLE_KEY:")
                             ? originalText.slice(0, originalText.indexOf("STRIPE_PUBLISHABLE_KEY:"))
                             : originalText;
-                        // const displayText = originalText;
 
                         return (
                             <div key={index} className="text-zinc-800 dark:text-zinc-300 flex flex-col gap-4 mb-2">
@@ -310,35 +307,6 @@ export function ChatMessage({
                             )
                         }
                     }
-
-
-                    if (part.type === "tool-supabaseSQLQuery") {
-                        if (part.output && part.state && part.state === 'output-available') {
-                            const response = part.output as any;
-                            const message = response.message as string;
-                            return (
-                                <div key={index}>
-                                    <ToolMessage
-                                        icon={<Database className="size-4" />}
-                                        message={"Base de datos actualizada"}
-                                        isLoading={false}
-                                    />
-                                </div>
-                            )
-                        }
-                        if (isLoading) {
-                            return (
-                                <div key={index}>
-                                    <ToolMessage
-                                        icon={<Database className="size-4" />}
-                                        message={"Actualizando base de datos..."}
-                                        isLoading={true}
-                                    />
-                                </div>
-                            )
-                        }
-                    }
-
 
                     if (part.type === "tool-deployEdgeFunction") {
                         if (part.output && part.state && part.state === 'output-available') {

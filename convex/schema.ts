@@ -22,8 +22,6 @@ export default defineSchema({
         endsOn: v.optional(v.number()),
         subscriptionId: v.optional(v.string()),
         customerId: v.optional(v.string()),
-        supabaseAccessToken: v.optional(v.string()),
-        supabaseRefreshToken: v.optional(v.string()),
     })
         .index('by_token_identifier', ['tokenIdentifier'])
         .index('by_email', ['email'])
@@ -35,7 +33,6 @@ export default defineSchema({
         title: v.optional(v.string()),
         currentVersion: v.optional(v.number()),
         isGenerating: v.optional(v.boolean()),
-        supabaseProjectId: v.optional(v.string()),
         vercelProjectId: v.optional(v.string()),
         deploymentUrl: v.optional(v.string()),
     })

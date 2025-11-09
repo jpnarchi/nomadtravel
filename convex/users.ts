@@ -446,23 +446,6 @@ export const updateSubscriptionById = internalMutation({
     },
 });
 
-export const updateSupabaseTokens = mutation({
-    args: {
-        supabaseAccessToken: v.optional(v.string()),
-        supabaseRefreshToken: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const user = await getCurrentUser(ctx);
-
-        await ctx.db.patch(user._id, {
-            supabaseAccessToken: args.supabaseAccessToken,
-            supabaseRefreshToken: args.supabaseRefreshToken
-        });
-
-        return user._id;
-    },
-});
-
 // Version limit constants (server-side)
 const VERSION_LIMITS = {
     free: 5,
