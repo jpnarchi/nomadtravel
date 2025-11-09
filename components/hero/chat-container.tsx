@@ -15,6 +15,7 @@ import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { HowSection } from "./how-section"
 import { ProjectsPreviewHero } from "./projects-preview-hero"
+import { SuggestionButtons } from "../chat/suggestion-buttons"
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
@@ -33,6 +34,84 @@ export function ChatContainer() {
     const generateUploadUrl = useMutation(api.messages.generateUploadUrl);
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
+
+    const suggestions = [
+        "Create a chemistry presentation",
+        "Create a biology presentation",
+        "Create business presentation"
+    ];
+
+    const handleSuggestionClick = async (suggestion: string) => {
+        if (!isSignedIn) {
+            router.push('/sign-in');
+            return
+        }
+
+        // Check if user can create more chats (server-side validation)
+        if (canCreateChat && !canCreateChat.canCreate) {
+            setShowPricingPopup(true);
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const chatId = await createChat();
+
+            // create message
+            const messageId = await createMessage({
+                chatId,
+                role: "user",
+                parts: [{ type: "text", text: '' }],
+            });
+
+            const fileUrls = [];
+            let prompt = suggestion
+
+            // check if files are present
+            if (files.length > 0) {
+                for (const file of files) {
+                    const postUrl = await generateUploadUrl();
+                    const result = await fetch(postUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": file.type },
+                        body: file,
+                    });
+                    const { storageId } = await result.json();
+
+                    const { url } = await saveFile({
+                        storageId,
+                        messageId: messageId,
+                        type: file.type,
+                    });
+
+                    fileUrls.push({ url: url, type: file.type });
+                }
+
+                prompt = createPromptWithAttachments(suggestion, fileUrls);
+            }
+
+            await updateParts({
+                messageId: messageId,
+                parts: [{ type: "text", text: prompt }],
+            });
+
+            localStorage.removeItem('astri-dev-draft');
+
+            router.push(`/chat/${chatId}`);
+        } catch (error: any) {
+            console.error(error);
+
+            // Check if it's a chat limit error
+            if (error.message && error.message.includes('Chat limit exceeded')) {
+                setShowPricingPopup(true);
+                return;
+            }
+
+            toast.error('Error al crear el chat');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Load saved draft on component mount
     useEffect(() => {
@@ -172,7 +251,7 @@ export function ChatContainer() {
                                 </p>
                             </motion.div>
                             <motion.div
-                                className="w-full bg-transparent max-w-4xl mx-auto"
+                                className="w-full bg-transparent max-w-4xl mx-auto flex flex-col gap-4"
                                 exit={{
                                     y: 20,
                                     opacity: 0,
@@ -188,6 +267,12 @@ export function ChatContainer() {
                                     setFiles={setFiles}
                                     fileInputRef={fileInputRef}
                                 />
+                                <div className="hidden md:flex justify-center -mt-4">
+                                    <SuggestionButtons
+                                        suggestions={suggestions}
+                                        onSuggestionClick={handleSuggestionClick}
+                                    />
+                                </div>
                             </motion.div>
                         </motion.div>
                     </AnimatePresence>
