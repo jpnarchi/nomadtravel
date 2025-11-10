@@ -1,11 +1,10 @@
 import { Button } from "../ui/button";
-import { ArrowLeftIcon, CodeXml, Eye, Pencil, Save, X } from "lucide-react";
+import { ArrowLeftIcon, CodeXml, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { CreateTemplateDialog } from "./create-template-dialog";
 import { Loader } from "../ai-elements/loader";
-import { FabricPresentationPreview } from "./fabric-presentation-preview";
 import { FabricPresentationPreviewMobile } from "./fabric-presentation-preview-mobile";
 import { FabricPresentationEditor } from "../templates/fabric-presentation-editor";
 import { api } from "@/convex/_generated/api";
@@ -16,12 +15,9 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
     const isAdmin = useQuery(api.users.isAdmin);
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [showCode, setShowCode] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [editedFiles, setEditedFiles] = useState<Record<string, string>>({});
     const [isMobile, setIsMobile] = useState(false);
     const files = useQuery(api.files.getAll, { chatId: id, version });
-    const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId: id });
     const updateFile = useMutation(api.files.updateByPath);
     const router = useRouter();
 
@@ -50,27 +46,12 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
             await Promise.all(updatePromises);
 
             toast.success(`Changes saved to version ${versionToSave}`);
-            setEditedFiles({});
-            setIsEditing(false);
         } catch (error) {
             console.error('Error saving changes:', error);
             toast.error('Error saving changes');
         } finally {
             setIsSaving(false);
         }
-    };
-
-    // Handle cancel editing
-    const handleCancelEdit = () => {
-        setEditedFiles({});
-        setIsEditing(false);
-        toast.info('Edit cancelled');
-    };
-
-    // Handle start editing
-    const handleStartEdit = () => {
-        setIsEditing(true);
-        toast.info('Edit mode activated');
     };
 
     if (!files) {
@@ -88,7 +69,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
             <div className="flex flex-row justify-between items-center">
                 <Button
                     variant="ghost"
-                    className="cursor-pointer text-white"
+                    className="cursor-pointer text-black"
                     onClick={() => {
                         setIsBackButtonLoading(true);
                         router.push(`/chat/${id}`);
@@ -101,58 +82,27 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
 
                 <div className="flex gap-2">
                     {isAdmin && <CreateTemplateDialog files={files} />}
-
-                    {!isEditing ? (
-                        <>
-                            {!isMobile && (
-                                <Button
-                                    size="sm"
-                                    // variant="outline"
-                                    className="cursor-pointer"
-                                    onClick={handleStartEdit}
-                                >
-                                    <Pencil className="size-4 mr-2" />
-                                    Edit
-                                </Button>
-                            )}
-                            {isAdmin && <Button
-                                size="sm"
-                                variant="outline"
-                                className="cursor-pointer"
-                                onClick={() => setShowCode(!showCode)}
-                            >
-                                {showCode ? <Eye className="size-4" /> : <CodeXml className="size-4" />}
-                            </Button>}
-                        </>
-                    ) : (
-                        <>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="cursor-pointer"
-                                onClick={handleCancelEdit}
-                                disabled={isSaving}
-                            >
-                                <X className="size-4 mr-2" />
-                                Cancel
-                            </Button>
-                        </>
+                    {isAdmin && !isMobile && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() => setShowCode(!showCode)}
+                        >
+                            {showCode ? <Eye className="size-4" /> : <CodeXml className="size-4" />}
+                        </Button>
                     )}
                 </div>
             </div>
             <div className="flex-1 border rounded-lg overflow-hidden mt-4 bg-black">
-                {isEditing ? (
+                {isMobile ? (
+                    <FabricPresentationPreviewMobile chatId={id} version={version} />
+                ) : !showCode ? (
                     <FabricPresentationEditor
                         initialFiles={files}
                         onSave={handleSaveChanges}
                         isSaving={isSaving}
                     />
-                ) : !showCode ? (
-                    isMobile ? (
-                        <FabricPresentationPreviewMobile chatId={id} version={version} />
-                    ) : (
-                        <FabricPresentationPreview chatId={id} version={version} />
-                    )
                 ) : (
                     <div className="h-full overflow-auto p-6 bg-zinc-900 text-white">
                         <h2 className="text-xl font-bold mb-4">Presentation Files</h2>

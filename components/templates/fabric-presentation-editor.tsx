@@ -18,6 +18,14 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { DragDropOverlay } from '../global/drag-drop-overlay'
 import * as fabric from 'fabric'
 import { useSlideRenderer } from '@/lib/hooks/use-slide-renderer'
@@ -75,6 +83,7 @@ export function FabricPresentationEditor({
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+    const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false)
     const editorContainerRef = useRef<HTMLDivElement>(null)
     const fullscreenRef = useRef<HTMLDivElement>(null)
     const slideEditorRef = useRef<any>(null)
@@ -643,6 +652,16 @@ export function FabricPresentationEditor({
         }
     }, [generateUploadUrl, saveImage, handleAddImageToCurrentSlide])
 
+    // Handle return to chat
+    const handleReturnToChat = useCallback(() => {
+        setIsBackButtonLoading(true);
+        const chatId = params?.id || params?.chatId;
+        if (chatId) {
+            router.push(`/chat/${chatId}`);
+            router.refresh();
+        }
+    }, [params, router])
+
     // Global copy/paste handlers
     const handleCopyObject = useCallback((objectData: any) => {
         copiedObjectRef.current = objectData
@@ -786,11 +805,10 @@ export function FabricPresentationEditor({
                         variant="ghost"
                         className="cursor-pointer text-white hover:bg-muted-500 hover:text-gray"
                         onClick={() => {
-                            setIsBackButtonLoading(true);
-                            const chatId = params?.id || params?.chatId;
-                            if (chatId) {
-                                router.push(`/chat/${chatId}`);
-                                router.refresh();
+                            if (hasUnsavedChanges) {
+                                setShowUnsavedChangesDialog(true);
+                            } else {
+                                handleReturnToChat();
                             }
                         }}
                     >
@@ -798,7 +816,7 @@ export function FabricPresentationEditor({
                         {isBackButtonLoading ? "Loading" : "Return to Chat"}
                     </Button>
 
-                    <div className="h-8 w-px bg-zinc-700/50" />
+                    <div className="h-8 w-px bg-white" />
 
                     <h2 className="text-xl font-bold text-white">Presentation Editor</h2>
 
@@ -817,8 +835,7 @@ export function FabricPresentationEditor({
                         size="sm"
                         onClick={() => setShowCode(!showCode)}
                     >
-                        {showCode ? <Eye className="size-4 mr-2" /> : <Code className="size-4 mr-2" />}
-                        {showCode ? 'Editor' : 'Ver JSON'}
+                        {showCode ? <Eye className="size-4" /> : <Code className="size-4" />}
                     </Button>)}
                     {/* Share Dropdown */}
                     <DropdownMenu>
@@ -1045,6 +1062,27 @@ export function FabricPresentationEditor({
             <DragDropOverlay onUpload={handleUploadFiles} />
             </div>
             )}
+
+            {/* Unsaved Changes Dialog */}
+            {hasUnsavedChanges && (
+            <Dialog open={showUnsavedChangesDialog} onOpenChange={setShowUnsavedChangesDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>You have unsaved changes</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to leave? Any unsaved changes will be lost.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowUnsavedChangesDialog(false)}>
+                            Stay and Save
+                        </Button>
+                        <Button onClick={handleReturnToChat} className="bg-red-600 hover:bg-red-700">
+                            Leave Without Saving
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>)}
         </div>
     )
 }
