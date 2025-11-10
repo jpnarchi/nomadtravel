@@ -40,16 +40,22 @@ interface FabricSlideEditorProps {
     slideData: any
     onSlideChange: (slideData: any) => void
     slideNumber: number
+    totalSlides: number
     onCopyObject: (objectData: any) => void
     onPasteObject: () => any
+    isSidebarCollapsed?: boolean
+    onToggleSidebar?: () => void
 }
 
 export function FabricSlideEditor({
     slideData,
     onSlideChange,
     slideNumber,
+    totalSlides,
     onCopyObject,
-    onPasteObject
+    onPasteObject,
+    isSidebarCollapsed,
+    onToggleSidebar
 }: FabricSlideEditorProps) {
     // Refs
     const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -107,11 +113,7 @@ export function FabricSlideEditor({
 
         const slideJSON = serializeCanvas(fabricCanvasRef.current, backgroundColor)
 
-        console.log('💾 Guardando slide:', {
-            slideNumber,
-            objectCount: slideJSON.objects.length,
-            background: backgroundColor,
-        })
+
 
         // Log what's being saved
         console.log('📦 Datos que se guardarán:')
@@ -294,7 +296,7 @@ export function FabricSlideEditor({
 
         return () => {
             if (fabricCanvasRef.current) {
-                console.log('🧹 Limpiando canvas y guardando estado final...')
+
 
                 // CRITICAL: Clear any active selection before cleanup save
                 // This prevents saving objects with group-relative coordinates
@@ -936,6 +938,8 @@ export function FabricSlideEditor({
                 onAddLine={handleAddLine}
                 onFileSelect={handleFileSelect}
                 onShowUploadDialog={() => setShowUploadDialog(true)}
+                isSidebarCollapsed={isSidebarCollapsed}
+                onToggleSidebar={onToggleSidebar}
             />
 
             {/* Center - Canvas Area */}
@@ -943,6 +947,7 @@ export function FabricSlideEditor({
                 {/* Top Toolbar */}
                 <EditorToolbar
                     slideNumber={slideNumber}
+                    totalSlides={totalSlides}
                     zoom={zoom}
                     selectedObject={selectedObject}
                     onZoomIn={handleZoomIn}

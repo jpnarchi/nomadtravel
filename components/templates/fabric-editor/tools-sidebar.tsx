@@ -15,6 +15,8 @@ import {
     Pentagon,
     Hexagon,
     Minus,
+    PanelLeftClose,
+    PanelLeftOpen,
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -32,6 +34,8 @@ interface ToolsSidebarProps {
     onAddLine?: () => void
     onFileSelect: (file: File) => void
     onShowUploadDialog?: () => void
+    isSidebarCollapsed?: boolean
+    onToggleSidebar?: () => void
 }
 
 export function ToolsSidebar({
@@ -42,6 +46,8 @@ export function ToolsSidebar({
     onAddLine,
     onFileSelect,
     onShowUploadDialog,
+    isSidebarCollapsed,
+    onToggleSidebar,
 }: ToolsSidebarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -54,6 +60,20 @@ export function ToolsSidebar({
 
     return (
         <div className="w-16 bg-zinc-900 border-r border-zinc-800 flex flex-col items-center py-4 gap-2">
+            {onToggleSidebar && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onToggleSidebar}
+                    className="h-12 w-12 text-white hover:text-white hover:bg-zinc-800"
+                    title={isSidebarCollapsed ? "Show slides sidebar" : "Hide slides sidebar"}
+                >
+                    {isSidebarCollapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
+                </Button>
+            )}
+
+        <div className="h-px w-8 bg-zinc-700 my-2" />
+
             <Button
                 variant="ghost"
                 size="icon"

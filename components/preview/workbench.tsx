@@ -88,7 +88,7 @@ export function Workbench({ id, version }: { id: Id<"chats">, version: number })
             <div className="flex flex-row justify-between items-center">
                 <Button
                     variant="ghost"
-                    className="cursor-pointer"
+                    className="cursor-pointer text-white"
                     onClick={() => {
                         setIsBackButtonLoading(true);
                         router.push(`/chat/${id}`);

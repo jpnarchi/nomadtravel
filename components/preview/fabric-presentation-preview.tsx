@@ -21,6 +21,7 @@ import { exportToPPT } from '@/lib/export/ppt-exporter'
 import { useSlideRenderer } from '@/lib/hooks/use-slide-renderer'
 import { parseSlidesFromFiles } from '@/lib/utils/slide-parser'
 import { ThumbnailsSidebar } from './thumbnails-sidebar'
+import { toast } from 'sonner'
 
 interface FabricPresentationPreviewProps {
     chatId: Id<"chats"> | null
@@ -40,6 +41,7 @@ export function FabricPresentationPreview({
         !isTemplate && chatId ? { chatId, version } : "skip"
     )
     const files = isTemplate ? templateFiles : filesFromQuery
+    const userInfo = useQuery(api.users.getUserInfo)
     const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -55,6 +57,28 @@ export function FabricPresentationPreview({
     const [isPanning, setIsPanning] = useState(false)
     const [panStart, setPanStart] = useState({ x: 0, y: 0 })
     const [scrollStart, setScrollStart] = useState({ x: 0, y: 0 })
+
+    // Check if user can export to PowerPoint
+    const canExportToPPT = () => {
+        if (!userInfo) return false
+        // Allow admins
+        if (userInfo.role === 'admin') return true
+        // Allow paying users (pro, premium, ultra)
+        if (userInfo.plan === 'pro' || userInfo.plan === 'premium' || userInfo.plan === 'ultra') return true
+        // Block free users
+        return false
+    }
+
+    // Handle PowerPoint export with authorization
+    const handlePPTExport = () => {
+        if (!canExportToPPT()) {
+            toast.error('PowerPoint export is only available for Pro, Premium, and Ultra users', {
+                description: 'Upgrade your plan to unlock this feature'
+            })
+            return
+        }
+        exportToPPT(slides)
+    }
 
     // Extract slides from files
     useEffect(() => {
@@ -402,7 +426,7 @@ export function FabricPresentationPreview({
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => exportToPPT(slides)}
+                                            onClick={handlePPTExport}
                                             className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all text-white"
                                         >
                                             <FileDown className="size-4 mr-2 text-white" />

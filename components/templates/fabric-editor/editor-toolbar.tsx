@@ -19,6 +19,7 @@ import {
 
 interface EditorToolbarProps {
     slideNumber: number
+    totalSlides: number
     zoom: number
     selectedObject: fabric.FabricObject | null
     onZoomIn: () => void
@@ -34,6 +35,7 @@ interface EditorToolbarProps {
 
 export function EditorToolbar({
     slideNumber,
+    totalSlides,
     zoom,
     selectedObject,
     onZoomIn,
@@ -48,7 +50,7 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
     return (
         <div className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-4">
-            <h3 className="text-sm font-semibold text-white">Slide {slideNumber}</h3>
+            <h3 className="text-sm font-semibold text-white">Slide {slideNumber} of {totalSlides}</h3>
 
             <div className="flex items-center gap-2">
                 {/* Zoom Controls */}

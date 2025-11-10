@@ -12,7 +12,16 @@ import { FabricSlideEditor } from './fabric-slide-editor'
 import { Button } from '../ui/button'
 import { api } from "@/convex/_generated/api";
 import { ScrollArea } from '../ui/scroll-area'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '../ui/dropdown-menu'
 import { DragDropOverlay } from '../global/drag-drop-overlay'
+import * as fabric from 'fabric'
+import { useSlideRenderer } from '@/lib/hooks/use-slide-renderer'
+import { useRouter, useParams } from 'next/navigation'
 import {
     ChevronLeft,
     ChevronRight,
@@ -23,11 +32,22 @@ import {
     Save,
     Copy,
     ArrowUp,
-    ArrowDown
+    ArrowDown,
+    FileDown,
+    Maximize,
+    Minimize,
+    SkipBack,
+    SkipForward,
+    ArrowLeft,
+    PanelLeftClose,
+    PanelLeftOpen,
+    Share
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Loader } from '../ai-elements/loader'
 import { useQuery, useMutation } from "convex/react";
+import { exportToPDF } from '@/lib/export/pdf-exporter'
+import { exportToPPT } from '@/lib/export/ppt-exporter'
 
 interface FabricPresentationEditorProps {
     initialFiles: Record<string, string>
@@ -40,8 +60,11 @@ export function FabricPresentationEditor({
     onSave,
     isSaving
 }: FabricPresentationEditorProps) {
+    const router = useRouter()
+    const params = useParams()
     const [slides, setSlides] = useState<any[]>([])
     const isAdmin = useQuery(api.users.isAdmin);
+    const userInfo = useQuery(api.users.getUserInfo);
     const generateUploadUrl = useMutation(api.files.generateUploadUrl);
     const saveImage = useMutation(api.files.saveImage);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
@@ -49,9 +72,18 @@ export function FabricPresentationEditor({
     const [isLoading, setIsLoading] = useState(true)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
+    const [isFullscreen, setIsFullscreen] = useState(false)
+    const [isBackButtonLoading, setIsBackButtonLoading] = useState(false)
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const editorContainerRef = useRef<HTMLDivElement>(null)
+    const fullscreenRef = useRef<HTMLDivElement>(null)
     const slideEditorRef = useRef<any>(null)
     const copiedObjectRef = useRef<any>(null) // Global clipboard for all slides
+
+    // Presentation mode canvas
+    const [presentationCanvasElement, setPresentationCanvasElement] = useState<HTMLCanvasElement | null>(null)
+    const presentationCanvasRef = useRef<fabric.Canvas | null>(null)
+    const [presentationCanvasReady, setPresentationCanvasReady] = useState(false)
 
     // Load slides from initial files
     useEffect(() => {
@@ -317,15 +349,200 @@ export function FabricPresentationEditor({
         toast.success('Slide movido hacia abajo')
     }
 
+    // Check if user can export to PowerPoint
+    const canExportToPPT = () => {
+        if (!userInfo) return false
+        // Allow admins
+        if (userInfo.role === 'admin') return true
+        // Allow paying users (pro, premium, ultra)
+        if (userInfo.plan === 'pro' || userInfo.plan === 'premium' || userInfo.plan === 'ultra') return true
+        // Block free users
+        return false
+    }
+
+    // Handle PowerPoint export with authorization
+    const handlePPTExport = () => {
+        if (!canExportToPPT()) {
+            toast.error('PowerPoint export is only available for Pro, Premium, and Ultra users', {
+                description: 'Upgrade your plan to unlock this feature'
+            })
+            return
+        }
+        exportToPPT(slides.map(slide => slide.data))
+    }
+
+    // Fullscreen toggle
+    const toggleFullscreen = () => {
+        if (!fullscreenRef.current) return
+
+        if (!document.fullscreenElement) {
+            fullscreenRef.current.requestFullscreen().then(() => {
+                setIsFullscreen(true)
+            }).catch((err) => {
+                console.error('Error attempting to enable fullscreen:', err)
+            })
+        } else {
+            document.exitFullscreen().then(() => {
+                setIsFullscreen(false)
+            })
+        }
+    }
+
+    // Listen for fullscreen changes
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement)
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange)
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }, [])
+
+    // Keyboard shortcuts for fullscreen and navigation in presentation mode
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'f' || e.key === 'F') {
+                if (!isFullscreen) {
+                    e.preventDefault()
+                    toggleFullscreen()
+                }
+            } else if (e.key === 'Escape' && isFullscreen) {
+                e.preventDefault()
+                document.exitFullscreen()
+            } else if (isFullscreen) {
+                // Navigation in presentation mode
+                if (e.key === 'ArrowRight' || e.key === ' ') {
+                    e.preventDefault()
+                    goToNextSlide()
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault()
+                    goToPreviousSlide()
+                } else if (e.key === 'Home') {
+                    e.preventDefault()
+                    setCurrentSlideIndex(0)
+                } else if (e.key === 'End') {
+                    e.preventDefault()
+                    setCurrentSlideIndex(slides.length - 1)
+                }
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [isFullscreen, currentSlideIndex, slides.length])
+
+    // Initialize presentation canvas when in fullscreen
+    useEffect(() => {
+        if (!isFullscreen) {
+            // Clean up canvas when exiting fullscreen
+            if (presentationCanvasRef.current) {
+                console.log('🧹 Cleaning up presentation canvas (exiting fullscreen)')
+                presentationCanvasRef.current.dispose()
+                presentationCanvasRef.current = null
+                setPresentationCanvasReady(false)
+                setPresentationCanvasElement(null)
+            }
+            return
+        }
+
+        if (!presentationCanvasElement) {
+            return
+        }
+
+        if (presentationCanvasRef.current) {
+            return
+        }
+
+        console.log('🎨 Initializing presentation canvas')
+
+        try {
+            // Calculate optimal canvas size based on viewport
+            const viewportWidth = window.innerWidth
+            const viewportHeight = window.innerHeight
+
+            // Reserve space for controls and padding
+            const availableWidth = viewportWidth * 0.9
+            const availableHeight = viewportHeight * 0.75
+
+            // Calculate scale to fit 16:9 aspect ratio
+            const targetAspectRatio = 16 / 9
+            let displayWidth = availableWidth
+            let displayHeight = displayWidth / targetAspectRatio
+
+            if (displayHeight > availableHeight) {
+                displayHeight = availableHeight
+                displayWidth = displayHeight * targetAspectRatio
+            }
+
+            const canvas = new fabric.Canvas(presentationCanvasElement, {
+                width: displayWidth,
+                height: displayHeight,
+                backgroundColor: '#ffffff',
+                selection: false,
+            })
+
+            // Set the internal resolution to 1920x1080
+            const scale = displayWidth / 1920
+            canvas.setZoom(scale)
+            canvas.setDimensions({
+                width: displayWidth,
+                height: displayHeight
+            })
+
+            presentationCanvasRef.current = canvas
+            setPresentationCanvasReady(true)
+            console.log('✅ Presentation canvas initialized', { displayWidth, displayHeight, scale })
+        } catch (error) {
+            console.error('❌ Error initializing presentation canvas:', error)
+        }
+    }, [isFullscreen, presentationCanvasElement])
+
+    // Handle window resize in presentation mode
+    useEffect(() => {
+        if (!isFullscreen || !presentationCanvasRef.current) return
+
+        const handleResize = () => {
+            if (!presentationCanvasRef.current) return
+
+            const viewportWidth = window.innerWidth
+            const viewportHeight = window.innerHeight
+
+            const availableWidth = viewportWidth * 0.9
+            const availableHeight = viewportHeight * 0.75
+
+            const targetAspectRatio = 16 / 9
+            let displayWidth = availableWidth
+            let displayHeight = displayWidth / targetAspectRatio
+
+            if (displayHeight > availableHeight) {
+                displayHeight = availableHeight
+                displayWidth = displayHeight * targetAspectRatio
+            }
+
+            const scale = displayWidth / 1920
+            presentationCanvasRef.current.setZoom(scale)
+            presentationCanvasRef.current.setDimensions({
+                width: displayWidth,
+                height: displayHeight
+            })
+            presentationCanvasRef.current.renderAll()
+        }
+
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [isFullscreen])
+
+    // Use slide renderer for presentation mode
+    useSlideRenderer(
+        presentationCanvasReady,
+        presentationCanvasRef,
+        slides.map(slide => slide.data),
+        currentSlideIndex
+    )
+
     // Save changes
     const handleSave = () => {
-        console.log('💾 Guardando presentación...')
-        console.log('📊 Estado actual de slides:', slides.map((s, i) => ({
-            index: i,
-            path: s.path,
-            objectCount: s.data.objects?.length || 0,
-            background: s.data.background
-        })))
+
 
         const files: Record<string, string> = {}
 
@@ -454,25 +671,146 @@ export function FabricPresentationEditor({
 
     return (
         <div
-            ref={editorContainerRef}
-            className="h-full flex flex-col bg-zinc-950 relative"
+            ref={fullscreenRef}
+            className="fixed inset-0 w-screen h-screen flex flex-col bg-zinc-950 z-50"
         >
+            {isFullscreen ? (
+                // Presentation Mode - Full Screen
+                <div className="h-full w-full flex bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 relative">
+                    {/* Fullscreen Exit Button */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleFullscreen}
+                        className="absolute top-6 right-6 h-12 w-12 text-white hover:bg-white/20 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl transition-all hover:scale-105 z-50"
+                    >
+                        <Minimize className="size-5 text-white" />
+                    </Button>
+
+                    {/* Slide Counter */}
+                    <div className="absolute top-6 left-6 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl px-5 py-3 border border-white/10 shadow-xl z-50">
+                        <div className="flex items-center gap-2">
+                            <span className="text-white text-sm font-bold">{currentSlideIndex + 1}</span>
+                            <span className="text-zinc-500 text-sm">/</span>
+                            <span className="text-zinc-300 text-sm">{slides.length}</span>
+                        </div>
+                    </div>
+
+                    {/* Canvas Container - Centered */}
+                    <div className="flex-1 flex items-center justify-center">
+                        <canvas
+                            ref={(el) => {
+                                if (el && !presentationCanvasElement) {
+                                    console.log('📍 Presentation canvas element mounted')
+                                    setPresentationCanvasElement(el)
+                                }
+                            }}
+                            className="shadow-2xl rounded-lg ring-1 ring-white/10"
+                            style={{
+                                display: 'block',
+                                boxShadow: '0 20px 60px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(59, 130, 246, 0.1)',
+                            }}
+                        />
+                    </div>
+
+                    {/* Navigation Controls */}
+                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-gradient-to-r from-zinc-900/95 via-zinc-800/95 to-zinc-900/95 backdrop-blur-2xl rounded-2xl px-6 py-3 shadow-2xl border border-zinc-700/50 z-50">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setCurrentSlideIndex(0)}
+                            disabled={currentSlideIndex === 0}
+                            className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                        >
+                            <SkipBack className="size-5 text-white" />
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={goToPreviousSlide}
+                            disabled={currentSlideIndex === 0}
+                            className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                        >
+                            <ChevronLeft className="size-6 text-white" />
+                        </Button>
+
+                        <div className="flex items-center gap-2 px-4 py-2 bg-black/30 rounded-xl">
+                            {slides.map((_, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setCurrentSlideIndex(index)}
+                                    className={`
+                                        h-2 rounded-full transition-all duration-300
+                                        ${index === currentSlideIndex
+                                            ? 'w-10 bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/50'
+                                            : 'w-2 bg-white/30 hover:bg-white/60 hover:w-4'
+                                        }
+                                    `}
+                                    aria-label={`Go to slide ${index + 1}`}
+                                />
+                            ))}
+                        </div>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={goToNextSlide}
+                            disabled={currentSlideIndex === slides.length - 1}
+                            className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                        >
+                            <ChevronRight className="size-6 text-white" />
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setCurrentSlideIndex(slides.length - 1)}
+                            disabled={currentSlideIndex === slides.length - 1}
+                            className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                        >
+                            <SkipForward className="size-5 text-white" />
+                        </Button>
+                    </div>
+                </div>
+            ) : (
+                // Editor Mode - Normal View
+            <div
+                ref={editorContainerRef}
+                className="w-full h-full flex flex-col bg-zinc-950 relative overflow-hidden"
+            >
             {/* Top toolbar */}
-            <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex items-center justify-between">
+            <div className="bg-[#E2322A] border-b border-zinc-800 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        className="cursor-pointer text-white hover:bg-muted-500 hover:text-gray"
+                        onClick={() => {
+                            setIsBackButtonLoading(true);
+                            const chatId = params?.id || params?.chatId;
+                            if (chatId) {
+                                router.push(`/chat/${chatId}`);
+                                router.refresh();
+                            }
+                        }}
+                    >
+                        {isBackButtonLoading ? (<Loader />) : (<ArrowLeft className="size-4" />)}
+                        {isBackButtonLoading ? "Loading" : "Return to Chat"}
+                    </Button>
+
+                    <div className="h-8 w-px bg-zinc-700/50" />
+
                     <h2 className="text-xl font-bold text-white">Presentation Editor</h2>
-                    <span className="text-sm text-zinc-400">
-                        Slide {currentSlideIndex + 1} of {slides.length}
-                    </span>
+
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {hasUnsavedChanges && !isSaving && (
+                    {/* {hasUnsavedChanges && !isSaving && (
                         <span className="text-sm text-yellow-400 flex items-center gap-1">
                             <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse"></span>
                             Unsaved changes
                         </span>
-                    )}
+                    )} */}
                     {isAdmin && (
                         <Button
                         variant="outline"
@@ -482,17 +820,52 @@ export function FabricPresentationEditor({
                         {showCode ? <Eye className="size-4 mr-2" /> : <Code className="size-4 mr-2" />}
                         {showCode ? 'Editor' : 'Ver JSON'}
                     </Button>)}
+                    {/* Share Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                // variant="outline"
+                                size="sm"
+                                className=" transition-all border-1 p-6 px-4"
+                            >
+                                <Share className="size-4 mr-2" />
+                                Share
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => exportToPDF(slides.map(slide => slide.data))}>
+                                <FileDown className="size-4 mr-2" />
+                                Export as PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handlePPTExport}>
+                                <FileDown className="size-4 mr-2" />
+                                Export as PPT
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Fullscreen Button */}
+                    <Button
+                        size="sm"
+                        onClick={toggleFullscreen}
+                        className="border-1 transition-all p-6"
+                    >
+                         <img src="/presentation-icon.svg" alt="Present" className="size-6" />
+                        {isFullscreen ? 'Exit' : 'Present'}
+                    </Button>
+
+
                     <Button
                         variant="default"
                         size="sm"
                         onClick={handleSave}
                         disabled={isSaving || !hasUnsavedChanges}
-                        className={hasUnsavedChanges ? 'relative overflow-hidden bg-gradient-to-r from-[#E5332D] via-[#db3f42] to-[#BD060A] bg-[length:200%_100%] animate-gradient-x hover:shadow-lg hover:shadow-[#E5332D]/50 transition-all duration-300' : ''}
+                        className={hasUnsavedChanges ? 'relative overflow-hidden bg-gradient-to-r from-[#E5332D] via-[#db3f42] to-[#BD060A] bg-[length:200%_100%] animate-gradient-x hover:shadow-lg hover:shadow-[#E5332D]/50 transition-all duration-300 p-6 border-1' : ''}
                     >
                         {isSaving ? (
                             <>
                                 <Loader />
-                                <span className="ml-2">Guardando...</span>
+                                <span className="ml-2">Saving...</span>
                             </>
                         ) : (
                             <>
@@ -507,7 +880,8 @@ export function FabricPresentationEditor({
             <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 flex overflow-hidden">
                     {/* Sidebar with slide thumbnails */}
-                    <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+                    {!isSidebarCollapsed && (
+                    <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-all duration-300">
                         <div className="p-4 border-b border-zinc-800 flex-shrink-0">
                             <Button
                                 className="w-full"
@@ -611,6 +985,7 @@ export function FabricPresentationEditor({
                             </div>
                         </ScrollArea>
                     </div>
+                    )}
 
                     {/* Main editor area */}
                     <div className="flex-1 flex flex-col overflow-hidden">
@@ -629,8 +1004,11 @@ export function FabricPresentationEditor({
                                     slideData={currentSlide.data}
                                     onSlideChange={(newData) => updateSlide(currentSlideIndex, newData)}
                                     slideNumber={currentSlideIndex + 1}
+                                    totalSlides={slides.length}
                                     onCopyObject={handleCopyObject}
                                     onPasteObject={handlePasteObject}
+                                    isSidebarCollapsed={isSidebarCollapsed}
+                                    onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                                 />
                             )
                         )}
@@ -665,6 +1043,8 @@ export function FabricPresentationEditor({
 
             {/* DragDropOverlay for file uploads */}
             <DragDropOverlay onUpload={handleUploadFiles} />
+            </div>
+            )}
         </div>
     )
 }
