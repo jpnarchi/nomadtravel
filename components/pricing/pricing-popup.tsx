@@ -20,7 +20,7 @@ export function PricingPopup({
     const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
 
-    const handleUpgrade = async (plan: "pro" | "premium") => {
+    const handleUpgrade = async (plan: "pro" | "premium" | "ultra") => {
         if (!isSignedIn) {
             router.push('/sign-in');
             return;
@@ -96,9 +96,9 @@ export function PricingPopup({
                 {/* Content */}
                 <div className="p-8 md:p-10 lg:p-12">
                     <div className="text-center space-y-3 mb-10">
-                        <h2 className="text-3xl md:text-4xl font-semibold">Pricing</h2>
+                        <h2 className="text-3xl md:text-4xl font-semibold">Ready to Create More?</h2>
                         <p className="text-muted-foreground text-base md:text-lg">
-                            Choose the plan that best fits your needs
+                            Upgrade to continue creating amazing presentations with AI
                         </p>
                     </div>
 
@@ -121,8 +121,8 @@ export function PricingPopup({
                                 price: "$0 USD",
                                 description: "For a quick presentation",
                                 features: [
-                                    '2 presentations',
-                                    '4 versions of your presentations',
+                                    '2 presentations per month',
+                                    '5 versions per presentation',
                                     'Unlimited templates',
                                     'User community'
                                 ],
@@ -139,14 +139,11 @@ export function PricingPopup({
                                 price: "$7 USD",
                                 description: "For passionate creators",
                                 features: [
-                                    'Everything in the free plan',
-                                    'Weekly call with businesses',
-                                    'Participate in weekly voting',
                                     '10 presentations per month',
-                                    '30 versions per presentation',
+                                    '20 versions per presentation',
                                     'Unlimited templates',
                                     'Priority support',
-                                    'Export to Power Point and Google Slides'
+                                    'Export to Power Point'
                                 ],
 
                                 buttonText: user?.plan === "pro" ? "Current plan" : "Get started",
@@ -163,10 +160,11 @@ export function PricingPopup({
                                 price: "20 USD",
 
                                 features: [
-                                    'Everything in the pro plan',
                                     '35 presentations per month',
-                                    'Unlimited versions per presentations',
-                                    'Export to Power Point and Google Slides'
+                                    'Unlimited versions per presentation',
+                                    'Unlimited templates',
+                                    'Priority support',
+                                    'Export to Power Point'
                                 ],
                                 buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
                                 isPopular: true,
@@ -178,20 +176,20 @@ export function PricingPopup({
                         <PricingCard
                             plan={{
                                 name: "Ultra",
-                                price: "49 USD",
+                                price: "$49 USD",
                                 description: "For agencies",
                                 features: [
-                                    'Everything in the premium plan',
-                                    'Unlimited presentations',
-                                    'Create your own templates',
-                                    'Personalized templates',
-                                    'Unlimited versions of your presentations',
-                                    'Export to Power Point and Google Slides'
+                                    'Unlimited presentations per month',
+                                    'Unlimited versions per presentation',
+                                    'Unlimited templates',
+                                    'Priority support',
+                                    'Export to Power Point',
+                                    'Access to new features'
                                 ],
-                                buttonText: user?.plan === "premium" ? "Current plan" : "Get started",
+                                buttonText: user?.plan === "ultra" ? "Current plan" : "Get started",
                                 buttonVariant: "outline",
-                                onButtonClick: () => handleUpgrade('premium'),
-                                isDisabled: user?.plan === "premium"
+                                onButtonClick: () => handleUpgrade('ultra'),
+                                isDisabled: user?.plan === "ultra"
                             }}
                         />
                     </div>

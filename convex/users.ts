@@ -478,8 +478,8 @@ export const cancelSubscription = internalMutation({
 // Version limit constants (server-side)
 const VERSION_LIMITS = {
     free: 5,
-    pro: 51,
-    premium: 8000, // High limit for premium users
+    pro: 20,
+    premium: 8000, // Unlimited versions for premium users
     ultra: 8000, // Unlimited versions for ultra users
     admin: 8000, // Very high limit for admins
 } as const;

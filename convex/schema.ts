@@ -107,5 +107,12 @@ export default defineSchema({
     ,
     totalUsers: defineTable({
         count: v.number(),
+    }),
+    monthlyPresentationUsage: defineTable({
+        userId: v.id('users'),
+        month: v.string(), // Format: YYYY-MM
+        count: v.number(), // Number of presentations created this month
     })
+        .index('by_user_id_month', ['userId', 'month'])
+        .index('by_user_id', ['userId'])
 });

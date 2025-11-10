@@ -1,16 +1,24 @@
 import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
+import { query, mutation, MutationCtx, QueryCtx } from "./_generated/server";
 import { paginationOptsValidator } from "convex/server";
 import { getCurrentUser, getVersionLimit } from "./users";
 
-// Chat limits for different plans
+// Chat limits for different plans (monthly creation limit)
 const CHAT_LIMITS = {
-    free: 1,
-    pro: 8000,
-    premium: 8000,
+    free: 2,
+    pro: 10,
+    premium: 35,
     ultra: 8000,
     admin: 8000,
 } as const;
+
+// Helper function to get current month in YYYY-MM format
+const getCurrentMonth = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+};
 
 // Helper function to get chat limit for a user
 const getChatLimit = (user: { plan?: string; role?: string }): number => {
@@ -29,6 +37,44 @@ const getChatLimit = (user: { plan?: string; role?: string }): number => {
             return CHAT_LIMITS.ultra;
         default:
             return CHAT_LIMITS.free;
+    }
+};
+
+// Helper function to get monthly usage record (works with both Query and Mutation contexts)
+const getMonthlyUsage = async (ctx: MutationCtx | QueryCtx, userId: any) => {
+    const currentMonth = getCurrentMonth();
+
+    const existingRecord = await ctx.db
+        .query("monthlyPresentationUsage")
+        .withIndex("by_user_id_month", (q) =>
+            q.eq("userId", userId).eq("month", currentMonth)
+        )
+        .unique();
+
+    return existingRecord;
+};
+
+// Helper function to increment monthly usage
+const incrementMonthlyUsage = async (ctx: MutationCtx, userId: any) => {
+    const currentMonth = getCurrentMonth();
+
+    const existingRecord = await ctx.db
+        .query("monthlyPresentationUsage")
+        .withIndex("by_user_id_month", (q) =>
+            q.eq("userId", userId).eq("month", currentMonth)
+        )
+        .unique();
+
+    if (existingRecord) {
+        await ctx.db.patch(existingRecord._id, {
+            count: existingRecord.count + 1
+        });
+    } else {
+        await ctx.db.insert("monthlyPresentationUsage", {
+            userId,
+            month: currentMonth,
+            count: 1
+        });
     }
 };
 
@@ -52,23 +98,25 @@ export const create = mutation({
     handler: async (ctx) => {
         const user = await getCurrentUser(ctx);
 
-        // Check if user has reached chat limit
+        // Check if user has reached monthly chat creation limit
         const chatLimit = getChatLimit(user);
-        const existingChats = await ctx.db
-            .query("chats")
-            .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-            .collect();
+        const monthlyUsage = await getMonthlyUsage(ctx, user._id);
+        const currentMonthCount = monthlyUsage?.count || 0;
 
-        if (existingChats.length >= chatLimit) {
-            throw new Error(`Chat limit exceeded. Maximum chats allowed: ${chatLimit}. Please upgrade your plan to create more chats.`);
+        if (currentMonthCount >= chatLimit) {
+            throw new Error(`Monthly presentation limit exceeded. You have created ${currentMonthCount} of ${chatLimit} presentations this month. Limit resets next month or upgrade your plan.`);
         }
 
+        // Create the chat
         const chatId = await ctx.db.insert("chats", {
             userId: user._id,
             title: "New Chat",
             currentVersion: 1,
             isGenerating: false,
         });
+
+        // Increment monthly usage counter
+        await incrementMonthlyUsage(ctx, user._id);
 
         return chatId;
     },
@@ -95,23 +143,25 @@ export const duplicateChat = mutation({
             throw new Error("Access denied");
         }
 
-        // Check if user has reached chat limit
+        // Check if user has reached monthly chat creation limit
         const chatLimit = getChatLimit(user);
-        const existingChats = await ctx.db
-            .query("chats")
-            .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-            .collect();
+        const monthlyUsage = await getMonthlyUsage(ctx, user._id);
+        const currentMonthCount = monthlyUsage?.count || 0;
 
-        if (existingChats.length >= chatLimit) {
-            throw new Error(`Chat limit exceeded. Maximum chats allowed: ${chatLimit}. Please upgrade your plan to create more chats.`);
+        if (currentMonthCount >= chatLimit) {
+            throw new Error(`Monthly presentation limit exceeded. You have created ${currentMonthCount} of ${chatLimit} presentations this month. Limit resets next month or upgrade your plan.`);
         }
 
+        // Create the duplicate chat
         const newChatId = await ctx.db.insert("chats", {
             userId: user._id,
             title: chat.title + " (Copia)",
             currentVersion: chat.currentVersion,
             isGenerating: false,
         });
+
+        // Increment monthly usage counter
+        await incrementMonthlyUsage(ctx, user._id);
 
         const messages = await ctx.db
             .query("messages")
@@ -687,21 +737,19 @@ export const validateUserEmail = query({
     },
 });
 
-// Query to check if user can create more chats
+// Query to check if user can create more chats (based on monthly limit)
 export const canCreateChat = query({
     args: {},
     handler: async (ctx) => {
         try {
             const user = await getCurrentUser(ctx);
             const chatLimit = getChatLimit(user);
-            const existingChats = await ctx.db
-                .query("chats")
-                .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-                .collect();
+            const monthlyUsage = await getMonthlyUsage(ctx, user._id);
+            const currentMonthCount = monthlyUsage?.count || 0;
 
             return {
-                canCreate: existingChats.length < chatLimit,
-                currentCount: existingChats.length,
+                canCreate: currentMonthCount < chatLimit,
+                currentCount: currentMonthCount,
                 limit: chatLimit,
                 plan: user.plan || "free",
             };
@@ -717,20 +765,18 @@ export const canCreateChat = query({
     },
 });
 
-// Query to get user's chat count and limit info
+// Query to get user's chat count and limit info (based on monthly limit)
 export const getChatLimitInfo = query({
     args: {},
     handler: async (ctx) => {
         try {
             const user = await getCurrentUser(ctx);
             const chatLimit = getChatLimit(user);
-            const existingChats = await ctx.db
-                .query("chats")
-                .withIndex("by_user_id", (q) => q.eq("userId", user._id))
-                .collect();
+            const monthlyUsage = await getMonthlyUsage(ctx, user._id);
+            const currentMonthCount = monthlyUsage?.count || 0;
 
             return {
-                currentCount: existingChats.length,
+                currentCount: currentMonthCount,
                 limit: chatLimit,
                 plan: user.plan || "free",
                 role: user.role || "user",
