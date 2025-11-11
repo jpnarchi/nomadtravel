@@ -115,4 +115,25 @@ export default defineSchema({
     })
         .index('by_user_id_month', ['userId', 'month'])
         .index('by_user_id', ['userId'])
+    ,
+    supportTickets: defineTable({
+        userId: v.id('users'),
+        chatId: v.optional(v.id('chats')),
+        title: v.string(),
+        description: v.string(),
+        status: v.union(
+            v.literal("open"),
+            v.literal("closed")
+        ),
+        attachments: v.optional(v.array(v.object({
+            storageId: v.string(),
+            name: v.string(),
+            type: v.string(),
+            size: v.number(),
+        }))),
+    })
+        .index('by_user_id', ['userId'])
+        .index('by_status', ['status'])
+        .index('by_user_id_status', ['userId', 'status'])
+    ,
 });

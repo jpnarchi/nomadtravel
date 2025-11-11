@@ -14,11 +14,11 @@ const links = [
     {
         title: 'Support',
         href: '/support',
-    },
-    {
-        title: 'Status',
-        href: '/status',
-    },
+    }
+    // {
+    //     title: 'Status',
+    //     href: '/status',
+    // },
 ]
 
 const socialLinks = [
