@@ -61,12 +61,14 @@ interface FabricPresentationEditorProps {
     initialFiles: Record<string, string>
     onSave: (files: Record<string, string>) => void
     isSaving: boolean
+    returnPath?: string // Optional path to return to when clicking "Return to Chat"
 }
 
 export function FabricPresentationEditor({
     initialFiles,
     onSave,
-    isSaving
+    isSaving,
+    returnPath
 }: FabricPresentationEditorProps) {
     const router = useRouter()
     const params = useParams()
@@ -410,6 +412,13 @@ export function FabricPresentationEditor({
     // Keyboard shortcuts for fullscreen and navigation in presentation mode
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Check if user is typing in an input or textarea
+            const target = e.target as HTMLElement
+            const isTextInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+
+            // Don't trigger shortcuts when typing in regular inputs or editing text
+            if (isTextInput) return
+
             if (e.key === 'f' || e.key === 'F') {
                 if (!isFullscreen) {
                     e.preventDefault()
@@ -655,12 +664,18 @@ export function FabricPresentationEditor({
     // Handle return to chat
     const handleReturnToChat = useCallback(() => {
         setIsBackButtonLoading(true);
-        const chatId = params?.id || params?.chatId;
-        if (chatId) {
-            router.push(`/chat/${chatId}`);
+        // Use provided returnPath if available, otherwise default to chat behavior
+        if (returnPath) {
+            router.push(returnPath);
             router.refresh();
+        } else {
+            const chatId = params?.id || params?.chatId;
+            if (chatId) {
+                router.push(`/chat/${chatId}`);
+                router.refresh();
+            }
         }
-    }, [params, router])
+    }, [params, router, returnPath])
 
     // Global copy/paste handlers
     const handleCopyObject = useCallback((objectData: any) => {
@@ -799,11 +814,15 @@ export function FabricPresentationEditor({
                 className="w-full h-full flex flex-col bg-zinc-950 relative overflow-hidden"
             >
             {/* Top toolbar */}
-            <div className="bg-[#E2322A] border-b border-zinc-800 p-4 flex items-center justify-between">
+            <div
+                className="bg-white border-b border-zinc-800 p-4 grid grid-cols-3 items-center"
+                style={{ backgroundImage: "url('/img/background2.svg')" }}
+            >
+                {/* Left side */}
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
-                        className="cursor-pointer text-white hover:bg-muted-500 hover:text-gray"
+                        className="cursor-pointer text-black hover:bg-muted-500 hover:text-gray"
                         onClick={() => {
                             if (hasUnsavedChanges) {
                                 setShowUnsavedChangesDialog(true);
@@ -816,13 +835,18 @@ export function FabricPresentationEditor({
                         {isBackButtonLoading ? "Loading" : "Return to Chat"}
                     </Button>
 
-                    <div className="h-8 w-px bg-white" />
+                    <div className="h-8 w-px bg-black" />
 
-                    <h2 className="text-xl font-bold text-white">Presentation Editor</h2>
-
+                    <h2 className="text-xl font-bold text-black">Presentation Editor</h2>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Center - Logo */}
+                <div className="flex items-center justify-center">
+                    <img src="/logo.png" alt="Logo" className="h-12" />
+                </div>
+
+                {/* Right side */}
+                <div className="flex items-center gap-2 justify-end">
                     {/* {hasUnsavedChanges && !isSaving && (
                         <span className="text-sm text-yellow-400 flex items-center gap-1">
                             <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse"></span>
@@ -886,7 +910,7 @@ export function FabricPresentationEditor({
                             </>
                         ) : (
                             <>
-                                <Save className="size-4 mr-2" />
+                                <Save className="mr-2" />
                                 {hasUnsavedChanges ? 'Save Changes' : 'All Saved'}
                             </>
                         )}

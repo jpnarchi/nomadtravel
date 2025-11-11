@@ -142,6 +142,7 @@ export function PreviewTemplate({
                         initialFiles={initialFiles}
                         onSave={handleSave}
                         isSaving={isSaving}
+                        returnPath="/templates"
                     />
                 ) : (
                     <FabricPresentationPreview
