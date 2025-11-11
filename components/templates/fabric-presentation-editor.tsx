@@ -409,7 +409,7 @@ export function FabricPresentationEditor({
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
     }, [])
 
-    // Keyboard shortcuts for fullscreen and navigation in presentation mode
+    // Keyboard shortcuts for fullscreen and navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Check if user is typing in an input or textarea
@@ -419,23 +419,29 @@ export function FabricPresentationEditor({
             // Don't trigger shortcuts when typing in regular inputs or editing text
             if (isTextInput) return
 
+            // Fullscreen toggle - only when NOT in fullscreen
             if (e.key === 'f' || e.key === 'F') {
                 if (!isFullscreen) {
                     e.preventDefault()
                     toggleFullscreen()
                 }
-            } else if (e.key === 'Escape' && isFullscreen) {
+            }
+            // Exit fullscreen - only when IN fullscreen
+            else if (e.key === 'Escape' && isFullscreen) {
                 e.preventDefault()
                 document.exitFullscreen()
-            } else if (isFullscreen) {
-                // Navigation in presentation mode
-                if (e.key === 'ArrowRight' || e.key === ' ') {
-                    e.preventDefault()
-                    goToNextSlide()
-                } else if (e.key === 'ArrowLeft') {
-                    e.preventDefault()
-                    goToPreviousSlide()
-                } else if (e.key === 'Home') {
+            }
+            // Navigation with arrow keys - works in BOTH modes (editor and fullscreen)
+            else if (e.key === 'ArrowRight' || (e.key === ' ' && isFullscreen)) {
+                e.preventDefault()
+                goToNextSlide()
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault()
+                goToPreviousSlide()
+            }
+            // Home/End keys - only in fullscreen mode
+            else if (isFullscreen) {
+                if (e.key === 'Home') {
                     e.preventDefault()
                     setCurrentSlideIndex(0)
                 } else if (e.key === 'End') {
@@ -692,8 +698,8 @@ export function FabricPresentationEditor({
 
     if (isLoading) {
         return (
-            <div className="h-full flex items-center justify-center bg-black">
-                <div className="flex flex-col items-center gap-2 text-white">
+            <div className="h-full flex items-center justify-center bg-white">
+                <div className="flex flex-col items-center gap-2 text-gray-900">
                     <Loader />
                     <p>Cargando editor...</p>
                 </div>
@@ -706,27 +712,27 @@ export function FabricPresentationEditor({
     return (
         <div
             ref={fullscreenRef}
-            className="fixed inset-0 w-screen h-screen flex flex-col bg-zinc-950 z-50"
+            className="fixed inset-0 w-screen h-screen flex flex-col bg-gray-100 z-50"
         >
             {isFullscreen ? (
                 // Presentation Mode - Full Screen
-                <div className="h-full w-full flex bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 relative">
+                <div className="h-full w-full flex bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative">
                     {/* Fullscreen Exit Button */}
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={toggleFullscreen}
-                        className="absolute top-6 right-6 h-12 w-12 text-white hover:bg-white/20 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl transition-all hover:scale-105 z-50"
+                        className="absolute top-6 right-6 h-12 w-12 text-gray-900 hover:bg-gray-300/50 bg-gradient-to-br from-white/90 to-gray-100/90 backdrop-blur-xl rounded-2xl border border-gray-300 shadow-xl transition-all hover:scale-105 z-50"
                     >
-                        <Minimize className="size-5 text-white" />
+                        <Minimize className="size-5 text-gray-900" />
                     </Button>
 
                     {/* Slide Counter */}
-                    <div className="absolute top-6 left-6 bg-gradient-to-br from-zinc-900/90 to-zinc-800/90 backdrop-blur-xl rounded-2xl px-5 py-3 border border-white/10 shadow-xl z-50">
+                    <div className="absolute top-6 left-6 bg-gradient-to-br from-white/90 to-gray-100/90 backdrop-blur-xl rounded-2xl px-5 py-3 border border-gray-300 shadow-xl z-50">
                         <div className="flex items-center gap-2">
-                            <span className="text-white text-sm font-bold">{currentSlideIndex + 1}</span>
-                            <span className="text-zinc-500 text-sm">/</span>
-                            <span className="text-zinc-300 text-sm">{slides.length}</span>
+                            <span className="text-gray-900 text-sm font-bold">{currentSlideIndex + 1}</span>
+                            <span className="text-gray-500 text-sm">/</span>
+                            <span className="text-gray-700 text-sm">{slides.length}</span>
                         </div>
                     </div>
 
@@ -742,21 +748,21 @@ export function FabricPresentationEditor({
                             className="shadow-2xl rounded-lg ring-1 ring-white/10"
                             style={{
                                 display: 'block',
-                                boxShadow: '0 20px 60px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(59, 130, 246, 0.1)',
+                                boxShadow: '0 20px 60px -12px rgba(0, 0, 0, 0.2), 0 0 40px rgba(59, 130, 246, 0.1)',
                             }}
                         />
                     </div>
 
                     {/* Navigation Controls */}
-                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-gradient-to-r from-zinc-900/95 via-zinc-800/95 to-zinc-900/95 backdrop-blur-2xl rounded-2xl px-6 py-3 shadow-2xl border border-zinc-700/50 z-50">
+                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-gradient-to-r from-white/95 via-gray-50/95 to-white/95 backdrop-blur-2xl rounded-2xl px-6 py-3 shadow-2xl border border-gray-300 z-50">
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => setCurrentSlideIndex(0)}
                             disabled={currentSlideIndex === 0}
-                            className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            className="h-10 w-10 text-gray-900 hover:bg-gray-200/50 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                         >
-                            <SkipBack className="size-5 text-white" />
+                            <SkipBack className="size-5 text-gray-900" />
                         </Button>
 
                         <Button
@@ -764,12 +770,12 @@ export function FabricPresentationEditor({
                             size="icon"
                             onClick={goToPreviousSlide}
                             disabled={currentSlideIndex === 0}
-                            className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            className="h-11 w-11 text-gray-900 hover:bg-blue-100/50 hover:text-blue-600 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                         >
-                            <ChevronLeft className="size-6 text-white" />
+                            <ChevronLeft className="size-6 text-gray-900" />
                         </Button>
 
-                        <div className="flex items-center gap-2 px-4 py-2 bg-black/30 rounded-xl">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-200/50 rounded-xl">
                             {slides.map((_, index) => (
                                 <button
                                     key={index}
@@ -778,7 +784,7 @@ export function FabricPresentationEditor({
                                         h-2 rounded-full transition-all duration-300
                                         ${index === currentSlideIndex
                                             ? 'w-10 bg-gradient-to-r from-blue-500 to-blue-600 shadow-lg shadow-blue-500/50'
-                                            : 'w-2 bg-white/30 hover:bg-white/60 hover:w-4'
+                                            : 'w-2 bg-gray-400/60 hover:bg-gray-500 hover:w-4'
                                         }
                                     `}
                                     aria-label={`Go to slide ${index + 1}`}
@@ -791,9 +797,9 @@ export function FabricPresentationEditor({
                             size="icon"
                             onClick={goToNextSlide}
                             disabled={currentSlideIndex === slides.length - 1}
-                            className="h-11 w-11 text-white hover:bg-blue-500/20 hover:text-blue-400 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            className="h-11 w-11 text-gray-900 hover:bg-blue-100/50 hover:text-blue-600 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                         >
-                            <ChevronRight className="size-6 text-white" />
+                            <ChevronRight className="size-6 text-gray-900" />
                         </Button>
 
                         <Button
@@ -801,9 +807,9 @@ export function FabricPresentationEditor({
                             size="icon"
                             onClick={() => setCurrentSlideIndex(slides.length - 1)}
                             disabled={currentSlideIndex === slides.length - 1}
-                            className="h-10 w-10 text-white hover:bg-white/20 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
+                            className="h-10 w-10 text-gray-900 hover:bg-gray-200/50 disabled:opacity-20 disabled:cursor-not-allowed rounded-xl transition-all"
                         >
-                            <SkipForward className="size-5 text-white" />
+                            <SkipForward className="size-5 text-gray-900" />
                         </Button>
                     </div>
                 </div>
@@ -811,7 +817,7 @@ export function FabricPresentationEditor({
                 // Editor Mode - Normal View
             <div
                 ref={editorContainerRef}
-                className="w-full h-full flex flex-col bg-zinc-950 relative overflow-hidden"
+                className="w-full h-full flex flex-col bg-gray-100 relative overflow-hidden"
             >
             {/* Top toolbar */}
             <div
@@ -835,7 +841,7 @@ export function FabricPresentationEditor({
                         {isBackButtonLoading ? "Loading" : "Return to Chat"}
                     </Button>
 
-                    <div className="h-8 w-px bg-black" />
+                    <div className="h-8 w-px bg-gray-300" />
 
                     <h2 className="text-xl font-bold text-black">Presentation Editor</h2>
                 </div>
@@ -922,8 +928,8 @@ export function FabricPresentationEditor({
                 <div className="flex-1 flex overflow-hidden">
                     {/* Sidebar with slide thumbnails */}
                     {!isSidebarCollapsed && (
-                    <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-all duration-300">
-                        <div className="p-4 border-b border-zinc-800 flex-shrink-0">
+                    <div className="w-64 bg-gray-50 border-r border-gray-300 flex flex-col transition-all duration-300">
+                        <div className="p-4 border-b border-gray-300 flex-shrink-0">
                             <Button
                                 className="w-full"
                                 onClick={addSlide}
@@ -943,14 +949,14 @@ export function FabricPresentationEditor({
                                             className={`
                                                 relative p-3 rounded-lg border-2 cursor-pointer transition-all
                                                 ${index === currentSlideIndex
-                                                    ? 'border-blue-500 bg-blue-500/10'
-                                                    : 'border-zinc-700 bg-zinc-800 hover:border-zinc-600'
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-300 bg-white hover:border-gray-400'
                                                 }
                                             `}
                                             onClick={() => setCurrentSlideIndex(index)}
                                         >
                                             <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm font-medium text-white">
+                                                <span className="text-sm font-medium text-gray-900">
                                                     Slide {index + 1}
                                                 </span>
                                                 <div className="flex items-center gap-1">
@@ -959,7 +965,7 @@ export function FabricPresentationEditor({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-6 w-6 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700"
+                                                            className="h-6 w-6 text-gray-600 hover:text-gray-800 hover:bg-gray-200"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 moveSlideUp(index)
@@ -974,7 +980,7 @@ export function FabricPresentationEditor({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-6 w-6 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700"
+                                                            className="h-6 w-6 text-gray-600 hover:text-gray-800 hover:bg-gray-200"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 moveSlideDown(index)
@@ -987,7 +993,7 @@ export function FabricPresentationEditor({
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-6 w-6 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10"
+                                                        className="h-6 w-6 text-blue-600 hover:text-blue-700 hover:bg-blue-100"
                                                         onClick={(e) => {
                                                             e.stopPropagation()
                                                             duplicateSlide(index)
@@ -1000,7 +1006,7 @@ export function FabricPresentationEditor({
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                                            className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-100"
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
                                                                 deleteSlide(index)
@@ -1013,10 +1019,10 @@ export function FabricPresentationEditor({
                                                 </div>
                                             </div>
                                             <div
-                                                className="aspect-video rounded border border-zinc-700 flex items-center justify-center text-xs"
+                                                className="aspect-video rounded border border-gray-300 flex items-center justify-center text-xs"
                                                 style={{ backgroundColor: slide.data.background || '#ffffff' }}
                                             >
-                                                <span className="font-medium text-zinc-700">
+                                                <span className="font-medium text-gray-600">
                                                     {objectCount} {objectCount === 1 ? 'object' : 'objects'}
                                                 </span>
                                             </div>
@@ -1032,8 +1038,8 @@ export function FabricPresentationEditor({
                     <div className="flex-1 flex flex-col overflow-hidden">
                         {showCode ? (
                             // JSON view
-                            <div className="flex-1 overflow-auto p-6 bg-zinc-900">
-                                <pre className="bg-black p-4 rounded text-sm text-green-400 font-mono">
+                            <div className="flex-1 overflow-auto p-6 bg-gray-50">
+                                <pre className="bg-white p-4 rounded text-sm text-green-700 font-mono border border-gray-300">
                                     {JSON.stringify(currentSlide.data, null, 2)}
                                 </pre>
                             </div>
@@ -1057,7 +1063,7 @@ export function FabricPresentationEditor({
                 </div>
 
                 {/* Navigation controls - Always visible at bottom */}
-                <div className="bg-zinc-900 border-t border-zinc-800 p-4 flex items-center justify-center gap-4 flex-shrink-0">
+                <div className="bg-gray-50 border-t border-gray-300 p-4 flex items-center justify-center gap-4 flex-shrink-0">
                     <Button
                         variant="outline"
                         onClick={goToPreviousSlide}
@@ -1067,7 +1073,7 @@ export function FabricPresentationEditor({
                         Previous
                     </Button>
 
-                    <span className="text-white font-medium">
+                    <span className="text-gray-900 font-medium">
                         {currentSlideIndex + 1} / {slides.length}
                     </span>
 

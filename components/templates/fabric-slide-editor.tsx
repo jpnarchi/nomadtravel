@@ -964,18 +964,18 @@ export function FabricSlideEditor({
                 {/* Canvas */}
                 <div
                     ref={containerRef}
-                    className="flex-1 bg-zinc-800 flex items-start justify-center overflow-auto relative p-4"
+                    className="flex-1 bg-gray-200 flex items-start justify-center overflow-auto relative p-4"
                 >
                     <canvas
                         ref={canvasRef}
-                        className="shadow-2xl border-2 border-zinc-600 rounded-sm flex-shrink-0"
+                        className="shadow-2xl border-2 border-gray-400 rounded-sm flex-shrink-0"
                         style={{
                             display: 'block',
                         }}
                     />
 
-                    <div className="absolute bottom-4 left-4 bg-black/70 text-white text-xs px-2 py-1.5 rounded backdrop-blur-sm">
-                        <p className="text-[10px] text-zinc-300">Shift+Drag to move</p>
+                    <div className="absolute bottom-4 left-4 bg-white/90 text-gray-900 text-xs px-2 py-1.5 rounded backdrop-blur-sm border border-gray-300">
+                        <p className="text-[10px] text-gray-600">Shift+Drag to move</p>
                     </div>
                 </div>
             </div>
