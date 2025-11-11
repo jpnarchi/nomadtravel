@@ -185,8 +185,8 @@ export function FabricSlideEditor({
             isUndoRedoRef.current = false
         }, 100)
 
-        console.log('⏮️ Undo. Step:', historyStepRef.current)
-        toast.success('Undo')
+        
+        
     }
 
     const redo = async () => {
@@ -213,8 +213,6 @@ export function FabricSlideEditor({
             isUndoRedoRef.current = false
         }, 100)
 
-        console.log('⏭️ Redo. Step:', historyStepRef.current)
-        toast.success('Redo')
     }
 
     // ============================================================================
@@ -959,12 +957,21 @@ export function FabricSlideEditor({
                     onSendToBack={handleSendToBack}
                     onToggleLock={handleToggleLock}
                     onDelete={handleDeleteSelected}
+                    onUndo={undo}
+                    onRedo={redo}
                 />
 
                 {/* Canvas */}
                 <div
                     ref={containerRef}
                     className="flex-1 bg-gray-200 flex items-start justify-center overflow-auto relative p-4"
+                    style={{
+                        backgroundImage: "url('/img/background.svg')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundAttachment: 'fixed'
+                    }}
                 >
                     <canvas
                         ref={canvasRef}
@@ -974,9 +981,9 @@ export function FabricSlideEditor({
                         }}
                     />
 
-                    <div className="absolute bottom-4 left-4 bg-white/90 text-gray-900 text-xs px-2 py-1.5 rounded backdrop-blur-sm border border-gray-300">
+                    {/* <div className="absolute bottom-4 left-4 bg-white/90 text-gray-900 text-xs px-2 py-1.5 rounded backdrop-blur-sm border border-gray-300">
                         <p className="text-[10px] text-gray-600">Shift+Drag to move</p>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 

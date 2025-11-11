@@ -15,6 +15,8 @@ import {
     ArrowDown,
     ChevronsUp,
     ChevronsDown,
+    Undo2,
+    Redo2,
 } from 'lucide-react'
 
 interface EditorToolbarProps {
@@ -31,6 +33,8 @@ interface EditorToolbarProps {
     onSendToBack: () => void
     onToggleLock: () => void
     onDelete: () => void
+    onUndo: () => void
+    onRedo: () => void
 }
 
 export function EditorToolbar({
@@ -47,10 +51,32 @@ export function EditorToolbar({
     onSendToBack,
     onToggleLock,
     onDelete,
+    onUndo,
+    onRedo,
 }: EditorToolbarProps) {
     return (
-        <div className="h-14 bg-gray-50 border-b border-gray-300 flex items-center justify-between px-4">
-            <h3 className="text-sm font-semibold text-gray-900">Slide {slideNumber} of {totalSlides}</h3>
+        <div className="h-14  border-b border-gray-300 flex items-center justify-between px-4">
+            {/* Undo/Redo Controls */}
+            <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-md">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onUndo}
+                    className="h-8 w-8 text-gray-900 hover:text-gray-700"
+                    title="Undo (Ctrl+Z)"
+                >
+                    <Undo2 className="size-4" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onRedo}
+                    className="h-8 w-8 text-gray-900 hover:text-gray-700"
+                    title="Redo (Ctrl+Shift+Z)"
+                >
+                    <Redo2 className="size-4" />
+                </Button>
+            </div>
 
             <div className="flex items-center gap-2">
                 {/* Zoom Controls */}
