@@ -26,6 +26,15 @@ const openrouter = createOpenRouter({
 
 const http = httpRouter();
 
+// Helper function to get today's date in YYYY-MM-DD format
+const getTodayString = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 // Helper function to upload image to storage within HTTP action context
 async function uploadFileToStorageFromHttpAction(
     ctx: any,
@@ -172,8 +181,12 @@ http.route({
 
         const templates = await ctx.runQuery(api.templates.getAll, {});
 
+        // Get current date and user info for context
+        const currentDate = getTodayString();
+        const userName = identity.name || "User";
+
         const result = streamText({
-            // model: openrouter('deepseek/deepseek-chat-v3-0324'), 
+            // model: openrouter('deepseek/deepseek-chat-v3-0324'),
         //   model: openrouter('anthropic/claude-haiku-4.5'),
            model: openrouter('x-ai/grok-4-fast'),// very good cheap as fuck
             // model: openrouter('anthropic/claude-sonnet-4.5'),
@@ -181,7 +194,12 @@ http.route({
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),system: `
             You are iLovePresentations, an assistant for creating professional presentations using Fabric.js (HTML5 canvas library).
-            
+
+            ## User Context
+            - User Name: ${userName}
+            - Current Date: ${currentDate}
+            - Use this information when relevant for personalizing presentations or adding date references
+
             ## Communication Style
             - Maximum 1 sentence per response
             - No lists or emojis

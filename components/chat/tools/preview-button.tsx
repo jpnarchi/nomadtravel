@@ -290,11 +290,6 @@ export function PreviewButton({
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                             <p className="font-semibold text-foreground">Version {version}</p>
-                            {/* {version !== currentVersion && (
-                                <span className="hidden lg:flex text-xs px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
-                                    Old Version
-                                </span>
-                            )} */}
                         </div>
                         <p className="text-sm text-muted-foreground">{formatCreationTime(creationTime)}</p>
                     </div>
