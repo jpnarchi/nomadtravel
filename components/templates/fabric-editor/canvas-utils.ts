@@ -39,6 +39,9 @@ export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) 
             'height', // Include height
             // Image-specific properties
             'src', // Include src for Image objects
+            'cropX', // Crop properties for image containers
+            'cropY',
+            'clipPath', // Clip path for rounded corners
             // Position and transform properties (critical for images)
             'left',
             'top',
@@ -46,11 +49,54 @@ export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) 
             'scaleY',
             'angle',
             'originX',
-            'originY'
+            'originY',
+            // Custom properties for image placeholders and containers
+            'isImagePlaceholder',
+            'isImageContainer',
+            'placeholderWidth',
+            'placeholderHeight',
+            'borderRadius',
         ])
 
         // Add z-index to preserve layer order
         json.zIndex = index
+
+        // Special handling for image placeholders (groups)
+        if ((obj as any).isImagePlaceholder && obj.type === 'group') {
+            json.isImagePlaceholder = true
+            json.placeholderWidth = (obj as any).placeholderWidth
+            json.placeholderHeight = (obj as any).placeholderHeight
+            json.borderRadius = (obj as any).borderRadius || 0
+
+            console.log('📦 Serializando contenedor de imagen:', {
+                type: obj.type,
+                position: { left: json.left, top: json.top },
+                size: { width: json.placeholderWidth, height: json.placeholderHeight },
+                borderRadius: json.borderRadius,
+                zIndex: index
+            })
+        }
+
+        // Special handling for image containers
+        if ((obj as any).isImageContainer && obj.type === 'image') {
+            json.isImageContainer = true
+            json.borderRadius = (obj as any).borderRadius || 0
+            json.cropX = (obj as any).cropX
+            json.cropY = (obj as any).cropY
+
+            console.log('🖼️ Serializando imagen con container:', {
+                type: obj.type,
+                src: json.src,
+                position: { left: json.left, top: json.top },
+                origin: { originX: json.originX, originY: json.originY },
+                scale: { scaleX: json.scaleX, scaleY: json.scaleY },
+                size: { width: json.width, height: json.height },
+                borderRadius: json.borderRadius,
+                crop: { cropX: json.cropX, cropY: json.cropY },
+                angle: json.angle,
+                clipPath: json.clipPath ? 'presente' : 'ausente'
+            })
+        }
 
         // Special handling for images - Fabric.js doesn't always serialize src
         if (obj.type?.toLowerCase() === 'image') {

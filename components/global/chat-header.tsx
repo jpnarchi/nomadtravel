@@ -54,7 +54,7 @@ export function ChatHeader() {
             </div>
             <div className="flex items-center gap-4">
                 {!isSignedIn && (
-                    <Button className="hidden sm:block justify-center gap-2">
+                    <Button className="justify-center gap-2">
                         <Link href="/sign-in">
                             Sign In
                         </Link>

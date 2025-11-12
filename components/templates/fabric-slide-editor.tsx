@@ -14,7 +14,7 @@ import { useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 
 // Import utilities and components
-import { createText, createRectangle, createCircle, createTriangle, createLine, addImageToCanvas } from './fabric-editor/shape-factory'
+import { createText, createRectangle, createCircle, createTriangle, createLine, addImageToCanvas, createImagePlaceholder, replaceImagePlaceholderWithImage } from './fabric-editor/shape-factory'
 import { loadObjectsToCanvas } from './fabric-editor/object-loader'
 import {
     serializeCanvas,
@@ -76,6 +76,7 @@ export function FabricSlideEditor({
     const [zoom, setZoom] = useState(1)
     const [showUploadDialog, setShowUploadDialog] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
+    const [selectedPlaceholder, setSelectedPlaceholder] = useState<fabric.FabricObject | null>(null)
 
     // History management for undo/redo
     const historyRef = useRef<any[]>([])
@@ -319,15 +320,58 @@ export function FabricSlideEditor({
     const setupCanvasEvents = (canvas: fabric.Canvas) => {
         // Selection events
         canvas.on('selection:created', (e) => {
-            setSelectedObject(e.selected?.[0] || null)
+            const obj = e.selected?.[0] || null
+            console.log('🔍 Objeto seleccionado:', {
+                type: obj?.type,
+                isImagePlaceholder: (obj as any)?.isImagePlaceholder,
+                isImageContainer: (obj as any)?.isImageContainer,
+                borderRadius: (obj as any)?.borderRadius,
+                placeholderWidth: (obj as any)?.placeholderWidth,
+                placeholderHeight: (obj as any)?.placeholderHeight,
+            })
+            setSelectedObject(obj)
+            if (obj && (obj as any).isImagePlaceholder) {
+                console.log('✅ Detectado placeholder - habilitando controles')
+                setSelectedPlaceholder(obj)
+            } else {
+                setSelectedPlaceholder(null)
+            }
         })
 
         canvas.on('selection:updated', (e) => {
-            setSelectedObject(e.selected?.[0] || null)
+            const obj = e.selected?.[0] || null
+            console.log('🔍 Objeto actualizado:', {
+                type: obj?.type,
+                isImagePlaceholder: (obj as any)?.isImagePlaceholder,
+                isImageContainer: (obj as any)?.isImageContainer,
+                borderRadius: (obj as any)?.borderRadius,
+            })
+            setSelectedObject(obj)
+            if (obj && (obj as any).isImagePlaceholder) {
+                console.log('✅ Detectado placeholder - habilitando controles')
+                setSelectedPlaceholder(obj)
+            } else {
+                setSelectedPlaceholder(null)
+            }
         })
 
         canvas.on('selection:cleared', () => {
             setSelectedObject(null)
+            setSelectedPlaceholder(null)
+        })
+
+        // Double click to load image into placeholder
+        canvas.on('mouse:dblclick', (e) => {
+            const target = e.target
+            console.log('👆 Doble click en:', {
+                type: target?.type,
+                isImagePlaceholder: (target as any)?.isImagePlaceholder,
+            })
+            if (target && (target as any).isImagePlaceholder) {
+                console.log('✅ Abriendo diálogo de imagen para placeholder')
+                setSelectedPlaceholder(target)
+                setShowUploadDialog(true)
+            }
         })
 
         // Auto-save on changes
@@ -456,7 +500,13 @@ export function FabricSlideEditor({
     const handleAddLine = () => {
         if (!fabricCanvasRef.current) return
         createLine(fabricCanvasRef.current)
-        
+
+    }
+
+    const handleAddImagePlaceholder = () => {
+        if (!fabricCanvasRef.current) return
+        createImagePlaceholder(fabricCanvasRef.current)
+
     }
 
     // ============================================================================
@@ -506,9 +556,20 @@ export function FabricSlideEditor({
     const handleAddImage = (imgSrc: string) => {
         if (!fabricCanvasRef.current) return
 
-        addImageToCanvas(fabricCanvasRef.current, imgSrc)
-            .then(() => toast.success('Image added'))
-            .catch(() => toast.error('Error al cargar la imagen. Verifica la URL.'))
+        // Check if we're replacing a placeholder
+        if (selectedPlaceholder && (selectedPlaceholder as any).isImagePlaceholder) {
+            replaceImagePlaceholderWithImage(fabricCanvasRef.current, selectedPlaceholder, imgSrc)
+                .then(() => {
+                    toast.success('Image added to container')
+                    setSelectedPlaceholder(null)
+                })
+                .catch(() => toast.error('Error al cargar la imagen. Verifica la URL.'))
+        } else {
+            // Add image normally
+            addImageToCanvas(fabricCanvasRef.current, imgSrc)
+                .then(() => toast.success('Image added'))
+                .catch(() => toast.error('Error al cargar la imagen. Verifica la URL.'))
+        }
     }
 
     // ============================================================================
@@ -742,6 +803,69 @@ export function FabricSlideEditor({
         saveCanvas()
     }
 
+    const handleUpdateBorderRadius = (radius: number) => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+
+        // Store the new border radius
+        ;(selectedObject as any).borderRadius = radius
+
+        // If it's an image placeholder (group), update the rectangles inside
+        if ((selectedObject as any).isImagePlaceholder && selectedObject.type === 'group') {
+            const group = selectedObject as fabric.Group
+            const objects = group.getObjects()
+
+            objects.forEach(obj => {
+                if (obj.type === 'rect') {
+                    const rect = obj as fabric.Rect
+                    rect.set({
+                        rx: radius,
+                        ry: radius,
+                    })
+                }
+            })
+
+            group.setCoords()
+            fabricCanvasRef.current.renderAll()
+        }
+
+        // If it's an image container, update the clipPath
+        if ((selectedObject as any).isImageContainer && selectedObject.type === 'image') {
+            const img = selectedObject as fabric.FabricImage
+
+            // Get the current crop and scale values
+            const cropX = (img as any).cropX || 0
+            const cropY = (img as any).cropY || 0
+            const imgWidth = img.width || 100
+            const imgHeight = img.height || 100
+            const scale = img.scaleX || 1
+
+            // Create new clipPath with updated border radius
+            if (radius > 0) {
+                const clipBorderRadius = radius / scale
+
+                const newClipPath = new fabric.Rect({
+                    width: imgWidth - (cropX * 2),
+                    height: imgHeight - (cropY * 2),
+                    rx: clipBorderRadius,
+                    ry: clipBorderRadius,
+                    left: -(imgWidth - (cropX * 2)) / 2,
+                    top: -(imgHeight - (cropY * 2)) / 2,
+                    originX: 'left',
+                    originY: 'top',
+                })
+
+                img.set({ clipPath: newClipPath })
+            } else {
+                // Remove clipPath if radius is 0
+                img.set({ clipPath: undefined })
+            }
+
+            fabricCanvasRef.current.renderAll()
+        }
+
+        saveCanvas()
+    }
+
     // ============================================================================
     // LAYER CONTROLS
     // ============================================================================
@@ -936,6 +1060,7 @@ export function FabricSlideEditor({
                 onAddLine={handleAddLine}
                 onFileSelect={handleFileSelect}
                 onShowUploadDialog={() => setShowUploadDialog(true)}
+                onAddImagePlaceholder={handleAddImagePlaceholder}
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={onToggleSidebar}
             />
@@ -994,6 +1119,7 @@ export function FabricSlideEditor({
                 onBackgroundColorChange={setBackgroundColor}
                 onUpdateTextProperty={handleUpdateTextProperty}
                 onUpdateFillColor={handleUpdateFillColor}
+                onUpdateBorderRadius={handleUpdateBorderRadius}
             />
 
             {/* Image Upload Dialog */}

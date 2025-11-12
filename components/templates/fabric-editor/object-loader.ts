@@ -37,6 +37,9 @@ export const createFabricObjectFromJSON = async (obj: any, index: number): Promi
             case 'image':
                 fabricObj = await createImageObject(obj, index)
                 break
+            case 'group':
+                fabricObj = await createGroupObject(obj, index)
+                break
             default:
                 console.warn(`⚠️ Tipo de objeto desconocido: ${obj.type} (normalizado: ${objType})`)
                 return null
@@ -44,6 +47,22 @@ export const createFabricObjectFromJSON = async (obj: any, index: number): Promi
 
         if (fabricObj) {
             applyCommonProperties(fabricObj, obj)
+
+            // Restore custom properties for image placeholders and containers
+            if (obj.isImagePlaceholder) {
+                ;(fabricObj as any).isImagePlaceholder = true
+                ;(fabricObj as any).placeholderWidth = obj.placeholderWidth
+                ;(fabricObj as any).placeholderHeight = obj.placeholderHeight
+                ;(fabricObj as any).borderRadius = obj.borderRadius || 0
+                console.log(`📦 Restaurado contenedor de imagen con borderRadius: ${obj.borderRadius}`)
+            }
+
+            if (obj.isImageContainer) {
+                ;(fabricObj as any).isImageContainer = true
+                ;(fabricObj as any).borderRadius = obj.borderRadius || 0
+                console.log(`🖼️ Restaurado imagen con container, borderRadius: ${obj.borderRadius}`)
+            }
+
             console.log(`✅ Objeto ${index} creado: ${obj.type} en (${obj.left}, ${obj.top})`,
                 obj.lockMovementX ? '🔒 bloqueado' : '')
         }
@@ -183,7 +202,17 @@ const createLineObject = (obj: any): fabric.Line => {
  * Crea una imagen desde JSON
  */
 const createImageObject = async (obj: any, index: number): Promise<fabric.FabricImage | null> => {
-    console.log(`🖼️ Creando imagen desde: ${obj.src}`)
+    console.log(`🖼️ Creando imagen ${index} desde JSON:`, {
+        src: obj.src?.substring(0, 50) + '...',
+        position: { left: obj.left, top: obj.top },
+        origin: { originX: obj.originX, originY: obj.originY },
+        scale: { scaleX: obj.scaleX, scaleY: obj.scaleY },
+        size: { width: obj.width, height: obj.height },
+        crop: { cropX: obj.cropX, cropY: obj.cropY },
+        angle: obj.angle,
+        isImageContainer: obj.isImageContainer,
+        borderRadius: obj.borderRadius
+    })
 
     if (!obj.src) return null
 
@@ -195,11 +224,79 @@ const createImageObject = async (obj: any, index: number): Promise<fabric.Fabric
         if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX)
         if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY)
         if (obj.angle !== undefined) img.set('angle', obj.angle)
+        if (obj.originX !== undefined) img.set('originX', obj.originX)
+        if (obj.originY !== undefined) img.set('originY', obj.originY)
 
-        console.log(`✅ Imagen ${index} cargada`)
+        // Restore crop properties for image containers
+        if (obj.cropX !== undefined) (img as any).cropX = obj.cropX
+        if (obj.cropY !== undefined) (img as any).cropY = obj.cropY
+        if (obj.width !== undefined) img.set('width', obj.width)
+        if (obj.height !== undefined) img.set('height', obj.height)
+
+        // Restore clipPath if it exists
+        if (obj.clipPath && obj.borderRadius) {
+            const clipBorderRadius = obj.borderRadius / (obj.scaleX || 1)
+            const clipPath = new fabric.Rect({
+                width: obj.width,
+                height: obj.height,
+                rx: clipBorderRadius,
+                ry: clipBorderRadius,
+                left: -(obj.width) / 2,
+                top: -(obj.height) / 2,
+                originX: 'left',
+                originY: 'top',
+            })
+            img.set('clipPath', clipPath)
+        }
+
+        console.log(`✅ Imagen ${index} cargada con valores finales:`, {
+            position: { left: img.left, top: img.top },
+            origin: { originX: img.originX, originY: img.originY },
+            scale: { scaleX: img.scaleX, scaleY: img.scaleY },
+            size: { width: img.width, height: img.height },
+            angle: img.angle
+        })
         return img
     } catch (err) {
         console.error(`❌ Error cargando imagen ${index}:`, err)
+        return null
+    }
+}
+
+/**
+ * Crea un grupo desde JSON (para image placeholders)
+ */
+const createGroupObject = async (obj: any, index: number): Promise<fabric.Group | null> => {
+    console.log(`📦 Creando grupo (probablemente un contenedor de imagen)`)
+
+    try {
+        // Use Fabric.js built-in method to recreate the group from JSON
+        const group = await fabric.Group.fromObject(obj)
+
+        // IMPORTANT: Immediately restore custom properties on the group
+        // This ensures they're available before the group is returned
+        if (obj.isImagePlaceholder) {
+            ;(group as any).isImagePlaceholder = true
+            ;(group as any).placeholderWidth = obj.placeholderWidth
+            ;(group as any).placeholderHeight = obj.placeholderHeight
+            ;(group as any).borderRadius = obj.borderRadius || 0
+            console.log(`📦 Propiedades custom aplicadas inmediatamente en grupo:`, {
+                isImagePlaceholder: true,
+                placeholderWidth: obj.placeholderWidth,
+                placeholderHeight: obj.placeholderHeight,
+                borderRadius: obj.borderRadius
+            })
+        }
+
+        console.log(`✅ Grupo ${index} creado con propiedades:`, {
+            type: group.type,
+            isImagePlaceholder: (group as any).isImagePlaceholder,
+            placeholderWidth: (group as any).placeholderWidth,
+            borderRadius: (group as any).borderRadius
+        })
+        return group
+    } catch (err) {
+        console.error(`❌ Error cargando grupo ${index}:`, err)
         return null
     }
 }
@@ -260,7 +357,25 @@ export const loadObjectsToCanvas = async (canvas: fabric.Canvas, slideData: any,
     loadedObjects.forEach((fabricObj, index) => {
         if (fabricObj) {
             canvas.add(fabricObj)
-            console.log(`✅ Objeto ${index} agregado al canvas en orden`)
+
+            // Verify custom properties are still present after adding to canvas
+            if ((fabricObj as any).isImagePlaceholder) {
+                console.log(`✅ Objeto ${index} agregado al canvas - PLACEHOLDER con propiedades:`, {
+                    type: fabricObj.type,
+                    isImagePlaceholder: (fabricObj as any).isImagePlaceholder,
+                    placeholderWidth: (fabricObj as any).placeholderWidth,
+                    placeholderHeight: (fabricObj as any).placeholderHeight,
+                    borderRadius: (fabricObj as any).borderRadius
+                })
+            } else if ((fabricObj as any).isImageContainer) {
+                console.log(`✅ Objeto ${index} agregado al canvas - IMAGE CONTAINER con propiedades:`, {
+                    type: fabricObj.type,
+                    isImageContainer: (fabricObj as any).isImageContainer,
+                    borderRadius: (fabricObj as any).borderRadius
+                })
+            } else {
+                console.log(`✅ Objeto ${index} agregado al canvas en orden`)
+            }
         }
     })
 

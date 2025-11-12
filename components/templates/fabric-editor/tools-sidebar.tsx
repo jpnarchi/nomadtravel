@@ -17,6 +17,7 @@ import {
     Minus,
     PanelLeftClose,
     PanelLeftOpen,
+    ImagePlus,
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -34,6 +35,7 @@ interface ToolsSidebarProps {
     onAddLine?: () => void
     onFileSelect: (file: File) => void
     onShowUploadDialog?: () => void
+    onAddImagePlaceholder?: () => void
     isSidebarCollapsed?: boolean
     onToggleSidebar?: () => void
 }
@@ -46,6 +48,7 @@ export function ToolsSidebar({
     onAddLine,
     onFileSelect,
     onShowUploadDialog,
+    onAddImagePlaceholder,
     isSidebarCollapsed,
     onToggleSidebar,
 }: ToolsSidebarProps) {
@@ -144,6 +147,18 @@ export function ToolsSidebar({
                     title="Subir Imagen"
                 >
                     <ImageIcon className="size-5" />
+                </Button>
+            )}
+
+            {onAddImagePlaceholder && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onAddImagePlaceholder}
+                    className="h-12 w-12 text-gray-900 hover:text-gray-700 hover:bg-gray-100"
+                    title="Contenedor de Imagen"
+                >
+                    <ImagePlus className="size-5" />
                 </Button>
             )}
 

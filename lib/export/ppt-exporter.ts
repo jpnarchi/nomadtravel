@@ -196,9 +196,22 @@ export async function exportToPPT(slides: any[]) {
                                 const imgW = (obj.width || 200) * scaleXObj * scaleX
                                 const imgH = (obj.height || 200) * scaleYObj * scaleY
 
+                                // CRITICAL: Convert from Fabric.js coordinates to PowerPoint coordinates
+                                // Fabric.js images can have origin at 'center', but PowerPoint always uses top-left
+                                let imgX = (obj.left || 0) * scaleX
+                                let imgY = (obj.top || 0) * scaleY
+
+                                // If image has center origin, convert to top-left origin for PPT
+                                if (obj.originX === 'center') {
+                                    imgX = imgX - (imgW / 2)
+                                }
+                                if (obj.originY === 'center') {
+                                    imgY = imgY - (imgH / 2)
+                                }
+
                                 const imgOptions: any = {
-                                    x: (obj.left || 0) * scaleX,
-                                    y: (obj.top || 0) * scaleY,
+                                    x: imgX,
+                                    y: imgY,
                                     w: imgW,
                                     h: imgH,
                                 }

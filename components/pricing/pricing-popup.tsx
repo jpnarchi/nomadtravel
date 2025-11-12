@@ -4,8 +4,9 @@ import { api } from '@/convex/_generated/api';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function PricingPopup({
     isOpen,
@@ -19,6 +20,7 @@ export function PricingPopup({
     const upgrade = useAction(api.stripe.pay);
     const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
+    const [billingType, setBillingType] = useState<'monthly' | 'annual'>('monthly');
 
     const handleUpgrade = async (plan: "pro" | "premium" | "ultra") => {
         if (!isSignedIn) {
@@ -26,7 +28,7 @@ export function PricingPopup({
             return;
         }
 
-        const url = await upgrade({ plan });
+        const url = await upgrade({ plan, billingType });
         if (url) {
             router.push(url);
         }
@@ -100,25 +102,38 @@ export function PricingPopup({
                         <p className="text-muted-foreground text-base md:text-lg">
                             Upgrade to continue creating amazing presentations with AI
                         </p>
-                    </div>
 
-                    {user?.subscriptionId && (
-                        <div className="flex justify-center mb-8">
-                            <Button
-                                variant="outline"
-                                className="w-fit cursor-pointer"
-                                onClick={handleBillingPortal}
-                            >
-                                Manage subscription
-                            </Button>
-                        </div>
-                    )}
+                        {user?.subscriptionId ? (
+                            <div className="flex justify-center mt-8">
+                                <Button
+                                    variant="outline"
+                                    className="w-fit cursor-pointer"
+                                    onClick={handleBillingPortal}
+                                >
+                                    Manage subscription
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-sm text-green-600 font-semibold">Save up to 28% with annual billing</p>
+
+                                <Tabs value={billingType} onValueChange={(value) => setBillingType(value as 'monthly' | 'annual')} className="w-fit mx-auto">
+                                    <TabsList className="grid w-full grid-cols-2 gap-8">
+                                        <TabsTrigger value="monthly" className="data-[state=inactive]:text-gray-400">Pay Monthly</TabsTrigger>
+                                        <TabsTrigger value="annual" className="data-[state=inactive]:text-gray-400">Pay Annually</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </>
+                        )}
+                    </div>
 
                     <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
                         <PricingCard
+                            billingType={billingType}
                             plan={{
                                 name: "Free",
-                                price: "$0 USD",
+                                monthlyPrice: "$0",
+                                annualPrice: "$0",
                                 description: "For a quick presentation",
                                 features: [
                                     '2 presentations per month',
@@ -134,9 +149,11 @@ export function PricingPopup({
                         />
 
                         <PricingCard
+                            billingType={billingType}
                             plan={{
                                 name: "Pro",
-                                price: "$7 USD",
+                                monthlyPrice: "$7",
+                                annualPrice: "$5",
                                 description: "For passionate creators",
                                 features: [
                                     '10 presentations per month',
@@ -154,10 +171,12 @@ export function PricingPopup({
                         />
 
                         <PricingCard
+                            billingType={billingType}
                             plan={{
                                 name: "Premium",
                                 description: "For presentations lovers",
-                                price: "20 USD",
+                                monthlyPrice: "$20",
+                                annualPrice: "$14",
 
                                 features: [
                                     '35 presentations per month',
@@ -174,9 +193,11 @@ export function PricingPopup({
                             }}
                         />
                         <PricingCard
+                            billingType={billingType}
                             plan={{
                                 name: "Ultra",
-                                price: "$49 USD",
+                                monthlyPrice: "$49",
+                                annualPrice: "$35",
                                 description: "For agencies",
                                 features: [
                                     'Unlimited presentations per month',

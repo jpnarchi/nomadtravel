@@ -4,6 +4,8 @@ import { api } from '@/convex/_generated/api'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { PricingCard } from './pricing-card'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState } from 'react'
 
 export function PricingContainer() {
     const { isSignedIn } = useAuth();
@@ -11,6 +13,7 @@ export function PricingContainer() {
     const upgrade = useAction(api.stripe.pay);
     const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
+    const [billingType, setBillingType] = useState<'monthly' | 'annual'>('annual');
 
     const handleUpgrade = async (plan: "pro" | "premium" | "ultra") => {
         if (!isSignedIn) {
@@ -18,7 +21,7 @@ export function PricingContainer() {
             return;
         }
 
-        const url = await upgrade({ plan });
+        const url = await upgrade({ plan, billingType });
         if (url) {
             router.push(url);
         }
@@ -37,38 +40,60 @@ export function PricingContainer() {
     }
 
     return (
-        <section className="py-16"
-            style={{
-                backgroundImage: "url('/img/background2.svg')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat'
-            }}
-            >
-            <div className="mx-auto max-w-[140rem] px-6">
-                <div className="mx-auto max-w-2xl space-y-6 text-center">
-                    <h1 className="text-center text-4xl font-semibold lg:text-5xl">Pricing</h1>
-                    <p>Choose the plan that best fits your needs</p>
+        <section className="-mb-10">
+            <div className="bg-gradient-to-t from-[#F5F5FA] from-10% to-white to-70% pb-2 pt-10">
+                <div className="mx-auto max-w-[140rem] px-6">
+                    <div className="mx-auto max-w-4xl space-y-6 text-center mb-8">
+                        <h1 className="text-center text-4xl font-semibold lg:text-5xl">Choose the plan that best fits your needs</h1>
+                        {user?.subscriptionId && (
+                            <div className="flex justify-center">
+                                <Button
+                                    variant="outline"
+                                    className="w-fit cursor-pointer"
+                                    onClick={handleBillingPortal}
+                                >
+                                    Manage subscription
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {user?.subscriptionId && (
-                    <div className="mt-8 flex justify-center">
-                        <Button
-                            variant="outline"
-                            className="mt-4 w-fit cursor-pointer"
-                            onClick={handleBillingPortal}
-
-                        >
-                            Manage subscription
-                        </Button>
+                {!user?.subscriptionId && (
+                    <div className="w-full flex justify-center mb-1">
+                        <Tabs value={billingType} onValueChange={(value) => setBillingType(value as 'monthly' | 'annual')} className="w-fit">
+                            <TabsList className="grid w-full bg-transparent shadow-none border-0 grid-cols-2 gap-2">
+                            <TabsTrigger value="monthly" className="rounded-sm rounded-b-none shadow-none border-0 text-xl p-2 data-[state=active]:bg-white data-[state=active]:shadow-none data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-[#CE2B25] data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-400 data-[state=inactive]:shadow-none data-[state=inactive]:border-t data-[state=inactive]:border-l data-[state=inactive]:border-r data-[state=inactive]:border-gray-200 px-8">Pay Monthly</TabsTrigger> 
+                                <TabsTrigger value="annual" className="rounded-sm rounded-b-none shadow-none border-0 text-xl p-2 data-[state=active]:bg-white data-[state=active]:shadow-none data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-[#CE2B25] data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-400 data-[state=inactive]:shadow-none data-[state=inactive]:border-t data-[state=inactive]:border-l data-[state=inactive]:border-r data-[state=inactive]:border-gray-200 px-8">Pay Annually</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                     </div>
                 )}
+            </div>
 
-                <div className="mx-auto max-w-[80rem] mt-8 grid gap-6 md:mt-12 md:grid-cols-4">
+            <div className="w-full bg-white pb-8 py-12"
+                style={{
+                    backgroundImage: "url('/img/bg-pricing.png')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    // backgroundAttachment: 'fixed'
+                }}
+            >
+                
+                <div className="text-center mb-6 -mt-6">
+                    <span className="text-green-600 font-semibold">Save up to 28%</span>
+                    <span className="text-black ml-1 font-semibold">with annual billing</span>
+                </div>
+                
+                <div className="mx-auto max-w-[80rem] px-6 grid gap-6 md:grid-cols-4 pb-6 px-16"
+                >
                     <PricingCard
+                        billingType={billingType}
                         plan={{
                             name: "Free",
-                            price: "$0 USD",
+                            monthlyPrice: "$0",
+                            annualPrice: "$0",
                             description: "For a quick presentation",
                             features: [
                                 '2 presentations per month',
@@ -84,9 +109,11 @@ export function PricingContainer() {
                     />
 
                     <PricingCard
+                        billingType={billingType}
                         plan={{
                             name: "Pro",
-                            price: "$7 USD",
+                            monthlyPrice: "$7",
+                            annualPrice: "$5",
                             description: "For passionate creators",
                             features: [
                                 '10 presentations per month',
@@ -95,7 +122,7 @@ export function PricingContainer() {
                                 'Priority support',
                                 'Export to Power Point'
                             ],
-                            
+
                             buttonText: user?.plan === "pro" ? "Current plan" : "Get started",
                             onButtonClick: () => handleUpgrade('pro'),
                             buttonVariant: "outline",
@@ -104,11 +131,13 @@ export function PricingContainer() {
                     />
 
                     <PricingCard
+                        billingType={billingType}
                         plan={{
                             name: "Premium",
                             description: "For presentations lovers",
-                            price: "20 USD",
-                            
+                            monthlyPrice: "$20",
+                            annualPrice: "$14",
+
                             features: [
                                 '35 presentations per month',
                                 'Unlimited versions per presentation',
@@ -124,9 +153,11 @@ export function PricingContainer() {
                         }}
                     />
                     <PricingCard
+                        billingType={billingType}
                         plan={{
                             name: "Ultra",
-                            price: "$49 USD",
+                            monthlyPrice: "$49",
+                            annualPrice: "$35",
                             description: "For agencies",
                             features: [
                                 'Unlimited presentations per month',

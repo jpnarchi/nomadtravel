@@ -11,6 +11,10 @@ export const pay = action({
             v.literal("premium"),
             v.literal("ultra"),
         ),
+        billingType: v.union(
+            v.literal("monthly"),
+            v.literal("annual"),
+        ),
     },
     handler: async (ctx, args) => {
         const user = await ctx.runQuery(api.users.getUserInfo, {});
@@ -30,12 +34,20 @@ export const pay = action({
         const baseUrl = process.env.BASE_URL!;
 
         let priceId: string;
+
+        // Seleccionar el price ID basado en el plan y el tipo de facturación
         if (args.plan === "pro") {
-            priceId = process.env.STRIPE_PRO_PRICE_ID!;
+            priceId = args.billingType === "annual"
+                ? process.env.STRIPE_PRO_ANNUAL_PRICE_ID!
+                : process.env.STRIPE_PRO_PRICE_ID!;
         } else if (args.plan === "premium") {
-            priceId = process.env.STRIPE_PREMIUM_PRICE_ID!;
+            priceId = args.billingType === "annual"
+                ? process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID!
+                : process.env.STRIPE_PREMIUM_PRICE_ID!;
         } else {
-            priceId = process.env.STRIPE_ULTRA_PRICE_ID!;
+            priceId = args.billingType === "annual"
+                ? process.env.STRIPE_ULTRA_ANNUAL_PRICE_ID!
+                : process.env.STRIPE_ULTRA_PRICE_ID!;
         }
 
         const session: Stripe.Response<Stripe.Checkout.Session> = await stripe.checkout.sessions.create(

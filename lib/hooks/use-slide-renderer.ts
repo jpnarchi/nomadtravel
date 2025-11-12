@@ -171,18 +171,65 @@ export function useSlideRenderer(
                             if (obj.src) {
                                 try {
                                     const img = await fabric.FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' })
+
+                                    // Apply position and transform
                                     if (obj.left !== undefined) img.set('left', obj.left)
                                     if (obj.top !== undefined) img.set('top', obj.top)
                                     if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX)
                                     if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY)
                                     if (obj.angle !== undefined) img.set('angle', obj.angle)
+
+                                    // CRITICAL: Apply originX and originY for centered images
+                                    if (obj.originX !== undefined) img.set('originX', obj.originX)
+                                    if (obj.originY !== undefined) img.set('originY', obj.originY)
+
+                                    // Apply crop properties for image containers
+                                    if (obj.cropX !== undefined) (img as any).cropX = obj.cropX
+                                    if (obj.cropY !== undefined) (img as any).cropY = obj.cropY
+                                    if (obj.width !== undefined) img.set('width', obj.width)
+                                    if (obj.height !== undefined) img.set('height', obj.height)
+
+                                    // Restore clipPath for rounded corners
+                                    if (obj.clipPath && obj.borderRadius) {
+                                        const clipBorderRadius = obj.borderRadius / (obj.scaleX || 1)
+                                        const clipPath = new fabric.Rect({
+                                            width: obj.width,
+                                            height: obj.height,
+                                            rx: clipBorderRadius,
+                                            ry: clipBorderRadius,
+                                            left: -(obj.width) / 2,
+                                            top: -(obj.height) / 2,
+                                            originX: 'left',
+                                            originY: 'top',
+                                        })
+                                        img.set('clipPath', clipPath)
+                                    }
+
                                     img.set({ selectable: false, evented: false })
                                     fabricObj = img
-                                    console.log(`✅ Imagen ${index} cargada`)
+                                    console.log(`✅ Imagen ${index} cargada en preview con:`, {
+                                        position: { left: obj.left, top: obj.top },
+                                        origin: { originX: obj.originX, originY: obj.originY },
+                                        scale: { scaleX: obj.scaleX, scaleY: obj.scaleY },
+                                        crop: { cropX: obj.cropX, cropY: obj.cropY },
+                                        size: { width: obj.width, height: obj.height }
+                                    })
                                 } catch (err) {
                                     console.error('Error loading image:', err)
                                     return null
                                 }
+                            }
+                            break
+                        case 'group':
+                            console.log(`📦 Creando grupo (probablemente un contenedor de imagen)`)
+                            try {
+                                // Use Fabric.js built-in method to recreate the group from JSON
+                                const group = await fabric.Group.fromObject(obj)
+                                fabricObj = group
+                                console.log(`✅ Grupo ${index} creado`)
+                            } catch (err) {
+                                console.error(`❌ Error cargando grupo ${index}:`, err)
+                                return null
                             }
                             break
                         default:

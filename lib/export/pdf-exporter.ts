@@ -145,12 +145,22 @@ export async function exportToPDF(slides: any[]) {
                     case 'image':
                         if (obj.src) {
                             try {
-                                const imgX = (obj.left || 0) * scaleX
-                                const imgY = (obj.top || 0) * scaleY
-
                                 // Calculate actual image dimensions from object properties
                                 const imgW = (obj.width || 200) * scaleXObj * scaleX
                                 const imgH = (obj.height || 200) * scaleYObj * scaleY
+
+                                // CRITICAL: Convert from Fabric.js coordinates to PDF coordinates
+                                // Fabric.js images can have origin at 'center', but PDF always uses top-left
+                                let imgX = (obj.left || 0) * scaleX
+                                let imgY = (obj.top || 0) * scaleY
+
+                                // If image has center origin, convert to top-left origin for PDF
+                                if (obj.originX === 'center') {
+                                    imgX = imgX - (imgW / 2)
+                                }
+                                if (obj.originY === 'center') {
+                                    imgY = imgY - (imgH / 2)
+                                }
 
                                 pdf.addImage(obj.src, 'PNG', imgX, imgY, imgW, imgH)
                             } catch (err) {

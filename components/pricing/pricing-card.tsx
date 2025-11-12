@@ -5,7 +5,8 @@ import { Check } from 'lucide-react'
 interface PricingCardProps {
     plan: {
         name: string
-        price: string
+        monthlyPrice: string
+        annualPrice: string
         description: string
         features: string[]
         isPopular?: boolean
@@ -14,9 +15,13 @@ interface PricingCardProps {
         onButtonClick: () => void
         isDisabled?: boolean
     }
+    billingType: 'monthly' | 'annual'
 }
 
-export function PricingCard({ plan }: PricingCardProps) {
+export function PricingCard({ plan, billingType }: PricingCardProps) {
+    const currentPrice = billingType === 'monthly' ? plan.monthlyPrice : plan.annualPrice;
+    const billingText = billingType === 'monthly' ? '/ billed monthly' : '/ month, billed annually';
+
     return (
         <Card className={`h-full flex flex-col ${plan.isPopular ? "relative border-2 border-[#E5332D]" : ""}`}>
             {plan.isPopular && (
@@ -28,8 +33,8 @@ export function PricingCard({ plan }: PricingCardProps) {
             <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold">{plan.name}</CardTitle>
                 <CardDescription className="text-base">{plan.description}</CardDescription>
-                <span className="my-4 block text-5xl font-bold">{plan.price}</span>
-                <CardDescription className="text-sm -mt-4">/ billed monthly</CardDescription>
+                <span className="my-4 block text-6xl font-bold">{currentPrice}</span>
+                <CardDescription className="text-sm -mt-4">{billingText}</CardDescription>
                 
                 <Button
                     variant={plan.buttonVariant || "default"}

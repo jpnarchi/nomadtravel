@@ -26,6 +26,7 @@ interface PropertiesSidebarProps {
     onBackgroundColorChange: (color: string) => void
     onUpdateTextProperty: (property: string, value: any) => void
     onUpdateFillColor: (color: string) => void
+    onUpdateBorderRadius?: (radius: number) => void
 }
 
 export function PropertiesSidebar({
@@ -34,9 +35,13 @@ export function PropertiesSidebar({
     onBackgroundColorChange,
     onUpdateTextProperty,
     onUpdateFillColor,
+    onUpdateBorderRadius,
 }: PropertiesSidebarProps) {
     const isTextType = selectedObject &&
         (selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox')
+
+    const isImagePlaceholder = selectedObject && (selectedObject as any).isImagePlaceholder
+    const isImageContainer = selectedObject && (selectedObject as any).isImageContainer
 
     return (
         <div className="w-64 bg-gray-50 border-l border-gray-300 overflow-y-auto">
@@ -221,6 +226,27 @@ export function PropertiesSidebar({
                                     value={(selectedObject as any).fill as string || '#667eea'}
                                     onChange={(e) => onUpdateFillColor(e.target.value)}
                                     className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
+                                />
+                            </div>
+                        )}
+
+                        {/* Border Radius Control - Available for image placeholders and containers */}
+                        {(isImagePlaceholder || isImageContainer) && onUpdateBorderRadius && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs text-gray-700 font-medium">Corner Radius</Label>
+                                    <span className="text-xs text-gray-600 font-medium">
+                                        {Math.round((selectedObject as any).borderRadius ?? 0)}px
+                                    </span>
+                                </div>
+                                <Input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="1"
+                                    value={(selectedObject as any).borderRadius ?? 0}
+                                    onChange={(e) => onUpdateBorderRadius(parseFloat(e.target.value))}
+                                    className="w-full h-2 cursor-pointer accent-blue-500"
                                 />
                             </div>
                         )}
