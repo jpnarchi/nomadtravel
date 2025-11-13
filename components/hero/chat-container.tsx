@@ -211,7 +211,7 @@ export function ChatContainer() {
             <div
                 className="h-[calc(100dvh-4rem)] overflow-y-auto bg-background"
                 style={{
-                    backgroundImage: "url('/img/background2.svg')",
+                    backgroundImage: "url('/img/bg-pricing.png')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',

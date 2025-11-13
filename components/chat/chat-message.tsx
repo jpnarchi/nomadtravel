@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { parseAttachmentsFromText } from "@/lib/utils";
 import Image from "next/image";
 import { UserIcon } from "@/components/global/icons";
-import { File, Folders, Mail, SquareDashedMousePointer, SquareFunction, Presentation } from "lucide-react";
+import { File, Folders, Mail, SquareDashedMousePointer, SquareFunction, Presentation, ImageIcon } from "lucide-react";
 import { Markdown } from "@/components/global/markdown";
 import { Attachments } from "./attachments";
 import { ToolMessage } from "./tools/tool-message";
@@ -50,8 +50,15 @@ export function ChatMessage({
         "Almost done..."
     ];
 
+    const imageMessages = [
+        "Generating image...",
+        "Processing...",
+        "Almost ready..."
+    ];
+
     const currentDesignMessage = useProgressiveMessage(designMessages, 1500, isLoading, true);
     const currentTextMessage = useProgressiveMessage(textMessages, 1000, isLoading, true);
+    const currentImageMessage = useProgressiveMessage(imageMessages, 1500, isLoading, true);
 
     // Get current user for profile picture
     const user = useQuery(api.users.getUserInfo);
@@ -376,6 +383,50 @@ export function ChatMessage({
                                     <div className="flex flex-col space-y-3">
                                         <Skeleton className="h-[250px] w-[250px] rounded-xl" />
                                     </div>
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-fillImageContainer") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            const imagesFilled = response.imagesFilled as number;
+                            const imageUrls = response.imageUrls as string[];
+                            return (
+                                <div key={index} className="flex flex-col gap-2">
+                                    <ToolMessage
+                                        icon={<ImageIcon className="size-4" />}
+                                        message={message || `${imagesFilled} ${imagesFilled === 1 ? 'image' : 'images'} added`}
+                                        isLoading={false}
+                                    />
+                                    {imageUrls && imageUrls.length > 0 && (
+                                        <div className="flex flex-row gap-4 items-start py-2 ml-8">
+                                            {imageUrls.map((url, imgIndex) => (
+                                                <a key={imgIndex} href={url} target="_blank" rel="noopener noreferrer">
+                                                    <Image
+                                                        src={url}
+                                                        alt={`Generated image ${imgIndex + 1}`}
+                                                        width={200}
+                                                        height={133}
+                                                        className="rounded-xl"
+                                                    />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<ImageIcon className="size-4" />}
+                                        message={currentImageMessage}
+                                        isLoading={true}
+                                    />
                                 </div>
                             )
                         }

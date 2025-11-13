@@ -187,14 +187,22 @@ http.route({
 
         const result = streamText({
             // model: openrouter('deepseek/deepseek-chat-v3-0324'),
-        //   model: openrouter('anthropic/claude-haiku-4.5'),
-           model: openrouter('x-ai/grok-4-fast'),// very good cheap as fuck
-            // model: openrouter('anthropic/claude-sonnet-4.5'),
+            model: openrouter('anthropic/claude-haiku-4.5'), // Best tool handling
+           // model: openrouter('x-ai/grok-4-fast'),// Has issues with tool format
+            // model: openrouter('anthropic/claude-haiku-4.5'),
             // model: provider('claude-sonnet-4'),
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
             system: `
 You are iLovePresentations, an assistant for creating professional presentations using Fabric.js (HTML5 canvas library).
+
+🚨 CRITICAL EXECUTION RULE FOR ALL OPERATIONS:
+- You MUST execute tools SEQUENTIALLY (one at a time) when they depend on each other
+- You MUST WAIT for each tool to complete and return a response before calling the next tool
+- NEVER call multiple dependent tools in parallel
+- When generating images with fillImageContainer, you MUST WAIT for the complete response (including "success": true and "imageUrls") before proceeding
+- NEVER call showPreview until ALL fillImageContainer operations have completed successfully
+- If you're unsure whether a tool has completed, WAIT and verify the response before proceeding
 
 ## User Context
 - User Name: ${userName}
@@ -250,15 +258,46 @@ Never create a new slide from scratch without first examining existing slides fo
 
 ### Smart Content Generation
 1. Load template with generateInitialCodebase
-2. Infer slide count from user's request or use template default
-3. Extract information from user's initial message and context (company name, topic, purpose, etc.)
-4. If critical info is missing (e.g., user just says "create presentation" with no context), ask ONE specific question
-5. IMMEDIATELY generate content and update ALL slides:
-   - Read every slide with readFile
+   - WAIT for this to complete before proceeding
+
+2. 🚨 IMMEDIATELY read ALL slides with readFile (slide-1.json, slide-2.json, etc.) - THIS IS MANDATORY
+   - Read slide-1.json and WAIT for response
+   - Read slide-2.json and WAIT for response
+   - Continue for ALL slides
+   - Identify ALL image containers in ALL slides before proceeding
+
+3. 🚨 FILL ALL IMAGE CONTAINERS FIRST - DO NOT SKIP THIS STEP:
+   - For EACH slide that has image containers:
+     * Call fillImageContainer with ALL containers for that slide
+     * WAIT for fillImageContainer to complete and return success
+     * DO NOT call any other tool until fillImageContainer completes
+     * Verify the response confirms images were added
+   - Process slides ONE AT A TIME, waiting for each to complete
+   - DO NOT proceed to next step until ALL image containers in ALL slides are filled
+
+4. Extract information from user's initial message and context (company name, topic, purpose, etc.)
+
+5. If critical info is missing (e.g., user just says "create presentation" with no context), ask ONE specific question
+
+6. ONLY AFTER ALL images are filled, update text content on ALL slides:
    - Replace ALL placeholder texts with contextually appropriate content
    - Use updateSlideTexts for text-only changes (99% of cases)
    - Verify NO placeholders remain before showing preview
-6. Show preview with showPreview
+
+7. Show preview with showPreview ONLY AFTER:
+   - ALL image containers are filled ✓
+   - ALL text placeholders are replaced ✓
+   - NO other tool calls are pending ✓
+
+🚨 CRITICAL EXECUTION RULES:
+- NEVER call multiple tools in parallel when one depends on another
+- ALWAYS wait for fillImageContainer to complete before calling ANY other tool
+- NEVER call showPreview before ALL fillImageContainer calls are complete
+- Process each slide's images SEQUENTIALLY, not in parallel
+
+🚨 CRITICAL ORDER: generate → read all slides → fill ALL image containers (WAIT for each) → update texts → preview
+❌ WRONG: generate → update texts → preview (images will be missing!)
+❌ WRONG: generate → fill images (parallel) → preview (images might not be ready!)
 
 ### Mandatory Content Rules
 - NEVER leave ANY slide with "Lorem Ipsum" or placeholder text
@@ -362,18 +401,160 @@ Common properties: left, top, width, height, fill, stroke, strokeWidth, opacity,
 
 Text properties: fontSize, fontFamily, fontWeight, textAlign, lineHeight
 
+## Image Container Handling - CRITICAL
+When customizing a template:
+1. ALWAYS read EVERY slide with readFile immediately after loading template
+2. Look for image containers/placeholders in the objects array:
+   - Objects with type: "Group" (capital G) OR "group"
+   - AND has property isImagePlaceholder: true
+   - AND has properties placeholderWidth and placeholderHeight
+   - Example structure:
+     {
+       "type": "Group",
+       "isImagePlaceholder": true,
+       "placeholderWidth": 400,
+       "placeholderHeight": 300,
+       "borderRadius": 0,
+       "left": 1098,
+       "top": -5,
+       ...
+     }
+3. For EACH image container found:
+   - Note its index in the objects array (e.g., if it's the 6th object, index = 5)
+   - Analyze the slide content and overall presentation theme
+   - Use fillImageContainer tool to generate and place appropriate images
+   - Provide detailed, specific prompts based on:
+     * Slide title and content (if visible)
+     * Overall presentation topic provided by user
+     * Visual style needed (professional, modern, abstract, etc.)
+     * Mood and tone (corporate, creative, educational, etc.)
+     * Avoid text in images - focus on visuals only
+4. Fill ALL image containers BEFORE updating any text
+5. This ensures the presentation has complete visual content
+
+🚨 MANDATORY WORKFLOW EXAMPLE:
+User request: "Create a tech startup pitch with the professional template"
+
+CORRECT EXECUTION ORDER (SEQUENTIAL - WAIT FOR EACH STEP):
+1. generateInitialCodebase({ templateName: "Professional Pitch" })
+   ⏳ WAIT for completion...
+   ✅ Template loaded
+
+2. readFile("/slides/slide-1.json") ← READ FIRST
+   ⏳ WAIT for file content...
+   ✅ Received file content
+   ✅ Analyze objects array
+   ✅ Found: objects[5] = { type: "Group", isImagePlaceholder: true, ... }
+
+3. readFile("/slides/slide-2.json")
+   ⏳ WAIT for file content...
+   ✅ Received file content
+   ✅ Found: objects[3] = { type: "Group", isImagePlaceholder: true, ... }
+
+4. (Continue reading ALL slides before proceeding)
+
+5. fillImageContainer({ ← FILL SLIDE 1 FIRST
+     path: "/slides/slide-1.json",
+     imagePrompts: [{
+       containerIndex: 5,
+       prompt: "Professional tech startup office, modern workspace, innovation and technology theme, blue and purple tones, clean corporate aesthetic, no text or people"
+     }],
+     explanation: "Adding tech images"
+   })
+   ⏳ WAIT for image generation and upload...
+   ✅ Image container filled successfully
+   🚨 DO NOT proceed until you see success: true
+
+6. fillImageContainer({ ← NOW FILL SLIDE 2
+     path: "/slides/slide-2.json",
+     imagePrompts: [{
+       containerIndex: 3,
+       prompt: "Modern technology concept, digital innovation..."
+     }],
+     explanation: "Adding images"
+   })
+   ⏳ WAIT for image generation and upload...
+   ✅ Image container filled successfully
+
+7. (Continue for ALL slides with containers, ONE AT A TIME)
+   ✅ All image containers filled
+
+8. ONLY NOW update text content with updateSlideTexts
+   ✅ Replace placeholder texts with startup-specific content
+
+9. Final verification: No empty containers, no placeholder text
+   ✅ All checks pass
+
+10. showPreview ← LAST STEP, AFTER EVERYTHING IS COMPLETE
+    ✅ Complete presentation displayed
+
+❌ WRONG ORDER #1 (DO NOT DO THIS):
+generateInitialCodebase → updateSlideTexts → showPreview
+Result: Images missing, presentation incomplete!
+
+❌ WRONG ORDER #2 (DO NOT DO THIS):
+generateInitialCodebase → fillImageContainer (slide 1) → fillImageContainer (slide 2) in parallel → showPreview
+Result: Images might not be ready, race condition!
+
+❌ WRONG ORDER #3 (DO NOT DO THIS):
+generateInitialCodebase → fillImageContainer → showPreview (before waiting for completion)
+Result: showPreview called before images are ready!
+
+✅ CORRECT ORDER (ALWAYS DO THIS):
+generateInitialCodebase → read ALL slides → fill image containers ONE BY ONE (wait for each) → update texts → showPreview
+Result: Complete presentation with all images properly loaded and all text updated!
+
 ## Additional Tools
 - Web search: Only use when user explicitly requests information lookup
 - File reading: Use readAttachment when user uploads a file or asks to read one
 - Image generation: Only use when user requests AI-generated images
+- fillImageContainer: ALWAYS use automatically when template has image containers
 
 ## Verification Checklist Before Preview
-- All slides updated? (slide-1, slide-2, slide-3, etc.)
-- ZERO placeholder text remaining? (no "Lorem Ipsum", "Your Company", "Insert Text", etc.)
-- All text is contextually relevant and professional?
-- Text lengths match original structure?
-- If NO to any, STOP and complete missing updates before showing preview
-- CRITICAL: Scan every slide one final time for any placeholder text
+🚨 MANDATORY STEPS - COMPLETE IN ORDER - DO NOT SKIP - WAIT FOR EACH:
+
+✅ Step 1: All slides read with readFile?
+   → If NO: Read ALL slides immediately and WAIT for each response
+   → Do NOT proceed until you have the content of EVERY slide
+
+✅ Step 2: ALL image containers (objects with isImagePlaceholder: true) filled?
+   → Count total image containers across ALL slides
+   → For EACH container: Call fillImageContainer and WAIT for success response
+   → Verify you received success: true for EVERY fillImageContainer call
+   → Do NOT proceed until you see "imagesFilled" in the response for ALL slides
+   → Check EVERY slide - missing images are visible errors
+   → If you called fillImageContainer but didn't wait for response, STOP and wait
+
+✅ Step 3: ZERO placeholder text remaining?
+   → No "Lorem Ipsum", "Your Company", "Insert Text", "Title Goes Here", etc.
+   → If NO: Update ALL placeholder texts with updateSlideTexts
+   → WAIT for each updateSlideTexts to complete
+
+✅ Step 4: All text is contextually relevant and professional?
+   → Text lengths match original structure?
+   → If NO: Refine text content
+
+❌ If ANY step above is NO, STOP immediately and complete it before preview
+❌ If you called a tool but didn't receive a response, STOP and WAIT for the response
+❌ NEVER call showPreview while ANY tool is still executing
+
+🚨 CRITICAL PRE-PREVIEW CHECKLIST:
+Before calling showPreview, ask yourself these questions:
+1. Did I call fillImageContainer for EVERY image container? → Must be YES
+2. Did I WAIT for and receive success response for EVERY fillImageContainer? → Must be YES
+3. Did I see "imagesFilled" and "imageUrls" in EVERY response? → Must be YES
+4. Are there ANY tools still executing? → Must be NO
+5. Is ALL text updated? → Must be YES
+
+If ANY answer is NO or UNCERTAIN, DO NOT call showPreview yet.
+
+🚨 FINAL VERIFICATION: Scan every slide one last time for:
+   - Empty image containers (type: "Group" with isImagePlaceholder: true) → Must be 0
+   - Placeholder text of any kind → Must be 0
+   - Generic or Lorem Ipsum content → Must be 0
+   - Pending tool executions → Must be 0
+
+Only call showPreview when ALL checks pass and ALL tools have completed successfully.
 
 Existing files:
 ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
@@ -881,6 +1062,245 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                             return {
                                 success: false,
                                 message: `Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`
+                            };
+                        }
+                    },
+                },
+
+                fillImageContainer: {
+                    description: '🖼️ Automatically detect empty image containers (placeholders) in a slide and fill them with AI-generated images. Use this when you want to generate appropriate images for empty image placeholders in a slide based on the slide content and presentation context.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
+                        imagePrompts: z.array(z.object({
+                            containerIndex: z.number().describe('Index of the image placeholder/container object in the objects array (0-based)'),
+                            prompt: z.string().describe('Detailed prompt to generate an appropriate image for this container based on slide content and context. Be specific about style, content, mood, and composition.'),
+                        })).describe('Array of image containers to fill with their respective prompts'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words for user'),
+                    }),
+                    execute: async function ({ path, imagePrompts, explanation }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+
+                            // Read the slide
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+                            const fileContent = allFiles[path];
+                            if (!fileContent) {
+                                return {
+                                    success: false,
+                                    error: `File not found: ${path}`
+                                };
+                            }
+
+                            // Parse the slide JSON
+                            const slideData = JSON.parse(fileContent);
+
+                            if (!slideData.objects || !Array.isArray(slideData.objects)) {
+                                return {
+                                    success: false,
+                                    error: `Invalid slide structure in ${path}`
+                                };
+                            }
+
+                            // Array to store generated image URLs
+                            const generatedImageUrls: string[] = [];
+
+                            // Process each image container
+                            for (const { containerIndex, prompt } of imagePrompts) {
+                                if (containerIndex < 0 || containerIndex >= slideData.objects.length) {
+                                    return {
+                                        success: false,
+                                        error: `Invalid container index ${containerIndex}. Slide has ${slideData.objects.length} objects.`
+                                    };
+                                }
+
+                                const container = slideData.objects[containerIndex];
+
+                                // Verify it's an image placeholder (case-insensitive type check)
+                                const objType = (container.type || '').toLowerCase();
+                                if (!container.isImagePlaceholder || objType !== 'group') {
+                                    return {
+                                        success: false,
+                                        error: `Object at index ${containerIndex} is not an image placeholder container (type: ${container.type}, isImagePlaceholder: ${container.isImagePlaceholder})`
+                                    };
+                                }
+
+                                // Generate image with Gemini 2.5 Flash Image (Nano Banana) via OpenRouter
+                                console.log('[GEMINI IMAGE] Starting generation with prompt:', prompt.substring(0, 100) + '...');
+
+                                const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        model: 'google/gemini-2.5-flash-image-preview',
+                                        messages: [
+                                            {
+                                                role: 'user',
+                                                content: prompt
+                                            }
+                                        ],
+                                        modalities: ['image', 'text'],
+                                        image_config: {
+                                            aspect_ratio: '1:1' // Square format (1024x1024)
+                                        }
+                                    })
+                                });
+
+                                console.log('[GEMINI IMAGE] Response status:', openrouterResponse.status);
+
+                                if (!openrouterResponse.ok) {
+                                    const errorText = await openrouterResponse.text();
+                                    console.error('[GEMINI IMAGE] API Error:', errorText);
+                                    throw new Error(`OpenRouter API error: ${openrouterResponse.status} - ${errorText}`);
+                                }
+
+                                const responseData = await openrouterResponse.json();
+                                console.log('[GEMINI IMAGE] Response structure:', JSON.stringify(responseData, null, 2).substring(0, 500));
+
+                                // Extract base64 image from response
+                                // Gemini returns images as objects: { type: "image_url", url: "data:image/..." } or { type: "image_url", image_url: { url: "..." } }
+                                const imageObject = responseData.choices?.[0]?.message?.images?.[0];
+                                console.log('[GEMINI IMAGE] Image object extracted:', imageObject);
+
+                                if (!imageObject) {
+                                    console.error('[GEMINI IMAGE] Full response:', JSON.stringify(responseData, null, 2));
+                                    throw new Error('No image generated in response');
+                                }
+
+                                // Extract the actual base64 data from the object
+                                let imageData: string;
+                                if (typeof imageObject === 'string') {
+                                    imageData = imageObject;
+                                } else if (imageObject.url) {
+                                    imageData = imageObject.url;
+                                } else if (imageObject.image_url?.url) {
+                                    imageData = imageObject.image_url.url;
+                                } else {
+                                    console.error('[GEMINI IMAGE] Unknown image object structure:', imageObject);
+                                    throw new Error('Could not extract image data from response');
+                                }
+
+                                console.log('[GEMINI IMAGE] Base64 data extracted:', imageData.substring(0, 50) + '...');
+
+                                // Convert base64 to Uint8Array
+                                // Remove data URL prefix if present (data:image/png;base64,...)
+                                const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                                const binaryString = atob(base64Data);
+                                const uint8Array = new Uint8Array(binaryString.length);
+                                for (let i = 0; i < binaryString.length; i++) {
+                                    uint8Array[i] = binaryString.charCodeAt(i);
+                                }
+
+                                console.log('[GEMINI IMAGE] Converted to Uint8Array, size:', uint8Array.length);
+
+                                // Upload image to storage
+                                const imageUrl = await uploadFileToStorageFromHttpAction(ctx, uint8Array, 'image/png');
+                                console.log('[GEMINI IMAGE] Uploaded to storage:', imageUrl);
+
+                                if (!imageUrl) {
+                                    return {
+                                        success: false,
+                                        error: `Failed to upload generated image`
+                                    };
+                                }
+
+                                // Store the generated image URL
+                                generatedImageUrls.push(imageUrl);
+
+                                // Get container properties
+                                const placeholderWidth = container.placeholderWidth || 400;
+                                const placeholderHeight = container.placeholderHeight || 300;
+                                const borderRadius = container.borderRadius || 0;
+                                const containerLeft = container.left || 100;
+                                const containerTop = container.top || 100;
+                                const containerAngle = container.angle || 0;
+                                const containerScaleX = container.scaleX || 1;
+                                const containerScaleY = container.scaleY || 1;
+                                const containerOriginX = container.originX || 'center';
+                                const containerOriginY = container.originY || 'center';
+
+                                // Calculate scale to cover the container (like CSS object-fit: cover)
+                                // Assume generated image is 1024x1024
+                                const imgWidth = 1024;
+                                const imgHeight = 1024;
+                                const actualContainerWidth = placeholderWidth * containerScaleX;
+                                const actualContainerHeight = placeholderHeight * containerScaleY;
+
+                                const scaleX = actualContainerWidth / imgWidth;
+                                const scaleY = actualContainerHeight / imgHeight;
+                                const scale = Math.max(scaleX, scaleY);
+
+                                // Calculate crop values to center the image
+                                const scaledImageWidth = imgWidth * scale;
+                                const scaledImageHeight = imgHeight * scale;
+                                const cropX = (scaledImageWidth - actualContainerWidth) / (2 * scale);
+                                const cropY = (scaledImageHeight - actualContainerHeight) / (2 * scale);
+
+                                // Create clipPath for rounded corners if needed
+                                let clipPath = undefined;
+                                if (borderRadius > 0) {
+                                    const clipBorderRadius = borderRadius / scale;
+                                    clipPath = {
+                                        type: 'rect',
+                                        width: imgWidth - (cropX * 2),
+                                        height: imgHeight - (cropY * 2),
+                                        rx: clipBorderRadius,
+                                        ry: clipBorderRadius,
+                                        left: -(imgWidth - (cropX * 2)) / 2,
+                                        top: -(imgHeight - (cropY * 2)) / 2,
+                                        originX: 'left',
+                                        originY: 'top',
+                                    };
+                                }
+
+                                // Replace container with image
+                                slideData.objects[containerIndex] = {
+                                    type: 'image',
+                                    left: containerLeft,
+                                    top: containerTop,
+                                    angle: containerAngle,
+                                    originX: containerOriginX,
+                                    originY: containerOriginY,
+                                    scaleX: scale,
+                                    scaleY: scale,
+                                    cropX: cropX,
+                                    cropY: cropY,
+                                    width: imgWidth - (cropX * 2),
+                                    height: imgHeight - (cropY * 2),
+                                    src: imageUrl,
+                                    clipPath: clipPath,
+                                    isImageContainer: true,
+                                    borderRadius: borderRadius,
+                                    selectable: true,
+                                    evented: true,
+                                    hasControls: true,
+                                    hasBorders: true,
+                                    crossOrigin: 'anonymous',
+                                };
+                            }
+
+                            // Save the updated slide
+                            const updatedContent = JSON.stringify(slideData, null, 2);
+                            await ctx.runMutation(api.files.updateByPath, {
+                                chatId: id,
+                                path,
+                                content: updatedContent,
+                                version: currentVersion ?? 0
+                            });
+
+                            return {
+                                success: true,
+                                message: explanation,
+                                imagesFilled: imagePrompts.length,
+                                imageUrls: generatedImageUrls
+                            };
+                        } catch (error) {
+                            console.error(`Error filling image containers in ${path}:`, error);
+                            return {
+                                success: false,
+                                error: `Error filling image containers: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },
