@@ -299,7 +299,7 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             onClick={handleClick}
-            className="group relative rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer"
+            className="group relative rounded-xl sm:rounded-2xl cursor-pointer"
         >
             {/* Canvas Container */}
             <div className="relative aspect-video bg-white flex items-center justify-center overflow-hidden rounded-t-xl sm:rounded-t-2xl">
@@ -316,20 +316,6 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
                         maxHeight: '100%',
                     }}
                 />
-
-                {/* Clickable overlay to ensure clicks work on mobile */}
-                <div
-                    className="absolute inset-0 cursor-pointer z-10"
-                    onClick={handleClick}
-                />
-
-                {/* Hover Overlay - visible on tap for mobile */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none z-20">
-                    <div className="flex items-center gap-2 text-white font-medium text-sm sm:text-base">
-                        <span>Open presentation...</span>
-                        <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                </div>
             </div>
 
             {/* Info Section */}
@@ -472,12 +458,15 @@ export function ProjectsPreviewHero() {
 
     // Handler to confirm delete
     const handleConfirmDelete = async () => {
+        console.log('[DELETE] Button clicked!', deleteChatId)
         if (deleteChatId) {
             try {
+                console.log('[DELETE] Calling deleteChat mutation...')
                 await deleteChat({ chatId: deleteChatId })
+                console.log('[DELETE] Success! Closing dialog...')
                 setDeleteDialogOpen(false)
             } catch (error) {
-                console.error('Error deleting presentation:', error)
+                console.error('[DELETE] Error deleting presentation:', error)
             }
         }
     }
@@ -676,8 +665,8 @@ export function ProjectsPreviewHero() {
             </div>
 
             {/* Rename Dialog */}
-            <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-                <DialogContent>
+            <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen} modal={true}>
+                <DialogContent className="z-[10000]">
                     <DialogHeader>
                         <DialogTitle>Rename Presentation</DialogTitle>
                         <DialogDescription>
@@ -716,8 +705,8 @@ export function ProjectsPreviewHero() {
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent>
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} modal={true}>
+                <DialogContent className="z-[10000]">
                     <DialogHeader>
                         <DialogTitle>Delete "{deleteTitle}"</DialogTitle>
                         <DialogDescription>

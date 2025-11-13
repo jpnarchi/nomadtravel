@@ -187,9 +187,9 @@ http.route({
 
         const result = streamText({
             // model: openrouter('deepseek/deepseek-chat-v3-0324'),
-            model: openrouter('anthropic/claude-haiku-4.5'), // Best tool handling
-           // model: openrouter('x-ai/grok-4-fast'),// Has issues with tool format
-            // model: openrouter('anthropic/claude-haiku-4.5'),
+            // model: openrouter('openai/gpt-4.1-nano')
+        //    model: openrouter('x-ai/grok-3-mini'),// Has issues with tool format
+            model: openrouter('anthropic/claude-haiku-4.5'),
             // model: provider('claude-sonnet-4'),
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
