@@ -189,7 +189,7 @@ http.route({
             // model: openrouter('deepseek/deepseek-chat-v3-0324'),
             // model: openrouter('openai/gpt-4.1-nano')
         //    model: openrouter('x-ai/grok-3-mini'),// Has issues with tool format
-            model: openrouter('anthropic/claude-haiku-4.5'),
+            model: openrouter('deepseek/deepseek-v3.2-exp'),
             // model: provider('claude-sonnet-4'),
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
