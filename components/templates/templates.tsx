@@ -12,10 +12,10 @@ import { ChatHeader } from "../global/chat-header";
 import { TemplatesContainer } from "./templates-container";
 
 export function Templates() {
-    // const isAdmin = useQuery(api.users.isAdmin);
-    // if (!isAdmin) {
-    //     notFound();
-    // }
+    const isAdmin = useQuery(api.users.isAdmin);
+    if (!isAdmin) {
+        notFound();
+    }
 
     return (
         <SidebarProvider
