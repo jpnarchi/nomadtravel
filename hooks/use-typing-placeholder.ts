@@ -5,7 +5,6 @@ import { useState, useEffect, useRef } from "react";
 const PLACEHOLDER_VARIANTS = [
     "I want a presentation for my startup...",
     "Create a sales pitch deck...",
-    "Build a product roadmap presentation...",
     "Design a business proposal...",
     "Make a quarterly review presentation...",
 ];
