@@ -29,7 +29,7 @@ export function CTASection() {
                             <div className="flex items-start gap-3">
                                 <CircleCheckBig className="text-green-500 w-6 h-6 flex-shrink-0 mt-1" />
                                 <p>
-                                    Get full access to unlimited presentations and work offline with Desktop
+                                    Get full access to unlimited presentations
                                 </p>
                             </div>
                             <div className="flex items-start gap-3">
@@ -41,7 +41,7 @@ export function CTASection() {
                             <div className="flex items-start gap-3">
                                 <CircleCheckBig className="text-green-500 w-6 h-6 flex-shrink-0 mt-1" />
                                 <p>
-                                    Collaborate with teams and export to multiple formats
+                                    Export to multiple formats
                                 </p>
                             </div>
                         </div>
