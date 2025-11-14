@@ -881,18 +881,17 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                     inputSchema: z.object({
                         path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
                         imagePrompts: z.array(z.object({
-                            containerIndex: z.number().describe('Index of the image placeholder/container object in the objects array (0-based)'),
-                            prompt: z.string().describe('Detailed prompt to generate an appropriate image for this container based on slide content and context. Be specific about style, content, mood, and composition.'),
-                        })).describe('Array of image containers to fill with their respective prompts'),
-                        explanation: z.string().describe('Explanation in 1 to 3 words for user'),
+                            containerIndex: z.number().describe('Index of the image placeholder/container'),
+                            prompt: z.string().describe('Detailed prompt to generate image'),
+                        })),
+                        explanation: z.string().describe('Explanation in 1 to 3 words'),
                     }),
                     execute: async function ({ path, imagePrompts, explanation }: any) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-
-                            // Read the slide
                             const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
                             const fileContent = allFiles[path];
+
                             if (!fileContent) {
                                 return {
                                     success: false,
@@ -900,7 +899,6 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                 };
                             }
 
-                            // Parse the slide JSON
                             const slideData = JSON.parse(fileContent);
 
                             if (!slideData.objects || !Array.isArray(slideData.objects)) {
@@ -910,187 +908,191 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                 };
                             }
 
-                            // Array to store generated image URLs
-                            const generatedImageUrls: string[] = [];
+                            // Arrays para tracking de resultados
+                            const results = {
+                                successful: [] as { index: number, url: string }[],
+                                failed: [] as { index: number, error: string }[]
+                            };
 
-                            // Process each image container
+                            // Procesar cada contenedor individualmente
                             for (const { containerIndex, prompt } of imagePrompts) {
-                                if (containerIndex < 0 || containerIndex >= slideData.objects.length) {
-                                    return {
-                                        success: false,
-                                        error: `Invalid container index ${containerIndex}. Slide has ${slideData.objects.length} objects.`
-                                    };
-                                }
+                                try {
+                                    // Validar índice
+                                    if (containerIndex < 0 || containerIndex >= slideData.objects.length) {
+                                        results.failed.push({
+                                            index: containerIndex,
+                                            error: `Invalid index (slide has ${slideData.objects.length} objects)`
+                                        });
+                                        continue; // Continuar con la siguiente imagen
+                                    }
 
-                                const container = slideData.objects[containerIndex];
+                                    const container = slideData.objects[containerIndex];
 
-                                // Verify it's an image placeholder (case-insensitive type check)
-                                const objType = (container.type || '').toLowerCase();
-                                if (!container.isImagePlaceholder || objType !== 'group') {
-                                    return {
-                                        success: false,
-                                        error: `Object at index ${containerIndex} is not an image placeholder container (type: ${container.type}, isImagePlaceholder: ${container.isImagePlaceholder})`
-                                    };
-                                }
+                                    // Verificar que sea un placeholder
+                                    const objType = (container.type || '').toLowerCase();
+                                    if (!container.isImagePlaceholder || objType !== 'group') {
+                                        results.failed.push({
+                                            index: containerIndex,
+                                            error: `Not an image placeholder (type: ${container.type})`
+                                        });
+                                        continue;
+                                    }
 
-                                // Generate image with Gemini 2.5 Flash Image (Nano Banana) via OpenRouter
-                                console.log('[GEMINI IMAGE] Starting generation with prompt:', prompt.substring(0, 100) + '...');
+                                    console.log(`[GEMINI IMAGE] Generating for container ${containerIndex}:`, prompt.substring(0, 100));
 
-                                const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({
-                                        model: 'google/gemini-2.5-flash-image-preview',
-                                        messages: [
-                                            {
-                                                role: 'user',
-                                                content: prompt
-                                            }
-                                        ],
-                                        modalities: ['image', 'text'],
-                                        image_config: {
-                                            aspect_ratio: '1:1' // Square format (1024x1024)
-                                        }
-                                    })
-                                });
+                                    // Generar imagen
+                                    const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                            model: 'google/gemini-2.5-flash-image-preview',
+                                            messages: [{ role: 'user', content: prompt }],
+                                            modalities: ['image', 'text'],
+                                            image_config: { aspect_ratio: '1:1' }
+                                        })
+                                    });
 
-                                console.log('[GEMINI IMAGE] Response status:', openrouterResponse.status);
+                                    if (!openrouterResponse.ok) {
+                                        const errorText = await openrouterResponse.text();
+                                        console.error(`[GEMINI IMAGE] API Error for container ${containerIndex}:`, errorText);
+                                        results.failed.push({
+                                            index: containerIndex,
+                                            error: `API error: ${openrouterResponse.status}`
+                                        });
+                                        continue;
+                                    }
 
-                                if (!openrouterResponse.ok) {
-                                    const errorText = await openrouterResponse.text();
-                                    console.error('[GEMINI IMAGE] API Error:', errorText);
-                                    throw new Error(`OpenRouter API error: ${openrouterResponse.status} - ${errorText}`);
-                                }
+                                    const responseData = await openrouterResponse.json();
+                                    const imageObject = responseData.choices?.[0]?.message?.images?.[0];
 
-                                const responseData = await openrouterResponse.json();
-                                console.log('[GEMINI IMAGE] Response structure:', JSON.stringify(responseData, null, 2).substring(0, 500));
+                                    if (!imageObject) {
+                                        console.error(`[GEMINI IMAGE] No image in response for container ${containerIndex}`);
+                                        results.failed.push({
+                                            index: containerIndex,
+                                            error: 'No image generated'
+                                        });
+                                        continue;
+                                    }
 
-                                // Extract base64 image from response
-                                // Gemini returns images as objects: { type: "image_url", url: "data:image/..." } or { type: "image_url", image_url: { url: "..." } }
-                                const imageObject = responseData.choices?.[0]?.message?.images?.[0];
-                                console.log('[GEMINI IMAGE] Image object extracted:', imageObject);
+                                    // Extraer base64
+                                    let imageData: string;
+                                    if (typeof imageObject === 'string') {
+                                        imageData = imageObject;
+                                    } else if (imageObject.url) {
+                                        imageData = imageObject.url;
+                                    } else if (imageObject.image_url?.url) {
+                                        imageData = imageObject.image_url.url;
+                                    } else {
+                                        results.failed.push({
+                                            index: containerIndex,
+                                            error: 'Could not extract image data'
+                                        });
+                                        continue;
+                                    }
 
-                                if (!imageObject) {
-                                    console.error('[GEMINI IMAGE] Full response:', JSON.stringify(responseData, null, 2));
-                                    throw new Error('No image generated in response');
-                                }
+                                    // Convertir a Uint8Array
+                                    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                                    const binaryString = atob(base64Data);
+                                    const uint8Array = new Uint8Array(binaryString.length);
+                                    for (let i = 0; i < binaryString.length; i++) {
+                                        uint8Array[i] = binaryString.charCodeAt(i);
+                                    }
 
-                                // Extract the actual base64 data from the object
-                                let imageData: string;
-                                if (typeof imageObject === 'string') {
-                                    imageData = imageObject;
-                                } else if (imageObject.url) {
-                                    imageData = imageObject.url;
-                                } else if (imageObject.image_url?.url) {
-                                    imageData = imageObject.image_url.url;
-                                } else {
-                                    console.error('[GEMINI IMAGE] Unknown image object structure:', imageObject);
-                                    throw new Error('Could not extract image data from response');
-                                }
+                                    // Upload a storage
+                                    const imageUrl = await uploadFileToStorageFromHttpAction(ctx, uint8Array, 'image/png');
 
-                                console.log('[GEMINI IMAGE] Base64 data extracted:', imageData.substring(0, 50) + '...');
+                                    if (!imageUrl) {
+                                        results.failed.push({
+                                            index: containerIndex,
+                                            error: 'Failed to upload to storage'
+                                        });
+                                        continue;
+                                    }
 
-                                // Convert base64 to Uint8Array
-                                // Remove data URL prefix if present (data:image/png;base64,...)
-                                const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-                                const binaryString = atob(base64Data);
-                                const uint8Array = new Uint8Array(binaryString.length);
-                                for (let i = 0; i < binaryString.length; i++) {
-                                    uint8Array[i] = binaryString.charCodeAt(i);
-                                }
+                                    console.log(`[GEMINI IMAGE] Success for container ${containerIndex}:`, imageUrl);
 
-                                console.log('[GEMINI IMAGE] Converted to Uint8Array, size:', uint8Array.length);
+                                    // Guardar URL exitosa
+                                    results.successful.push({ index: containerIndex, url: imageUrl });
 
-                                // Upload image to storage
-                                const imageUrl = await uploadFileToStorageFromHttpAction(ctx, uint8Array, 'image/png');
-                                console.log('[GEMINI IMAGE] Uploaded to storage:', imageUrl);
+                                    // Actualizar el slide data con la imagen
+                                    const placeholderWidth = container.placeholderWidth || 400;
+                                    const placeholderHeight = container.placeholderHeight || 300;
+                                    const borderRadius = container.borderRadius || 0;
+                                    const containerLeft = container.left || 100;
+                                    const containerTop = container.top || 100;
+                                    const containerAngle = container.angle || 0;
+                                    const containerScaleX = container.scaleX || 1;
+                                    const containerScaleY = container.scaleY || 1;
+                                    const containerOriginX = container.originX || 'center';
+                                    const containerOriginY = container.originY || 'center';
 
-                                if (!imageUrl) {
-                                    return {
-                                        success: false,
-                                        error: `Failed to upload generated image`
-                                    };
-                                }
+                                    const imgWidth = 1024;
+                                    const imgHeight = 1024;
+                                    const actualContainerWidth = placeholderWidth * containerScaleX;
+                                    const actualContainerHeight = placeholderHeight * containerScaleY;
 
-                                // Store the generated image URL
-                                generatedImageUrls.push(imageUrl);
+                                    const scaleX = actualContainerWidth / imgWidth;
+                                    const scaleY = actualContainerHeight / imgHeight;
+                                    const scale = Math.max(scaleX, scaleY);
 
-                                // Get container properties
-                                const placeholderWidth = container.placeholderWidth || 400;
-                                const placeholderHeight = container.placeholderHeight || 300;
-                                const borderRadius = container.borderRadius || 0;
-                                const containerLeft = container.left || 100;
-                                const containerTop = container.top || 100;
-                                const containerAngle = container.angle || 0;
-                                const containerScaleX = container.scaleX || 1;
-                                const containerScaleY = container.scaleY || 1;
-                                const containerOriginX = container.originX || 'center';
-                                const containerOriginY = container.originY || 'center';
+                                    const scaledImageWidth = imgWidth * scale;
+                                    const scaledImageHeight = imgHeight * scale;
+                                    const cropX = (scaledImageWidth - actualContainerWidth) / (2 * scale);
+                                    const cropY = (scaledImageHeight - actualContainerHeight) / (2 * scale);
 
-                                // Calculate scale to cover the container (like CSS object-fit: cover)
-                                // Assume generated image is 1024x1024
-                                const imgWidth = 1024;
-                                const imgHeight = 1024;
-                                const actualContainerWidth = placeholderWidth * containerScaleX;
-                                const actualContainerHeight = placeholderHeight * containerScaleY;
+                                    let clipPath = undefined;
+                                    if (borderRadius > 0) {
+                                        const clipBorderRadius = borderRadius / scale;
+                                        clipPath = {
+                                            type: 'rect',
+                                            width: imgWidth - (cropX * 2),
+                                            height: imgHeight - (cropY * 2),
+                                            rx: clipBorderRadius,
+                                            ry: clipBorderRadius,
+                                            left: -(imgWidth - (cropX * 2)) / 2,
+                                            top: -(imgHeight - (cropY * 2)) / 2,
+                                            originX: 'left',
+                                            originY: 'top',
+                                        };
+                                    }
 
-                                const scaleX = actualContainerWidth / imgWidth;
-                                const scaleY = actualContainerHeight / imgHeight;
-                                const scale = Math.max(scaleX, scaleY);
-
-                                // Calculate crop values to center the image
-                                const scaledImageWidth = imgWidth * scale;
-                                const scaledImageHeight = imgHeight * scale;
-                                const cropX = (scaledImageWidth - actualContainerWidth) / (2 * scale);
-                                const cropY = (scaledImageHeight - actualContainerHeight) / (2 * scale);
-
-                                // Create clipPath for rounded corners if needed
-                                let clipPath = undefined;
-                                if (borderRadius > 0) {
-                                    const clipBorderRadius = borderRadius / scale;
-                                    clipPath = {
-                                        type: 'rect',
+                                    slideData.objects[containerIndex] = {
+                                        type: 'image',
+                                        left: containerLeft,
+                                        top: containerTop,
+                                        angle: containerAngle,
+                                        originX: containerOriginX,
+                                        originY: containerOriginY,
+                                        scaleX: scale,
+                                        scaleY: scale,
+                                        cropX: cropX,
+                                        cropY: cropY,
                                         width: imgWidth - (cropX * 2),
                                         height: imgHeight - (cropY * 2),
-                                        rx: clipBorderRadius,
-                                        ry: clipBorderRadius,
-                                        left: -(imgWidth - (cropX * 2)) / 2,
-                                        top: -(imgHeight - (cropY * 2)) / 2,
-                                        originX: 'left',
-                                        originY: 'top',
+                                        src: imageUrl,
+                                        clipPath: clipPath,
+                                        isImageContainer: true,
+                                        borderRadius: borderRadius,
+                                        selectable: true,
+                                        evented: true,
+                                        hasControls: true,
+                                        hasBorders: true,
+                                        crossOrigin: 'anonymous',
                                     };
-                                }
 
-                                // Replace container with image
-                                slideData.objects[containerIndex] = {
-                                    type: 'image',
-                                    left: containerLeft,
-                                    top: containerTop,
-                                    angle: containerAngle,
-                                    originX: containerOriginX,
-                                    originY: containerOriginY,
-                                    scaleX: scale,
-                                    scaleY: scale,
-                                    cropX: cropX,
-                                    cropY: cropY,
-                                    width: imgWidth - (cropX * 2),
-                                    height: imgHeight - (cropY * 2),
-                                    src: imageUrl,
-                                    clipPath: clipPath,
-                                    isImageContainer: true,
-                                    borderRadius: borderRadius,
-                                    selectable: true,
-                                    evented: true,
-                                    hasControls: true,
-                                    hasBorders: true,
-                                    crossOrigin: 'anonymous',
-                                };
+                                } catch (error) {
+                                    console.error(`[GEMINI IMAGE] Error processing container ${containerIndex}:`, error);
+                                    results.failed.push({
+                                        index: containerIndex,
+                                        error: error instanceof Error ? error.message : 'Unknown error'
+                                    });
+                                }
                             }
 
-                            // Save the updated slide
+                            // Guardar el slide actualizado (incluso con solo algunas imágenes exitosas)
                             const updatedContent = JSON.stringify(slideData, null, 2);
                             await ctx.runMutation(api.files.updateByPath, {
                                 chatId: id,
@@ -1099,12 +1101,22 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                 version: currentVersion ?? 0
                             });
 
+                            // Retornar resultados detallados
+                            const totalProcessed = imagePrompts.length;
+                            const successCount = results.successful.length;
+                            const failCount = results.failed.length;
+
                             return {
-                                success: true,
+                                success: successCount > 0, // Success si al menos una imagen funcionó
                                 message: explanation,
-                                imagesFilled: imagePrompts.length,
-                                imageUrls: generatedImageUrls
+                                imagesFilled: successCount,
+                                imagesRequested: totalProcessed,
+                                imagesFailed: failCount,
+                                imageUrls: results.successful.map(r => r.url),
+                                failedContainers: results.failed,
+                                partialSuccess: successCount > 0 && failCount > 0
                             };
+
                         } catch (error) {
                             console.error(`Error filling image containers in ${path}:`, error);
                             return {
