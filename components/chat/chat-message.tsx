@@ -119,6 +119,9 @@ export function ChatMessage({
                     }
 
                     if (part.type === "tool-manageFile") {
+                        const input = part.input as any;
+                        const operation = input?.operation;
+
                         if (part.output && part.state && part.state === 'output-available') {
                             const response = part.output as any;
                             const message = response.message as string;
@@ -126,7 +129,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<File className="size-4" />}
-                                        message={message || "Slide updated"}
+                                        message={message || (operation === 'create' ? "Slide created" : "Slide updated")}
                                         isLoading={false}
                                     />
                                 </div>
@@ -137,7 +140,34 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<File className="size-4" />}
-                                        message={currentDesignMessage}
+                                        message={operation === 'create' ? "Creating slide..." : currentDesignMessage}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-insertSlideAtPosition") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={message || "Slide inserted"}
+                                        isLoading={false}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={"Inserting slide..."}
                                         isLoading={true}
                                     />
                                 </div>
