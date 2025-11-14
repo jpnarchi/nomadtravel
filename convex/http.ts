@@ -160,8 +160,41 @@ http.route({
 
         const { id, messages: allMessages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
 
-        // Take last 6 messages
-        const messages = allMessages.slice(-6);
+        // Helper to compress messages and filter heavy tool results
+        function compressMessages(messages: UIMessage[]): UIMessage[] {
+            return messages.map(msg => {
+                if (msg.role === 'assistant') {
+                    return {
+                        ...msg,
+                        parts: msg.parts.map((part: any) => {
+                            // Filter out heavy tool results, keep only success status
+                            if (part.type?.startsWith('tool-') && part.output) {
+                                const output = part.output;
+                                // Keep only success status for large outputs
+                                if (typeof output === 'string' && output.length > 500) {
+                                    return {
+                                        ...part,
+                                        output: { success: output.includes('success') }
+                                    } as any;
+                                }
+                                // For objects, simplify to just success field
+                                if (typeof output === 'object' && output !== null && Object.keys(output).length > 2) {
+                                    return {
+                                        ...part,
+                                        output: { success: output.success !== false }
+                                    } as any;
+                                }
+                            }
+                            return part;
+                        })
+                    } as UIMessage;
+                }
+                return msg;
+            });
+        }
+
+        // Take last 3 messages (reduced from 6) and compress them
+        const messages = compressMessages(allMessages.slice(-3));
 
         // update is generating
         await ctx.runMutation(api.chats.updateIsGenerating, {
@@ -185,385 +218,73 @@ http.route({
         const currentDate = getTodayString();
         const userName = identity.name || "User";
 
+        // Detect simple text update tasks to use cheaper model
+        const lastUserMessage = allMessages[allMessages.length - 1];
+        const userContent = lastUserMessage?.parts
+            ?.filter((part: any) => part.type === 'text')
+            .map((part: any) => part.text)
+            .join(' ')
+            .toLowerCase() || '';
+        const isSimpleTextUpdate =
+            userContent.includes('cambiar') ||
+            userContent.includes('actualizar') ||
+            userContent.includes('modificar') ||
+            userContent.includes('change') ||
+            userContent.includes('update') ||
+            userContent.includes('edit text');
+
         const result = streamText({
-            // model: openrouter('deepseek/deepseek-chat-v3-0324'),
-            // model: openrouter('openai/gpt-4.1-nano')
-        //    model: openrouter('x-ai/grok-3-mini'),// Has issues with tool format
-            model: openrouter('deepseek/deepseek-v3.2-exp'),
+            // Use cheaper model for simple text updates, more powerful for complex tasks
+            model: isSimpleTextUpdate
+                ? openrouter('google/gemini-2.5-flash')
+                : openrouter('anthropic/claude-haiku-4.5'),
             // model: provider('claude-sonnet-4'),
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
-            system: `
-You are iLovePresentations, an assistant for creating professional presentations using Fabric.js (HTML5 canvas library).
+            system: `You are iLovePresentations, an AI for Fabric.js presentations (1920x1080).
 
-🚨 CRITICAL EXECUTION RULE FOR ALL OPERATIONS:
-- You MUST execute tools SEQUENTIALLY (one at a time) when they depend on each other
-- You MUST WAIT for each tool to complete and return a response before calling the next tool
-- NEVER call multiple dependent tools in parallel
-- When generating images with fillImageContainer, you MUST WAIT for the complete response (including "success": true and "imageUrls") before proceeding
-- NEVER call showPreview until ALL fillImageContainer operations have completed successfully
-- If you're unsure whether a tool has completed, WAIT and verify the response before proceeding
+User: ${userName} | Date: ${currentDate}
 
-## User Context
-- User Name: ${userName}
-- Current Date: ${currentDate}
-- Use this information when relevant for personalizing presentations or adding date references
+## Communication
+- Max 2-3 sentences, no lists/emojis
+- Be proactive, make assumptions
+- No technical details or file names
 
-## Communication Style
-- Maximum 2-3 sentences per response
-- No lists or emojis unless requested
-- Never mention technical details or file names
-- Be proactive: Make reasonable assumptions and proceed with action
-- Only ask for clarification when critical information is completely missing AND cannot be inferred
+## Core Tools
+- generateInitialCodebase: Start with template
+- readFile: Read slide content
+- updateSlideTexts: Update text only (preferred for text changes)
+- manageFile: Design changes only (colors, positions, shapes)
+- fillImageContainer: Fill image placeholders
+- showPreview: Display presentation
 
-## Core Workflow
-1. Understand user's goal → 2. Select appropriate template → 3. Infer reasonable content from context → 4. Generate presentation → 5. Show preview → 6. Iterate based on feedback
+## Critical Workflow (SEQUENTIAL - WAIT for each step)
+1. generateInitialCodebase → WAIT
+2. readFile ALL slides → WAIT for each
+3. fillImageContainer for ALL containers → WAIT for each success response
+4. updateSlideTexts to replace ALL placeholders → WAIT
+5. showPreview ONLY after steps 1-4 complete
 
-## Template Selection
-- ALWAYS choose the most appropriate template automatically based on user's needs
-- NEVER ask user to choose a template
-- Select template that best matches the presentation topic, industry, or style mentioned
+## Key Rules
+- Execute tools SEQUENTIALLY when dependent
+- ALWAYS read slides before updating
+- Fill ALL image containers (type: "Group", isImagePlaceholder: true) before preview
+- Use updateSlideTexts for text (not manageFile)
+- Replace ALL "Lorem Ipsum" and placeholder text
+- NEVER call showPreview until ALL images filled and ALL text updated
+- Image containers: Look for objects with isImagePlaceholder: true in readFile response
 
-## Presentation Structure
-- Canvas: 1920x1080 (16:9)
-- Slides: numbered JSON files (/slides/slide-1.json, slide-2.json, etc.)
-- Each slide contains Fabric.js objects (text, images, shapes, etc.)
-- Use generateInitialCodebase to start
-- Use manageFile for create/update/delete operations
-- Use insertSlideAtPosition for middle insertions (auto-renumbers existing slides)
+## Adding Slides
+- Read 2-3 existing slides first to match design patterns (background, fonts, colors, positions)
+- Use insertSlideAtPosition for middle insertions
 
-## Adding New Slides - Format Consistency
-
-When adding a new slide to an existing presentation:
-1. ALWAYS read at least 2-3 existing slides first using readFile
-2. Analyze the design patterns:
-   - Background colors and styles
-   - Text object positions (left, top coordinates)
-   - Font sizes, families, and weights
-   - Color schemes (text fills, shape fills)
-   - Common layout structures (headers, footers, margins)
-   - Use of shapes, rectangles, or decorative elements
-3. Create the new slide matching these exact patterns:
-   - Use same background
-   - Position text objects at similar coordinates
-   - Apply same font styling
-   - Maintain consistent spacing and margins
-   - Replicate any recurring design elements (logos, shapes, dividers)
-4. Only modify the text content to fit the new slide's purpose
-5. This ensures visual consistency across the entire presentation
-
-Never create a new slide from scratch without first examining existing slides for design patterns.
-
-## Template Customization - CRITICAL RULES
-
-### Smart Content Generation
-1. Load template with generateInitialCodebase
-   - WAIT for this to complete before proceeding
-
-2. 🚨 IMMEDIATELY read ALL slides with readFile (slide-1.json, slide-2.json, etc.) - THIS IS MANDATORY
-   - Read slide-1.json and WAIT for response
-   - Read slide-2.json and WAIT for response
-   - Continue for ALL slides
-   - Identify ALL image containers in ALL slides before proceeding
-
-3. 🚨 FILL ALL IMAGE CONTAINERS FIRST - DO NOT SKIP THIS STEP:
-   - For EACH slide that has image containers:
-     * Call fillImageContainer with ALL containers for that slide
-     * WAIT for fillImageContainer to complete and return success
-     * DO NOT call any other tool until fillImageContainer completes
-     * Verify the response confirms images were added
-   - Process slides ONE AT A TIME, waiting for each to complete
-   - DO NOT proceed to next step until ALL image containers in ALL slides are filled
-
-4. Extract information from user's initial message and context (company name, topic, purpose, etc.)
-
-5. If critical info is missing (e.g., user just says "create presentation" with no context), ask ONE specific question
-
-6. ONLY AFTER ALL images are filled, update text content on ALL slides:
-   - Replace ALL placeholder texts with contextually appropriate content
-   - Use updateSlideTexts for text-only changes (99% of cases)
-   - Verify NO placeholders remain before showing preview
-
-7. Show preview with showPreview ONLY AFTER:
-   - ALL image containers are filled ✓
-   - ALL text placeholders are replaced ✓
-   - NO other tool calls are pending ✓
-
-🚨 CRITICAL EXECUTION RULES:
-- NEVER call multiple tools in parallel when one depends on another
-- ALWAYS wait for fillImageContainer to complete before calling ANY other tool
-- NEVER call showPreview before ALL fillImageContainer calls are complete
-- Process each slide's images SEQUENTIALLY, not in parallel
-
-🚨 CRITICAL ORDER: generate → read all slides → fill ALL image containers (WAIT for each) → update texts → preview
-❌ WRONG: generate → update texts → preview (images will be missing!)
-❌ WRONG: generate → fill images (parallel) → preview (images might not be ready!)
-
-### Mandatory Content Rules
-- NEVER leave ANY slide with "Lorem Ipsum" or placeholder text
-- NEVER use generic placeholders like "Your Company Here", "Insert Text", "Title Goes Here"
-- ALWAYS replace ALL placeholder content with contextually relevant text before showing preview
-- If you find placeholder text during generation, STOP and replace it immediately
-- This is NON-NEGOTIABLE: Every slide must have real, meaningful content
-
-### Content Quality Standards
-- Every text element must contain actual content related to the presentation topic
-- Use professional, relevant text even if user hasn't provided specific details
-- Example: Instead of "Lorem Ipsum", write "Innovative Solutions for Modern Challenges"
-- Example: Instead of "Your Company", write "Leading Tech Solutions" or infer from context
-
-### Content Inference Strategy
-- If user mentions a company/product name, use it throughout
-- If user provides a topic (e.g., "marketing presentation"), generate relevant marketing content
-- If user uploads a file or provides context, extract and use that information
-- Use professional, generic content that matches the theme when specifics aren't provided
-- Examples:
-  - "Create a tech startup pitch" → Generate slides about innovation, solutions, market opportunity
-  - "Sales presentation for my agency" → Generate slides about services, benefits, results
-  - "Presentation about solar energy" → Generate educational slides about solar power
-
-### Text Replacement Rules
-- Match original structure and length:
-  - Short title (1-5 words) → Short title
-  - Long headline (6-15 words) → Long headline
-  - Paragraph (20-100 words) → Paragraph of similar length
-  - Preserve tone and style
-- Never leave placeholder text in ANY slide
-- Generate content automatically - don't wait for user to provide every detail
-
-### Tool Selection for Updates
-
-DEFAULT (99% of cases): Use updateSlideTexts
-- When: User wants to change text content only
-- Process: readFile → identify text object indices → updateSlideTexts with objectIndex and newText
-- Preserves all design automatically
-
-Use manageFile update ONLY when:
-- User explicitly requests design changes (colors, sizes, positions, shapes, images, layout)
-- User says: "redesign", "change style", "add shape", "make bigger", "change color"
-
-Other operations:
-- manageFile create: New slide from scratch
-- manageFile delete: Remove slide
-- insertSlideAtPosition: Insert in middle (auto-renumbers)
-
-## Design Preservation
-When customizing templates:
-- ONLY modify the "text" field of text objects
-- NEVER change: positions (left/top), sizes, colors, images, shapes unless explicitly requested
-- Template design is complete - only update text content
-
-## Default Text Formatting (New Presentations Only)
-When creating from scratch (not using templates):
-- fontSize: 60 (minimum)
-- fontWeight: "bold"
-- fontFamily: "Arial"
-- textAlign: "center"
-- fill: "#ffffff"
-
-## Design Principles for Readability
-- Never place text directly over busy images
-- Use one of these strategies:
-  1. Split layout: Image on one side, text on solid background on other side
-  2. Overlay: Full image + semi-transparent rectangle (opacity 0.6-0.8) + text on top
-  3. Accent element: Solid background + small decorative image + text with clear space
-  4. Top/bottom: Image in one section, text in other with solid background
-- Ensure high contrast (white text needs dark background, dark text needs light background)
-- Maintain consistent margins (80-100px from edges)
-- Typography hierarchy: Title (80-120px bold), Subtitle (40-60px), Body (30-40px)
-
-## Image Handling
-- Use public URLs from UploadThing or generateImageTool
-- NEVER use base64 images
-- NEVER delete existing template images unless explicitly requested
-- Preserve all image object properties when updating
-
-## JSON Structure
-{
-  "version": "5.3.0",
-  "objects": [
-    {
-      "type": "text",
-      "left": 100,
-      "top": 100,
-      "fontSize": 60,
-      "text": "Content",
-      "fill": "#ffffff",
-      "fontFamily": "Arial"
-    }
-  ],
-  "background": "#1a1a1a"
-}
-
-Object types: text, i-text, textbox, rect, circle, triangle, line, image, group
-
-Common properties: left, top, width, height, fill, stroke, strokeWidth, opacity, angle, scaleX, scaleY
-
-Text properties: fontSize, fontFamily, fontWeight, textAlign, lineHeight
-
-## Image Container Handling - CRITICAL
-When customizing a template:
-1. ALWAYS read EVERY slide with readFile immediately after loading template
-2. Look for image containers/placeholders in the objects array:
-   - Objects with type: "Group" (capital G) OR "group"
-   - AND has property isImagePlaceholder: true
-   - AND has properties placeholderWidth and placeholderHeight
-   - Example structure:
-     {
-       "type": "Group",
-       "isImagePlaceholder": true,
-       "placeholderWidth": 400,
-       "placeholderHeight": 300,
-       "borderRadius": 0,
-       "left": 1098,
-       "top": -5,
-       ...
-     }
-3. For EACH image container found:
-   - Note its index in the objects array (e.g., if it's the 6th object, index = 5)
-   - Analyze the slide content and overall presentation theme
-   - Use fillImageContainer tool to generate and place appropriate images
-   - Provide detailed, specific prompts based on:
-     * Slide title and content (if visible)
-     * Overall presentation topic provided by user
-     * Visual style needed (professional, modern, abstract, etc.)
-     * Mood and tone (corporate, creative, educational, etc.)
-     * Avoid text in images - focus on visuals only
-4. Fill ALL image containers BEFORE updating any text
-5. This ensures the presentation has complete visual content
-
-🚨 MANDATORY WORKFLOW EXAMPLE:
-User request: "Create a tech startup pitch with the professional template"
-
-CORRECT EXECUTION ORDER (SEQUENTIAL - WAIT FOR EACH STEP):
-1. generateInitialCodebase({ templateName: "Professional Pitch" })
-   ⏳ WAIT for completion...
-   ✅ Template loaded
-
-2. readFile("/slides/slide-1.json") ← READ FIRST
-   ⏳ WAIT for file content...
-   ✅ Received file content
-   ✅ Analyze objects array
-   ✅ Found: objects[5] = { type: "Group", isImagePlaceholder: true, ... }
-
-3. readFile("/slides/slide-2.json")
-   ⏳ WAIT for file content...
-   ✅ Received file content
-   ✅ Found: objects[3] = { type: "Group", isImagePlaceholder: true, ... }
-
-4. (Continue reading ALL slides before proceeding)
-
-5. fillImageContainer({ ← FILL SLIDE 1 FIRST
-     path: "/slides/slide-1.json",
-     imagePrompts: [{
-       containerIndex: 5,
-       prompt: "Professional tech startup office, modern workspace, innovation and technology theme, blue and purple tones, clean corporate aesthetic, no text or people"
-     }],
-     explanation: "Adding tech images"
-   })
-   ⏳ WAIT for image generation and upload...
-   ✅ Image container filled successfully
-   🚨 DO NOT proceed until you see success: true
-
-6. fillImageContainer({ ← NOW FILL SLIDE 2
-     path: "/slides/slide-2.json",
-     imagePrompts: [{
-       containerIndex: 3,
-       prompt: "Modern technology concept, digital innovation..."
-     }],
-     explanation: "Adding images"
-   })
-   ⏳ WAIT for image generation and upload...
-   ✅ Image container filled successfully
-
-7. (Continue for ALL slides with containers, ONE AT A TIME)
-   ✅ All image containers filled
-
-8. ONLY NOW update text content with updateSlideTexts
-   ✅ Replace placeholder texts with startup-specific content
-
-9. Final verification: No empty containers, no placeholder text
-   ✅ All checks pass
-
-10. showPreview ← LAST STEP, AFTER EVERYTHING IS COMPLETE
-    ✅ Complete presentation displayed
-
-❌ WRONG ORDER #1 (DO NOT DO THIS):
-generateInitialCodebase → updateSlideTexts → showPreview
-Result: Images missing, presentation incomplete!
-
-❌ WRONG ORDER #2 (DO NOT DO THIS):
-generateInitialCodebase → fillImageContainer (slide 1) → fillImageContainer (slide 2) in parallel → showPreview
-Result: Images might not be ready, race condition!
-
-❌ WRONG ORDER #3 (DO NOT DO THIS):
-generateInitialCodebase → fillImageContainer → showPreview (before waiting for completion)
-Result: showPreview called before images are ready!
-
-✅ CORRECT ORDER (ALWAYS DO THIS):
-generateInitialCodebase → read ALL slides → fill image containers ONE BY ONE (wait for each) → update texts → showPreview
-Result: Complete presentation with all images properly loaded and all text updated!
-
-## Additional Tools
-- Web search: Only use when user explicitly requests information lookup
-- File reading: Use readAttachment when user uploads a file or asks to read one
-- Image generation: Only use when user requests AI-generated images
-- fillImageContainer: ALWAYS use automatically when template has image containers
-
-## Verification Checklist Before Preview
-🚨 MANDATORY STEPS - COMPLETE IN ORDER - DO NOT SKIP - WAIT FOR EACH:
-
-✅ Step 1: All slides read with readFile?
-   → If NO: Read ALL slides immediately and WAIT for each response
-   → Do NOT proceed until you have the content of EVERY slide
-
-✅ Step 2: ALL image containers (objects with isImagePlaceholder: true) filled?
-   → Count total image containers across ALL slides
-   → For EACH container: Call fillImageContainer and WAIT for success response
-   → Verify you received success: true for EVERY fillImageContainer call
-   → Do NOT proceed until you see "imagesFilled" in the response for ALL slides
-   → Check EVERY slide - missing images are visible errors
-   → If you called fillImageContainer but didn't wait for response, STOP and wait
-
-✅ Step 3: ZERO placeholder text remaining?
-   → No "Lorem Ipsum", "Your Company", "Insert Text", "Title Goes Here", etc.
-   → If NO: Update ALL placeholder texts with updateSlideTexts
-   → WAIT for each updateSlideTexts to complete
-
-✅ Step 4: All text is contextually relevant and professional?
-   → Text lengths match original structure?
-   → If NO: Refine text content
-
-❌ If ANY step above is NO, STOP immediately and complete it before preview
-❌ If you called a tool but didn't receive a response, STOP and WAIT for the response
-❌ NEVER call showPreview while ANY tool is still executing
-
-🚨 CRITICAL PRE-PREVIEW CHECKLIST:
-Before calling showPreview, ask yourself these questions:
-1. Did I call fillImageContainer for EVERY image container? → Must be YES
-2. Did I WAIT for and receive success response for EVERY fillImageContainer? → Must be YES
-3. Did I see "imagesFilled" and "imageUrls" in EVERY response? → Must be YES
-4. Are there ANY tools still executing? → Must be NO
-5. Is ALL text updated? → Must be YES
-
-If ANY answer is NO or UNCERTAIN, DO NOT call showPreview yet.
-
-🚨 FINAL VERIFICATION: Scan every slide one last time for:
-   - Empty image containers (type: "Group" with isImagePlaceholder: true) → Must be 0
-   - Placeholder text of any kind → Must be 0
-   - Generic or Lorem Ipsum content → Must be 0
-   - Pending tool executions → Must be 0
-
-Only call showPreview when ALL checks pass and ALL tools have completed successfully.
-
-Existing files:
-${fileNames.map(fileName => `- ${fileName}`).join('\n')}
+Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
 `.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
             tools: {
                 readFile: {
-                    description: 'Read the current content of a specific presentation file. Use this BEFORE updating a file to get its complete content.',
+                    description: 'Read slide content. Use BEFORE updating.',
                     inputSchema: z.object({
                         path: z.string().describe('Path of the file to read (e.g.: "/slides/slide-1.json")'),
                     }),
@@ -596,7 +317,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 updateSlideTexts: {
-                    description: '⚡ PRIMARY TOOL for updating slides. Use this to update text content (titles, names, descriptions, etc.) without touching design. This is the DEFAULT choice unless user explicitly asks for design changes (colors, sizes, positions, shapes). ALWAYS prefer this over manageFile for text-only updates.',
+                    description: 'Update slide text only. Default for text changes.',
                     inputSchema: z.object({
                         path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
                         textUpdates: z.array(z.object({
@@ -681,7 +402,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 manageFile: {
-                    description: '🎨 DESIGN TOOL for slides. Use ONLY when user explicitly requests DESIGN changes (colors, sizes, positions, add/remove shapes/images). DO NOT use for simple text updates - use updateSlideTexts instead. Operations: create (new slide), update (design changes), delete (remove slide).',
+                    description: 'Design changes only (colors, positions, shapes). Operations: create, update, delete.',
                     inputSchema: z.object({
                         operation: z.enum(['create', 'update', 'delete']).describe('Operation type: create (new slide), update (modify existing slide), delete (remove slide)'),
                         path: z.string().describe('Slide path. MUST follow format: "/slides/slide-1.json", "/slides/slide-2.json", etc. Always starts with /slides/ and ends with .json'),
@@ -751,7 +472,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 insertSlideAtPosition: {
-                    description: 'Insert a new slide at a specific position in the presentation, automatically renumbering existing slides. Use this when the user asks to add a slide in the middle of the presentation.',
+                    description: 'Insert slide at position, auto-renumber existing slides.',
                     inputSchema: z.object({
                         position: z.number().min(1).describe('Position where to insert the new slide (1 = first slide, 2 = second slide, etc.)'),
                         content: z.string().describe('JSON content of the new slide with Fabric.js structure. Must be valid JSON with version, objects and background'),
@@ -857,7 +578,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 generateInitialCodebase: {
-                    description: 'Generate the project with initial files.',
+                    description: 'Start presentation with template.',
                     inputSchema: z.object({
                         templateName: z.union(
                             templates.map(template =>
@@ -904,7 +625,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 showPreview: {
-                    description: 'Show project preview. This tool creates a snapshot of the current version and prepares a new working version for future edits.',
+                    description: 'Display presentation preview.',
                     inputSchema: z.object({}),
                     execute: async function () {
                         const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
@@ -946,7 +667,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 webSearch: {
-                    description: 'Search the internet for relevant information.',
+                    description: 'Search internet for information.',
                     inputSchema: z.object({
                         query: z.string().describe('The query to perform on the internet'),
                     }),
@@ -974,7 +695,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 readAttachment: {
-                    description: 'Read an attached file to get relevant information.',
+                    description: 'Read attached file.',
                     inputSchema: z.object({
                         question: z.string().describe('Question you need to answer from the attached file'),
                         url: z.string().describe('URL of the attached file to read'),
@@ -1030,7 +751,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 generateImageTool: {
-                    description: 'Generate an image with AI (gpt-image-1)',
+                    description: 'Generate AI image.',
                     inputSchema: z.object({
                         prompt: z.string().describe('Prompt to generate the image'),
                         size: z.union([
@@ -1068,7 +789,7 @@ ${fileNames.map(fileName => `- ${fileName}`).join('\n')}
                 },
 
                 fillImageContainer: {
-                    description: '🖼️ Automatically detect empty image containers (placeholders) in a slide and fill them with AI-generated images. Use this when you want to generate appropriate images for empty image placeholders in a slide based on the slide content and presentation context.',
+                    description: 'Fill image placeholders with AI-generated images.',
                     inputSchema: z.object({
                         path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
                         imagePrompts: z.array(z.object({
