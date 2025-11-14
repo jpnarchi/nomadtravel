@@ -55,12 +55,12 @@ export function TransferChatDialog({
 
     const handleTransferChat = async () => {
         if (!newOwnerEmail.trim()) {
-            toast.error("Por favor ingresa un email válido");
+            toast.error("Please enter a valid email");
             return;
         }
 
         if (!emailValidation?.isValid) {
-            toast.error("El usuario con este email no existe");
+            toast.error("User with this email does not exist");
             return;
         }
 
@@ -71,14 +71,14 @@ export function TransferChatDialog({
                 newOwnerEmail: newOwnerEmail.trim()
             });
 
-            toast.success(`Chat transferido exitosamente a ${result.newOwnerName}`);
+            toast.success(`Chat successfully transferred to ${result.newOwnerName}`);
             setIsTransferDialogOpen(false);
             setNewOwnerEmail("");
             setEmailValidation(null);
             router.push('/');
         } catch (error) {
             console.error("Error transferring chat:", error);
-            toast.error(error instanceof Error ? error.message : "Error al transferir el chat");
+            toast.error(error instanceof Error ? error.message : "Error transferring chat");
         } finally {
             setIsTransferring(false);
         }
@@ -114,7 +114,7 @@ export function TransferChatDialog({
                             <Input
                                 id="new-owner-email"
                                 type="email"
-                                placeholder="usuario@ejemplo.com"
+                                placeholder="user@example.com"
                                 value={newOwnerEmail}
                                 onChange={(e) => setNewOwnerEmail(e.target.value)}
                                 className="pr-10"

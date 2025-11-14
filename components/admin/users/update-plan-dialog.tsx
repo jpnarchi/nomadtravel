@@ -43,10 +43,10 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                 userId: user._id,
                 plan: selectedPlan as "free" | "pro" | "premium" | "ultra"
             })
-            toast.success(`Plan actualizado a ${selectedPlan}`)
+            toast.success(`Plan updated to ${selectedPlan}`)
             onOpenChange(false)
         } catch (error) {
-            toast.error("Error al actualizar el plan")
+            toast.error("Error updating plan")
         } finally {
             setIsUpdatingPlan(false)
         }
@@ -56,15 +56,15 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Cambiar Plan de Usuario</DialogTitle>
+                    <DialogTitle>Change User Plan</DialogTitle>
                     <DialogDescription>
-                        Actualiza el plan del usuario <strong>{user.name}</strong> ({user.email})
+                        Update the plan for user <strong>{user.name}</strong> ({user.email})
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="flex items-center gap-4">
                         <label htmlFor="plan" className="text-sm font-medium w-24">
-                            Plan actual:
+                            Current plan:
                         </label>
                         <Badge variant={(user.plan === "pro" || user.plan === "premium" || user.plan === "ultra") ? "default" : "secondary"} className="capitalize">
                             {user.plan || "free"}
@@ -72,11 +72,11 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                     </div>
                     <div className="flex items-center gap-4">
                         <label htmlFor="new-plan" className="text-sm font-medium w-24">
-                            Nuevo plan:
+                            New plan:
                         </label>
                         <Select value={selectedPlan} onValueChange={handlePlanSelect}>
                             <SelectTrigger className="flex-1">
-                                <SelectValue placeholder="Selecciona un plan" />
+                                <SelectValue placeholder="Select a plan" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="free">Free</SelectItem>
@@ -93,13 +93,13 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                         onClick={() => onOpenChange(false)}
                         disabled={isUpdatingPlan}
                     >
-                        Cancelar
+                        Cancel
                     </Button>
                     <Button
                         onClick={handlePlanChange}
                         disabled={isUpdatingPlan || selectedPlan === user.plan}
                     >
-                        {isUpdatingPlan ? "Actualizando..." : "Actualizar Plan"}
+                        {isUpdatingPlan ? "Updating..." : "Update Plan"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

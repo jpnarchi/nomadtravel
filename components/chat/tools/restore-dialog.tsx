@@ -20,11 +20,11 @@ export function RestoreDialog({
         setIsRestoring(true);
         try {
             await onRestore();
-            toast.success(`Versión ${version} restaurada exitosamente`);
+            toast.success(`Version ${version} restored successfully`);
             onOpenChange(false);
         } catch (error) {
             console.error("Error restoring version:", error);
-            toast.error("Error al restaurar la versión");
+            toast.error("Error restoring version");
         } finally {
             setIsRestoring(false);
         }
@@ -34,9 +34,9 @@ export function RestoreDialog({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Restaurar versión</DialogTitle>
+                    <DialogTitle>Restore version</DialogTitle>
                     <DialogDescription>
-                        ¿Estás seguro de que quieres restaurar la versión {version}? Esta acción no se puede deshacer.
+                        Are you sure you want to restore version {version}? This action cannot be undone.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -46,14 +46,14 @@ export function RestoreDialog({
                         disabled={isRestoring}
                         className="cursor-pointer"
                     >
-                        Cancelar
+                        Cancel
                     </Button>
                     <Button
                         className="bg-red-500/70 hover:bg-red-500 text-white cursor-pointer"
                         onClick={handleRestore}
                         disabled={isRestoring}
                     >
-                        {isRestoring ? "Restaurando" : "Restaurar"}
+                        {isRestoring ? "Restoring" : "Restore"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

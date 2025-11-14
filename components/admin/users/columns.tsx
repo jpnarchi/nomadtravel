@@ -30,9 +30,9 @@ function ActionsCell({ user }: { user: User }) {
     const handleCopyId = async () => {
         try {
             await navigator.clipboard.writeText(user._id)
-            toast.success("ID copiado al portapapeles")
+            toast.success("ID copied to clipboard")
         } catch (error) {
-            toast.error("Error al copiar el ID")
+            toast.error("Error copying ID")
         }
     }
 
@@ -49,21 +49,21 @@ function ActionsCell({ user }: { user: User }) {
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Abrir menú</span>
+                        <span className="sr-only">Open menu</span>
                         <MoreHorizontal />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuItem onClick={handleCopyId}>
-                        Copiar ID de usuario
+                        Copy user ID
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleViewDetails}>
-                        Ver detalles
+                        View details
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleOpenDialog}>
-                        Cambiar plan
+                        Change plan
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -80,10 +80,10 @@ function ActionsCell({ user }: { user: User }) {
 export const columns: ColumnDef<User>[] = [
     {
         accessorKey: "name",
-        header: "Usuario",
+        header: "User",
         cell: ({ row }) => {
             const user = row.original
-            const userName = user.name || user.email || "Usuario"
+            const userName = user.name || user.email || "User"
             const userInitial = userName.charAt(0).toUpperCase()
 
             return (
@@ -129,33 +129,33 @@ export const columns: ColumnDef<User>[] = [
     },
     {
         accessorKey: "_creationTime",
-        header: "Fecha de registro",
+        header: "Registration date",
         cell: ({ row }) => {
             const timestamp = row.getValue("_creationTime") as number
             const date = new Date(timestamp)
             return (
                 <div className="text-sm text-muted-foreground">
-                    {date.toLocaleDateString("es-ES")}
+                    {date.toLocaleDateString("en-US")}
                 </div>
             )
         },
     },
     {
         accessorKey: "lastLogin",
-        header: "Último acceso",
+        header: "Last login",
         cell: ({ row }) => {
             const timestamp = row.getValue("lastLogin") as number | undefined
             if (!timestamp) {
                 return (
                     <div className="text-sm text-muted-foreground">
-                        Nunca
+                        Never
                     </div>
                 )
             }
             const date = new Date(timestamp)
             return (
                 <div className="text-sm text-muted-foreground">
-                    {date.toLocaleDateString("es-ES")}
+                    {date.toLocaleDateString("en-US")}
                 </div>
             )
         },

@@ -1011,7 +1011,7 @@ export function FabricPresentationEditor({
                                                                 e.stopPropagation()
                                                                 deleteSlide(index)
                                                             }}
-                                                            title="Eliminar"
+                                                            title="Delete"
                                                         >
                                                             <Trash2 className="size-3" />
                                                         </Button>

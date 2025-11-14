@@ -107,7 +107,7 @@ export function ChatContainer() {
                 return;
             }
 
-            toast.error('Error al crear el chat');
+            toast.error('Error creating chat');
         } finally {
             setIsLoading(false);
         }
@@ -202,7 +202,7 @@ export function ChatContainer() {
                 return;
             }
 
-            toast.error('Error al crear el chat');
+            toast.error('Error creating chat');
         }
     };
 

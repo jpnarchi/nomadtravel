@@ -175,8 +175,8 @@ export function UserNav() {
             
             <UserButton.UserProfilePage label="Help" labelIcon={<Info className="w-3.5 h-3.5 mt-0.5" />} url="help">
                 <div>
-                    <h1>Ayuda</h1>
-                    <p>Esta es la página de ayuda personalizada</p>
+                    <h1>Help</h1>
+                    <p>This is the custom help page</p>
                 </div>
             </UserButton.UserProfilePage>
         </UserButton>

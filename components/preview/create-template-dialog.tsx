@@ -23,7 +23,7 @@ export function CreateTemplateDialog({
 
     const handleCreateTemplate = async () => {
         if (!templateName.trim() || !templateDescription.trim()) {
-            toast.error("Por favor completa el nombre y descripción del template");
+            toast.error("Please complete the template name and description");
             return;
         }
 
@@ -46,13 +46,13 @@ export function CreateTemplateDialog({
 
             await Promise.all(filePromises);
 
-            toast.success("Template creado exitosamente");
+            toast.success("Template created successfully");
             setIsCreateTemplateOpen(false);
             setTemplateName("");
             setTemplateDescription("");
         } catch (error) {
             console.error("Error creating template:", error);
-            toast.error("Error al crear el template");
+            toast.error("Error creating template");
         } finally {
             setIsCreatingTemplate(false);
         }
@@ -67,37 +67,37 @@ export function CreateTemplateDialog({
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Crear Template</DialogTitle>
+                    <DialogTitle>Create Template</DialogTitle>
                     <DialogDescription>
-                        Crea un template con todos los archivos del workbench actual.
+                        Create a template with all files from the current workbench.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                         <label htmlFor="template-name" className="text-sm font-medium">
-                            Nombre del Template
+                            Template Name
                         </label>
                         <Input
                             id="template-name"
-                            placeholder="Ej: Todo App"
+                            placeholder="Ex: Todo App"
                             value={templateName}
                             onChange={(e) => setTemplateName(e.target.value)}
                         />
                     </div>
                     <div className="grid gap-2">
                         <label htmlFor="template-description" className="text-sm font-medium">
-                            Descripción
+                            Description
                         </label>
                         <Textarea
                             id="template-description"
-                            placeholder="Describe qué hace este template..."
+                            placeholder="Describe what this template does..."
                             value={templateDescription}
                             onChange={(e) => setTemplateDescription(e.target.value)}
                             rows={3}
                         />
                     </div>
                     <div className="text-sm text-muted-foreground">
-                        Se crearán {Object.keys(files).length} archivos en el template.
+                        {Object.keys(files).length} files will be created in the template.
                     </div>
                 </div>
                 <DialogFooter>
@@ -106,7 +106,7 @@ export function CreateTemplateDialog({
                         onClick={() => setIsCreateTemplateOpen(false)}
                         disabled={isCreatingTemplate}
                     >
-                        Cancelar
+                        Cancel
                     </Button>
                     <Button
                         onClick={handleCreateTemplate}
@@ -115,10 +115,10 @@ export function CreateTemplateDialog({
                         {isCreatingTemplate ? (
                             <>
                                 <Loader2 className="size-4 mr-2 animate-spin" />
-                                Creando...
+                                Creating...
                             </>
                         ) : (
-                            "Crear Template"
+                            "Create Template"
                         )}
                     </Button>
                 </DialogFooter>

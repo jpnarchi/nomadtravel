@@ -67,7 +67,7 @@ export function UsersTable() {
         <div className="w-full">
             <div className="flex items-center justify-between py-4">
                 <Input
-                    placeholder="Buscar email..."
+                    placeholder="Search email..."
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     className="max-w-sm"
@@ -76,7 +76,7 @@ export function UsersTable() {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="ml-auto">
-                                Columnas <ChevronDown />
+                                Columns <ChevronDown />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -128,7 +128,7 @@ export function UsersTable() {
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    Cargando usuarios...
+                                    Loading users...
                                 </TableCell>
                             </TableRow>
                         ) : table.getRowModel().rows?.length ? (
@@ -153,7 +153,7 @@ export function UsersTable() {
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    No hay resultados.
+                                    No results.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -162,7 +162,7 @@ export function UsersTable() {
             </div>
             <div className="flex items-center justify-between space-x-2 py-4">
                 <div className="text-sm text-muted-foreground">
-                    {users.length} usuario{users.length !== 1 ? "s" : ""} cargado{users.length !== 1 ? "s" : ""}
+                    {users.length} user{users.length !== 1 ? "s" : ""} loaded
                 </div>
                 <div className="space-x-2">
                     <Button
@@ -171,7 +171,7 @@ export function UsersTable() {
                         onClick={() => loadMore(10)}
                         disabled={status !== "CanLoadMore"}
                     >
-                        {status === "LoadingMore" ? "Cargando..." : "Cargar más"}
+                        {status === "LoadingMore" ? "Loading..." : "Load more"}
                     </Button>
                 </div>
             </div>

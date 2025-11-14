@@ -28,7 +28,7 @@ export function UserChatsContainer({ userId }: UserChatsContainerProps) {
                     {user ? (
                         <div className="bg-muted/50 p-4 rounded-lg space-y-2">
                             <div className="flex items-center gap-2">
-                                <span className="font-medium">Nombre:</span>
+                                <span className="font-medium">Name:</span>
                                 <span>{user.name}</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -42,7 +42,7 @@ export function UserChatsContainer({ userId }: UserChatsContainerProps) {
                         </div>
                     ) : (
                         <div className="bg-muted/50 p-4 rounded-lg">
-                            <span className="text-muted-foreground">Cargando información del usuario...</span>
+                            <span className="text-muted-foreground">Loading user information...</span>
                         </div>
                     )}
                 </div>

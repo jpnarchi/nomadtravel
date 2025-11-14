@@ -175,7 +175,7 @@ export function EditorToolbar({
                             size="icon"
                             onClick={onDelete}
                             className="h-8 w-8 text-gray-900 hover:text-gray-700 hover:bg-red-100"
-                            title="Eliminar"
+                            title="Delete"
                         >
                             <Trash2 className="size-4" />
                         </Button>

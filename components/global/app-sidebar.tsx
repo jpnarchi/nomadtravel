@@ -260,14 +260,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {/* No results message */}
             {searchQuery && filteredChats?.length === 0 && (
               <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                No chats encontrados que coincidan con "{searchQuery}"
+                No chats found matching "{searchQuery}"
               </div>
             )}
 
             {/* No chats message */}
             {!searchQuery && (!getAllChats || getAllChats.length === 0) && (
               <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-                No hay chats. Crea tu primer chat!
+                No chats yet. Create your first chat!
               </div>
             )}
           </SidebarMenu>
@@ -278,9 +278,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Eliminar Chat</DialogTitle>
+            <DialogTitle>Delete Chat</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que quieres eliminar "{chatToDelete?.title}"? Esta acción no se puede deshacer.
+              Are you sure you want to delete "{chatToDelete?.title}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -290,14 +290,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               disabled={isDeleting}
               className="cursor-pointer"
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               className="bg-red-500/70 hover:bg-red-500 text-white cursor-pointer"
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
             >
-              {isDeleting ? "Eliminando" : "Eliminar"}
+              {isDeleting ? "Deleting" : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
