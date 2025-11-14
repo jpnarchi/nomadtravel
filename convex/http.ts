@@ -26,6 +26,30 @@ const openrouter = createOpenRouter({
 
 const http = httpRouter();
 
+// Slide limit constants by plan
+const SLIDE_LIMITS = {
+    free: 7,
+    pro: 25,
+    premium: 100,
+    ultra: 1000,
+} as const;
+
+// Helper function to get slide limit for a user plan
+const getSlideLimit = (plan?: string): number => {
+    switch (plan) {
+        case "free":
+            return SLIDE_LIMITS.free;
+        case "pro":
+            return SLIDE_LIMITS.pro;
+        case "premium":
+            return SLIDE_LIMITS.premium;
+        case "ultra":
+            return SLIDE_LIMITS.ultra;
+        default:
+            return SLIDE_LIMITS.free;
+    }
+};
+
 // Helper function to get today's date in YYYY-MM-DD format
 const getTodayString = () => {
     const today = new Date();
@@ -421,6 +445,31 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                             error: 'Content is required to create a file'
                                         };
                                     }
+
+                                    // Validate slide limit before creating
+                                    if (path.startsWith('/slides/') && path.endsWith('.json')) {
+                                        const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+                                        const slideCount = Object.keys(allFiles).filter(p =>
+                                            p.startsWith('/slides/') && p.endsWith('.json')
+                                        ).length;
+
+                                        // Get user plan
+                                        const userInfo = await ctx.runQuery(api.users.getUserInfo, {});
+                                        const userPlan = userInfo?.plan || "free";
+                                        const slideLimit = getSlideLimit(userPlan);
+
+                                        if (slideCount >= slideLimit) {
+                                            return {
+                                                success: false,
+                                                error: `Slide limit reached. Maximum ${slideLimit} slides for ${userPlan} plan. Please upgrade to create more slides.`,
+                                                limitReached: true,
+                                                currentPlan: userPlan,
+                                                slideLimit: slideLimit,
+                                                currentSlides: slideCount
+                                            };
+                                        }
+                                    }
+
                                     // For create, we still use current version (no need to create new version yet)
                                     await ctx.runMutation(api.files.create, {
                                         chatId: id,
@@ -493,6 +542,23 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                     const numB = parseInt(b.match(/slide-(\d+)\.json$/)?.[1] || '0');
                                     return numA - numB;
                                 });
+
+                            // Validate slide limit before inserting
+                            const slideCount = slidePaths.length;
+                            const userInfo = await ctx.runQuery(api.users.getUserInfo, {});
+                            const userPlan = userInfo?.plan || "free";
+                            const slideLimit = getSlideLimit(userPlan);
+
+                            if (slideCount >= slideLimit) {
+                                return {
+                                    success: false,
+                                    error: `Slide limit reached. Maximum ${slideLimit} slides for ${userPlan} plan. Please upgrade to create more slides.`,
+                                    limitReached: true,
+                                    currentPlan: userPlan,
+                                    slideLimit: slideLimit,
+                                    currentSlides: slideCount
+                                };
+                            }
 
                             // Validate position
                             if (position < 1) {
@@ -595,6 +661,28 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
 
                         // get template files
                         const templateFiles = await ctx.runQuery(api.templates.getFiles, { name: templateName });
+
+                        // Count slides in template
+                        const templateSlideCount = templateFiles.filter(file =>
+                            file.path.startsWith('/slides/') && file.path.endsWith('.json')
+                        ).length;
+
+                        // Validate slide limit
+                        const userInfo = await ctx.runQuery(api.users.getUserInfo, {});
+                        const userPlan = userInfo?.plan || "free";
+                        const slideLimit = getSlideLimit(userPlan);
+
+                        if (templateSlideCount > slideLimit) {
+                            return {
+                                success: false,
+                                error: `This template has ${templateSlideCount} slides, but your ${userPlan} plan allows maximum ${slideLimit} slides. Please upgrade or choose a smaller template.`,
+                                limitReached: true,
+                                currentPlan: userPlan,
+                                slideLimit: slideLimit,
+                                templateSlides: templateSlideCount
+                            };
+                        }
+
                         const files = templateFiles.reduce((acc, file) => ({
                             ...acc,
                             [file.path]: file.content
