@@ -24,6 +24,7 @@ export function ChatContainer() {
     const [files, setFiles] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showPricingPopup, setShowPricingPopup] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     const router = useRouter();
     const user = useQuery(api.users.getUserInfo);
@@ -128,6 +129,18 @@ export function ChatContainer() {
         }
     }, [input, isSignedIn]);
 
+    // Detect mobile screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.matchMedia('(max-width: 768px)').matches);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!isSignedIn) {
@@ -211,7 +224,7 @@ export function ChatContainer() {
             <div
                 className="h-[calc(100dvh-4rem)] overflow-y-auto bg-background"
                 style={{
-                    backgroundImage: "url('/img/bg-pricing.png')",
+                    backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
