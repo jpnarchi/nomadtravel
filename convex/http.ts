@@ -285,18 +285,20 @@ User: ${userName} | Date: ${currentDate}
 ## Critical Workflow (SEQUENTIAL - WAIT for each step)
 1. generateInitialCodebase → WAIT
 2. readFile ALL slides → WAIT for each
-3. fillImageContainer for ALL containers → WAIT for each success response
+3. IF image containers detected (type: "Group", isImagePlaceholder: true):
+   - fillImageContainer for ALL containers → WAIT for each success response
 4. updateSlideTexts to replace ALL placeholders → WAIT
-5. showPreview ONLY after steps 1-4 complete
+5. showPreview ONLY after all steps complete
 
 ## Key Rules
 - Execute tools SEQUENTIALLY when dependent
 - ALWAYS read slides before updating
-- Fill ALL image containers (type: "Group", isImagePlaceholder: true) before preview
+- IF image containers exist (isImagePlaceholder: true), fill ALL before preview
+- ONLY use fillImageContainer when objects have isImagePlaceholder: true
 - Use updateSlideTexts for text (not manageFile)
 - Replace ALL "Lorem Ipsum" and placeholder text
-- NEVER call showPreview until ALL images filled and ALL text updated
-- Image containers: Look for objects with isImagePlaceholder: true in readFile response
+- BEFORE showPreview: Verify ALL slides have NO placeholder text and NO unfilled image containers
+- Image containers detection: Look for objects with isImagePlaceholder: true in readFile response
 
 ## Adding Slides
 - Read 2-3 existing slides first to match design patterns (background, fonts, colors, positions)
