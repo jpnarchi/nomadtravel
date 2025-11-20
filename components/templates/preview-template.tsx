@@ -17,7 +17,7 @@ import { api } from "@/convex/_generated/api";
 import { useQuery, useMutation } from "convex/react";
 import { toast } from "sonner";
 import { FabricPresentationEditor } from "./fabric-presentation-editor";
-import { FabricPresentationPreview } from "../preview/fabric-presentation-preview";
+import { FabricPresentationPreviewMobile } from "../preview/fabric-presentation-preview-mobile";
 
 export function PreviewTemplate({
     id,
@@ -25,13 +25,25 @@ export function PreviewTemplate({
     id: Id<"templates">,
 }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
-    const [showEditor, setShowEditor] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const initialFiles = useQuery(api.templates.getFilesByTemplateId, { templateId: id });
     const [isSaving, setIsSaving] = useState(false);
     const [editorKey, setEditorKey] = useState(0);
     const router = useRouter();
 
     const saveTemplateFiles = useMutation(api.templates.saveTemplateFiles);
+
+    // Detect if mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     if (!initialFiles) {
         return (
@@ -100,59 +112,23 @@ export function PreviewTemplate({
     };
 
     return (
-        <div className="h-screen flex flex-col px-4 md:px-12 pt-4 pb-24 md:pb-12">
-            <div className="flex flex-row justify-between items-center">
-                <Button
-                    variant="ghost"
-                    className="cursor-pointer"
-                    onClick={() => {
-                        setIsBackButtonLoading(true);
-                        router.push(`/templates`);
-                    }}
-                >
-                    {isBackButtonLoading ? (<Loader />) : (<ArrowLeftIcon className="size-4" />)}
-                    {isBackButtonLoading ? "Loading" : "Return to chat"}
-                </Button>
-
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        className="cursor-pointer"
-                        onClick={() => setShowEditor(!showEditor)}
-                    >
-                        {showEditor ? (
-                            <>
-                                <Eye className="size-4 mr-2" />
-                                Preview
-                            </>
-                        ) : (
-                            <>
-                                <Code className="size-4 mr-2" />
-                                Editor
-                            </>
-                        )}
-                    </Button>
-                </div>
-            </div>
-
-            <div className="flex-1 border rounded-lg overflow-hidden mt-4">
-                {showEditor ? (
-                    <FabricPresentationEditor
-                        key={`editor-${editorKey}`}
-                        initialFiles={initialFiles}
-                        onSave={handleSave}
-                        isSaving={isSaving}
-                        returnPath="/templates"
-                    />
-                ) : (
-                    <FabricPresentationPreview
-                        chatId={id as any}
-                        version={0}
-                        isTemplate={true}
-                        templateFiles={initialFiles}
-                    />
-                )}
-            </div>
+        <div className="h-screen flex flex-col">
+            {isMobile ? (
+                <FabricPresentationPreviewMobile
+                    chatId={id as any}
+                    version={0}
+                    isTemplate={true}
+                    templateFiles={initialFiles}
+                />
+            ) : (
+                <FabricPresentationEditor
+                    key={`editor-${editorKey}`}
+                    initialFiles={initialFiles}
+                    onSave={handleSave}
+                    isSaving={isSaving}
+                    returnPath="/templates"
+                />
+            )}
         </div>
     );
 }

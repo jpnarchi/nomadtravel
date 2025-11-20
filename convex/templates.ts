@@ -493,3 +493,56 @@ export const renameTemplateFile = mutation({
         return { success: true };
     },
 });
+
+export const getAllWithFirstSlide = query({
+    args: {},
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        if (user.role !== "admin") {
+            throw new Error("Unauthorized");
+        }
+
+        // Get all templates ordered by creation time (newest first)
+        const templates = await ctx.db
+            .query("templates")
+            .order("desc")
+            .collect();
+
+        // For each template, get the first slide content from files
+        const templatesWithFirstSlide = await Promise.all(
+            templates.map(async (template) => {
+                // Get all files for this template
+                const templateFiles = await ctx.db
+                    .query("templateFiles")
+                    .withIndex("by_templateId", (q) => q.eq("templateId", template._id))
+                    .collect();
+
+                // Find the first slide file (e.g., /slides/slide-1.json)
+                const firstSlideFile = templateFiles.find(file =>
+                    file.path === '/slides/slide-1.json'
+                );
+
+                let firstSlideContent = null;
+                if (firstSlideFile) {
+                    try {
+                        // The content is already the slide data, just pass it as-is
+                        firstSlideContent = firstSlideFile.content;
+                    } catch (error) {
+                        console.error(`Error reading first slide for template ${template._id}:`, error);
+                    }
+                }
+
+                return {
+                    _id: template._id,
+                    _creationTime: template._creationTime,
+                    name: template.name,
+                    description: template.description,
+                    firstSlideContent: firstSlideContent,
+                };
+            })
+        );
+
+        return templatesWithFirstSlide;
+    },
+});

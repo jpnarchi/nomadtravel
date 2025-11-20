@@ -42,6 +42,9 @@ export function ChatHeader() {
                     <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
                         Pricing
                     </Link>
+                    <Link href="/my-templates" className="text-sm font-medium hover:text-primary transition-colors">
+                        My Templates
+                    </Link>
                     {/* {isSignedIn && (
                     <button 
                         onClick={handleProjectsClick}

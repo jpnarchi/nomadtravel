@@ -16,6 +16,7 @@ import * as fabric from 'fabric'
 import { useRouter } from 'next/navigation'
 import { Presentation, Clock, ArrowRight, ChevronRight, Search, ArrowUpDown, Check, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Loader } from "@/components/ai-elements/loader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Doc } from "@/convex/_generated/dataModel"
@@ -305,7 +306,7 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
             <div className="relative aspect-video bg-white flex items-center justify-center overflow-hidden rounded-t-xl sm:rounded-t-2xl">
                 {!isLoaded && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-500"></div>
+                        <Loader className="size-6 sm:size-8" />
                     </div>
                 )}
                 <canvas
@@ -495,7 +496,7 @@ export function ProjectsPreviewHero() {
             <div className="w-full py-8 sm:py-16 px-3 sm:px-4">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-center py-8 sm:py-12">
-                        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-500"></div>
+                        <Loader className="size-8 sm:size-10" />
                     </div>
                 </div>
             </div>
