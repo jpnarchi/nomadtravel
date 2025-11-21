@@ -9,15 +9,14 @@ import {
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "../global/app-sidebar";
 import { ChatHeader } from "../global/chat-header";
-import { TemplatesContainer } from "./templates-container";
+import { AdminTemplatesContainer } from "./admin-templates-container";
 
-export function Templates() {
+export function AdminTemplates() {
     const userInfo = useQuery(api.users.getUserInfo);
     const isAdmin = userInfo?.role === "admin";
-    const isUltra = userInfo?.plan === "ultra";
 
-    // Allow access to admins and ultra users
-    if (!isAdmin && !isUltra) {
+    // Only allow access to admins for /templates route
+    if (!isAdmin) {
         notFound();
     }
 
@@ -33,7 +32,7 @@ export function Templates() {
             <SidebarInset>
                 <ChatHeader />
                 <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background overflow-y-auto">
-                    <TemplatesContainer />
+                    <AdminTemplatesContainer />
                 </div>
             </SidebarInset>
         </SidebarProvider>

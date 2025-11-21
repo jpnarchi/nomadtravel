@@ -5,7 +5,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, PlusIcon, Search, MoreVertical, Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Loader2, PlusIcon, Search, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import * as fabric from 'fabric';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,10 +40,9 @@ interface TemplateCardProps {
     index: number
     onRename: (templateId: Id<"templates">, currentName: string, currentDescription: string) => void
     onDelete: (templateId: Id<"templates">, name: string) => void
-    onUse: (templateName: string) => void
 }
 
-function TemplateCard({ slideContent, name, description, templateId, createdAt, index, onRename, onDelete, onUse }: TemplateCardProps) {
+function TemplateCard({ slideContent, name, description, templateId, createdAt, index, onRename, onDelete }: TemplateCardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const [isLoaded, setIsLoaded] = useState(false)
@@ -323,23 +322,8 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end">
-                        {/* Use button */}
-                        <Button
-                            variant="default"
-                            size="sm"
-                            className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white z-10"
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onUse(name)
-                            }}
-                        >
-                            <span className="text-xs">Usar</span>
-                            <ArrowRight className="h-3 w-3 ml-1" />
-                        </Button>
-
-                        {/* 3-dot menu button */}
-                        <div className="relative z-10">
+                    {/* 3-dot menu button */}
+                    <div className="relative self-end z-10">
                         <Button
                             variant="ghost"
                             size="sm"
@@ -402,7 +386,6 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
                                 </>
                             )}
                         </AnimatePresence>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -410,12 +393,11 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
     )
 }
 
-export function TemplatesContainer() {
-    const templates = useQuery(api.templates.getAllWithFirstSlide);
+export function AdminTemplatesContainer() {
+    const templates = useQuery(api.templates.getAllAdminTemplatesWithFirstSlide);
     const deleteTemplate = useMutation(api.templates.deleteTemplate);
     const updateTemplate = useMutation(api.templates.updateTemplate);
     const createTemplateWithFiles = useMutation(api.templates.createTemplateWithFiles);
-    const createChatWithTemplate = useMutation(api.chats.createWithTemplate);
     const router = useRouter();
 
     const [searchTerm, setSearchTerm] = useState("");
@@ -528,21 +510,6 @@ export function TemplatesContainer() {
         }
     };
 
-    // Handler to use template (create a new chat with the template)
-    const handleUseTemplate = async (templateName: string) => {
-        try {
-            toast.loading("Creando conversación con el template...");
-            const chatId = await createChatWithTemplate({ templateName });
-            toast.dismiss();
-            toast.success("Conversación creada");
-            router.push(`/chat/${chatId}`);
-        } catch (error) {
-            toast.dismiss();
-            console.error("Error creating chat with template:", error);
-            toast.error(error instanceof Error ? error.message : "Error al crear conversación");
-        }
-    };
-
     if (!templates) {
         return (
             <div className="p-6">
@@ -598,7 +565,6 @@ export function TemplatesContainer() {
                             index={index}
                             onRename={handleRename}
                             onDelete={handleDelete}
-                            onUse={handleUseTemplate}
                         />
                     ))}
                 </div>

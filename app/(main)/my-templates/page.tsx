@@ -1,5 +1,6 @@
-import { Templates } from "@/components/templates/templates";
+import { MyTemplates } from "@/components/templates/my-templates";
 
-export default function TemplatesPage() {
-    return <Templates />
+// This is the /my-templates route - for ultra users and admins
+export default function MyTemplatesPage() {
+    return <MyTemplates />
 }

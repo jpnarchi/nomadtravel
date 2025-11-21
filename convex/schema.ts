@@ -80,8 +80,11 @@ export default defineSchema({
     templates: defineTable({
         name: v.string(),
         description: v.string(),
+        userId: v.optional(v.id('users')), // null for admin templates, set for user templates
+        isPublic: v.optional(v.boolean()), // true for admin templates, false for user templates
     })
         .index('by_name', ['name'])
+        .index('by_userId', ['userId'])
     ,
     templateFiles: defineTable({
         templateId: v.id('templates'),

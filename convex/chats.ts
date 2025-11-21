@@ -122,6 +122,67 @@ export const create = mutation({
     },
 });
 
+export const createWithTemplate = mutation({
+    args: {
+        templateName: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        // Check if user has reached monthly chat creation limit
+        const chatLimit = getChatLimit(user);
+        const monthlyUsage = await getMonthlyUsage(ctx, user._id);
+        const currentMonthCount = monthlyUsage?.count || 0;
+
+        if (currentMonthCount >= chatLimit) {
+            throw new Error(`Monthly presentation limit exceeded. You have created ${currentMonthCount} of ${chatLimit} presentations this month. Limit resets next month or upgrade your plan.`);
+        }
+
+        // Get template by name
+        const templates = await ctx.db
+            .query("templates")
+            .withIndex("by_name", (q) => q.eq("name", args.templateName))
+            .collect();
+
+        if (templates.length === 0) {
+            throw new Error("Template not found");
+        }
+
+        // Use the first template found
+        const template = templates[0];
+
+        // Get template files
+        const templateFiles = await ctx.db
+            .query("templateFiles")
+            .withIndex("by_templateId", (q) => q.eq("templateId", template._id))
+            .collect();
+
+        // Create the chat with template name as title
+        const chatId = await ctx.db.insert("chats", {
+            userId: user._id,
+            title: `${template.name} Template`,
+            currentVersion: 1,
+            isGenerating: false,
+        });
+
+        // Copy all template files to the new chat (version 1)
+        for (const file of templateFiles) {
+            await ctx.db.insert("files", {
+                chatId: chatId,
+                userId: user._id,
+                path: file.path,
+                content: file.content,
+                version: 1,
+            });
+        }
+
+        // Increment monthly usage counter
+        await incrementMonthlyUsage(ctx, user._id);
+
+        return chatId;
+    },
+});
+
 export const duplicateChat = mutation({
     args: {
         chatId: v.optional(v.id("chats")),

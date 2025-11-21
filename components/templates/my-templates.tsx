@@ -11,12 +11,12 @@ import { AppSidebar } from "../global/app-sidebar";
 import { ChatHeader } from "../global/chat-header";
 import { TemplatesContainer } from "./templates-container";
 
-export function Templates() {
+export function MyTemplates() {
     const userInfo = useQuery(api.users.getUserInfo);
     const isAdmin = userInfo?.role === "admin";
     const isUltra = userInfo?.plan === "ultra";
 
-    // Allow access to admins and ultra users
+    // Allow access to admins and ultra users for /my-templates route
     if (!isAdmin && !isUltra) {
         notFound();
     }

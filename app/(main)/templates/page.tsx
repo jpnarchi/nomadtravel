@@ -1,5 +1,6 @@
-import { Templates } from "@/components/templates/templates";
+import { AdminTemplates } from "@/components/templates/admin-templates";
 
+// This is the /templates route - only for admins
 export default function TemplatesPage() {
-    return <Templates />
+    return <AdminTemplates />
 }

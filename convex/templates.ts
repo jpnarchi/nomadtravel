@@ -7,11 +7,19 @@ export const getAll = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        const templates = await ctx.db
+        // Get all public templates (admin templates) and user's own templates
+        const allTemplates = await ctx.db
             .query("templates")
             .collect();
 
-        return templates;
+        // Filter to show:
+        // 1. Public templates (isPublic = true, userId = null)
+        // 2. User's own templates (userId = user._id)
+        const filteredTemplates = allTemplates.filter(template =>
+            template.isPublic === true || template.userId === user._id
+        );
+
+        return filteredTemplates;
     },
 });
 
@@ -77,8 +85,9 @@ export const createTemplate = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
+        // Allow admins and ultra users to create templates
+        if (user.role !== "admin" && user.plan !== "ultra") {
+            throw new Error("Unauthorized. Only admin and ultra users can create templates.");
         }
 
         if (!args.name) {
@@ -89,17 +98,31 @@ export const createTemplate = mutation({
             throw new Error("Description is required");
         }
 
-        // Check if template already exists
+        // Check if template already exists for this user
         const existingTemplates = await ctx.db
             .query("templates")
             .withIndex("by_name", (q) => q.eq("name", args.name!))
             .collect();
 
-        if (existingTemplates.length > 0) {
-            throw new Error("Template already exists");
+        // For non-admins, check if they already have a template with this name
+        if (user.role !== "admin") {
+            const userTemplateExists = existingTemplates.some(t => t.userId === user._id);
+            if (userTemplateExists) {
+                throw new Error("You already have a template with this name");
+            }
+        } else {
+            // For admins, check if any template with this name exists
+            if (existingTemplates.length > 0) {
+                throw new Error("Template already exists");
+            }
         }
 
-        const templateId = await ctx.db.insert("templates", { name: args.name!, description: args.description! });
+        const templateId = await ctx.db.insert("templates", {
+            name: args.name!,
+            description: args.description!,
+            userId: user.role === "admin" ? undefined : user._id,
+            isPublic: user.role === "admin" ? true : false,
+        });
         return templateId;
     },
 });
@@ -115,20 +138,38 @@ export const createTemplateWithFiles = mutation({
         sourceTemplateId: v.optional(v.id('templates')),
     },
     handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        // Allow admins and ultra users to create templates
+        if (user.role !== "admin" && user.plan !== "ultra") {
+            throw new Error("Unauthorized. Only admin and ultra users can create templates.");
+        }
+
         // Check if template name already exists
         const existingTemplates = await ctx.db
             .query("templates")
             .withIndex("by_name", (q) => q.eq("name", args.name))
             .collect();
 
-        if (existingTemplates.length > 0) {
-            throw new Error("Template already exists");
+        // For non-admins, check if they already have a template with this name
+        if (user.role !== "admin") {
+            const userTemplateExists = existingTemplates.some(t => t.userId === user._id);
+            if (userTemplateExists) {
+                throw new Error("You already have a template with this name");
+            }
+        } else {
+            // For admins, check if any template with this name exists
+            if (existingTemplates.length > 0) {
+                throw new Error("Template already exists");
+            }
         }
 
         // Create the new template
         const templateId = await ctx.db.insert("templates", {
             name: args.name,
             description: args.description,
+            userId: user.role === "admin" ? undefined : user._id,
+            isPublic: user.role === "admin" ? true : false,
         });
 
         // If files array is provided, create them
@@ -201,8 +242,14 @@ export const updateTemplate = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
+        const template = await ctx.db.get(args.id);
+        if (!template) {
+            throw new Error("Template not found");
+        }
+
+        // Check if user owns this template or is admin
+        if (user.role !== "admin" && template.userId !== user._id) {
+            throw new Error("Unauthorized. You can only edit your own templates.");
         }
 
         if (!args.name) {
@@ -229,10 +276,6 @@ export const deleteTemplate = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
-
         if (!args.name) {
             throw new Error("Name is required");
         }
@@ -247,25 +290,34 @@ export const deleteTemplate = mutation({
             throw new Error("Template not found");
         }
 
-        // Delete all matching templates and their files
+        // Filter templates that the user can delete
+        let deletedCount = 0;
         for (const template of templates) {
-            // Delete all files for this template
-            const templateFiles = await ctx.db
-                .query("templateFiles")
-                .withIndex("by_templateId", (q) => q.eq("templateId", template._id))
-                .collect();
+            // User can delete if they own it OR if they are admin
+            if (user.role === "admin" || template.userId === user._id) {
+                // Delete all files for this template
+                const templateFiles = await ctx.db
+                    .query("templateFiles")
+                    .withIndex("by_templateId", (q) => q.eq("templateId", template._id))
+                    .collect();
 
-            for (const templateFile of templateFiles) {
-                await ctx.db.delete(templateFile._id);
+                for (const templateFile of templateFiles) {
+                    await ctx.db.delete(templateFile._id);
+                }
+
+                // Delete the template itself
+                await ctx.db.delete(template._id);
+                deletedCount++;
             }
+        }
 
-            // Delete the template itself
-            await ctx.db.delete(template._id);
+        if (deletedCount === 0) {
+            throw new Error("Unauthorized. You can only delete your own templates.");
         }
 
         return {
             success: true,
-            deleted: templates.length
+            deleted: deletedCount
         };
     },
 });
@@ -306,13 +358,14 @@ export const updateTemplateFile = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
-
         const template = await ctx.db.get(args.templateId);
         if (!template) {
             throw new Error("Template not found");
+        }
+
+        // Check if user owns this template or is admin
+        if (user.role !== "admin" && template.userId !== user._id) {
+            throw new Error("Unauthorized. You can only edit your own templates.");
         }
 
         // Find existing file using compound index
@@ -349,13 +402,14 @@ export const deleteTemplateFile = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
-
         const template = await ctx.db.get(args.templateId);
         if (!template) {
             throw new Error("Template not found");
+        }
+
+        // Check if user owns this template or is admin
+        if (user.role !== "admin" && template.userId !== user._id) {
+            throw new Error("Unauthorized. You can only edit your own templates.");
         }
 
         // Find and delete the file using compound index
@@ -386,13 +440,14 @@ export const saveTemplateFiles = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
-
         const template = await ctx.db.get(args.templateId);
         if (!template) {
             throw new Error("Template not found");
+        }
+
+        // Check if user owns this template or is admin
+        if (user.role !== "admin" && template.userId !== user._id) {
+            throw new Error("Unauthorized. You can only edit your own templates.");
         }
 
         // Handle deletions using compound index
@@ -447,13 +502,14 @@ export const renameTemplateFile = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
-
         const template = await ctx.db.get(args.templateId);
         if (!template) {
             throw new Error("Template not found");
+        }
+
+        // Check if user owns this template or is admin
+        if (user.role !== "admin" && template.userId !== user._id) {
+            throw new Error("Unauthorized. You can only edit your own templates.");
         }
 
         // Get all files that match the old path (for renaming folders)
@@ -494,20 +550,89 @@ export const renameTemplateFile = mutation({
     },
 });
 
+// Query for /templates route - Only admin templates (public templates)
+export const getAllAdminTemplatesWithFirstSlide = query({
+    args: {},
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        // Only admins can access the /templates page
+        if (user.role !== "admin") {
+            throw new Error("Unauthorized. Only admins can access the templates management page.");
+        }
+
+        // Get all templates ordered by creation time (newest first)
+        const allTemplates = await ctx.db
+            .query("templates")
+            .order("desc")
+            .collect();
+
+        // Only show admin templates (public templates, userId = undefined/null)
+        const templates = allTemplates.filter(template =>
+            template.isPublic === true || template.userId === undefined || template.userId === null
+        );
+
+        // For each template, get the first slide content from files
+        const templatesWithFirstSlide = await Promise.all(
+            templates.map(async (template) => {
+                // Get all files for this template
+                const templateFiles = await ctx.db
+                    .query("templateFiles")
+                    .withIndex("by_templateId", (q) => q.eq("templateId", template._id))
+                    .collect();
+
+                // Find the first slide file (e.g., /slides/slide-1.json)
+                const firstSlideFile = templateFiles.find(file =>
+                    file.path === '/slides/slide-1.json'
+                );
+
+                let firstSlideContent = null;
+                if (firstSlideFile) {
+                    try {
+                        // The content is already the slide data, just pass it as-is
+                        firstSlideContent = firstSlideFile.content;
+                    } catch (error) {
+                        console.error(`Error reading first slide for template ${template._id}:`, error);
+                    }
+                }
+
+                return {
+                    _id: template._id,
+                    _creationTime: template._creationTime,
+                    name: template.name,
+                    description: template.description,
+                    firstSlideContent: firstSlideContent,
+                };
+            })
+        );
+
+        return templatesWithFirstSlide;
+    },
+});
+
+// Query for /my-templates route - User's own templates + admin templates
 export const getAllWithFirstSlide = query({
     args: {},
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
+        // Allow admins and ultra users to access My Templates page
+        if (user.role !== "admin" && user.plan !== "ultra") {
+            throw new Error("Unauthorized. Only admin and ultra users can access templates.");
         }
 
         // Get all templates ordered by creation time (newest first)
-        const templates = await ctx.db
+        const allTemplates = await ctx.db
             .query("templates")
             .order("desc")
             .collect();
+
+        // Filter to show:
+        // 1. Public templates (isPublic = true) - admin templates available for everyone
+        // 2. User's own templates (userId = user._id) - only for the owner
+        const templates = allTemplates.filter(template =>
+            template.isPublic === true || template.userId === user._id
+        );
 
         // For each template, get the first slide content from files
         const templatesWithFirstSlide = await Promise.all(
