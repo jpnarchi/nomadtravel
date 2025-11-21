@@ -363,8 +363,6 @@ export function ChatContainer({
                                 setFiles={setFiles}
                                 fileInputRef={fileInputRef}
                                 disabled={true}
-                                templateSource={isPaidUser ? templateSource : undefined}
-                                setTemplateSource={isPaidUser ? setTemplateSource : undefined}
                             />
                         </motion.div>
                     </motion.div>
@@ -423,8 +421,6 @@ export function ChatContainer({
                                 setFiles={setFiles}
                                 fileInputRef={fileInputRef}
                                 disabled={false}
-                                templateSource={isPaidUser ? templateSource : undefined}
-                                setTemplateSource={isPaidUser ? setTemplateSource : undefined}
                             />
                         </motion.div>
                     </motion.div>
