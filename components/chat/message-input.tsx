@@ -4,6 +4,9 @@ import { ArrowUpIcon, CancelIcon, ClipIcon, LoaderIcon, StopIcon } from "../glob
 import { MicrophoneButton } from "../global/microphone-button";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Layers, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 const MAX_FILES = 5;
@@ -21,6 +24,8 @@ export const MessageInput = ({
     setFiles,
     fileInputRef,
     disabled = false,
+    templateSource,
+    setTemplateSource,
 }: {
     input: string;
     setInput: (input: string) => void;
@@ -34,7 +39,10 @@ export const MessageInput = ({
     setFiles: React.Dispatch<React.SetStateAction<File[]>>,
     fileInputRef: React.RefObject<HTMLInputElement | null>,
     disabled: boolean,
+    templateSource?: 'default' | 'my-templates',
+    setTemplateSource?: (source: 'default' | 'my-templates') => void,
 }) => {
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -143,11 +151,93 @@ export const MessageInput = ({
                             rows={1}
                             disabled={isLoading || isUploading || disabled}
                         />
-                        <div className="flex gap-2 justify-end items-center mt-2 flex-shrink-0">
+                        <div className="flex gap-2 justify-between items-center mt-2 flex-shrink-0">
+                            {/* Left side - Templates selector (if props provided) */}
+                            <div className="flex gap-2">
+                                {templateSource && setTemplateSource && (
+                                    <div className="relative">
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+                                            onClick={() => setDropdownOpen(!dropdownOpen)}
+                                            disabled={isLoading || isUploading || disabled}
+                                        >
+                                            <Layers className="h-4 w-4" />
+                                        </Button>
 
-                            <MicrophoneButton isDisabled={isLoading || isUploading || disabled} />
+                                        {/* Dropdown Menu */}
+                                        <AnimatePresence>
+                                            {dropdownOpen && (
+                                                <>
+                                                    {/* Backdrop to close dropdown */}
+                                                    <div
+                                                        className="fixed inset-0 z-40"
+                                                        onClick={() => setDropdownOpen(false)}
+                                                    />
 
-                            {files.length >= MAX_FILES ? (
+                                                    {/* Menu */}
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 10 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute top-10 left-0 w-56 bg-white border border-zinc-200 rounded-lg shadow-xl z-50 overflow-hidden"
+                                                    >
+                                                        <div className="py-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setTemplateSource('default')
+                                                                    setDropdownOpen(false)
+                                                                }}
+                                                                className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-100 transition-colors flex items-center gap-3 ${
+                                                                    templateSource === 'default' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                                }`}
+                                                            >
+                                                                <Layers className="h-4 w-4" />
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium">Default Templates</span>
+                                                                    <span className="text-xs text-zinc-500">Use admin templates</span>
+                                                                </div>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    console.log('[MessageInput] MY TEMPLATES CLICKED!');
+                                                                    console.log('[MessageInput] setTemplateSource exists:', !!setTemplateSource);
+                                                                    console.log('[MessageInput] Current templateSource:', templateSource);
+                                                                    if (setTemplateSource) {
+                                                                        console.log('[MessageInput] Calling setTemplateSource("my-templates")');
+                                                                        setTemplateSource('my-templates');
+                                                                    }
+                                                                    setDropdownOpen(false)
+                                                                }}
+                                                                className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-100 transition-colors flex items-center gap-3 ${
+                                                                    templateSource === 'my-templates' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                                }`}
+                                                            >
+                                                                <Layers className="h-4 w-4" />
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium">My Templates</span>
+                                                                    <span className="text-xs text-zinc-500">Use your own templates</span>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right side - Microphone, Files, Submit buttons */}
+                            <div className="flex gap-2 items-center">
+                                <MicrophoneButton isDisabled={isLoading || isUploading || disabled} />
+
+                                {files.length >= MAX_FILES ? (
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <span className="inline-flex">
@@ -217,6 +307,7 @@ export const MessageInput = ({
                                     <ArrowUpIcon />
                                 </Button>
                             )}
+                            </div>
                         </div>
                     </div>
                 </form>

@@ -25,10 +25,19 @@ export function ChatContainer() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [showPricingPopup, setShowPricingPopup] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [templateSource, setTemplateSource] = useState<'default' | 'my-templates'>('default');
+
+    // Debug log for templateSource changes
+    useEffect(() => {
+        console.log('[Hero ChatContainer] templateSource changed to:', templateSource);
+    }, [templateSource]);
 
     const router = useRouter();
     const user = useQuery(api.users.getUserInfo);
     const canCreateChat = useQuery(api.chats.canCreateChat);
+
+    // Check if user has a paid plan (pro, premium, ultra, or admin)
+    const isPaidUser = user?.role === "admin" || user?.plan === "ultra" || user?.plan === "premium" || user?.plan === "pro";
 
     const createChat = useMutation(api.chats.create);
     const createMessage = useMutation(api.messages.create);
@@ -97,6 +106,10 @@ export function ChatContainer() {
             });
 
             localStorage.removeItem('astri-dev-draft');
+
+            // Save templateSource to localStorage so chat page can read it
+            localStorage.setItem('templateSource', templateSource);
+            console.log('[Hero ChatContainer] Saved templateSource to localStorage:', templateSource);
 
             router.push(`/chat/${chatId}`);
         } catch (error: any) {
@@ -204,6 +217,10 @@ export function ChatContainer() {
 
                 localStorage.removeItem('astri-dev-draft');
 
+                // Save templateSource to localStorage so chat page can read it
+                localStorage.setItem('templateSource', templateSource);
+                console.log('[Hero ChatContainer] Saved templateSource to localStorage:', templateSource);
+
                 router.push(`/chat/${chatId}`);
             }
         } catch (error: any) {
@@ -279,6 +296,8 @@ export function ChatContainer() {
                                     files={files}
                                     setFiles={setFiles}
                                     fileInputRef={fileInputRef}
+                                    templateSource={isPaidUser ? templateSource : undefined}
+                                    setTemplateSource={isPaidUser ? setTemplateSource : undefined}
                                 />
                                 <div className="hidden md:flex justify-center -mt-4">
                                     <SuggestionButtons

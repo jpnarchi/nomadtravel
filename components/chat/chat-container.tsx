@@ -52,13 +52,45 @@ export function ChatContainer({
     const [input, setInput] = useState('');
     const [isGeneratingSync, setIsGeneratingSync] = useState(false);
     const [showPricingPopup, setShowPricingPopup] = useState(false);
+    // Initialize templateSource from localStorage if available
+    const [templateSource, setTemplateSource] = useState<'default' | 'my-templates'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('templateSource');
+            if (saved === 'my-templates' || saved === 'default') {
+                return saved;
+            }
+        }
+        return 'default';
+    });
+    const templateSourceRef = useRef<'default' | 'my-templates'>(templateSource);
+
+    // Check if user has a paid plan (pro, premium, ultra, or admin)
+    const isPaidUser = user?.role === "admin" || user?.plan === "ultra" || user?.plan === "premium" || user?.plan === "pro";
+
+    console.log('[ChatContainer] User info:', { role: user?.role, plan: user?.plan, isPaidUser });
+
+    // Keep ref in sync with state
+    useEffect(() => {
+        templateSourceRef.current = templateSource;
+        console.log('[ChatContainer] templateSource STATE changed to:', templateSource);
+        console.log('[ChatContainer] templateSourceRef.current is now:', templateSourceRef.current);
+    }, [templateSource]);
+
+    // Create a stable reference to getToken
+    const getTokenRef = useRef(getToken);
+    getTokenRef.current = getToken;
 
     const { messages, sendMessage, stop: originalStop, status } = useChat({
         transport: new DefaultChatTransport({
             api: `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`,
-            headers: async () => ({
-                Authorization: `Bearer ${await getToken({ template: "convex" })}`,
-            }),
+            headers: async () => {
+                const currentTemplateSource = templateSourceRef.current;
+                console.log('[ChatContainer] headers() called, sending X-Template-Source:', currentTemplateSource);
+                return {
+                    Authorization: `Bearer ${await getTokenRef.current({ template: "convex" })}`,
+                    'X-Template-Source': currentTemplateSource,
+                };
+            },
         }),
         id,
         messages: safeInitialMessages.length === 1 ? [] : safeInitialMessages,
@@ -107,7 +139,8 @@ export function ChatContainer({
                 },
                 body: JSON.stringify({
                     id,
-                    messages: safeInitialMessages
+                    messages: safeInitialMessages,
+                    templateSource: templateSourceRef.current
                 }),
             });
 
@@ -264,9 +297,18 @@ export function ChatContainer({
     useEffect(() => {
         const isCurrentlyShowingGenerando = !isLoading && isGenerating && !isGeneratingSync;
 
+        console.log('[ChatContainer] isGenerating state:', {
+            isLoading,
+            isGenerating,
+            isGeneratingSync,
+            isCurrentlyShowingGenerando,
+            wasShowingGenerando: wasShowingGenerando.current
+        });
+
         if (isCurrentlyShowingGenerando) {
             wasShowingGenerando.current = true;
         } else if (wasShowingGenerando.current && !isGenerating) {
+            console.log('[ChatContainer] Reloading page due to isGenerating change');
             wasShowingGenerando.current = false;
             window.location.reload();
         }
@@ -321,6 +363,8 @@ export function ChatContainer({
                                 setFiles={setFiles}
                                 fileInputRef={fileInputRef}
                                 disabled={true}
+                                templateSource={isPaidUser ? templateSource : undefined}
+                                setTemplateSource={isPaidUser ? setTemplateSource : undefined}
                             />
                         </motion.div>
                     </motion.div>
@@ -379,6 +423,8 @@ export function ChatContainer({
                                 setFiles={setFiles}
                                 fileInputRef={fileInputRef}
                                 disabled={false}
+                                templateSource={isPaidUser ? templateSource : undefined}
+                                setTemplateSource={isPaidUser ? setTemplateSource : undefined}
                             />
                         </motion.div>
                     </motion.div>

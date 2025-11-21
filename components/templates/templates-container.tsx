@@ -41,9 +41,10 @@ interface TemplateCardProps {
     onRename: (templateId: Id<"templates">, currentName: string, currentDescription: string) => void
     onDelete: (templateId: Id<"templates">, name: string) => void
     onUse: (templateName: string) => void
+    basePath?: string
 }
 
-function TemplateCard({ slideContent, name, description, templateId, createdAt, index, onRename, onDelete, onUse }: TemplateCardProps) {
+function TemplateCard({ slideContent, name, description, templateId, createdAt, index, onRename, onDelete, onUse, basePath = '/my-templates' }: TemplateCardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const [isLoaded, setIsLoaded] = useState(false)
@@ -270,7 +271,7 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
     }, [slideContent])
 
     const handleClick = () => {
-        router.push(`/templates/${templateId}`)
+        router.push(`${basePath}/${templateId}`)
     }
 
     return (

@@ -182,7 +182,20 @@ http.route({
             throw new Error("Unauthorized");
         }
 
-        const { id, messages: allMessages }: { id: Id<"chats">; messages: UIMessage[] } = await req.json();
+        const requestBody = await req.json();
+        const { id, messages: allMessages, templateSource: bodyTemplateSource }: { id: Id<"chats">; messages: UIMessage[]; templateSource?: 'default' | 'my-templates' } = requestBody;
+
+        // Extract templateSource from header (preferred) or body (fallback)
+        const headerTemplateSource = req.headers.get('X-Template-Source') as 'default' | 'my-templates' | null;
+        const templateSource = headerTemplateSource || bodyTemplateSource || 'default';
+
+        console.log('=== TEMPLATE SOURCE DEBUG ===');
+        console.log('[HTTP] Request body keys:', Object.keys(requestBody));
+        console.log('[HTTP] Header X-Template-Source:', headerTemplateSource);
+        console.log('[HTTP] Body templateSource:', bodyTemplateSource);
+        console.log('[HTTP] FINAL templateSource being used:', templateSource);
+        console.log('[HTTP] Will call query:', templateSource === 'my-templates' ? 'getUserTemplates' : 'getAdminTemplates');
+        console.log('=============================');
 
         // Helper to compress messages and filter heavy tool results
         function compressMessages(messages: UIMessage[]): UIMessage[] {
@@ -236,7 +249,14 @@ http.route({
         const files = await ctx.runQuery(api.files.getAll, { chatId: id, version: chat.currentVersion });
         const fileNames = Object.keys(files);
 
-        const templates = await ctx.runQuery(api.templates.getAll, {});
+        // Get templates based on templateSource selection
+        const templates = templateSource === 'my-templates'
+            ? await ctx.runQuery(api.templates.getUserTemplates, {})
+            : await ctx.runQuery(api.templates.getAdminTemplates, {});
+
+        console.log('[HTTP] Template source:', templateSource);
+        console.log('[HTTP] Templates received:', templates.length);
+        console.log('[HTTP] Template names:', templates.map(t => t.name));
 
         // Get current date and user info for context
         const currentDate = getTodayString();
@@ -268,14 +288,15 @@ http.route({
             system: `You are iLovePresentations, an AI for Fabric.js presentations (1920x1080).
 
             User: ${userName} | Date: ${currentDate}
-            
+            ${templates.length === 0 ? '\n⚠️ IMPORTANT: No templates available. Inform the user that they need to create templates first before creating presentations. You cannot use generateInitialCodebase until templates are available.\n' : ''}
+
             ## Communication
             - Max 2-3 sentences, no lists/emojis
             - Be proactive, make assumptions
             - No technical details or file names
-            
+
             ## Core Tools
-            - generateInitialCodebase: Start with template
+            - generateInitialCodebase: Start with template${templates.length === 0 ? ' (UNAVAILABLE - no templates)' : ''}
             - readFile: Read slide content
             - updateSlideTexts: Update text only (preferred for text changes)
             - manageFile: Design changes only (colors, positions, shapes)
@@ -665,13 +686,24 @@ http.route({
                 generateInitialCodebase: {
                     description: 'Start presentation with template.',
                     inputSchema: z.object({
-                        templateName: z.union(
-                            templates.map(template =>
-                                z.literal(template.name).describe(template.description)
+                        templateName: templates.length > 0
+                            ? z.union(
+                                templates.map(template =>
+                                    z.literal(template.name).describe(template.description)
+                                ) as [any, ...any[]]
                             )
-                        ),
+                            : z.string().describe('No templates available'),
                     }),
                     execute: async function ({ templateName }: any) {
+                        // Check if templates are available
+                        if (templates.length === 0) {
+                            return {
+                                success: false,
+                                error: 'No templates available. Please create templates first or switch to "Default Templates" if you are using "My Templates".',
+                                noTemplates: true
+                            };
+                        }
+
                         // get current version
                         const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
 
@@ -1249,7 +1281,7 @@ http.route({
                 headers: new Headers({
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "POST",
-                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent",
+                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent, X-Template-Source",
                     "Access-Control-Max-Age": "86400",
                 }),
             });

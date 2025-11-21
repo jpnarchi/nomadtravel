@@ -36,14 +36,22 @@ export const getById = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        if (user.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
-
         const template = await ctx.db.get(args.id);
 
         if (!template) {
             throw new Error("Template not found");
+        }
+
+        // Allow access if:
+        // 1. User is admin (can access any template)
+        // 2. User owns the template (userId matches)
+        // 3. Template is public (admin template)
+        const isAdmin = user.role === "admin";
+        const isOwner = template.userId === user._id;
+        const isPublicTemplate = !template.userId && template.isPublic;
+
+        if (!isAdmin && !isOwner && !isPublicTemplate) {
+            throw new Error("Unauthorized");
         }
 
         return template;
@@ -613,6 +621,155 @@ export const getAllAdminTemplatesWithFirstSlide = query({
         );
 
         return templatesWithFirstSlide;
+    },
+});
+
+// Query to get ONLY admin templates (for AI to use as default)
+// This should return ALL public templates created by admins (userId is undefined/null)
+// IMPORTANT: This query is accessible to ALL users (no authentication required)
+export const getAdminTemplates = query({
+    args: {},
+    handler: async (ctx, args) => {
+        // NO getCurrentUser() call - this query should work for ALL users
+        // Get all templates from the database
+        const allTemplates = await ctx.db
+            .query("templates")
+            .collect();
+
+        console.log('[getAdminTemplates] Total templates in DB:', allTemplates.length);
+
+        // Filter: Only return templates that are admin templates
+        // Admin templates have: userId = undefined/null (created by admin)
+        // We consider isPublic=true OR isPublic=undefined as public (for backward compatibility)
+        const adminTemplates = allTemplates.filter(template => {
+            const isAdminTemplate = !template.userId && (template.isPublic === true || template.isPublic === undefined);
+            return isAdminTemplate;
+        });
+
+        console.log('[getAdminTemplates] Admin templates found:', adminTemplates.length);
+        console.log('[getAdminTemplates] Returning admin template names:', adminTemplates.map(t => t.name));
+
+        return adminTemplates;
+    },
+});
+
+// Query to get ONLY user's own templates (for AI to use when "My Templates" is selected)
+export const getUserTemplates = query({
+    args: {},
+    handler: async (ctx, args) => {
+        try {
+            const user = await getCurrentUser(ctx);
+
+            console.log('[getUserTemplates] User ID:', user._id);
+            console.log('[getUserTemplates] User role:', user.role);
+            console.log('[getUserTemplates] User plan:', user.plan);
+
+            // Get all templates
+            const allTemplates = await ctx.db
+                .query("templates")
+                .collect();
+
+            console.log('[getUserTemplates] Total templates in DB:', allTemplates.length);
+
+            // Only return user's own templates
+            const userTemplates = allTemplates.filter(template => {
+                const isUserTemplate = template.userId === user._id;
+                if (isUserTemplate) {
+                    console.log(`[getUserTemplates] Found user template: "${template.name}"`);
+                }
+                return isUserTemplate;
+            });
+
+            console.log('[getUserTemplates] User templates found:', userTemplates.length);
+            console.log('[getUserTemplates] Returning template names:', userTemplates.map(t => t.name));
+
+            return userTemplates;
+        } catch (error) {
+            console.error('[getUserTemplates] ERROR:', error);
+            // Return empty array if there's an error (e.g., user not authenticated)
+            // This prevents infinite loading
+            return [];
+        }
+    },
+});
+
+// Migration mutation to fix existing templates with isPublic=undefined
+export const fixAdminTemplatesIsPublic = mutation({
+    args: {},
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        // Only admins can run this migration
+        if (user.role !== "admin") {
+            throw new Error("Unauthorized. Only admins can run this migration.");
+        }
+
+        // Get all templates
+        const allTemplates = await ctx.db
+            .query("templates")
+            .collect();
+
+        let updatedCount = 0;
+
+        // Update admin templates (those without userId) to have isPublic=true
+        for (const template of allTemplates) {
+            if (!template.userId && (template.isPublic === undefined || template.isPublic !== true)) {
+                await ctx.db.patch(template._id, {
+                    isPublic: true,
+                });
+                updatedCount++;
+                console.log(`[MIGRATION] Updated template "${template.name}" to isPublic=true`);
+            }
+        }
+
+        return {
+            success: true,
+            message: `Migration completed. Updated ${updatedCount} admin templates to isPublic=true.`,
+            updatedCount,
+        };
+    },
+});
+
+// Mutation to assign a template to a specific user (convert admin template to user template)
+export const assignTemplateToUser = mutation({
+    args: {
+        templateName: v.string(),
+        targetUserId: v.optional(v.id('users')),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        // Only admins can reassign templates
+        if (user.role !== "admin") {
+            throw new Error("Unauthorized. Only admins can assign templates.");
+        }
+
+        // Find the template by name
+        const templates = await ctx.db
+            .query("templates")
+            .withIndex("by_name", (q) => q.eq("name", args.templateName))
+            .collect();
+
+        if (templates.length === 0) {
+            throw new Error(`Template "${args.templateName}" not found`);
+        }
+
+        const template = templates[0];
+
+        // Use targetUserId if provided, otherwise use current user's ID
+        const newUserId = args.targetUserId || user._id;
+
+        // Update the template to belong to the specified user
+        await ctx.db.patch(template._id, {
+            userId: newUserId,
+            isPublic: false,
+        });
+
+        return {
+            success: true,
+            message: `Template "${args.templateName}" assigned to user ${newUserId}`,
+            templateId: template._id,
+        };
     },
 });
 

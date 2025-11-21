@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTypingPlaceholder } from "@/hooks/use-typing-placeholder";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
+import { Layers, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MAX_FILES = 5;
 
@@ -17,6 +20,8 @@ export function MessageInput({
     files,
     setFiles,
     fileInputRef,
+    templateSource,
+    setTemplateSource,
 }: {
     input: string,
     setInput: (input: string) => void,
@@ -25,8 +30,11 @@ export function MessageInput({
     files: File[],
     setFiles: React.Dispatch<React.SetStateAction<File[]>>,
     fileInputRef: React.RefObject<HTMLInputElement | null>,
+    templateSource?: 'default' | 'my-templates',
+    setTemplateSource?: (source: 'default' | 'my-templates') => void,
 }) {
     const placeholder = useTypingPlaceholder();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -135,8 +143,8 @@ export function MessageInput({
                             disabled={isLoading}
                         />
                         <div className="flex gap-2 justify-between items-center mt-2 flex-shrink-0">
-                            {/* Left side - Files button */}
-                            <div>
+                            {/* Left side - Files button and Templates selector */}
+                            <div className="flex gap-2">
                                 {files.length >= MAX_FILES ? (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
@@ -168,6 +176,80 @@ export function MessageInput({
                                         <ClipIcon />
                                         <span>Files</span>
                                     </Button>
+                                )}
+
+                                {/* Templates selector dropdown - only show if props provided */}
+                                {templateSource && setTemplateSource && (
+                                    <div className="relative">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="h-12 px-4 rounded-full text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-2"
+                                            onClick={() => setDropdownOpen(!dropdownOpen)}
+                                            disabled={isLoading}
+                                        >
+                                            <Layers className="h-4 w-4" />
+                                            <span>{templateSource === 'default' ? 'Default Templates' : 'My Templates'}</span>
+                                            <ChevronDown className="h-4 w-4" />
+                                        </Button>
+
+                                        {/* Dropdown Menu */}
+                                        <AnimatePresence>
+                                            {dropdownOpen && (
+                                                <>
+                                                    {/* Backdrop to close dropdown */}
+                                                    <div
+                                                        className="fixed inset-0 z-40"
+                                                        onClick={() => setDropdownOpen(false)}
+                                                    />
+
+                                                    {/* Menu */}
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        transition={{ duration: 0.15 }}
+                                                        className="absolute bottom-14 left-0 w-56 bg-white border border-zinc-200 rounded-lg shadow-xl z-50 overflow-hidden"
+                                                    >
+                                                        <div className="py-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setTemplateSource('default')
+                                                                    setDropdownOpen(false)
+                                                                }}
+                                                                className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-100 transition-colors flex items-center gap-3 ${
+                                                                    templateSource === 'default' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                                }`}
+                                                            >
+                                                                <Layers className="h-4 w-4" />
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium">Default Templates</span>
+                                                                    <span className="text-xs text-zinc-500">Use admin templates</span>
+                                                                </div>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setTemplateSource('my-templates')
+                                                                    setDropdownOpen(false)
+                                                                }}
+                                                                className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-100 transition-colors flex items-center gap-3 ${
+                                                                    templateSource === 'my-templates' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                                }`}
+                                                            >
+                                                                <Layers className="h-4 w-4" />
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium">My Templates</span>
+                                                                    <span className="text-xs text-zinc-500">Use your own templates</span>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                </>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
                                 )}
                             </div>
 
