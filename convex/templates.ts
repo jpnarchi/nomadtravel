@@ -7,17 +7,23 @@ export const getAll = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        // Get all public templates (admin templates) and user's own templates
+        // Get all templates
         const allTemplates = await ctx.db
             .query("templates")
             .collect();
 
-        // Filter to show:
-        // 1. Public templates (isPublic = true, userId = null)
-        // 2. User's own templates (userId = user._id)
-        const filteredTemplates = allTemplates.filter(template =>
-            template.isPublic === true || template.userId === user._id
-        );
+        // Filter to show ONLY user's own templates (not admin templates)
+        // - For regular users (pro, premium, ultra): Only their own templates (userId = user._id)
+        // - For admins: Only admin templates (public templates with userId = undefined/null)
+        const filteredTemplates = allTemplates.filter(template => {
+            if (user.role === "admin") {
+                // Admins see only admin templates (public templates)
+                return template.isPublic === true && (template.userId === undefined || template.userId === null);
+            } else {
+                // Pro, Premium, and Ultra users see only their own templates
+                return template.userId === user._id;
+            }
+        });
 
         return filteredTemplates;
     },
@@ -85,9 +91,9 @@ export const createTemplate = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        // Allow admins and ultra users to create templates
-        if (user.role !== "admin" && user.plan !== "ultra") {
-            throw new Error("Unauthorized. Only admin and ultra users can create templates.");
+        // Allow admins and paid users (pro, premium, ultra) to create templates
+        if (user.role !== "admin" && user.plan !== "ultra" && user.plan !== "premium" && user.plan !== "pro") {
+            throw new Error("Unauthorized. Only admin and paid users (Pro, Premium, Ultra) can create templates.");
         }
 
         if (!args.name) {
@@ -140,9 +146,9 @@ export const createTemplateWithFiles = mutation({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        // Allow admins and ultra users to create templates
-        if (user.role !== "admin" && user.plan !== "ultra") {
-            throw new Error("Unauthorized. Only admin and ultra users can create templates.");
+        // Allow admins and paid users (pro, premium, ultra) to create templates
+        if (user.role !== "admin" && user.plan !== "ultra" && user.plan !== "premium" && user.plan !== "pro") {
+            throw new Error("Unauthorized. Only admin and paid users (Pro, Premium, Ultra) can create templates.");
         }
 
         // Check if template name already exists
@@ -610,15 +616,15 @@ export const getAllAdminTemplatesWithFirstSlide = query({
     },
 });
 
-// Query for /my-templates route - User's own templates + admin templates
+// Query for /my-templates route - ONLY user's own templates (not admin templates)
 export const getAllWithFirstSlide = query({
     args: {},
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        // Allow admins and ultra users to access My Templates page
-        if (user.role !== "admin" && user.plan !== "ultra") {
-            throw new Error("Unauthorized. Only admin and ultra users can access templates.");
+        // Allow admins and paid users (pro, premium, ultra) to access My Templates page
+        if (user.role !== "admin" && user.plan !== "ultra" && user.plan !== "premium" && user.plan !== "pro") {
+            throw new Error("Unauthorized. Only admin and paid users (Pro, Premium, Ultra) can access templates.");
         }
 
         // Get all templates ordered by creation time (newest first)
@@ -627,12 +633,18 @@ export const getAllWithFirstSlide = query({
             .order("desc")
             .collect();
 
-        // Filter to show:
-        // 1. Public templates (isPublic = true) - admin templates available for everyone
-        // 2. User's own templates (userId = user._id) - only for the owner
-        const templates = allTemplates.filter(template =>
-            template.isPublic === true || template.userId === user._id
-        );
+        // NEW LOGIC: Only show user's own templates
+        // - For regular users (pro, premium, ultra): Only their own templates (userId = user._id)
+        // - For admins: Only admin templates (public templates with userId = undefined/null)
+        const templates = allTemplates.filter(template => {
+            if (user.role === "admin") {
+                // Admins see only admin templates (public templates)
+                return template.isPublic === true && (template.userId === undefined || template.userId === null);
+            } else {
+                // Pro, Premium, and Ultra users see only their own templates
+                return template.userId === user._id;
+            }
+        });
 
         // For each template, get the first slide content from files
         const templatesWithFirstSlide = await Promise.all(

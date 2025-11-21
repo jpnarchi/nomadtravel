@@ -14,12 +14,10 @@ import { TemplatesContainer } from "./templates-container";
 export function MyTemplates() {
     const userInfo = useQuery(api.users.getUserInfo);
     const isAdmin = userInfo?.role === "admin";
-    const isUltra = userInfo?.plan === "ultra";
+    const isPaidUser = userInfo?.plan === "ultra" || userInfo?.plan === "premium" || userInfo?.plan === "pro";
 
-    // Allow access to admins and ultra users for /my-templates route
-    if (!isAdmin && !isUltra) {
-        notFound();
-    }
+    // Allow access to admins and paid users (pro, premium, ultra) for /my-templates route
+
 
     return (
         <SidebarProvider
