@@ -219,13 +219,13 @@ export function MessageInput({
                                                                     setDropdownOpen(false)
                                                                 }}
                                                                 className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-100 transition-colors flex items-center gap-3 ${
-                                                                    templateSource === 'default' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                                    templateSource === 'default' ? 'text-primary' : 'text-zinc-700'
                                                                 }`}
                                                             >
                                                                 <Layers className="h-4 w-4" />
                                                                 <div className="flex flex-col">
                                                                     <span className="font-medium">Default Templates</span>
-                                                                    <span className="text-xs text-zinc-500">Use admin templates</span>
+                                                                    <span className="text-xs text-zinc-500">Use premade templates</span>
                                                                 </div>
                                                             </button>
                                                             <button
@@ -235,7 +235,7 @@ export function MessageInput({
                                                                     setDropdownOpen(false)
                                                                 }}
                                                                 className={`w-full text-left px-4 py-3 text-sm hover:bg-zinc-100 transition-colors flex items-center gap-3 ${
-                                                                    templateSource === 'my-templates' ? 'bg-blue-50 text-blue-600' : 'text-zinc-700'
+                                                                    templateSource === 'my-templates' ? 'text-primary' : 'text-zinc-700'
                                                                 }`}
                                                             >
                                                                 <Layers className="h-4 w-4" />

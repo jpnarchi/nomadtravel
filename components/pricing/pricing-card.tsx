@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Check } from 'lucide-react'
+import { Check, Info, Sparkles } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface PricingCardProps {
     plan: {
@@ -49,12 +50,34 @@ export function PricingCard({ plan, billingType }: PricingCardProps) {
             <CardContent className="flex-1 space-y-6">
                 <hr className="border-dashed" />
                 <ul className="space-y-4 text-sm">
-                    {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                            <Check className="size-4 mt-0.5 flex-shrink-0" />
-                            <span className="leading-relaxed">{feature}</span>
-                        </li>
-                    ))}
+                    {plan.features.map((feature, index) => {
+                        const isTemplateFeature = feature === 'Create your own templates';
+                        return (
+                            <li
+                                key={index}
+                                className={`flex items-center gap-3 ${isTemplateFeature ? 'text-primary font-semibold' : ''}`}
+                            >
+                                { isTemplateFeature ?  (<Sparkles className="size-4 flex-shrink-0" />) :
+                                    <Check className="size-4 mt-0.5 flex-shrink-0 text-green-500" />
+                                }
+                                <span className={`leading-relaxed flex-1 ${isTemplateFeature ? 'whitespace-nowrap' : ''}`}>{feature}</span>
+                                {isTemplateFeature && (
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button type="button" className="p-1 -m-1 touch-manipulation">
+                                                    <Info className="size-4 flex-shrink-0 cursor-pointer text-muted-foreground hover:text-primary" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                            <p>Build your brand templates once, then let AI generate<br />customized presentations for every client instantly</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                )}
+                            </li>
+                        );
+                    })}
                 </ul>
             </CardContent>
         </Card>

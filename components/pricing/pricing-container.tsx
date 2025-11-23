@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { PricingCard } from './pricing-card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export function PricingContainer() {
     const { isSignedIn } = useAuth();
@@ -14,6 +14,17 @@ export function PricingContainer() {
     const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
     const [billingType, setBillingType] = useState<'monthly' | 'annual'>('annual');
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const handleUpgrade = async (plan: "pro" | "premium" | "ultra") => {
         if (!isSignedIn) {
@@ -73,11 +84,12 @@ export function PricingContainer() {
 
             <div className="w-full bg-white pb-8 py-12"
                 style={{
-                    backgroundImage: "url('/img/bg-pricing.png')",
+                    backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat',
-                    // backgroundAttachment: 'fixed'
+                    backgroundAttachment: isMobile ? "fixed" : "none"
+                    
                 }}
             >
                 
@@ -86,7 +98,7 @@ export function PricingContainer() {
                     <span className="text-black ml-1 font-semibold">with annual billing</span>
                 </div>
                 
-                <div className="mx-auto max-w-[80rem] px-6 grid gap-6 md:grid-cols-4 pb-6 px-16"
+                <div className="mx-auto max-w-[80rem] px-6 grid gap-6 md:grid-cols-4 pb-6 px-12"
                 >
                     <PricingCard
                         billingType={billingType}
@@ -160,12 +172,14 @@ export function PricingContainer() {
                             annualPrice: "$35",
                             description: "For agencies",
                             features: [
+                                'Create your own templates',
                                 'Unlimited presentations per month',
                                 'Unlimited versions per presentation',
                                 'Unlimited templates',
                                 'Priority support',
                                 'Export to Power Point',
-                                'Access to new features'
+                                'Access to new features',
+                                
                             ],
                             buttonText: user?.plan === "ultra" ? "Current plan" : "Get started",
                             buttonVariant: "outline",

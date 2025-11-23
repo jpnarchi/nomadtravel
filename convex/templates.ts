@@ -779,10 +779,8 @@ export const getAllWithFirstSlide = query({
     handler: async (ctx, args) => {
         const user = await getCurrentUser(ctx);
 
-        // Allow admins and paid users (pro, premium, ultra) to access My Templates page
-        if (user.role !== "admin" && user.plan !== "ultra" && user.plan !== "premium" && user.plan !== "pro") {
-            throw new Error("Unauthorized. Only admin and paid users (Pro, Premium, Ultra) can access templates.");
-        }
+        // All authenticated users can access this page (including free users)
+        // They will see their own templates (which will be empty for free users who can't create)
 
         // Get all templates ordered by creation time (newest first)
         const allTemplates = await ctx.db

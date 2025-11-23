@@ -11,5 +11,5 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         notFound();
     }
 
-    return <PreviewTemplate id={id as Id<"templates">} />
+    return <PreviewTemplate id={id as Id<"templates">} returnPath="/my-templates" />
 }

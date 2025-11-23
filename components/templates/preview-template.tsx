@@ -21,8 +21,10 @@ import { FabricPresentationPreviewMobile } from "../preview/fabric-presentation-
 
 export function PreviewTemplate({
     id,
+    returnPath = "/templates",
 }: {
     id: Id<"templates">,
+    returnPath?: string,
 }) {
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -126,7 +128,7 @@ export function PreviewTemplate({
                     initialFiles={initialFiles}
                     onSave={handleSave}
                     isSaving={isSaving}
-                    returnPath="/templates"
+                    returnPath={returnPath}
                 />
             )}
         </div>

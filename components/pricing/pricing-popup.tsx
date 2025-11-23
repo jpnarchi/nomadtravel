@@ -11,9 +11,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export function PricingPopup({
     isOpen,
     onOpenChange,
+    headerText = "Ready to Create More?",
+    descriptionText = "Upgrade to continue creating amazing presentations with AI",
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
+    headerText?: string;
+    descriptionText?: string;
 }) {
     const { isSignedIn } = useAuth();
     const user = useQuery(api.users.getUserInfo);
@@ -21,6 +25,17 @@ export function PricingPopup({
     const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
     const [billingType, setBillingType] = useState<'monthly' | 'annual'>('monthly');
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const handleUpgrade = async (plan: "pro" | "premium" | "ultra") => {
         if (!isSignedIn) {
@@ -85,7 +100,15 @@ export function PricingPopup({
             />
 
             {/* Modal */}
-            <div className="relative bg-background rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[1400px]">
+            <div
+                className="relative bg-background rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[1400px]"
+                style={{
+                    backgroundImage: isMobile ? "url('/img/bg-pricing.png')" : "url('/img/bg-pricing.png')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                }}
+            >
                 {/* Close button */}
                 <button
                     onClick={() => onOpenChange(false)}
@@ -98,9 +121,9 @@ export function PricingPopup({
                 {/* Content */}
                 <div className="p-8 md:p-10 lg:p-12">
                     <div className="text-center space-y-3 mb-10">
-                        <h2 className="text-3xl md:text-4xl font-semibold">Ready to Create More?</h2>
+                        <h2 className="text-3xl md:text-4xl font-semibold">{headerText}</h2>
                         <p className="text-muted-foreground text-base md:text-lg">
-                            Upgrade to continue creating amazing presentations with AI
+                            {descriptionText}
                         </p>
 
                         {user?.subscriptionId ? (
@@ -200,6 +223,7 @@ export function PricingPopup({
                                 annualPrice: "$35",
                                 description: "For agencies",
                                 features: [
+                                    'Create your own templates',
                                     'Unlimited presentations per month',
                                     'Unlimited versions per presentation',
                                     'Unlimited templates',

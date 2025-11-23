@@ -5,7 +5,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, PlusIcon, Search, MoreVertical, Pencil, Trash2, ArrowRight } from "lucide-react";
+import { Loader2, PlusIcon, Search, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import * as fabric from 'fabric';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,6 +30,7 @@ import {
     SelectValue,
 } from "../ui/select";
 import { Label } from "../ui/label";
+import { PricingPopup } from "../pricing/pricing-popup";
 
 interface TemplateCardProps {
     slideContent: string | null
@@ -40,11 +41,11 @@ interface TemplateCardProps {
     index: number
     onRename: (templateId: Id<"templates">, currentName: string, currentDescription: string) => void
     onDelete: (templateId: Id<"templates">, name: string) => void
-    onUse: (templateName: string) => void
+    onEdit: (templateId: Id<"templates">) => void
     basePath?: string
 }
 
-function TemplateCard({ slideContent, name, description, templateId, createdAt, index, onRename, onDelete, onUse, basePath = '/my-templates' }: TemplateCardProps) {
+function TemplateCard({ slideContent, name, description, templateId, createdAt, index, onRename, onDelete, onEdit, basePath = '/my-templates' }: TemplateCardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const [isLoaded, setIsLoaded] = useState(false)
@@ -316,7 +317,7 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
             <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 bg-white rounded-b-xl sm:rounded-b-2xl cursor-pointer">
                 <div className="flex items-start gap-2 sm:gap-3">
                     <div className="flex-1 min-w-0 text-black pointer-events-none">
-                        <h3 className="text-sm sm:text-base line-clamp-1 group-hover:text-blue-400 transition-colors font-medium">
+                        <h3 className="text-sm sm:text-base line-clamp-1 transition-colors font-medium">
                             {name}
                         </h3>
                         <p className="text-[11px] sm:text-xs text-zinc-400 mt-0.5 sm:mt-1 line-clamp-2">
@@ -325,18 +326,17 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
                     </div>
 
                     <div className="flex items-center gap-2 self-end">
-                        {/* Use button */}
+                        {/* Edit button */}
                         <Button
-                            variant="default"
                             size="sm"
-                            className="h-8 px-3 bg-blue-500 hover:bg-blue-600 text-white z-10"
+                            className="h-8 px-3 text-white z-10"
                             onClick={(e) => {
                                 e.stopPropagation()
-                                onUse(name)
+                                onEdit(templateId)
                             }}
                         >
-                            <span className="text-xs">Usar</span>
-                            <ArrowRight className="h-3 w-3 ml-1" />
+                            <Pencil className="h-3 w-3 mr-1" />
+                            <span className="text-xs">Edit template</span>
                         </Button>
 
                         {/* 3-dot menu button */}
@@ -413,13 +413,17 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
 
 export function TemplatesContainer() {
     const templates = useQuery(api.templates.getAllWithFirstSlide);
+    const user = useQuery(api.users.getUserInfo);
     const deleteTemplate = useMutation(api.templates.deleteTemplate);
     const updateTemplate = useMutation(api.templates.updateTemplate);
     const createTemplateWithFiles = useMutation(api.templates.createTemplateWithFiles);
-    const createChatWithTemplate = useMutation(api.chats.createWithTemplate);
     const router = useRouter();
 
     const [searchTerm, setSearchTerm] = useState("");
+    const [isPricingOpen, setIsPricingOpen] = useState(false);
+
+    // Check if user has a paid plan
+    const isPaidUser = user?.role === "admin" || user?.plan === "pro" || user?.plan === "premium" || user?.plan === "ultra";
 
     // Rename dialog state
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -529,19 +533,9 @@ export function TemplatesContainer() {
         }
     };
 
-    // Handler to use template (create a new chat with the template)
-    const handleUseTemplate = async (templateName: string) => {
-        try {
-            toast.loading("Creando conversación con el template...");
-            const chatId = await createChatWithTemplate({ templateName });
-            toast.dismiss();
-            toast.success("Conversación creada");
-            router.push(`/chat/${chatId}`);
-        } catch (error) {
-            toast.dismiss();
-            console.error("Error creating chat with template:", error);
-            toast.error(error instanceof Error ? error.message : "Error al crear conversación");
-        }
+    // Handler to edit template (open in editor)
+    const handleEditTemplate = (templateId: Id<"templates">) => {
+        router.push(`/my-templates/${templateId}`);
     };
 
     if (!templates) {
@@ -558,9 +552,15 @@ export function TemplatesContainer() {
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-xl sm:text-2xl font-bold">Templates</h1>
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Button onClick={() => {
+                    if (isPaidUser) {
+                        setIsCreateDialogOpen(true);
+                    } else {
+                        setIsPricingOpen(true);
+                    }
+                }}>
                     <PlusIcon className="size-4" />
-                    <span className="ml-2">Create New</span>
+                    <span className="ml-2">Create New Template</span>
                 </Button>
             </div>
 
@@ -599,7 +599,7 @@ export function TemplatesContainer() {
                             index={index}
                             onRename={handleRename}
                             onDelete={handleDelete}
-                            onUse={handleUseTemplate}
+                            onEdit={handleEditTemplate}
                         />
                     ))}
                 </div>
@@ -777,6 +777,14 @@ export function TemplatesContainer() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Pricing Popup for free users */}
+            <PricingPopup
+                isOpen={isPricingOpen}
+                onOpenChange={setIsPricingOpen}
+                headerText="Design Once, Present Everywhere"
+                descriptionText="Automate your Personalized Presentations with AI"
+            />
         </div>
     );
 }
