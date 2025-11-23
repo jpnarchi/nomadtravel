@@ -422,8 +422,8 @@ export function TemplatesContainer() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isPricingOpen, setIsPricingOpen] = useState(false);
 
-    // Check if user has a paid plan
-    const isPaidUser = user?.role === "admin" || user?.plan === "pro" || user?.plan === "premium" || user?.plan === "ultra";
+    // Check if user can create templates (only ultra and admins)
+    const canCreateTemplates = user?.role === "admin" || user?.plan === "ultra";
 
     // Rename dialog state
     const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -553,7 +553,7 @@ export function TemplatesContainer() {
             <div className="flex items-center justify-between mb-6">
                 <h1 className="text-xl sm:text-2xl font-bold">Templates</h1>
                 <Button onClick={() => {
-                    if (isPaidUser) {
+                    if (canCreateTemplates) {
                         setIsCreateDialogOpen(true);
                     } else {
                         setIsPricingOpen(true);

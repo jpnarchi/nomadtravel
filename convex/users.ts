@@ -206,6 +206,18 @@ export const isAdmin = query({
     },
 })
 
+export const canAccessMyTemplates = query({
+    args: {},
+    handler: async (ctx) => {
+        try {
+            const user = await getCurrentUser(ctx);
+            return user.role === "admin" || user.plan === "ultra";
+        } catch (error) {
+            return false;
+        }
+    },
+})
+
 export const searchByEmailAsAdmin = query({
     args: {
         searchTerm: v.string(),

@@ -36,8 +36,8 @@ export function ChatContainer() {
     const user = useQuery(api.users.getUserInfo);
     const canCreateChat = useQuery(api.chats.canCreateChat);
 
-    // Check if user has a paid plan (pro, premium, ultra, or admin)
-    const isPaidUser = user?.role === "admin" || user?.plan === "ultra" || user?.plan === "premium" || user?.plan === "pro";
+    // Check if user can access My Templates (only ultra and admin)
+    const canAccessMyTemplates = user?.role === "admin" || user?.plan === "ultra";
 
     const createChat = useMutation(api.chats.create);
     const createMessage = useMutation(api.messages.create);
@@ -296,8 +296,9 @@ export function ChatContainer() {
                                     files={files}
                                     setFiles={setFiles}
                                     fileInputRef={fileInputRef}
-                                    templateSource={isPaidUser ? templateSource : undefined}
-                                    setTemplateSource={isPaidUser ? setTemplateSource : undefined}
+                                    templateSource={canAccessMyTemplates ? templateSource : undefined}
+                                    setTemplateSource={canAccessMyTemplates ? setTemplateSource : undefined}
+                                    canAccessMyTemplates={canAccessMyTemplates}
                                 />
                                 <div className="hidden md:flex justify-center -mt-4">
                                     <SuggestionButtons

@@ -22,6 +22,7 @@ export function MessageInput({
     fileInputRef,
     templateSource,
     setTemplateSource,
+    canAccessMyTemplates = false,
 }: {
     input: string,
     setInput: (input: string) => void,
@@ -32,6 +33,7 @@ export function MessageInput({
     fileInputRef: React.RefObject<HTMLInputElement | null>,
     templateSource?: 'default' | 'my-templates',
     setTemplateSource?: (source: 'default' | 'my-templates') => void,
+    canAccessMyTemplates?: boolean,
 }) {
     const placeholder = useTypingPlaceholder();
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -178,8 +180,8 @@ export function MessageInput({
                                     </Button>
                                 )}
 
-                                {/* Templates selector dropdown - only show if props provided */}
-                                {templateSource && setTemplateSource && (
+                                {/* Templates selector dropdown - only show if props provided and user can access my templates */}
+                                {templateSource && setTemplateSource && canAccessMyTemplates && (
                                     <div className="relative">
                                         <Button
                                             type="button"
