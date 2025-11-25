@@ -15,10 +15,10 @@ export const SignInView = () => {
                         path="/sign-in"
                         appearance={{
                             elements: {
-                                card: "border-0 shadow-none bg-transparent outline-none !border-none px-1",
-                                rootBox: "border-0 outline-none !border-none px-1",
-                                cardBox: "border-0 shadow-none !border-none px-1",
-                                main: "border-0 !border-none px-1",
+                                card: "border-0 shadow-none bg-transparent outline-none !border-none",
+                                rootBox: "border-0 outline-none !border-none",
+                                cardBox: "border-0 shadow-none !border-none",
+                                main: "border-0 !border-none",
 
                                 header: {
                                     display: "none",
@@ -36,8 +36,8 @@ export const SignInView = () => {
                                     display: "none",
                                 },
                                 socialButtonsBlock: {
-
                                     gap: "0.5rem",
+                                    overflow: "visible",
                                 },
                                 socialButtonsBlockButton: {
                                     backgroundColor: "#E5332D",
@@ -52,6 +52,7 @@ export const SignInView = () => {
                                     minHeight: "3rem",
                                     width: "100%",
                                     display: "inline-flex",
+                                    overflow: "visible",
                                 },
                                 socialButtonsBlockButton__google: {
                                     backgroundColor: "#E5332D",
