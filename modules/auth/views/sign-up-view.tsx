@@ -50,7 +50,7 @@ export const SignUpView = () => {
                                     marginTop: "0",
                                     height: "3rem",
                                     minHeight: "3rem",
-                                    width: "auto",
+                                    width: "100%",
                                     display: "inline-flex",
                                 },
                                 socialButtonsBlockButton__google: {
