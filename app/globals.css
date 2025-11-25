@@ -201,7 +201,6 @@ html, body {
 /* Texto más pequeño en celular */
 @media (max-width: 768px) {
   .cl-socialButtonsBlockButton__google span {
-    font-size: 0.75rem !important;
     margin-left: -4px; 
     padding-right: 10px;
   }
