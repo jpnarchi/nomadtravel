@@ -3,9 +3,7 @@ import { ParallaxScrollSecondDemo } from "../components/parallax-scroll"
 
 export const SignInView = () => {
     return (
-        <div className="h-screen w-full relative bg-gradient-to-t from-white from-50% to-[#F4A7B6] to-95%"
-
-        >
+        <div className="h-screen w-full relative bg-gradient-to-t from-white from-50% to-[#F4A7B6] to-95%">
             {/* Columna izquierda - Formulario de Sign In */}
             <div className="absolute left-0 top-0 w-full h-full md:w-1/2 flex items-center justify-center p-4 md:p-8 z-10 pt-10 lg:pt-30 md:ml-0">
                 <div className="w-full max-w-md space-y-4">
@@ -15,10 +13,10 @@ export const SignInView = () => {
                         path="/sign-in"
                         appearance={{
                             elements: {
-                                card: "border-0 shadow-none bg-transparent outline-none !border-none !overflow-visible",
-                                rootBox: "border-0 outline-none !border-none !overflow-visible",
-                                cardBox: "border-0 shadow-none !border-none !overflow-visible",
-                                main: "border-0 !border-none !overflow-visible",
+                                card: "border-0 shadow-none bg-transparent outline-none !border-none",
+                                rootBox: "border-0 outline-none !border-none w-full",
+                                cardBox: "border-0 shadow-none !border-none w-full",
+                                main: "border-0 !border-none w-full",
 
                                 header: {
                                     display: "none",
@@ -38,23 +36,25 @@ export const SignInView = () => {
                                 socialButtonsBlock: {
                                     gap: "0.5rem",
                                     overflow: "visible",
+                                    width: "100%",
                                 },
                                 socialButtonsBlockButton: {
                                     backgroundColor: "#E5332D",
                                     color: "white",
                                     border: "none",
                                     justifyContent: "center",
-                                    paddingLeft: "2.5rem",
-                                    paddingRight: "2.5rem",
+                                    alignItems: "center",
+                                    paddingLeft: "1rem",
+                                    paddingRight: "1rem",
                                     borderRadius: "1.2rem",
                                     marginTop: "0",
                                     height: "3rem",
                                     minHeight: "3rem",
                                     width: "100%",
+                                    maxWidth: "100%",
                                     display: "flex",
-                                    alignItems: "center",
+                                    gap: "0.5rem",
                                     overflow: "visible",
-                                    boxSizing: "border-box",
                                 },
                                 socialButtonsBlockButton__google: {
                                     backgroundColor: "#E5332D",
@@ -65,20 +65,22 @@ export const SignInView = () => {
                                 socialButtonsBlockButtonText: {
                                     color: "white",
                                     fontWeight: "500",
-                                    fontSize: "1rem",
+                                    fontSize: "clamp(0.8rem, 3vw, 1rem)",
                                     whiteSpace: "nowrap",
                                     overflow: "visible",
                                     textOverflow: "clip",
                                     width: "auto",
-                                    flex: "0 0 auto",
-                                    marginLeft: "0.75rem",
+                                    flexShrink: 1,
                                 },
                                 socialButtonsBlockButtonText__google: {
-                                    fontSize: "1rem",
+                                    fontSize: "clamp(0.8rem, 3vw, 1rem)",
                                 },
                                 socialButtonsBlockButtonIcon: {
                                     filter: "brightness(0) invert(1)",
-                                    flex: "0 0 auto",
+                                    flexShrink: 0,
+                                    width: "20px",
+                                    height: "20px",
+                                    minWidth: "20px",
                                 },
                                 formFieldInput: "bg-white border border-gray-200 rounded-lg h-12",
                                 formFieldLabel: {
