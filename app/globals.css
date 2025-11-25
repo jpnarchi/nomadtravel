@@ -146,3 +146,54 @@ html, body {
 .animate-gradient-x {
   animation: gradient-x 3s ease infinite;
 }
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Remove Clerk card border */
+.cl-card,
+.cl-rootBox,
+.cl-cardBox,
+.cl-main,
+[data-localization-key] {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Personalizar icono de Google */
+.cl-socialButtonsBlockButton__google .cl-socialButtonsBlockButtonIcon,
+.cl-socialButtonsBlockButton__google img,
+.cl-socialButtonsBlockButton__google svg {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.cl-socialButtonsBlockButton__google::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="white" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"/></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-right: 8px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.cl-socialButtonsBlockButton__google span {
+  margin-left: -12px;
+}
+
+.cl-socialButtonsBlockButton__google {
+  width: fit-content !important;
+}
