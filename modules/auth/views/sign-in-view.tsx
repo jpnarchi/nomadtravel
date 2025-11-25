@@ -15,10 +15,10 @@ export const SignInView = () => {
                         path="/sign-in"
                         appearance={{
                             elements: {
-                                card: "border-0 shadow-none bg-transparent outline-none !border-none",
-                                rootBox: "border-0 outline-none !border-none",
-                                cardBox: "border-0 shadow-none !border-none",
-                                main: "border-0 !border-none",
+                                card: "border-0 shadow-none bg-transparent outline-none !border-none !overflow-visible",
+                                rootBox: "border-0 outline-none !border-none !overflow-visible",
+                                cardBox: "border-0 shadow-none !border-none !overflow-visible",
+                                main: "border-0 !border-none !overflow-visible",
 
                                 header: {
                                     display: "none",
@@ -43,7 +43,7 @@ export const SignInView = () => {
                                     backgroundColor: "#E5332D",
                                     color: "white",
                                     border: "none",
-                                    justifyContent: "flex-start",
+                                    justifyContent: "center",
                                     paddingLeft: "1.5rem",
                                     paddingRight: "1.5rem",
                                     borderRadius: "1.2rem",
@@ -51,8 +51,10 @@ export const SignInView = () => {
                                     height: "3rem",
                                     minHeight: "3rem",
                                     width: "100%",
-                                    display: "inline-flex",
+                                    display: "flex",
+                                    alignItems: "center",
                                     overflow: "visible",
+                                    boxSizing: "border-box",
                                 },
                                 socialButtonsBlockButton__google: {
                                     backgroundColor: "#E5332D",
@@ -68,13 +70,15 @@ export const SignInView = () => {
                                     overflow: "visible",
                                     textOverflow: "clip",
                                     width: "auto",
-                                    flexGrow: 1,
+                                    flex: "0 0 auto",
+                                    marginLeft: "0.75rem",
                                 },
                                 socialButtonsBlockButtonText__google: {
                                     fontSize: "1rem",
                                 },
                                 socialButtonsBlockButtonIcon: {
                                     filter: "brightness(0) invert(1)",
+                                    flex: "0 0 auto",
                                 },
                                 formFieldInput: "bg-white border border-gray-200 rounded-lg h-12",
                                 formFieldLabel: {
