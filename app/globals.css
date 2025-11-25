@@ -197,3 +197,10 @@ html, body {
 .cl-socialButtonsBlockButton__google {
   width: fit-content !important;
 }
+
+/* Texto más pequeño en celular */
+@media (max-width: 768px) {
+  .cl-socialButtonsBlockButton__google span {
+    font-size: 0.75rem !important;
+  }
+}
