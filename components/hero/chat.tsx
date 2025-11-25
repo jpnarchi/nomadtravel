@@ -3,6 +3,8 @@
 import { AppSidebar } from "@/components/global/app-sidebar"
 import { ChatContainer } from "@/components/hero/chat-container"
 import { ChatHeader } from "@/components/global/chat-header"
+
+
 import {
     SidebarInset,
     SidebarProvider,
@@ -21,7 +23,7 @@ export function Chat() {
             }
         >
             {isSignedIn && <AppSidebar />}
-            <SidebarInset>
+            <SidebarInset className="h-screen overflow-y-auto">
                 <ChatHeader />
                 <ChatContainer />
             </SidebarInset>

@@ -16,6 +16,7 @@ import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { HowSection } from "./how-section"
 import { ProjectsPreviewHero } from "./projects-preview-hero"
 import { SuggestionButtons } from "../chat/suggestion-buttons"
+import { HeroParallaxDemo } from "@/components/hero/hero-parallax-demo"
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
@@ -239,15 +240,9 @@ export function ChatContainer() {
     return (
         <>
             <div
-                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-background"
-                style={{
-                    backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundAttachment: 'fixed'
-                }}
+                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-gradient-to-t from-white from-80% to-[#F4A7B6] to-99%"
             >
+                <HeroParallaxDemo/>
                 {/* Hero Section - Full viewport height */}
                 <div className="flex flex-col min-h-[calc(100dvh-4rem)] w-full relative">
                     <AnimatePresence mode="wait">
