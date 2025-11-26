@@ -16,6 +16,7 @@ import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { HowSection } from "./how-section"
 import { ProjectsPreviewHero } from "./projects-preview-hero"
 import { SuggestionButtons } from "../chat/suggestion-buttons"
+import { HeroParallaxDemo } from "@/components/hero/hero-parallax-demo"
 
 export function ChatContainer() {
     const { isSignedIn } = useAuth();
@@ -239,17 +240,24 @@ export function ChatContainer() {
     return (
         <>
             <div
-                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-background"
-                style={{
-                    backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundAttachment: 'fixed'
-                }}
+                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-white"
+
             >
-                {/* Hero Section - Full viewport height */}
-                <div className="flex flex-col min-h-[calc(100dvh-4rem)] w-full relative">
+                {/* Show HeroParallax only when user is NOT signed in */}
+                {!isSignedIn && <HeroParallaxDemo/>}
+
+                {/* Hero Section - Full viewport height - Only shown when user IS signed in */}
+                {isSignedIn && (
+                <div
+                    className="flex flex-col min-h-[calc(150dvh-4rem)] w-full relative"
+                    style={{
+                        backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundAttachment: 'fixed'
+                    }}
+                >
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="initial-state"
@@ -349,10 +357,13 @@ export function ChatContainer() {
                             />
                         </svg>
                     </motion.div>)}
+
+                    {/* Projects Preview - Below hero, requires scroll */}
+                    <ProjectsPreviewHero />
                 </div>
+                )}
 
                 {/* How It Works Section - Below hero, requires scroll */}
-                {isSignedIn && <ProjectsPreviewHero />}
                 
                 {!isSignedIn && <HowSection />}
 
