@@ -522,7 +522,7 @@ export function ProjectsPreviewHero() {
     }
 
     return (
-        <div className="w-full px-3 sm:px-4 -mt-32 sm:-mt-32">
+        <div className="w-full px-3 sm:px-4 -mt-32 sm:-mt-32 mb-20">
             <div className="max-w-7xl mx-auto bg-white p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl">
                 {/* Header */}
                 <motion.div

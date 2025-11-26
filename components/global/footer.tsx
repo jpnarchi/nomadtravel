@@ -46,7 +46,7 @@ const socialLinks = [
 
 export function Footer() {
     return (
-        <footer className="py-10 bg-white mt-10 border-t">
+        <footer className="py-10 bg-white border-t">
             <div className="mx-auto px-6 max-w-7xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Logo - Left Side */}
