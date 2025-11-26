@@ -95,7 +95,7 @@ export const HeroParallax = ({
     <div
       ref={ref}
       className={isMobile 
-        ? "h-[120vh] py-40 overflow-hidden  antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
+        ? "h-[150vh] py-40 overflow-hidden  antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
         : "h-[200vh] py-40 overflow-hidden  antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
       }
     >
@@ -148,15 +148,15 @@ export const Header = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 relative z-50 lg:-mt-55 -mt-35">
         {/* Columna izquierda - Texto centrado */}
         <div className="flex flex-col justify-center items-start">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-semibold dark:text-white leading-tight text-center md:text-left">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-semibold dark:text-white leading-tight  md:text-left">
             The Ultimate Presentation Studio
           </h1>
-          <p className="max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl mt-4 md:mt-6 lg:mt-8 dark:text-neutral-200 leading-relaxed text-center md:text-left">
+          <p className="max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl mt-4 md:mt-6 lg:mt-8 dark:text-neutral-200 leading-relaxed md:text-left">
             Create stunning presentations in seconds by simply chatting with AI.
             No design skills needed - just describe your vision and watch it come to life
             with professional presentations and intelligent content generation.
           </p>
-          <div className="flex flex-row gap-3 md:gap-4 mt-6 md:mt-6 lg:mt-10 justify-center md:justify-start w-full">
+          <div className="flex flex-row gap-3 md:gap-4 mt-6 md:mt-6 lg:mt-10  md:justify-start w-full">
             <Link href="/sign-in">
               <Button className="justify-center gap-2 text-base md:text-lg rounded-full px-4 md:px-6 py-3 md:py-6">
                   Start now!
@@ -178,11 +178,11 @@ export const Header = () => {
           </div>
         </div>
         {/* Columna derecha - Imagen centrada */}
-        <div className="flex justify-center items-center">
+        <div className="flex justify-start items-center">
           <img
             src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDI2WWFDL65IsSQuNPF3mlyR4BEveh91koaUZq8"
             alt="Logo"
-            className="w-64 sm:w-64 md:w-full md:max-w-sm lg:max-w-xl z-50 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]"
+            className="w-80 sm:w-64 md:w-full md:max-w-sm lg:max-w-xl z-50 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]"
           />
         </div>
       </div>
@@ -221,7 +221,7 @@ export const ProductCard = ({
       key={product.title}
       src={product.thumbnail}
       alt={product.title}
-      className="h-96 w-[10rem] -mb-80 shrink-0 rounded-2xl object-contain"
+      className="h-96 w-[10rem] -mb-90 shrink-0 rounded-2xl object-contain"
     />
   ) : (
     <motion.img
