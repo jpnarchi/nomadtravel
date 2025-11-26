@@ -3,8 +3,6 @@
 import { useRef, useState, useEffect } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MessageInput } from "./message-input"
-import { useAuth } from "@clerk/nextjs";
-import { CTASection } from "./cta-section"
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -13,13 +11,10 @@ import { Footer } from "../global/footer";
 import { createPromptWithAttachments } from "@/lib/utils";
 import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
-import { HowSection } from "./how-section"
 import { ProjectsPreviewHero } from "./projects-preview-hero"
 import { SuggestionButtons } from "../chat/suggestion-buttons"
-import { HeroParallaxDemo } from "@/components/hero/hero-parallax-demo"
 
 export function ChatContainer() {
-    const { isSignedIn } = useAuth();
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
@@ -53,11 +48,6 @@ export function ChatContainer() {
     ];
 
     const handleSuggestionClick = async (suggestion: string) => {
-        if (!isSignedIn) {
-            router.push('/sign-in');
-            return
-        }
-
         // Check if user can create more chats (server-side validation)
         if (canCreateChat && !canCreateChat.canCreate) {
             setShowPricingPopup(true);
@@ -106,8 +96,6 @@ export function ChatContainer() {
                 parts: [{ type: "text", text: prompt }],
             });
 
-            localStorage.removeItem('astri-dev-draft');
-
             // Save templateSource to localStorage so chat page can read it
             localStorage.setItem('templateSource', templateSource);
             console.log('[Hero ChatContainer] Saved templateSource to localStorage:', templateSource);
@@ -128,21 +116,6 @@ export function ChatContainer() {
         }
     };
 
-    // Load saved draft on component mount
-    useEffect(() => {
-        const savedDraft = localStorage.getItem('astri-dev-draft');
-        if (savedDraft) {
-            setInput(savedDraft);
-        }
-    }, []);
-
-    // Save to localStorage every time input changes (only if not signed in)
-    useEffect(() => {
-        if (!isSignedIn) {
-            localStorage.setItem('astri-dev-draft', input);
-        }
-    }, [input, isSignedIn]);
-
     // Detect mobile screen size
     useEffect(() => {
         const checkMobile = () => {
@@ -157,10 +130,6 @@ export function ChatContainer() {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (!isSignedIn) {
-            router.push('/sign-in');
-            return
-        }
 
         // Check if user can create more chats (server-side validation)
         if (canCreateChat && !canCreateChat.canCreate) {
@@ -211,13 +180,6 @@ export function ChatContainer() {
                     parts: [{ type: "text", text: prompt }],
                 });
 
-                // setFiles([]);
-                // if (fileInputRef.current) {
-                //     fileInputRef.current.value = '';
-                // }
-
-                localStorage.removeItem('astri-dev-draft');
-
                 // Save templateSource to localStorage so chat page can read it
                 localStorage.setItem('templateSource', templateSource);
                 console.log('[Hero ChatContainer] Saved templateSource to localStorage:', templateSource);
@@ -240,28 +202,21 @@ export function ChatContainer() {
     return (
         <>
             <div
-                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-white"
-
+                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-background"
+                style={{
+                    backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed'
+                }}
             >
-                {/* Show HeroParallax only when user is NOT signed in */}
-                {!isSignedIn && <HeroParallaxDemo/>}
-
-                {/* Hero Section - Full viewport height - Only shown when user IS signed in */}
-                {isSignedIn && (
-                <div
-                    className="flex flex-col min-h-[180vh] w-full relative"
-                    style={{
-                        backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundAttachment: 'fixed'
-                    }}
-                >
+                {/* Hero Section - Full viewport height */}
+                <div className="flex flex-col min-h-[calc(100dvh-4rem)] w-full relative">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="initial-state"
-                            className="flex-1 flex flex-col items-center justify-center gap-4 pb-8 px-4 mt-40 mb-40 lg:mb-0 lg:mt-0"
+                            className="flex-1 flex flex-col items-center justify-center gap-4 pb-8 px-4"
                             initial={{ opacity: 1 }}
                             exit={{
                                 opacity: 0,
@@ -319,58 +274,17 @@ export function ChatContainer() {
                     </AnimatePresence>
 
                     {/* Scroll Indicator */}
-                    {!isSignedIn && ( 
-                    <motion.div
-                        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
-                        initial={{ opacity: 0 }}
-                        animate={{
-                            opacity: 1,
-                            y: [0, 10, 0]
-                        }}
-                        transition={{
-                            opacity: { delay: 1, duration: 0.5 },
-                            y: {
-                                repeat: Infinity,
-                                duration: 1.5,
-                                ease: "easeInOut"
-                            }
-                        }}
-                        onClick={() => {
-                            window.scrollTo({
-                                top: window.innerHeight - 64,
-                                behavior: 'smooth'
-                            });
-                        }}
-                    >
-                        <span className="text-black text-sm font-medium">Scroll to explore</span>
-                        <svg
-                            className="w-6 h-6 text-black"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 9l-7 7-7-7"
-                            />
-                        </svg>
-                    </motion.div>)}
-
-                    {/* Projects Preview - Below hero, requires scroll */}
-                    <ProjectsPreviewHero />
+                    
                 </div>
-                )}
 
                 {/* How It Works Section - Below hero, requires scroll */}
+               <ProjectsPreviewHero />
                 
-                {!isSignedIn && <HowSection />}
 
                 {/* Recent Presentations Panel - Only shown when user is signed in */}
 
 
-                {!isSignedIn && <CTASection/>}
+ 
 
                 {/* Footer */}
                 <Footer />
