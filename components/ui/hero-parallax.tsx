@@ -95,7 +95,7 @@ export const HeroParallax = ({
     <div
       ref={ref}
       className={isMobile 
-        ? "h-[100vh] py-40 overflow-hidden  antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
+        ? "h-[120vh] py-40 overflow-hidden  antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
         : "h-[200vh] py-40 overflow-hidden  antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
       }
     >
