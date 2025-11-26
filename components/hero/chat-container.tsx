@@ -249,7 +249,7 @@ export function ChatContainer() {
                 {/* Hero Section - Full viewport height - Only shown when user IS signed in */}
                 {isSignedIn && (
                 <div
-                    className="flex flex-col min-h-[calc(150dvh-4rem)] w-full relative"
+                    className="flex flex-col min-h-[180vh] w-full relative"
                     style={{
                         backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
                         backgroundSize: 'cover',
@@ -261,7 +261,7 @@ export function ChatContainer() {
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="initial-state"
-                            className="flex-1 flex flex-col items-center justify-center gap-4 pb-8 px-4"
+                            className="flex-1 flex flex-col items-center justify-center gap-4 pb-8 px-4 mt-40 mb-40 lg:mb-0 lg:mt-0"
                             initial={{ opacity: 1 }}
                             exit={{
                                 opacity: 0,
