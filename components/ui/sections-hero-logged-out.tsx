@@ -70,7 +70,7 @@ export const SectionsHero = () => {
           {/* Texto - aparece primero en mobile, segundo en desktop */}
           <div className="flex flex-col justify-center items-start order-1 md:order-2">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl dark:text-white leading-tight md:text-left font-[family-name:var(--font-ppmori-semibold)]">
-              AI-Powered Intelligence
+              AI-Powered Presentations
             </h1>
             <p className="max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl mt-4 md:mt-6 lg:mt-8 dark:text-neutral-200 leading-relaxed md:text-left">
               Every great idea deserves a creative partner. Our AI brings your vision to reality
