@@ -281,6 +281,7 @@ export function ChatContainer() {
                                         userPlan={user?.plan}
                                     />
                                 </div>
+                                
                                 <MessageInput
                                     input={input}
                                     setInput={setInput}

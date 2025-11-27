@@ -93,7 +93,7 @@ export function MessageInput({
         <div className="flex-shrink-0 ">
             <div className="flex justify-center p-4 pb-4 bg-transparent">
                 <form onSubmit={handleSubmit} className="flex flex-row gap-2 relative items-end w-full max-w-3xl">
-                    <div className="relative flex-1 min-h-[44px] p-2 rounded-xl border-2 border-input bg-white dark:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20 transition-colors flex flex-col">
+                    <div className="relative flex-1 min-h-[44px] p-2 rounded-xl border-2 border-input bg-white dark:bg-white text-black focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20 transition-colors flex flex-col">
                         {/* Hidden file input */}
                         <input
                             ref={fileInputRef}
@@ -140,7 +140,7 @@ export function MessageInput({
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder={placeholder}
-                            className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[80px] max-h-[240px] placeholder:text-muted-foreground rounded-lg flex-1 overflow-y-auto !text-lg md:!text-xl"
+                            className="w-full bg-transparent dark:bg-transparent border-0 resize-none focus-visible:outline-none focus-visible:ring-0 p-2 min-h-[80px] max-h-[240px] placeholder:text-muted-foreground rounded-lg flex-1 overflow-y-auto !text-lg md:!text-xl !text-black"
                             rows={1}
                             disabled={isLoading}
                         />
