@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Roboto, Open_Sans, Montserrat, Poppins, Lato, Raleway } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -56,6 +57,24 @@ const raleway = Raleway({
   subsets: ["latin"],
 });
 
+const esbuildBold = localFont({
+  src: "./fonts/ESBuild-Bold.woff2",
+  variable: "--font-esbuild-bold",
+  display: "swap",
+});
+
+const ppmoriMedium = localFont({
+  src: "./fonts/PPMori-Medium.woff2",
+  variable: "--font-ppmori-medium",
+  display: "swap",
+});
+
+const ppmoriSemiBold = localFont({
+  src: "./fonts/PPMori-SemiBold.woff2",
+  variable: "--font-ppmori-semibold",
+  display: "swap",
+});
+
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ilovepresentations.io";
 
 export const metadata = {
@@ -97,7 +116,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${montserrat.variable} ${poppins.variable} ${lato.variable} ${raleway.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${montserrat.variable} ${poppins.variable} ${lato.variable} ${raleway.variable} ${esbuildBold.variable} ${ppmoriMedium.variable} ${ppmoriSemiBold.variable} antialiased`}
       >
         <ClerkProvider
           appearance={{

@@ -24,7 +24,7 @@ export function UserChatsContainer({ userId }: UserChatsContainerProps) {
                     </div>
                 </Link>
                 <div className="space-y-4">
-                    <h1 className="text-3xl font-bold">Chats</h1>
+                    <h1 className="text-3xl font-bold font-[family-name:var(--font-esbuild-bold)]">Chats</h1>
                     {user ? (
                         <div className="bg-muted/50 p-4 rounded-lg space-y-2">
                             <div className="flex items-center gap-2">

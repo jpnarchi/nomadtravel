@@ -523,7 +523,7 @@ export function AdminTemplatesContainer() {
     return (
         <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-xl sm:text-2xl font-bold">Templates</h1>
+                <h1 className="text-xl sm:text-2xl font-bold font-[family-name:var(--font-esbuild-bold)]">Templates</h1>
                 <Button onClick={() => setIsCreateDialogOpen(true)}>
                     <PlusIcon className="size-4" />
                     <span className="ml-2">Create New</span>

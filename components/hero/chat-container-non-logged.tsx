@@ -4,6 +4,7 @@ import { Footer } from "../global/footer";
 import { CTASection } from "./cta-section"
 import { HowSection } from "./how-section"
 import { HeroParallaxDemo } from "@/components/hero/hero-parallax-demo"
+import {SectionsHero} from "@/components/ui/sections-hero-logged-out"
 
 export function ChatContainerNonLogged() {
     return (
@@ -13,10 +14,9 @@ export function ChatContainerNonLogged() {
                 <HeroParallaxDemo/>
 
                 {/* How It Works Section */}
-                <HowSection />
+                {/* <HowSection /> */}
+                <SectionsHero/>
 
-                {/* CTA Section */}
-                <CTASection/>
 
                 {/* Footer */}
                 <Footer />

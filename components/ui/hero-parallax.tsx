@@ -148,24 +148,22 @@ export const Header = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 relative z-50 lg:-mt-55 -mt-35">
         {/* Columna izquierda - Texto centrado */}
         <div className="flex flex-col justify-center items-start">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-semibold dark:text-white leading-tight  md:text-left">
-            The Ultimate Presentation Studio
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold dark:text-white leading-none md:text-left font-[family-name:var(--font-esbuild-bold)]">
+          Create your Presentations with AI
           </h1>
           <p className="max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl mt-4 md:mt-6 lg:mt-8 dark:text-neutral-200 leading-relaxed md:text-left">
-            Create stunning presentations in seconds by simply chatting with AI.
-            No design skills needed - just describe your vision and watch it come to life
-            with professional presentations and intelligent content generation.
+          Transform your ideas into professional presentations instantly. Our AI builds complete slide decks with design, content, and images, so you can focus on what matters.
           </p>
           <div className="flex flex-row gap-3 md:gap-4 mt-6 md:mt-6 lg:mt-10  md:justify-start w-full">
             <Link href="/sign-in">
-              <Button className="justify-center gap-2 text-base md:text-lg rounded-full px-4 md:px-6 py-3 md:py-6">
+              <Button className="justify-center gap-2 text-base md:text-md rounded-full px-4 md:px-6 py-3 md:py-6">
                   Start now!
               </Button>
             </Link>
             <Button
               variant="outline"
               onClick={signInWithGoogle}
-              className="justify-center gap-2 text-base md:text-lg rounded-full px-4 md:px-6 py-3 md:py-6 bg-white border border-black/20 hover:bg-gray-50"
+              className="justify-center gap-2 text-base md:text-md rounded-full px-4 md:px-6 py-3 md:py-6 bg-white border border-black/20 hover:bg-gray-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -178,11 +176,11 @@ export const Header = () => {
           </div>
         </div>
         {/* Columna derecha - Imagen centrada */}
-        <div className="flex justify-start items-center">
+        <div className="flex justify-center items-center">
           <img
-            src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDI2WWFDL65IsSQuNPF3mlyR4BEveh91koaUZq8"
+            src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIzHEvNEdrJRnSj63YXTA1l2O0Uet8NFypqidL"
             alt="Logo"
-            className="w-80 sm:w-64 md:w-full md:max-w-sm lg:max-w-xl z-50 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]"
+            className="w-80 sm:w-64 md:w-full md:max-w-sm lg:max-w-lg z-50 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]"
           />
         </div>
       </div>

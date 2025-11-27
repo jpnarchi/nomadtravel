@@ -15,7 +15,7 @@ export function AdminContainer() {
     return (
         <div className="p-4 space-y-6">
             <div className="flex flex-row items-center justify-between">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Admin Panel</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-[family-name:var(--font-esbuild-bold)]">Admin Panel</h1>
                 <div className="flex gap-2">
                     <Badge variant="outline" className="p-2">
                         Total Users: {totalUsers !== undefined ? totalUsers.toLocaleString() : "..."}
