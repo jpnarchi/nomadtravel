@@ -8,11 +8,14 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { Footer } from "../global/footer";
+import { UserNav } from "@/components/global/user-nav";
 import { createPromptWithAttachments } from "@/lib/utils";
 import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { ProjectsPreviewHero } from "./projects-preview-hero"
 import { SuggestionButtons } from "../chat/suggestion-buttons"
+import { SlideSelector } from "../chat/slides-selector"
+
 
 export function ChatContainer() {
     const [input, setInput] = useState('')
@@ -22,6 +25,8 @@ export function ChatContainer() {
     const [showPricingPopup, setShowPricingPopup] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [templateSource, setTemplateSource] = useState<'default' | 'my-templates'>('default');
+    const [selectedSlides, setSelectedSlides] = useState<number>(5);
+    const allPresentations = useQuery(api.chats.getAllPresentationsWithFirstSlide)
 
     // Debug log for templateSource changes
     useEffect(() => {
@@ -66,7 +71,8 @@ export function ChatContainer() {
             });
 
             const fileUrls = [];
-            let prompt = suggestion
+            // Add number of slides to the prompt
+            let prompt = `${suggestion}\nNumber of slides: ${selectedSlides}`
 
             // check if files are present
             if (files.length > 0) {
@@ -88,7 +94,7 @@ export function ChatContainer() {
                     fileUrls.push({ url: url, type: file.type });
                 }
 
-                prompt = createPromptWithAttachments(suggestion, fileUrls);
+                prompt = createPromptWithAttachments(`${suggestion}\nNumber of slides: ${selectedSlides}`, fileUrls);
             }
 
             await updateParts({
@@ -142,7 +148,7 @@ export function ChatContainer() {
             if (input.trim()) {
                 const chatId = await createChat();
 
-                // create message 
+                // create message
                 const messageId = await createMessage({
                     chatId,
                     role: "user",
@@ -150,9 +156,10 @@ export function ChatContainer() {
                 });
 
                 const fileUrls = [];
-                let prompt = input
+                // Add number of slides to the prompt
+                let prompt = `${input}\nNumber of slides: ${selectedSlides}`
 
-                // check if files are present 
+                // check if files are present
                 if (files.length > 0) {
                     for (const file of files) {
                         const postUrl = await generateUploadUrl();
@@ -172,7 +179,7 @@ export function ChatContainer() {
                         fileUrls.push({ url: url, type: file.type });
                     }
 
-                    prompt = createPromptWithAttachments(input, fileUrls);
+                    prompt = createPromptWithAttachments(`${input}\nNumber of slides: ${selectedSlides}`, fileUrls);
                 }
 
                 await updateParts({
@@ -202,17 +209,33 @@ export function ChatContainer() {
     return (
         <>
             <div
-                className="h-[calc(100dvh-4rem)] overflow-y-auto bg-background"
-                style={{
-                    backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundAttachment: 'fixed'
-                }}
-            >
+                className={
+                        allPresentations?.length === 0
+                        ? "h-screen overflow-y-auto bg-gradient-to-t from-primary from-50% to-[#F4A7B6] to-95%"
+                        : "h-screen overflow-y-auto bg-background"}>
+
+
+            
                 {/* Hero Section - Full viewport height */}
-                <div className="flex flex-col min-h-[calc(100dvh-4rem)] w-full relative">
+                <div
+                    className={
+                        allPresentations?.length === 0
+                            ? "text-white flex flex-col min-h-[calc(100dvh-4rem)] w-full relative lg:mt-10 "
+                            : "text-black flex flex-col min-h-[calc(100dvh-4rem)] w-full relative "
+                    }
+                >
+                    {allPresentations?.length === 0 ? (
+                            <header className="w-full h-16 md:h-2 shrink-0 bg-transparent">
+                            <div className="max-w-7xl mx-auto flex h-full items-center gap-2 px-4 justify-between">
+                            <div >
+                            </div>
+                            <div className="flex items-center gap-12">
+                                <UserNav />
+                            </div>
+                            </div>
+                        </header>            
+                    ): null}
+ 
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="initial-state"
@@ -225,7 +248,7 @@ export function ChatContainer() {
                             }}
                         >
                             <motion.div
-                                className="text-black text-3xl sm:text-4xl md:text-5xl font-inter font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
+                                className=" text-3xl sm:text-4xl md:text-5xl font-inter font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
                                 exit={{
                                     y: -30,
                                     opacity: 0,
@@ -238,19 +261,26 @@ export function ChatContainer() {
                                 </span>
                             </motion.div>
                             <motion.div>
-                                <p className="text-black text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
+                                <p className="-mt-4 md:mt-0 text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
                                 >
-                                    Create amazing presentations <br className="sm:hidden" />by chatting with AI
+                                    Start by typing your idea
                                 </p>
                             </motion.div>
                             <motion.div
-                                className="w-full bg-transparent max-w-4xl mx-auto flex flex-col gap-4"
+
+                                className="w-full bg-transparent max-w-4xl mx-auto flex flex-col"
                                 exit={{
                                     y: 20,
                                     opacity: 0,
                                     transition: { duration: 0.3, delay: 0.1, ease: "easeInOut" }
                                 }}
                             >
+                                <div className="flex justify-start px-6 lg:px-16 text-black">
+                                    <SlideSelector
+                                        onSlideChange={setSelectedSlides}
+                                        userPlan={user?.plan}
+                                    />
+                                </div>
                                 <MessageInput
                                     input={input}
                                     setInput={setInput}
@@ -263,12 +293,13 @@ export function ChatContainer() {
                                     setTemplateSource={canAccessMyTemplates ? setTemplateSource : undefined}
                                     canAccessMyTemplates={canAccessMyTemplates}
                                 />
-                                <div className="hidden md:flex justify-center -mt-4">
+                                {allPresentations?.length === 0 ? (
+                                <div className="hidden md:flex justify-center mr-2 text-black">
                                     <SuggestionButtons
                                         suggestions={suggestions}
                                         onSuggestionClick={handleSuggestionClick}
                                     />
-                                </div>
+                                </div> ) : null}
                             </motion.div>
                         </motion.div>
                     </AnimatePresence>
@@ -287,7 +318,7 @@ export function ChatContainer() {
  
 
                 {/* Footer */}
-                <Footer />
+                {/* <Footer /> */}
 
                 {/* Drag Drop Overlay */}
                 <DragDropOverlay files={files} setFiles={setFiles} />
@@ -300,3 +331,4 @@ export function ChatContainer() {
         </>
     )
 }
+

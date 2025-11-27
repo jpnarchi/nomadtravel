@@ -50,15 +50,15 @@ export function ChatHeader() {
                     />
                 </div>
                 <nav className="flex items-center gap-6">
-                    <Link href="/" className="text-base md:text-md  font-medium hover:text-primary transition-colors">
+                    <Link href="/" className="text-base md:text-sm  font-medium hover:text-primary transition-colors">
                         Home
                     </Link>
                     {isSignedIn && (
-                    <Link href="/my-templates" className="text-base md:text-md font-medium hover:text-primary transition-colors">
+                    <Link href="/my-templates" className="text-base md:text-sm font-medium hover:text-primary transition-colors">
                         My Templates
                     </Link>)}
 
-                    <Link href="/pricing" className="text-base md:text-md font-medium hover:text-primary transition-colors">
+                    <Link href="/pricing" className="text-base md:text-sm font-medium hover:text-primary transition-colors">
                         Pricing
                     </Link>
 
