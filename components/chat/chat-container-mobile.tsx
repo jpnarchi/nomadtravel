@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { PricingPopup } from '../pricing/pricing-popup';
 import { DragDropOverlay } from '../global/drag-drop-overlay';
 
-export function ChatContainer({
+export function ChatContainerMobile({
     id,
     initialMessages,
 }: {
@@ -316,130 +316,116 @@ export function ChatContainer({
 
     if (!isLoading && isGenerating && !isGeneratingSync) {
         return (
-            <div className="grid grid-cols-[40%_60%] h-[calc(100dvh-4rem)] bg-background">
-                {/* Left Column - Chat */}
-                <div className="flex flex-col h-full border-r border-border">
-                    <AnimatePresence mode="wait">
+            <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key="chat-state"
+                        className="flex flex-col h-full min-h-0"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{
+                            opacity: 1,
+                            y: 0,
+                            transition: { duration: 0.4, ease: "easeOut" }
+                        }}
+                    >
+                        <div className="flex flex-col h-full bg-background items-center justify-center">
+                            <div className="flex items-center gap-3">
+                                <Loader />
+                                <p>Creating...</p>
+                            </div>
+                        </div>
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                            <ChatMessages
+                                id={id}
+                                messages={messages}
+                                isLoading={isLoading}
+                                displayThinking={status === 'submitted'}
+                                handleSuggestionClick={handleSuggestionClick}
+                                suggestions={suggestions || []}
+                                showSuggestions={showSuggestions}
+                                currentVersion={currentVersion}
+                                isGenerating={true}
+                            />
+                        </div>
                         <motion.div
-                            key="chat-state"
-                            className="flex flex-col h-full min-h-0"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                                opacity: 1,
-                                y: 0,
-                                transition: { duration: 0.4, ease: "easeOut" }
-                            }}
+                            className="flex-shrink-0"
                         >
-                            <div className="flex flex-col h-full bg-background items-center justify-center">
-                                <div className="flex items-center gap-3">
-                                    <Loader />
-                                    <p>Creating...</p>
-                                </div>
-                            </div>
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                                <ChatMessages
-                                    id={id}
-                                    messages={messages}
-                                    isLoading={isLoading}
-                                    displayThinking={status === 'submitted'}
-                                    handleSuggestionClick={handleSuggestionClick}
-                                    suggestions={suggestions || []}
-                                    showSuggestions={showSuggestions}
-                                    currentVersion={currentVersion}
-                                    isGenerating={true}
-                                />
-                            </div>
-                            <motion.div
-                                className="flex-shrink-0"
-                            >
-                                <MessageInput
-                                    input={input}
-                                    setInput={setInput}
-                                    handleSubmit={handleSubmit}
-                                    stop={stop}
-                                    isLoading={true}
-                                    setIsLoading={setIsLoading}
-                                    setShowSuggestions={setShowSuggestions}
-                                    isUploading={isUploading}
-                                    files={files}
-                                    setFiles={setFiles}
-                                    fileInputRef={fileInputRef}
-                                    disabled={true}
-                                />
-                            </motion.div>
+                            <MessageInput
+                                input={input}
+                                setInput={setInput}
+                                handleSubmit={handleSubmit}
+                                stop={stop}
+                                isLoading={true}
+                                setIsLoading={setIsLoading}
+                                setShowSuggestions={setShowSuggestions}
+                                isUploading={isUploading}
+                                files={files}
+                                setFiles={setFiles}
+                                fileInputRef={fileInputRef}
+                                disabled={true}
+                            />
                         </motion.div>
-                    </AnimatePresence>
-                    <DragDropOverlay files={files} setFiles={setFiles} />
-                </div>
-
-                {/* Right Column - Empty for now */}
-                <div className="flex flex-col h-full bg-background">
-                </div>
+                    </motion.div>
+                </AnimatePresence>
+                <DragDropOverlay files={files} setFiles={setFiles} />
             </div>
         )
     }
 
     return (
         <>
-            <div className="grid grid-cols-[40%_60%] h-[calc(100dvh-4rem)] bg-background">
-                {/* Left Column - Chat */}
-                <div className="flex flex-col h-full border-r border-border">
-                    <AnimatePresence mode="wait">
+            <div className="flex flex-col h-[calc(100dvh-4rem)] bg-background">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key="chat-state"
+                        className="flex flex-col h-full min-h-0"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{
+                            opacity: 1,
+                            y: 0,
+                            transition: { duration: 0.4, ease: "easeOut" }
+                        }}
+                    >
+                        <div className="flex-1 min-h-0 overflow-hidden">
+                            <ChatMessages
+                                id={id}
+                                messages={messages}
+                                isLoading={isLoading}
+                                displayThinking={status === 'submitted'}
+                                handleSuggestionClick={handleSuggestionClick}
+                                suggestions={suggestions || []}
+                                showSuggestions={showSuggestions}
+                                currentVersion={currentVersion}
+
+                            />
+                        </div>
                         <motion.div
-                            key="chat-state"
-                            className="flex flex-col h-full min-h-0"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{
-                                opacity: 1,
-                                y: 0,
-                                transition: { duration: 0.4, ease: "easeOut" }
-                            }}
+                            // initial={{ y: 100, opacity: 0 }}
+                            // animate={{
+                            //     y: 0,
+                            //     opacity: 1,
+                            //     transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
+                            // }}
+                            className="flex-shrink-0"
                         >
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                                <ChatMessages
-                                    id={id}
-                                    messages={messages}
-                                    isLoading={isLoading}
-                                    displayThinking={status === 'submitted'}
-                                    handleSuggestionClick={handleSuggestionClick}
-                                    suggestions={suggestions || []}
-                                    showSuggestions={showSuggestions}
-                                    currentVersion={currentVersion}
-
-                                />
-                            </div>
-                            <motion.div
-                                // initial={{ y: 100, opacity: 0 }}
-                                // animate={{
-                                //     y: 0,
-                                //     opacity: 1,
-                                //     transition: { duration: 0.4, delay: 0.2, ease: "easeOut" }
-                                // }}
-                                className="flex-shrink-0"
-                            >
-                                <MessageInput
-                                    input={input}
-                                    setInput={setInput}
-                                    handleSubmit={handleSubmit}
-                                    stop={stop}
-                                    isLoading={isLoading}
-                                    setIsLoading={setIsLoading}
-                                    setShowSuggestions={setShowSuggestions}
-                                    isUploading={isUploading}
-                                    files={files}
-                                    setFiles={setFiles}
-                                    fileInputRef={fileInputRef}
-                                    disabled={false}
-                                />
-                            </motion.div>
+                            <MessageInput
+                                input={input}
+                                setInput={setInput}
+                                handleSubmit={handleSubmit}
+                                stop={stop}
+                                isLoading={isLoading}
+                                setIsLoading={setIsLoading}
+                                setShowSuggestions={setShowSuggestions}
+                                isUploading={isUploading}
+                                files={files}
+                                setFiles={setFiles}
+                                fileInputRef={fileInputRef}
+                                disabled={false}
+                            />
                         </motion.div>
-                    </AnimatePresence>
-                    <DragDropOverlay files={files} setFiles={setFiles} />
-                </div>
-
-                {/* Right Column - Empty for now */}
-                <div className="flex flex-col h-full bg-background">
-                </div>
+                    </motion.div>
+                </AnimatePresence>
+                <DragDropOverlay files={files} setFiles={setFiles} />
             </div>
             <PricingPopup
                 isOpen={showPricingPopup}

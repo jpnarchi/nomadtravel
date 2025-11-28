@@ -1,7 +1,8 @@
 'use client'
 
 import { AppSidebar } from "@/components/global/app-sidebar"
-import { ChatContainer } from "@/components/chat/chat-container"
+import { ChatContainerMobile } from "@/components/chat/chat-container-mobile"
+import { ChatContainer } from "@/components/chat/chat-container";
 import { ChatHeader } from "@/components/global/chat-header"
 import {
     SidebarInset,
@@ -10,6 +11,7 @@ import {
 import { UIMessage } from "ai"
 import { Id } from "@/convex/_generated/dataModel"
 import { useAuth } from "@clerk/nextjs"
+import { useState, useEffect } from "react";
 
 export function Chat({
     id,
@@ -19,6 +21,18 @@ export function Chat({
     initialMessages: UIMessage[],
 }) {
     const { isSignedIn } = useAuth()
+    const [isMobile, setIsMobile ] = useState(false)
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640)
+        }
+
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+
+        return () => window.removeEventListener('resize', checkMobile)
+    }, [])
 
     return (
         <SidebarProvider
@@ -31,10 +45,13 @@ export function Chat({
             {isSignedIn && <AppSidebar />}
             <SidebarInset>
                 <ChatHeader />
-                <ChatContainer
+                {isMobile ? (
+                <ChatContainerMobile
                     id={id}
                     initialMessages={initialMessages}
-                />
+                /> ) : <ChatContainer
+                id={id}
+                initialMessages={initialMessages}/> }
                 
             </SidebarInset>
         </SidebarProvider>
