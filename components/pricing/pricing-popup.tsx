@@ -24,7 +24,7 @@ export function PricingPopup({
     const upgrade = useAction(api.stripe.pay);
     const billingPortal = useAction(api.stripe.billingPortal);
     const router = useRouter();
-    const [billingType, setBillingType] = useState<'monthly' | 'annual'>('monthly');
+    const [billingType, setBillingType] = useState<'monthly' | 'annual'>('annual');
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
@@ -100,15 +100,9 @@ export function PricingPopup({
             />
 
             {/* Modal */}
-            <div
-                className="relative bg-background rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[1400px]"
-                style={{
-                    backgroundImage: isMobile ? "url('/img/bg-pricing.png')" : "url('/img/bg-pricing.png')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                }}
-            >
+            <div className="relative bg-white rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] max-w-[1400px]">
+                {/* Header section with gradient */}
+                <div className="bg-gradient-to-t from-[#F5F5FA] from-10% to-white to-70% pb-2 pt-10 rounded-t-lg">
                 {/* Close button */}
                 <button
                     onClick={() => onOpenChange(false)}
@@ -119,15 +113,14 @@ export function PricingPopup({
                 </button>
 
                 {/* Content */}
-                <div className="p-8 md:p-10 lg:p-12">
-                    <div className="text-center space-y-3 mb-10">
-                        <h2 className="text-3xl md:text-4xl font-semibold">{headerText}</h2>
+                <div className="px-6">
+                    <div className="mx-auto max-w-7xl space-y-6 text-center mb-8">
+                        <h1 className="text-center text-4xl font-semibold lg:text-5xl font-[family-name:var(--font-ppmori-semibold)]">{headerText}</h1>
                         <p className="text-muted-foreground text-base md:text-lg">
                             {descriptionText}
                         </p>
-
-                        {user?.subscriptionId ? (
-                            <div className="flex justify-center mt-8">
+                        {user?.subscriptionId && (
+                            <div className="flex justify-center">
                                 <Button
                                     variant="outline"
                                     className="w-fit cursor-pointer"
@@ -136,21 +129,46 @@ export function PricingPopup({
                                     Manage subscription
                                 </Button>
                             </div>
-                        ) : (
-                            <>
-                                <p className="text-sm text-green-600 font-semibold">Save up to 28% with annual billing</p>
-
-                                <Tabs value={billingType} onValueChange={(value) => setBillingType(value as 'monthly' | 'annual')} className="w-fit mx-auto">
-                                    <TabsList className="grid w-full grid-cols-2 gap-8">
-                                        <TabsTrigger value="monthly" className="data-[state=inactive]:text-gray-400">Pay Monthly</TabsTrigger>
-                                        <TabsTrigger value="annual" className="data-[state=inactive]:text-gray-400">Pay Annually</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </>
                         )}
                     </div>
+                </div>
 
-                    <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                {!user?.subscriptionId && (
+                    <div className="w-full flex justify-center mb-1">
+                        <Tabs value={billingType} onValueChange={(value) => setBillingType(value as 'monthly' | 'annual')} className="w-fit">
+                            <TabsList className="grid w-full bg-transparent shadow-none border-0 grid-cols-2 gap-2">
+                                <TabsTrigger value="monthly" className="rounded-sm rounded-b-none shadow-none border-0 text-xl p-2 data-[state=active]:bg-white data-[state=active]:shadow-none data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-[#CE2B25] data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-400 data-[state=inactive]:shadow-none data-[state=inactive]:border-t data-[state=inactive]:border-l data-[state=inactive]:border-r data-[state=inactive]:border-gray-200 px-8">Pay Monthly</TabsTrigger>
+                                <TabsTrigger value="annual" className="rounded-sm rounded-b-none shadow-none border-0 text-xl p-2 data-[state=active]:bg-white data-[state=active]:shadow-none data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-[#CE2B25] data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-400 data-[state=inactive]:shadow-none data-[state=inactive]:border-t data-[state=inactive]:border-l data-[state=inactive]:border-r data-[state=inactive]:border-gray-200 px-8">Pay Annually</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </div>
+                )}
+            </div>
+
+            {/* Pricing section with pink gradient */}
+            <div className="w-full bg-white pb-8 py-12 bg-gradient-to-t from-[#F4A7B6]/30 from-10% to-primary/90 to-99% relative overflow-hidden rounded-b-lg">
+
+                {/* Imágenes decorativas - Detrás de las tarjetas */}
+                {/* Imagen izquierda - Solo visible en desktop */}
+                <img
+                    src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
+                    alt="Decorative left"
+                    className="hidden lg:block absolute left-0 top-0 w-32 xl:w-40 h-auto opacity-80 mt-20 z-0"
+                />
+
+                {/* Imagen derecha - Solo visible en desktop */}
+                <img
+                    src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIT9jM2zUlgOP8WXqRbDcys6iZYpKNLMvldaEF"
+                    alt="Decorative right"
+                    className="hidden lg:block absolute right-0 bottom-0 w-32 xl:w-60 h-auto opacity-80 mb-10 transform scale-x-[-1] z-0"
+                />
+
+                <div className="text-center mb-6 -mt-6 relative z-10">
+                    <span className="text-white font-semibold">Save up to 28%</span>
+                    <span className="text-white ml-1 font-semibold">with annual billing</span>
+                </div>
+
+                <div className="mx-auto max-w-[80rem] px-6 grid gap-6 md:grid-cols-4 pb-6 px-12 relative z-10">
                         <PricingCard
                             billingType={billingType}
                             plan={{

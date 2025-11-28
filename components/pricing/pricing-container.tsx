@@ -54,7 +54,7 @@ export function PricingContainer() {
         <section className="">
             <div className="bg-gradient-to-t from-[#F5F5FA] from-10% to-white to-70% pb-2 pt-10">
                 <div className="mx-auto max-w-[140rem] px-6">
-                    <div className="mx-auto max-w-4xl space-y-6 text-center mb-8">
+                    <div className="mx-auto max-w-7xl space-y-6 text-center mb-8">
                         <h1 className="text-center text-4xl font-semibold lg:text-5xl font-[family-name:var(--font-ppmori-semibold)]">Choose the plan that best fits your needs</h1>
                         {user?.subscriptionId && (
                             <div className="flex justify-center">
