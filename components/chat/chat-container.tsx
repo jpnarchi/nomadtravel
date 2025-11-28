@@ -319,11 +319,11 @@ export function ChatContainer({
         return (
             <div className="flex flex-row h-[calc(100dvh-4rem)] bg-black">
                 {/* Chat column - 40% left */}
-                <div className="w-2/5 flex flex-col items-center justify-center h-full p-4 bg-primary">
+                <div className="w-2/5 flex flex-col h-full bg-primary">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="chat-state"
-                            className="flex flex-col w-full max-w-2xl aspect-square max-h-[85vh] rounded-2xl border border-black overflow-hidden bg-white"
+                            className="flex flex-col w-full h-full overflow-hidden bg-white"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{
                                 opacity: 1,
@@ -388,11 +388,11 @@ export function ChatContainer({
         <>
             <div className="flex flex-row h-[calc(100dvh-4rem)] bg-black">
                 {/* Chat column - 40% left */}
-                <div className="w-2/5 flex flex-col items-center justify-center h-full p-4  bg-gradient-to-t from-primary from-20% to-[#F4A7B6] to-95%">
+                <div className="w-2/5 flex flex-col h-full bg-gradient-to-t from-primary from-20% to-[#F4A7B6] to-95%">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="chat-state"
-                            className="flex flex-col w-full max-w-2xl aspect-square max-h-[100vh] rounded-2xl border border-black overflow-hidden bg-white"
+                            className="flex flex-col w-full h-full overflow-hidden bg-white"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{
                                 opacity: 1,
