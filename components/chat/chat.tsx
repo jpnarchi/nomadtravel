@@ -50,8 +50,8 @@ export function Chat({
                     id={id}
                     initialMessages={initialMessages}
                 /> ) : <ChatContainer
-                id={id}
-                initialMessages={initialMessages}/> }
+                                    id={id}
+                    initialMessages={initialMessages}/> }
                 
             </SidebarInset>
         </SidebarProvider>

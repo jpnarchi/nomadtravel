@@ -316,7 +316,7 @@ export function PreviewButton({
                                 router.push(`/chat/${id}/preview/${versionToView}`);
                             }}
                             disabled={isLoading}
-                            className="bg-primary hover:bg-primary-200 text-black cursor-pointer"
+                            className="bg-primary hover:bg-primary-200 text-white cursor-pointer"
                         >
                             {isLoading ? (
                                 <>
