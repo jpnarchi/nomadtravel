@@ -17,6 +17,7 @@ import Image from 'next/image';
 import { toast } from 'sonner';
 import { PricingPopup } from '../pricing/pricing-popup';
 import { DragDropOverlay } from '../global/drag-drop-overlay';
+import { LivePresentationViewer } from './live-presentation-viewer';
 
 export function ChatContainer({
     id,
@@ -377,7 +378,7 @@ export function ChatContainer({
 
                 {/* New column - 60% right */}
                 <div className="w-3/5 h-full bg-background border-l">
-                    {/* Tu contenido aquí */}
+                    <LivePresentationViewer chatId={id} />
                 </div>
             </div>
         )
@@ -443,7 +444,7 @@ export function ChatContainer({
 
                 {/* New column - 60% right */}
                 <div className="w-3/5 h-full bg-background border-l">
-                    {/* Tu contenido aquí */}
+                    <LivePresentationViewer chatId={id} />
                 </div>
             </div>
             <PricingPopup
