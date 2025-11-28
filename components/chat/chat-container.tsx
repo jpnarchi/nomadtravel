@@ -392,7 +392,7 @@ export function ChatContainer({
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="chat-state"
-                            className="flex flex-col w-full max-w-2xl aspect-square max-h-[85vh] rounded-2xl border border-black overflow-hidden bg-white"
+                            className="flex flex-col w-full max-w-2xl aspect-square max-h-[100vh] rounded-2xl border border-black overflow-hidden bg-white"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{
                                 opacity: 1,
