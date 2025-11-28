@@ -843,7 +843,7 @@ export function FabricPresentationEditor({
 
                     <div className="h-8 w-px bg-gray-300" />
 
-                    <h2 className="text-xl font-bold text-black">Presentation Editor</h2>
+                    <h2 className="text-xl text-black font-[family-name:var(--font-ppmori-semibold)]">Presentation Editor</h2>
                 </div>
 
                 {/* Center - Logo */}

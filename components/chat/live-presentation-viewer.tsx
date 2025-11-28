@@ -6,7 +6,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useState, useEffect, useRef, useMemo } from "react";
 import * as fabric from 'fabric';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Maximize } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, PencilRuler } from "lucide-react";
 import { Loader } from "@/components/ai-elements/loader";
 import { useRouter } from "next/navigation";
 
@@ -377,8 +377,8 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                     onClick={() => router.push(`/chat/${chatId}/preview/${currentVersion}`)}
                     className="gap-2"
                 >
-                    <Maximize className="size-4" />
-                    <span className="hidden md:inline">Full View</span>
+                    <PencilRuler className="size-4" />
+                    <span className="hidden md:inline">Edit presentation</span>
                 </Button>
             </div>
 
