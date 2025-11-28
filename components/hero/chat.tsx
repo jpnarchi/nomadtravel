@@ -6,6 +6,8 @@ import { ChatContainerNonLogged } from "@/components/hero/chat-container-non-log
 import { ChatHeader } from "@/components/global/chat-header"
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import { HeroOnboarding } from "./hero-onboarding";
+import { useState, useEffect, useRef } from "react"
 
 import {
     SidebarInset,
@@ -16,6 +18,8 @@ import { useAuth } from "@clerk/nextjs"
 export function Chat() {
     const allPresentations = useQuery(api.chats.getAllPresentationsWithFirstSlide)
     const { isSignedIn } = useAuth()
+    const isNavigatingRef = useRef(false)
+    const [, forceUpdate] = useState({})
 
 
 
@@ -29,13 +33,28 @@ export function Chat() {
         >
             {isSignedIn && <AppSidebar />}
             <SidebarInset className="h-screen overflow-y-auto">
-                {allPresentations?.length === 0 ? null: <ChatHeader /> }
-                {isSignedIn ? <ChatContainer /> :
-                <>
-                <ChatHeader /> 
-                <ChatContainerNonLogged />
-                </> }
-                
+                {isSignedIn && (allPresentations?.length === 0 || isNavigatingRef.current) ? (
+                    <HeroOnboarding
+                        onNavigate={() => {
+                            isNavigatingRef.current = true
+                            forceUpdate({})
+                        }}
+                        onNavigateCancel={() => {
+                            isNavigatingRef.current = false
+                            forceUpdate({})
+                        }}
+                    />
+                ) : isSignedIn ? (
+                    <>
+                        <ChatHeader />
+                        <ChatContainer />
+                    </>
+                ) : (
+                    <>
+                        <ChatHeader />
+                        <ChatContainerNonLogged />
+                    </>
+                )}
             </SidebarInset>
         </SidebarProvider>
     )
