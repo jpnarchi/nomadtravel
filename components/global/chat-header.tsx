@@ -49,16 +49,16 @@ export function ChatHeader() {
                     className="h-10 w-20 shrink-0"
                     />
                 </div>
-                <nav className="flex items-center gap-6">
-                    <Link href="/" className="text-base md:text-sm  font-medium hover:text-primary transition-colors">
+                <nav className="flex items-center gap-8">
+                    <Link href="/" className="text-base  md:text-md lg:text-xl  font-medium hover:text-primary transition-colors">
                         Home
                     </Link>
                     {isSignedIn && (
-                    <Link href="/my-templates" className="text-base md:text-sm font-medium hover:text-primary transition-colors">
+                    <Link href="/my-templates" className="text-base  md:text-md lg:text-xl font-medium hover:text-primary transition-colors">
                         My Templates
                     </Link>)}
 
-                    <Link href="/pricing" className="text-base md:text-sm font-medium hover:text-primary transition-colors">
+                    <Link href="/pricing" className="text-base  md:text-md lg:text-xl font-medium hover:text-primary transition-colors">
                         Pricing
                     </Link>
 
@@ -75,17 +75,17 @@ export function ChatHeader() {
             <div className="flex items-center gap-12">
                 {!isSignedIn && (
                     <>
-                        <Link href="/sign-in" className="hidden md:block text-base md:text-md font-medium hover:text-primary transition-colors">
+                        <Link href="/sign-in" className="hidden md:block text-base text-sm md:text-md lg:text-xl  hover:text-primary transition-colors">
                             Sign in
                         </Link>
                         {isMobile ? (
-                            <Button className="justify-center gap-2 text-base md:text-md rounded-full px-6 md:px-8 py-3 md:py-5 -mr-12">
+                            <Button className="justify-center gap-2 text-base text-sm  md:text-md lg:text-xl rounded-full px-6 md:px-8 py-3 md:py-5 -mr-12">
                                 <Link href="/sign-in">
                                     Sign in
                                 </Link>
                             </Button>
                         ) : (
-                            <Button className="justify-center gap-2 text-base md:text-md rounded-full px-6 md:px-8 py-3 md:py-5">
+                            <Button className="justify-center gap-2 text-base text-sm  md:text-md lg:text-xl rounded-full px-6 md:px-8 py-3 md:py-5">
                                 <Link href="/sign-up">
                                     Start free
                                 </Link>

@@ -51,11 +51,11 @@ export function PricingContainer() {
     }
 
     return (
-        <section className="-mb-10">
+        <section className="">
             <div className="bg-gradient-to-t from-[#F5F5FA] from-10% to-white to-70% pb-2 pt-10">
                 <div className="mx-auto max-w-[140rem] px-6">
                     <div className="mx-auto max-w-4xl space-y-6 text-center mb-8">
-                        <h1 className="text-center text-4xl font-semibold lg:text-5xl font-[family-name:var(--font-esbuild-bold)]">Choose the plan that best fits your needs</h1>
+                        <h1 className="text-center text-4xl font-semibold lg:text-5xl font-[family-name:var(--font-ppmori-semibold)]">Choose the plan that best fits your needs</h1>
                         {user?.subscriptionId && (
                             <div className="flex justify-center">
                                 <Button
@@ -82,23 +82,29 @@ export function PricingContainer() {
                 )}
             </div>
 
-            <div className="w-full bg-white pb-8 py-12"
-                style={{
-                    backgroundImage: isMobile ? "url('/img/bg-phone.png')" : "url('/img/bg-pricing.png')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundAttachment: isMobile ? "fixed" : "none"
-                    
-                }}
-            >
-                
-                <div className="text-center mb-6 -mt-6">
-                    <span className="text-green-600 font-semibold">Save up to 28%</span>
-                    <span className="text-black ml-1 font-semibold">with annual billing</span>
+            <div className="w-full bg-white pb-8 py-12 bg-gradient-to-t from-[#F4A7B6]/30 from-10% to-primary/90 to-99% relative overflow-hidden">
+
+            {/* Imágenes decorativas - Detrás de las tarjetas */}
+            {/* Imagen izquierda - Solo visible en desktop */}
+            <img
+                src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
+                alt="Decorative left"
+                className="hidden lg:block absolute left-0 top-0 w-32 xl:w-40 h-auto opacity-80 mt-20 z-0"
+            />
+
+            {/* Imagen derecha - Solo visible en desktop */}
+            <img
+                src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIT9jM2zUlgOP8WXqRbDcys6iZYpKNLMvldaEF"
+                alt="Decorative right"
+                className="hidden lg:block absolute right-0 bottom-0 w-32 xl:w-60 h-auto opacity-80 mb-10 transform scale-x-[-1] z-0"
+            />
+
+                <div className="text-center mb-6 -mt-6 relative z-10">
+                    <span className="text-white font-semibold">Save up to 28%</span>
+                    <span className="text-white ml-1 font-semibold">with annual billing</span>
                 </div>
                 
-                <div className="mx-auto max-w-[80rem] px-6 grid gap-6 md:grid-cols-4 pb-6 px-12"
+                <div className="mx-auto max-w-[80rem] px-6 grid gap-6 md:grid-cols-4 pb-6 px-12 relative z-10"
                 >
                     <PricingCard
                         billingType={billingType}
