@@ -7,7 +7,7 @@ export const SignUpView = () => {
             {/* Columna izquierda - Formulario de Sign Up */}
             <div className="absolute left-0 top-0 w-full h-full md:w-1/2 flex items-center justify-center p-4 md:p-8 z-10 pt-10 lg:pt-30 md:ml-0">
                 <div className="w-full max-w-md space-y-4">
-                    <h1 className="text-4xl lg:text-5xl font-semibold text-black -mb-2 ml-10 font-[family-name:var(--font-esbuild-bold)]">Sign up</h1>
+                    <h1 className="text-4xl lg:text-5xl font-semibold text-black -mb-2 ml-10 font-[family-name:var(--font-ppmori-semibold)]">Sign up</h1>
                     <SignUp
                         routing="path"
                         path="/sign-up"
