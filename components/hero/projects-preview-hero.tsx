@@ -329,7 +329,7 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0 text-black pointer-events-none">
-                        <h3 className="text-sm sm:text-base line-clamp-1 group-hover:text-blue-400 transition-colors font-medium">
+                        <h3 className="text-sm sm:text-base line-clamp-1 group-hover:text-blue-400 transition-colors font-[family-name:var(--font-ppmori-semibold)]">
                             {title}
                         </h3>
                         <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-zinc-400 mt-0.5 sm:mt-1">
@@ -556,7 +556,7 @@ export function ProjectsPreviewHero() {
                                 <div className="flex items-center gap-2">
                                     <ArrowUpDown className="h-4 w-4" />
                                     <span className="hidden sm:inline">Sort by:</span>
-                                    <span className="font-semibold">
+                                    <span className="text-base">
                                         {sortBy === 'lastEdited' && 'Last edited'}
                                         {sortBy === 'dateCreated' && 'Date created'}
                                         {sortBy === 'alphabetical' && 'Alphabetical'}

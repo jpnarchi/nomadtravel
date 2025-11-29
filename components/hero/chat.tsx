@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/global/app-sidebar"
 import { ChatContainer } from "@/components/hero/chat-container"
 import { ChatContainerNonLogged } from "@/components/hero/chat-container-non-logged"
 import { ChatHeader } from "@/components/global/chat-header"
+
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { HeroOnboarding } from "./hero-onboarding";
@@ -48,11 +49,13 @@ export function Chat() {
                     <>
                         <ChatHeader />
                         <ChatContainer />
+
                     </>
                 ) : (
                     <>
                         <ChatHeader />
                         <ChatContainerNonLogged />
+                        
                     </>
                 )}
             </SidebarInset>

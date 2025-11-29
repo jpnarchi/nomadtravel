@@ -12,6 +12,7 @@ import { PricingPopup } from "../pricing/pricing-popup";
 import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { ProjectsPreviewHero } from "./projects-preview-hero"
 import { SlideSelector } from "../chat/slides-selector"
+import { Footer } from "../global/footer"
 
 
 export function ChatContainer() {
@@ -115,9 +116,22 @@ export function ChatContainer() {
 
     return (
         <>
-            <div className="h-screen overflow-y-auto bg-background">
+            <div className="h-screen overflow-y-auto bg-gradient-to-t from-[#F4A7B6]/30  from-10% to-primary to-99%">
                 {/* Hero Section - Full viewport height */}
+
                 <div className="text-black flex flex-col min-h-[calc(100dvh-4rem)] w-full relative">
+                <img
+                        src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
+                        alt="Decorative left"
+                        className="hidden lg:block absolute left-0 bottom-0 w-32  -ml-20 xl:w-60 h-auto opacity-80 mb-40 pointer-events-none z-0"
+                    />
+                                    {/* Imagen derecha - Solo visible en desktop */}
+                <img
+                        
+                        src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
+                        alt="Decorative right"
+                        className="hidden lg:block absolute right-0 top-0 w-32 xl:w-90 h-auto opacity-80 mb-10 -mr-30 mt-20 transform scale-x-[-1] pointer-events-none z-0"
+                    />
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="initial-state"
@@ -130,7 +144,7 @@ export function ChatContainer() {
                             }}
                         >
                             <motion.div
-                                className=" text-3xl sm:text-4xl md:text-5xl font-inter font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
+                                className=" text-3xl text-white sm:text-4xl md:text-5xl font-inter font-bold flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
                                 exit={{
                                     y: -30,
                                     opacity: 0,
@@ -143,7 +157,7 @@ export function ChatContainer() {
                                 </span>
                             </motion.div>
                             <motion.div>
-                                <p className="-mt-4 md:mt-0 text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
+                                <p className="-mt-4 text-white md:mt-0 text-xl sm:text-xl md:text-2xl flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-center"
                                 >
                                     Start by typing your idea
                                 </p>
@@ -181,24 +195,36 @@ export function ChatContainer() {
                     </AnimatePresence>
 
                     {/* Scroll Indicator */}
-                    
+
                 </div>
 
                 {/* How It Works Section - Below hero, requires scroll */}
-               <ProjectsPreviewHero />
-                
-
-                {/* Recent Presentations Panel - Only shown when user is signed in */}
+                <div className="relative z-0">
+                    {/* Imágenes decorativas - detrás de ProjectsPreviewHero */}
 
 
- 
+                    <div className="relative z-10">
+                        <ProjectsPreviewHero />
+                    </div>
 
-                {/* Footer */}
-                {/* <Footer /> */}
+
+                    {/* Recent Presentations Panel - Only shown when user is signed in */}
+
+
+
+
+                    {/* Footer */}
+
+
+                </div>
 
                 {/* Drag Drop Overlay */}
+
                 <DragDropOverlay files={files} setFiles={setFiles} />
+
+                <Footer />
             </div>
+
 
             <PricingPopup
                 isOpen={showPricingPopup}
