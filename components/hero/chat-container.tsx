@@ -116,22 +116,22 @@ export function ChatContainer() {
 
     return (
         <>
-            <div className="h-screen overflow-y-auto bg-gradient-to-t from-[#F4A7B6]/30  from-10% to-primary to-99%">
+            <div className="h-screen overflow-y-auto overflow-x-hidden bg-white">
                 {/* Hero Section - Full viewport height */}
 
-                <div className="text-black flex flex-col min-h-[calc(100dvh-4rem)] w-full relative">
-                <img
+                <div className="text-black flex flex-col min-h-[calc(100dvh-4rem)] w-full relative bg-gradient-to-t from-[#F4A7B6]/30  from-10% to-primary to-99%">
+                {/* <img
                         src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
                         alt="Decorative left"
-                        className="hidden lg:block absolute left-0 bottom-0 w-32  -ml-20 xl:w-60 h-auto opacity-80 mb-40 pointer-events-none z-0"
-                    />
+                        className="hidden lg:block absolute left-0 bottom-0 w-32  -ml-20 xl:w-60 h-auto opacity-20 mb-40 pointer-events-none z-0 drop-shadow-[0_0_25px_rgba(255,255,255,0.9)]"
+                    /> */}
                                     {/* Imagen derecha - Solo visible en desktop */}
-                <img
-                        
+                {/* <img
+
                         src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
                         alt="Decorative right"
-                        className="hidden lg:block absolute right-0 top-0 w-32 xl:w-90 h-auto opacity-80 mb-10 -mr-30 mt-20 transform scale-x-[-1] pointer-events-none z-0"
-                    />
+                        className="hidden lg:block absolute right-0 top-0 w-32 xl:w-90 h-auto opacity-40 mb-10 -mr-30 mt-20 transform scale-x-[-1] pointer-events-none z-0 "
+                    /> */}
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="initial-state"
@@ -199,7 +199,7 @@ export function ChatContainer() {
                 </div>
 
                 {/* How It Works Section - Below hero, requires scroll */}
-                <div className="relative z-0">
+                <div className="relative z-0  bg-gradient-to-t from-white  from-60% to-[#FBD8DA] to-90%">
                     {/* Imágenes decorativas - detrás de ProjectsPreviewHero */}
 
 
