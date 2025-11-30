@@ -86,18 +86,18 @@ export function PricingContainer() {
 
             {/* Imágenes decorativas - Detrás de las tarjetas */}
             {/* Imagen izquierda - Solo visible en desktop */}
-            <img
+            {/* <img
                 src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
                 alt="Decorative left"
                 className="hidden lg:block absolute left-0 top-0 w-32 xl:w-40 h-auto opacity-80 mt-20 z-0"
             />
 
-            {/* Imagen derecha - Solo visible en desktop */}
+            
             <img
                 src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIT9jM2zUlgOP8WXqRbDcys6iZYpKNLMvldaEF"
                 alt="Decorative right"
                 className="hidden lg:block absolute right-0 bottom-0 w-32 xl:w-60 h-auto opacity-80 mb-10 transform scale-x-[-1] z-0"
-            />
+            /> */}
 
                 <div className="text-center mb-6 -mt-6 relative z-10">
                     <span className="text-white font-semibold">Save up to 28%</span>
