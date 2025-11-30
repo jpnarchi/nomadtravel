@@ -83,6 +83,13 @@ export const metadata = {
   icons: {
     icon: "/logo.svg"
   },
+  manifest: "/manifest.json",
+  themeColor: "#E5332D",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
   openGraph: {
     title: "iLovePresentations - Create your presentation with AI",
     description:

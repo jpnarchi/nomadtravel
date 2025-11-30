@@ -1,0 +1,62 @@
+{
+  "name": "iLovePresentations - AI-Powered Presentation Creator",
+  "short_name": "iLovePresentations",
+  "description": "Create professional presentations automatically with AI. Fast, optimized, and perfect for any business or project.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#E5332D",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/marketing.jpeg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "iLovePresentations - AI-Powered Platform"
+    }
+  ],
+  "categories": [
+    "productivity",
+    "business",
+    "education"
+  ],
+  "shortcuts": [
+    {
+      "name": "New Presentation",
+      "short_name": "New",
+      "description": "Create a new presentation with AI",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
