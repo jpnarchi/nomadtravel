@@ -45,17 +45,15 @@ export function Chat() {
                             forceUpdate({})
                         }}
                     />
-                ) : isSignedIn ? (
+                ) : !isSignedIn ? (
                     <>
                         <ChatHeader />
-                        <ChatContainer />
-
+                        <ChatContainerNonLogged />
                     </>
                 ) : (
                     <>
                         <ChatHeader />
-                        <ChatContainerNonLogged />
-                        
+                        <ChatContainer />
                     </>
                 )}
             </SidebarInset>

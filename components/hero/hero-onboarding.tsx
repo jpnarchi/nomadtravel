@@ -30,6 +30,12 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
         console.log('[Hero Onboarding] templateSource changed to:', templateSource);
     }, [templateSource]);
 
+    // Handler for slide changes - clears input when slides change
+    const handleSlideChange = (numSlides: number) => {
+        setSelectedSlides(numSlides);
+        setInput(''); // Clear input when user changes slide count
+    };
+
     const router = useRouter();
     const user = useQuery(api.users.getUserInfo);
     const canCreateChat = useQuery(api.chats.canCreateChat);
@@ -72,8 +78,7 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
             });
 
             const fileUrls = [];
-            // Add number of slides to the prompt
-            let prompt = `${suggestion}\nNumber of slides: ${selectedSlides}`
+            let prompt = suggestion
 
             // check if files are present
             if (files.length > 0) {
@@ -95,7 +100,7 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
                     fileUrls.push({ url: url, type: file.type });
                 }
 
-                prompt = createPromptWithAttachments(`${suggestion}\nNumber of slides: ${selectedSlides}`, fileUrls);
+                prompt = createPromptWithAttachments(suggestion, fileUrls);
             }
 
             await updateParts({
@@ -106,6 +111,10 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
             // Save templateSource to localStorage so chat page can read it
             localStorage.setItem('templateSource', templateSource);
             console.log('[Hero Onboarding] Saved templateSource to localStorage:', templateSource);
+
+            // Save slides count to localStorage so chat page can read it
+            localStorage.setItem('slidesCount', selectedSlides.toString());
+            console.log('[Hero Onboarding] Saved slidesCount to localStorage:', selectedSlides);
 
             router.push(`/chat/${chatId}`);
         } catch (error: any) {
@@ -152,8 +161,7 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
                 });
 
                 const fileUrls = [];
-                // Add number of slides to the prompt
-                let prompt = `${input}\nNumber of slides: ${selectedSlides}`
+                let prompt = input
 
                 // check if files are present
                 if (files.length > 0) {
@@ -175,7 +183,7 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
                         fileUrls.push({ url: url, type: file.type });
                     }
 
-                    prompt = createPromptWithAttachments(`${input}\nNumber of slides: ${selectedSlides}`, fileUrls);
+                    prompt = createPromptWithAttachments(input, fileUrls);
                 }
 
                 await updateParts({
@@ -186,6 +194,10 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
                 // Save templateSource to localStorage so chat page can read it
                 localStorage.setItem('templateSource', templateSource);
                 console.log('[Hero Onboarding] Saved templateSource to localStorage:', templateSource);
+
+                // Save slides count to localStorage so chat page can read it
+                localStorage.setItem('slidesCount', selectedSlides.toString());
+                console.log('[Hero Onboarding] Saved slidesCount to localStorage:', selectedSlides);
 
                 router.push(`/chat/${chatId}`);
             }
@@ -260,7 +272,7 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
                             >
                                 <div className="flex justify-start px-6 lg:px-16 text-black">
                                     <SlideSelector
-                                        onSlideChange={setSelectedSlides}
+                                        onSlideChange={handleSlideChange}
                                         userPlan={user?.plan}
                                     />
                                 </div>

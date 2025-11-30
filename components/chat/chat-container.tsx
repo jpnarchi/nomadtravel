@@ -65,6 +65,23 @@ export function ChatContainer({
     });
     const templateSourceRef = useRef<'default' | 'my-templates'>(templateSource);
 
+    // Initialize slidesCount from localStorage if available (only for first message)
+    const [slidesCount, setSlidesCount] = useState<number | null>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('slidesCount');
+            if (saved) {
+                // Clear it immediately after reading
+                localStorage.removeItem('slidesCount');
+                const count = parseInt(saved, 10);
+                if (!isNaN(count) && count > 0) {
+                    return count;
+                }
+            }
+        }
+        return null;
+    });
+    const slidesCountRef = useRef<number | null>(slidesCount);
+
     // Check if user has a paid plan (pro, premium, ultra, or admin)
     const isPaidUser = user?.role === "admin" || user?.plan === "ultra" || user?.plan === "premium" || user?.plan === "pro";
 
@@ -77,6 +94,13 @@ export function ChatContainer({
         console.log('[ChatContainer] templateSourceRef.current is now:', templateSourceRef.current);
     }, [templateSource]);
 
+    // Keep slidesCount ref in sync with state
+    useEffect(() => {
+        slidesCountRef.current = slidesCount;
+        console.log('[ChatContainer] slidesCount STATE changed to:', slidesCount);
+        console.log('[ChatContainer] slidesCountRef.current is now:', slidesCountRef.current);
+    }, [slidesCount]);
+
     // Create a stable reference to getToken
     const getTokenRef = useRef(getToken);
     getTokenRef.current = getToken;
@@ -86,11 +110,21 @@ export function ChatContainer({
             api: `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`,
             headers: async () => {
                 const currentTemplateSource = templateSourceRef.current;
+                const currentSlidesCount = slidesCountRef.current;
                 console.log('[ChatContainer] headers() called, sending X-Template-Source:', currentTemplateSource);
-                return {
+                console.log('[ChatContainer] headers() called, sending X-Slides-Count:', currentSlidesCount);
+
+                const headers: Record<string, string> = {
                     Authorization: `Bearer ${await getTokenRef.current({ template: "convex" })}`,
                     'X-Template-Source': currentTemplateSource,
                 };
+
+                // Only send slides count if it's set (for the first message)
+                if (currentSlidesCount !== null) {
+                    headers['X-Slides-Count'] = currentSlidesCount.toString();
+                }
+
+                return headers;
             },
         }),
         id,
@@ -99,6 +133,10 @@ export function ChatContainer({
             setIsLoading(false);
             setShowSuggestions(true);
             setIsGeneratingSync(true);
+            // Clear slides count after first message is processed
+            if (slidesCountRef.current !== null) {
+                setSlidesCount(null);
+            }
         }
     });
 
@@ -132,12 +170,20 @@ export function ChatContainer({
             setIsGeneratingSync(false);
 
             // Make direct API call to chat endpoint
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-Template-Source': templateSourceRef.current,
+            };
+
+            // Only send slides count if it's set (for the first message)
+            if (slidesCountRef.current !== null) {
+                headers['X-Slides-Count'] = slidesCountRef.current.toString();
+            }
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}/api/chat`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers,
                 body: JSON.stringify({
                     id,
                     messages: safeInitialMessages,

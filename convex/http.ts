@@ -189,12 +189,18 @@ http.route({
         const headerTemplateSource = req.headers.get('X-Template-Source') as 'default' | 'my-templates' | null;
         const templateSource = headerTemplateSource || bodyTemplateSource || 'default';
 
+        // Extract slidesCount from header (only for first message)
+        const headerSlidesCount = req.headers.get('X-Slides-Count');
+        const requestedSlidesCount = headerSlidesCount ? parseInt(headerSlidesCount, 10) : null;
+
         console.log('=== TEMPLATE SOURCE DEBUG ===');
         console.log('[HTTP] Request body keys:', Object.keys(requestBody));
         console.log('[HTTP] Header X-Template-Source:', headerTemplateSource);
         console.log('[HTTP] Body templateSource:', bodyTemplateSource);
         console.log('[HTTP] FINAL templateSource being used:', templateSource);
         console.log('[HTTP] Will call query:', templateSource === 'my-templates' ? 'getUserTemplates' : 'getAdminTemplates');
+        console.log('[HTTP] Header X-Slides-Count:', headerSlidesCount);
+        console.log('[HTTP] Requested slides count:', requestedSlidesCount);
         console.log('=============================');
 
         // Helper to compress messages and filter heavy tool results
@@ -288,6 +294,7 @@ http.route({
             system: `You are iLovePresentations, an AI for Fabric.js presentations (1920x1080).
 
             User: ${userName} | Date: ${currentDate}
+            ${requestedSlidesCount ? `\n📊 REQUESTED SLIDES: User wants ${requestedSlidesCount} slides in their presentation.\n` : ''}
             ${templates.length === 0 ? '\n⚠️ IMPORTANT: No templates available. Inform the user that they need to create templates first before creating presentations. You cannot use generateInitialCodebase until templates are available.\n' : ''}
 
             ## Communication
@@ -308,9 +315,14 @@ http.route({
             1. generateInitialCodebase → WAIT
             2. **MANDATORY SLIDE COUNT CHECK**:
                - Count total slides in template
-               - IF template has MORE slides than user requested:
-                 * deleteSlide for EACH excess slide (e.g., if user wants 5 slides but template has 7, delete 2 slides)
+               ${requestedSlidesCount ? `- User requested ${requestedSlidesCount} slides` : ''}
+               - IF template has MORE slides than user requested${requestedSlidesCount ? ` (more than ${requestedSlidesCount})` : ''}:
+                 * deleteSlide for EACH excess slide (e.g., if user wants ${requestedSlidesCount || 5} slides but template has ${(requestedSlidesCount || 5) + 2}, delete ${(requestedSlidesCount ? 2 : 2)} slides)
                  * WAIT for each deletion to complete
+               - IF template has FEWER slides than user requested${requestedSlidesCount ? ` (fewer than ${requestedSlidesCount})` : ''}:
+                 * Read existing slides to match design patterns
+                 * Add new slides to reach requested count
+                 * WAIT for each addition to complete
             3. readFile ALL remaining slides → WAIT for each
             4. MANDATORY IMAGE CHECK:
                - Search EVERY slide for image containers (objects with isImagePlaceholder: true OR type: "Group" with image placeholder properties)
@@ -322,7 +334,9 @@ http.route({
             
             ## Key Rules
             - Execute tools SEQUENTIALLY when dependent
-            - **MANDATORY**: ALWAYS delete excess slides if template has more than user requested
+            - **MANDATORY**: ALWAYS adjust slide count to match user's request${requestedSlidesCount ? ` (${requestedSlidesCount} slides)` : ''}
+            - **MANDATORY**: Delete excess slides if template has more than requested
+            - **MANDATORY**: Add new slides if template has fewer than requested
             - ALWAYS read slides before updating
             - **MANDATORY**: Search for and fill ALL image containers (isImagePlaceholder: true) before ANY preview
             - **NEVER skip fillImageContainer** if containers exist - this is REQUIRED
@@ -330,7 +344,7 @@ http.route({
             - Use updateSlideTexts for text (not manageFile)
             - Replace ALL "Lorem Ipsum" and placeholder text
             - BEFORE showPreview: Verify checklist:
-              * ✓ Correct number of slides (deleted excess if needed)
+              * ✓ Correct number of slides${requestedSlidesCount ? ` (exactly ${requestedSlidesCount} slides)` : ' (deleted excess or added missing if needed)'}
               * ✓ ALL slides read
               * ✓ ALL image containers identified and filled
               * ✓ NO placeholder text remains
@@ -1281,7 +1295,7 @@ http.route({
                 headers: new Headers({
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "POST",
-                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent, X-Template-Source",
+                    "Access-Control-Allow-Headers": "Content-Type, Digest, Authorization, User-Agent, X-Template-Source, X-Slides-Count",
                     "Access-Control-Max-Age": "86400",
                 }),
             });

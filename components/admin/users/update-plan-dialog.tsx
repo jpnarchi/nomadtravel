@@ -78,7 +78,7 @@ export function UpdatePlanDialog({ user, isOpen, onOpenChange }: UpdatePlanDialo
                             <SelectTrigger className="flex-1">
                                 <SelectValue placeholder="Select a plan" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="z-[10000]">
                                 <SelectItem value="free">Free</SelectItem>
                                 <SelectItem value="pro">Pro</SelectItem>
                                 <SelectItem value="premium">Premium</SelectItem>

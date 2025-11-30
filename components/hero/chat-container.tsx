@@ -29,6 +29,12 @@ export function ChatContainer() {
         console.log('[Hero ChatContainer] templateSource changed to:', templateSource);
     }, [templateSource]);
 
+    // Handler for slide changes - clears input when slides change
+    const handleSlideChange = (numSlides: number) => {
+        setSelectedSlides(numSlides);
+        setInput(''); // Clear input when user changes slide count
+    };
+
     const router = useRouter();
     const user = useQuery(api.users.getUserInfo);
     const canCreateChat = useQuery(api.chats.canCreateChat);
@@ -64,8 +70,7 @@ export function ChatContainer() {
                 });
 
                 const fileUrls = [];
-                // Add number of slides to the prompt
-                let prompt = `${input}\nNumber of slides: ${selectedSlides}`
+                let prompt = input
 
                 // check if files are present
                 if (files.length > 0) {
@@ -87,7 +92,7 @@ export function ChatContainer() {
                         fileUrls.push({ url: url, type: file.type });
                     }
 
-                    prompt = createPromptWithAttachments(`${input}\nNumber of slides: ${selectedSlides}`, fileUrls);
+                    prompt = createPromptWithAttachments(input, fileUrls);
                 }
 
                 await updateParts({
@@ -98,6 +103,10 @@ export function ChatContainer() {
                 // Save templateSource to localStorage so chat page can read it
                 localStorage.setItem('templateSource', templateSource);
                 console.log('[Hero ChatContainer] Saved templateSource to localStorage:', templateSource);
+
+                // Save slides count to localStorage so chat page can read it
+                localStorage.setItem('slidesCount', selectedSlides.toString());
+                console.log('[Hero ChatContainer] Saved slidesCount to localStorage:', selectedSlides);
 
                 router.push(`/chat/${chatId}`);
             }
@@ -173,7 +182,7 @@ export function ChatContainer() {
                             >
                                 <div className="flex justify-start px-6 lg:px-16 text-black">
                                     <SlideSelector
-                                        onSlideChange={setSelectedSlides}
+                                        onSlideChange={handleSlideChange}
                                         userPlan={user?.plan}
                                     />
                                 </div>
@@ -199,7 +208,7 @@ export function ChatContainer() {
                 </div>
 
                 {/* How It Works Section - Below hero, requires scroll */}
-                <div className="relative z-0  bg-gradient-to-t from-white  from-60% to-[#FBD8DA] to-90%">
+                <div className="relative z-0  bg-gradient-to-t from-white  from-60% to-[#FBDADC] to-90%">
                     {/* Imágenes decorativas - detrás de ProjectsPreviewHero */}
 
 
