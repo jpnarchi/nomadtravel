@@ -305,8 +305,8 @@ function SlideCanvas({ slideContent, title, chatId, createdAt, index, userInfo, 
             {/* Canvas Container */}
             <div className="relative aspect-video bg-white flex items-center justify-center overflow-hidden rounded-t-xl sm:rounded-t-2xl">
                 {!isLoaded && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <Loader className="size-6 sm:size-8" />
+                    <div className="absolute inset-0 flex items-center justify-center text-zinc-400 pointer-events-none">
+                        <span> Preview not available...</span>
                     </div>
                 )}
                 <canvas
