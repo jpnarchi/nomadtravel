@@ -148,8 +148,8 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
 
         // ABSOLUTE FIXED measurements - NEVER change regardless of screen size
         const canvasWidth = 800; // FIXED width
-        const canvasHeight = 400; // FIXED height
-        const scale = 740 / 1920; // FIXED scale
+        const canvasHeight = 410; // FIXED height
+        const scale = 740 / 2020; // FIXED scale
 
         console.log('🎨 Canvas Init (ABSOLUTE FIXED):', { canvasWidth, canvasHeight, scale });
 
