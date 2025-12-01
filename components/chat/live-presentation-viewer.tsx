@@ -81,25 +81,25 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
         }
     }, [slides.length, currentSlideIndex]);
 
-    // Initialize canvas with responsive sizing
+    // Initialize canvas with ABSOLUTE FIXED sizing - NEVER changes
     useEffect(() => {
-        if (!canvasElement || fabricCanvasRef.current || !containerRef.current) return;
+        if (!canvasElement || fabricCanvasRef.current) return;
 
-        // Calculate canvas size based on container
-        const containerWidth = containerRef.current.clientWidth;
-        const maxWidth = Math.min(containerWidth - 64, 900);
-        const aspectRatio = 16 / 9;
-        const canvasWidth = maxWidth;
-        const canvasHeight = canvasWidth / aspectRatio;
+        // ABSOLUTE FIXED measurements - NEVER change regardless of screen size
+        const canvasWidth = 800; // FIXED width
+        const canvasHeight = 400; // FIXED height
+        const scale = 740 / 1920; // FIXED scale
+
+        console.log('🎨 Canvas Init (ABSOLUTE FIXED):', { canvasWidth, canvasHeight, scale });
 
         const canvas = new fabric.Canvas(canvasElement, {
             width: canvasWidth,
             height: canvasHeight,
             backgroundColor: '#1a1a1a',
             selection: false,
+            preserveObjectStacking: true,
         });
 
-        const scale = canvasWidth / 1920;
         canvas.setZoom(scale);
         canvas.viewportTransform = [scale, 0, 0, scale, 0, 0];
 
