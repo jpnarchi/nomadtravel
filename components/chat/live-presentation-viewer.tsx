@@ -47,7 +47,9 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
             if (!containerElement) return;
 
             const containerWidth = containerElement.clientWidth;
-            const canvasWidth = 800; // Ancho fijo del canvas
+            const containerHeight = containerElement.clientHeight;
+            const canvasWidth = 1920; // Ancho del canvas (igual que editor)
+            const canvasHeight = 1080; // Alto del canvas (igual que editor)
 
             // Calcular padding basado en las clases: p-4 md:p-8 (16px mobile, 32px desktop en cada lado)
             const isMobile = window.innerWidth < 768;
@@ -56,18 +58,24 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
 
             // Calcular la escala para que el canvas quepa en el contenedor
             const availableWidth = containerWidth - totalPadding;
-            const rawScale = availableWidth / canvasWidth;
+            const availableHeight = containerHeight - totalPadding;
+            const scaleX = availableWidth / canvasWidth;
+            const scaleY = availableHeight / canvasHeight;
             // Limitar la escala a máximo 1 para que nunca sea más grande que el original
-            const scale = Math.min(rawScale, 1);
+            const scale = Math.min(scaleX, scaleY, 1);
 
             console.log('🎯 Scale calculation:', {
                 containerWidth,
+                containerHeight,
                 canvasWidth,
+                canvasHeight,
                 isMobile,
                 paddingPerSide,
                 totalPadding,
                 availableWidth,
-                rawScale,
+                availableHeight,
+                scaleX,
+                scaleY,
                 finalScale: scale
             });
 
@@ -142,20 +150,39 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
         }
     }, [slides.length, currentSlideIndex]);
 
-    // Initialize canvas with ABSOLUTE FIXED sizing - NEVER changes
+    // Initialize canvas with same dimensions as editor (1920x1080)
     useEffect(() => {
-        if (!canvasElement || fabricCanvasRef.current) return;
+        if (!canvasElement || fabricCanvasRef.current || !containerElement) return;
 
-        // ABSOLUTE FIXED measurements - NEVER change regardless of screen size
-        const canvasWidth = 800; // FIXED width
-        const canvasHeight = 410; // FIXED height
-        const scale = 740 / 2020; // FIXED scale
+        // Canvas dimensions - same as editor
+        const canvasWidth = 1920;
+        const canvasHeight = 1080;
 
-        console.log('🎨 Canvas Init (ABSOLUTE FIXED):', { canvasWidth, canvasHeight, scale });
+        // Calculate scale based on container (same logic as editor)
+        const containerWidth = containerElement.clientWidth;
+        const containerHeight = containerElement.clientHeight;
+        const isMobile = window.innerWidth < 768;
+        const paddingPerSide = isMobile ? 16 : 32;
+        const totalPadding = paddingPerSide * 2;
+
+        const scaleX = (containerWidth - totalPadding) / canvasWidth;
+        const scaleY = (containerHeight - totalPadding) / canvasHeight;
+        const scale = Math.min(scaleX, scaleY, 1);
+
+        const displayWidth = canvasWidth * scale;
+        const displayHeight = canvasHeight * scale;
+
+        console.log('🎨 Canvas Init:', {
+            canvasWidth,
+            canvasHeight,
+            scale,
+            displayWidth,
+            displayHeight
+        });
 
         const canvas = new fabric.Canvas(canvasElement, {
-            width: canvasWidth,
-            height: canvasHeight,
+            width: displayWidth,
+            height: displayHeight,
             backgroundColor: '#1a1a1a',
             selection: false,
             preserveObjectStacking: true,
@@ -173,7 +200,29 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                 fabricCanvasRef.current = null;
             }
         };
-    }, [canvasElement]);
+    }, [canvasElement, containerElement]);
+
+    // Update canvas size when containerScale changes
+    useEffect(() => {
+        if (!fabricCanvasRef.current || !isRendered) return;
+
+        const canvasWidth = 1920;
+        const canvasHeight = 1080;
+        const displayWidth = canvasWidth * containerScale;
+        const displayHeight = canvasHeight * containerScale;
+
+        console.log('🔄 Updating canvas size:', {
+            containerScale,
+            displayWidth,
+            displayHeight
+        });
+
+        fabricCanvasRef.current.setWidth(displayWidth);
+        fabricCanvasRef.current.setHeight(displayHeight);
+        fabricCanvasRef.current.setZoom(containerScale);
+        fabricCanvasRef.current.viewportTransform = [containerScale, 0, 0, containerScale, 0, 0];
+        fabricCanvasRef.current.renderAll();
+    }, [containerScale, isRendered]);
 
     // Render current slide
     useEffect(() => {
@@ -304,17 +353,56 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                                 if (obj.src) {
                                     try {
                                         const img = await fabric.FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' });
+
+                                        // Apply position and transform
                                         if (obj.left !== undefined) img.set('left', obj.left);
                                         if (obj.top !== undefined) img.set('top', obj.top);
                                         if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX);
                                         if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY);
                                         if (obj.angle !== undefined) img.set('angle', obj.angle);
+
+                                        // CRITICAL: Apply originX and originY for centered images
+                                        if (obj.originX !== undefined) img.set('originX', obj.originX);
+                                        if (obj.originY !== undefined) img.set('originY', obj.originY);
+
+                                        // Apply crop properties for image containers
+                                        if (obj.cropX !== undefined) (img as any).cropX = obj.cropX;
+                                        if (obj.cropY !== undefined) (img as any).cropY = obj.cropY;
+                                        if (obj.width !== undefined) img.set('width', obj.width);
+                                        if (obj.height !== undefined) img.set('height', obj.height);
+
+                                        // Restore clipPath for rounded corners
+                                        if (obj.clipPath && obj.borderRadius) {
+                                            const clipBorderRadius = obj.borderRadius / (obj.scaleX || 1);
+                                            const clipPath = new fabric.Rect({
+                                                width: obj.width,
+                                                height: obj.height,
+                                                rx: clipBorderRadius,
+                                                ry: clipBorderRadius,
+                                                left: -(obj.width) / 2,
+                                                top: -(obj.height) / 2,
+                                                originX: 'left',
+                                                originY: 'top',
+                                            });
+                                            img.set('clipPath', clipPath);
+                                        }
+
                                         img.set({ selectable: false, evented: false });
                                         fabricObj = img;
                                     } catch (err) {
                                         console.error('Error loading image:', err);
                                         return null;
                                     }
+                                }
+                                break;
+                            case 'group':
+                                try {
+                                    // Use Fabric.js built-in method to recreate the group from JSON
+                                    const group = await fabric.Group.fromObject(obj);
+                                    fabricObj = group;
+                                } catch (err) {
+                                    console.error('Error loading group:', err);
+                                    return null;
                                 }
                                 break;
                             default:
@@ -325,6 +413,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                             fabricObj.set({
                                 selectable: false,
                                 evented: false,
+                                opacity: obj.opacity ?? 1,
                             });
                             return fabricObj;
                         }
@@ -448,21 +537,17 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                 <div
                     className="relative rounded-lg shadow-2xl border border-border transition-all duration-300 overflow-hidden"
                     style={{
-                        width: `${800 * containerScale}px`,
-                        height: `${400 * containerScale}px`,
+                        width: `${1920 * containerScale}px`,
+                        height: `${1080 * containerScale}px`,
                         boxShadow: '0 20px 60px -12px rgba(0, 0, 0, 0.3)',
                     }}
                 >
                     <canvas
                         ref={setCanvasElement}
-                        className="origin-top-left block"
+                        className="block"
                         style={{
-                            width: '800px',
-                            height: '400px',
                             opacity: isLoadingSlide ? 0.5 : 1,
-                            transform: `scale(${containerScale})`,
-                            transformOrigin: 'top left',
-                            transition: 'opacity 200ms, transform 300ms ease-out',
+                            transition: 'opacity 200ms ease-out',
                             display: 'block',
                         }}
                     />
