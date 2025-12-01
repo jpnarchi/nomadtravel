@@ -149,7 +149,7 @@ export const Header = () => {
         {/* Columna izquierda - Texto centrado */}
         <div className="flex flex-col justify-center items-start">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold dark:text-white leading-none md:text-left font-[family-name:var(--font-esbuild-bold)]">
-          Create your Presentations with AI
+          Create Amazing Presentations with AI
           </h1>
           <p className="max-w-2xl text-sm sm:text-base md:text-md lg:text-xl mt-4 md:mt-6 lg:mt-8 dark:text-neutral-200 leading-relaxed md:text-left">
           Transform your ideas into professional presentations instantly. Our AI builds complete slide decks with design, content, and images, so you can focus on what matters.
