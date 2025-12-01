@@ -901,3 +901,28 @@ export const getAllPresentationsWithFirstSlide = query({
         }
     },
 });
+
+// Query to check if user should see onboarding (created less than 2 projects total)
+export const shouldShowOnboarding = query({
+    args: {},
+    handler: async (ctx) => {
+        try {
+            const user = await getCurrentUser(ctx);
+
+            // Get all monthly usage records for this user
+            const allMonthlyUsage = await ctx.db
+                .query("monthlyPresentationUsage")
+                .withIndex("by_user_id", (q) => q.eq("userId", user._id))
+                .collect();
+
+            // Calculate total presentations created across all months
+            const totalCreated = allMonthlyUsage.reduce((sum, record) => sum + record.count, 0);
+
+            // Show onboarding if user has created less than 2 presentations
+            return totalCreated < 2;
+        } catch (error) {
+            // Return true for unauthenticated users (show onboarding)
+            return true;
+        }
+    },
+});

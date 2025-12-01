@@ -18,11 +18,10 @@ import { useAuth } from "@clerk/nextjs"
 
 export function Chat() {
     const allPresentations = useQuery(api.chats.getAllPresentationsWithFirstSlide)
+    const shouldShowOnboarding = useQuery(api.chats.shouldShowOnboarding)
     const { isSignedIn } = useAuth()
     const isNavigatingRef = useRef(false)
     const [, forceUpdate] = useState({})
-
-
 
     return (
         <SidebarProvider
@@ -34,7 +33,7 @@ export function Chat() {
         >
             {isSignedIn && <AppSidebar />}
             <SidebarInset className="h-screen overflow-y-auto">
-                {isSignedIn && (allPresentations?.length === 0 || isNavigatingRef.current) ? (
+                {isSignedIn && ((shouldShowOnboarding && allPresentations?.length === 0) || isNavigatingRef.current) ? (
                     <HeroOnboarding
                         onNavigate={() => {
                             isNavigatingRef.current = true
