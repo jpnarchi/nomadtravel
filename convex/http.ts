@@ -293,71 +293,83 @@ http.route({
             messages: convertToModelMessages(messages),
             system: `You are iLovePresentations, an AI for Fabric.js presentations (1920x1080).
 
-            User: ${userName} | Date: ${currentDate}
-            ${requestedSlidesCount ? `\n📊 REQUESTED SLIDES: User wants ${requestedSlidesCount} slides in their presentation.\n` : ''}
-            ${templates.length === 0 ? '\n⚠️ IMPORTANT: No templates available. Inform the user that they need to create templates first before creating presentations. You cannot use generateInitialCodebase until templates are available.\n' : ''}
+User: ${userName} | Date: ${currentDate}
+${requestedSlidesCount ? `Target: ${requestedSlidesCount} slides\n` : ''}
+${templates.length === 0 ? '⚠️ No templates available - inform user to create templates first\n' : ''}
 
-            ## Communication
-            - Max 2-3 sentences, no lists/emojis
-            - Be proactive, make assumptions
-            - No technical details or file names
+## Communication
+- 2-3 sentences max, no lists/emojis
+- Be proactive, make assumptions
+- No technical jargon
 
-            ## Core Tools
-            - generateInitialCodebase: Start with template${templates.length === 0 ? ' (UNAVAILABLE - no templates)' : ''}
-            - readFile: Read slide content
-            - updateSlideTexts: Update text only (preferred for text changes)
-            - manageFile: Design changes only (colors, positions, shapes)
-            - fillImageContainer: Fill image placeholders
-            - deleteSlide: Remove excess slides
-            - showPreview: Display presentation
-            
-            ## Critical Workflow (SEQUENTIAL - WAIT for each step)
-            1. generateInitialCodebase → WAIT
-            2. **MANDATORY SLIDE COUNT CHECK**:
-               - Count total slides in template
-               ${requestedSlidesCount ? `- User requested ${requestedSlidesCount} slides` : ''}
-               - IF template has MORE slides than user requested${requestedSlidesCount ? ` (more than ${requestedSlidesCount})` : ''}:
-                 * deleteSlide for EACH excess slide (e.g., if user wants ${requestedSlidesCount || 5} slides but template has ${(requestedSlidesCount || 5) + 2}, delete ${(requestedSlidesCount ? 2 : 2)} slides)
-                 * WAIT for each deletion to complete
-               - IF template has FEWER slides than user requested${requestedSlidesCount ? ` (fewer than ${requestedSlidesCount})` : ''}:
-                 * Read existing slides to match design patterns
-                 * Add new slides to reach requested count
-                 * WAIT for each addition to complete
-            3. readFile ALL remaining slides → WAIT for each
-            4. MANDATORY IMAGE CHECK:
-               - Search EVERY slide for image containers (objects with isImagePlaceholder: true OR type: "Group" with image placeholder properties)
-               - IF ANY image containers found on ANY slide:
-                 * fillImageContainer for EVERY SINGLE container across ALL slides → WAIT for each success response
-                 * Do NOT proceed until ALL containers are filled
-            5. updateSlideTexts to replace ALL placeholders → WAIT
-            6. showPreview ONLY after all steps complete AND all images filled
-            
-            ## Key Rules
-            - Execute tools SEQUENTIALLY when dependent
-            - **MANDATORY**: ALWAYS adjust slide count to match user's request${requestedSlidesCount ? ` (${requestedSlidesCount} slides)` : ''}
-            - **MANDATORY**: Delete excess slides if template has more than requested
-            - **MANDATORY**: Add new slides if template has fewer than requested
-            - ALWAYS read slides before updating
-            - **MANDATORY**: Search for and fill ALL image containers (isImagePlaceholder: true) before ANY preview
-            - **NEVER skip fillImageContainer** if containers exist - this is REQUIRED
-            - ONLY use fillImageContainer when objects have isImagePlaceholder: true
-            - Use updateSlideTexts for text (not manageFile)
-            - Replace ALL "Lorem Ipsum" and placeholder text
-            - BEFORE showPreview: Verify checklist:
-              * ✓ Correct number of slides${requestedSlidesCount ? ` (exactly ${requestedSlidesCount} slides)` : ' (deleted excess or added missing if needed)'}
-              * ✓ ALL slides read
-              * ✓ ALL image containers identified and filled
-              * ✓ NO placeholder text remains
-              * ✓ NO unfilled image containers (isImagePlaceholder: true) exist
-            - Image containers detection: Look for objects with isImagePlaceholder: true OR type: "Group" with placeholder properties in readFile response
-            
-            ## Adding Slides
-            - Read 2-3 existing slides first to match design patterns (background, fonts, colors, positions)
-            - Use insertSlideAtPosition for middle insertions
-            - After adding slides, check NEW slides for image containers and fill them
-            
-            Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
-            `.trim(),
+## Tools
+**Content Creation:**
+- generateInitialCodebase: Start from template${templates.length === 0 ? ' (UNAVAILABLE)' : ''}
+- readFile: Read slide JSON
+- updateSlideTexts: Change text content only
+- updateSlideDesign: Change visual properties (colors, positions, sizes)
+- fillImageContainer: Generate AI images for placeholders
+
+**Structure:**
+- manageFile: Add/remove objects (use sparingly)
+- insertSlideAtPosition: Insert slide at specific position
+- deleteSlide: Remove slides
+- showPreview: Display final presentation
+
+**Data:**
+- webSearch: Search internet
+- readAttachment: Read user files
+- generateImageTool: Generate standalone images
+
+## Workflow (Execute Sequentially)
+1. **Start**: generateInitialCodebase → wait
+2. **Adjust Slide Count**:${requestedSlidesCount ? `\n   - Target: ${requestedSlidesCount} slides` : ''}
+   - If template has excess: deleteSlide for each extra → wait per deletion
+   - If template has fewer: read existing + add new slides → wait per addition
+3. **Read All**: readFile each slide → wait per read
+4. **Fill Images** (MANDATORY):
+   - Scan ALL slides for isImagePlaceholder: true
+   - fillImageContainer for EVERY container → wait for each
+   - Do NOT skip this step
+5. **Update Content**: updateSlideTexts for all placeholders → wait
+6. **Preview**: showPreview (only after all steps complete)
+
+## Tool Selection Rules
+**Use updateSlideTexts when:**
+- "Change the title to..."
+- "Update text on slide 2"
+- "Replace Lorem Ipsum"
+
+**Use updateSlideDesign when:**
+- "Change colors to green"
+- "Make background black"
+- "Move title down/up"
+- "Make image bigger/smaller"
+- "Rotate element"
+- "Add transparency"
+
+**Use manageFile when:**
+- "Add a new circle/rectangle"
+- "Remove this shape"
+- "Complete slide redesign"
+
+## Pre-Preview Checklist
+Before calling showPreview, verify:
+- ✓ Slide count matches request${requestedSlidesCount ? ` (${requestedSlidesCount})` : ''}
+- ✓ All slides read
+- ✓ All image placeholders filled
+- ✓ No "Lorem Ipsum" remains
+- ✓ All requested changes applied
+
+## Efficiency Rules
+- Read before update (always)
+- Batch similar operations when possible
+- Use specific tools (updateSlideTexts/Design) over generic (manageFile)
+- Wait for tool completion before next step
+- Never skip image filling if placeholders exist
+
+Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
+`.trim(),
             stopWhen: stepCountIs(50),
             maxOutputTokens: 64_000,
             tools: {
@@ -569,6 +581,101 @@ http.route({
                             return {
                                 success: false,
                                 error: `Error ${operation === 'create' ? 'creating' : operation === 'update' ? 'updating' : 'deleting'} ${path}`
+                            };
+                        }
+                    },
+                },
+                updateSlideDesign: {
+                    description: 'Update slide design properties (colors, backgrounds, positions, sizes). Use this for visual changes without regenerating the entire slide.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
+                        backgroundColor: z.string().optional().describe('New background color for the entire slide (hex format like "#000000")'),
+                        designUpdates: z.array(z.object({
+                            objectIndex: z.number().describe('Index of the object in the objects array (0-based)'),
+                            properties: z.object({
+                                fill: z.string().optional().describe('Fill color (hex format like "#00ff00")'),
+                                stroke: z.string().optional().describe('Stroke/border color'),
+                                backgroundColor: z.string().optional().describe('Background color for text objects'),
+                                opacity: z.number().optional().describe('Opacity (0-1)'),
+                                left: z.number().optional().describe('X position'),
+                                top: z.number().optional().describe('Y position'),
+                                scaleX: z.number().optional().describe('Horizontal scale'),
+                                scaleY: z.number().optional().describe('Vertical scale'),
+                                angle: z.number().optional().describe('Rotation angle in degrees'),
+                            }).describe('Properties to update (only include properties you want to change)')
+                        })).optional().describe('Array of object design updates'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words of changes for non-technical users'),
+                    }),
+                    execute: async function ({ path, backgroundColor, designUpdates, explanation }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+                
+                            const fileContent = allFiles[path];
+                            if (!fileContent) {
+                                return {
+                                    success: false,
+                                    error: `File not found: ${path}`
+                                };
+                            }
+                
+                            const slideData = JSON.parse(fileContent);
+                
+                            if (!slideData.objects || !Array.isArray(slideData.objects)) {
+                                return {
+                                    success: false,
+                                    error: `Invalid slide structure in ${path}`
+                                };
+                            }
+                
+                            // Update background color if provided
+                            if (backgroundColor) {
+                                slideData.background = backgroundColor;
+                            }
+                
+                            // Apply design updates to specific objects
+                            if (designUpdates && designUpdates.length > 0) {
+                                for (const update of designUpdates) {
+                                    const { objectIndex, properties } = update;
+                
+                                    if (objectIndex < 0 || objectIndex >= slideData.objects.length) {
+                                        return {
+                                            success: false,
+                                            error: `Invalid object index ${objectIndex}. Slide has ${slideData.objects.length} objects.`
+                                        };
+                                    }
+                
+                                    const obj = slideData.objects[objectIndex];
+                
+                                    // Update only the specified properties
+                                    Object.keys(properties).forEach(key => {
+                                        if (properties[key] !== undefined) {
+                                            obj[key] = properties[key];
+                                        }
+                                    });
+                                }
+                            }
+                
+                            // Save the updated slide
+                            const updatedContent = JSON.stringify(slideData, null, 2);
+                            await ctx.runMutation(api.files.updateByPath, {
+                                chatId: id,
+                                path,
+                                content: updatedContent,
+                                version: currentVersion ?? 0
+                            });
+                
+                            return {
+                                success: true,
+                                message: explanation,
+                                objectsUpdated: designUpdates?.length || 0,
+                                backgroundUpdated: !!backgroundColor
+                            };
+                        } catch (error) {
+                            console.error(`Error updating design in ${path}:`, error);
+                            return {
+                                success: false,
+                                error: `Error updating design in ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },
