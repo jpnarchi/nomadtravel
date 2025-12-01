@@ -197,18 +197,64 @@ export function PropertiesSidebar({
                                         </Button>
                                     </div>
                                 </div>
-                                <div>
-                                    <Label className="text-xs text-gray-700 mb-2 block font-medium">Line height</Label>
-                                    <Input
-                                        type="number"
-                                        step="0.1"
-                                        min="0.5"
-                                        max="3"
-                                        value={(selectedObject as any).lineHeight || 1.16}
-                                        onChange={(e) => onUpdateTextProperty('lineHeight', parseFloat(e.target.value))}
-                                        className="h-10 bg-gray-100 border-gray-300 text-gray-900"
-                                    />
-                                    <p className="text-[10px] text-gray-600 mt-1">1.0 = single spacing, 1.5 = 1.5x spacing</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <Label className="text-xs text-gray-700 mb-2 block font-medium">Line height</Label>
+                                        <Input
+                                            type="number"
+                                            step="0.1"
+                                            min="0.5"
+                                            max="3"
+                                            value={(selectedObject as any).lineHeight || 1.16}
+                                            onChange={(e) => onUpdateTextProperty('lineHeight', parseFloat(e.target.value))}
+                                            className="h-10 bg-gray-100 border-gray-300 text-gray-900"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-gray-700 mb-2 block font-medium">List style</Label>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                const currentStyle = (selectedObject as any).listStyle || 'bullets'
+                                                const styles = ['none', 'bullets', 'numbers']
+                                                const currentIndex = styles.indexOf(currentStyle)
+                                                const nextStyle = styles[(currentIndex + 1) % styles.length]
+                                                onUpdateTextProperty('listStyle', nextStyle)
+                                            }}
+                                            className="w-full h-10 bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 flex items-center justify-center gap-1"
+                                        >
+                                            {(() => {
+                                                const currentStyle = (selectedObject as any).listStyle || 'bullets'
+                                                switch (currentStyle) {
+                                                    case 'none':
+                                                        return (
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <path d="M11.75 5.25h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5z" />
+                                                            </svg>
+                                                        )
+                                                    case 'bullets':
+                                                        return (
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M11.75 5.25h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zM6 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
+                                                            </svg>
+                                                        )
+                                                    case 'numbers':
+                                                        return (
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M11.75 5.25h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zM5.69 8V4.07h-.06l-1.21.84v-.96l1.28-.88h1.02V8H5.7zm-1.25 3.04c0-.95.73-1.6 1.8-1.6 1.03 0 1.75.6 1.75 1.44 0 .54-.3 1-1.15 1.8l-.94.9v.06h2.16v.86H4.5v-.72l1.6-1.58c.7-.67.88-.93.88-1.25 0-.4-.32-.68-.78-.68-.47 0-.8.32-.8.77v.02h-.96v-.02zm1.26 7.82v-.77h.6c.47 0 .79-.27.79-.68 0-.4-.3-.64-.79-.64-.48 0-.8.27-.82.7h-.96c.04-.94.73-1.53 1.8-1.53 1.02 0 1.75.56 1.75 1.33 0 .57-.36 1.02-.91 1.13v.06c.67.08 1.1.53 1.1 1.18 0 .86-.81 1.49-1.94 1.49-1.1 0-1.84-.61-1.89-1.54h.99c.03.42.38.68.91.68.52 0 .88-.3.88-.71 0-.43-.34-.7-.9-.7h-.6z" />
+                                                            </svg>
+                                                        )
+                                                    default:
+                                                        return (
+                                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M11.75 5.25h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zm0 6h7.5a.75.75 0 1 1 0 1.5h-7.5a.75.75 0 1 1 0-1.5zM6 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" />
+                                                            </svg>
+                                                        )
+                                                }
+                                            })()}
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -253,7 +299,7 @@ export function PropertiesSidebar({
 
                         {/* Opacity Control - Available for all objects */}
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mt-4">
                                 <Label className="text-xs text-gray-700 font-medium">Opacity</Label>
                                 <span className="text-xs text-gray-600 font-medium">
                                     {Math.round(((selectedObject as any).opacity ?? 1) * 100)}%

@@ -101,6 +101,10 @@ const createTextObject = (obj: any): fabric.FabricObject => {
         if (obj.scaleX !== undefined) textbox.set('scaleX', obj.scaleX)
         if (obj.scaleY !== undefined) textbox.set('scaleY', obj.scaleY)
 
+        // Apply list style property
+        // @ts-expect-error - Custom property
+        if (obj.listStyle) textbox.listStyle = obj.listStyle
+
         return textbox
     } else {
         const itext = new fabric.IText(obj.text || 'Text', {
@@ -120,6 +124,10 @@ const createTextObject = (obj: any): fabric.FabricObject => {
         if (obj.angle !== undefined) itext.set('angle', obj.angle)
         if (obj.scaleX !== undefined) itext.set('scaleX', obj.scaleX)
         if (obj.scaleY !== undefined) itext.set('scaleY', obj.scaleY)
+
+        // Apply list style property
+        // @ts-expect-error - Custom property
+        if (obj.listStyle) itext.listStyle = obj.listStyle
 
         return itext
     }

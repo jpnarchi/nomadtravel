@@ -30,6 +30,7 @@ import {
     zoomIn,
     zoomOut,
     resetZoom,
+    applyListFormatting,
 } from './fabric-editor/canvas-utils'
 import { ToolsSidebar } from './fabric-editor/tools-sidebar'
 import { PropertiesSidebar } from './fabric-editor/properties-sidebar'
@@ -409,10 +410,45 @@ export function FabricSlideEditor({
         canvas.on('object:rotating', () => debouncedSave())
         canvas.on('object:moving', () => debouncedSave())
         canvas.on('text:changed', (e) => {
-            if (!isInitialLoad) debouncedSave()
+            if (!isInitialLoad) {
+                // Apply list formatting if applicable
+                const target = e.target as any
+                if (target && (target.type === 'i-text' || target.type === 'textbox') && target.listStyle && target.listStyle !== 'none') {
+                    const currentText = target.text || ''
+                    const listStyle = target.listStyle
+
+                    // Store cursor position
+                    const cursorPosition = target.selectionStart || 0
+
+                    // Apply formatting
+                    const formattedText = applyListFormatting(currentText, listStyle)
+
+                    // Only update if text changed
+                    if (formattedText !== currentText) {
+                        target.set('text', formattedText)
+                        // Restore cursor position (approximate)
+                        if (target.isEditing) {
+                            target.selectionStart = cursorPosition
+                            target.selectionEnd = cursorPosition
+                        }
+                        canvas.renderAll()
+                    }
+                }
+                debouncedSave()
+            }
         })
         canvas.on('text:editing:exited', (e) => {
             if (!isInitialLoad) {
+                // Apply list formatting when exiting text editing
+                const target = e.target as any
+                if (target && (target.type === 'i-text' || target.type === 'textbox') && target.listStyle && target.listStyle !== 'none') {
+                    const currentText = target.text || ''
+                    const formattedText = applyListFormatting(currentText, target.listStyle)
+                    if (formattedText !== currentText) {
+                        target.set('text', formattedText)
+                        canvas.renderAll()
+                    }
+                }
                 saveStateToHistory()
                 debouncedSave()
             }

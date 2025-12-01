@@ -35,6 +35,7 @@ export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) 
             'charSpacing',
             'styles',
             'editable',
+            'listStyle', // Bullet points, dashes, numbers
             'width', // Include width for Textbox objects (text wrapping)
             'height', // Include height
             // Image-specific properties
@@ -158,7 +159,7 @@ export const copyObjectToJSON = (obj: fabric.FabricObject) => {
         'lockScalingX', 'lockScalingY', 'opacity',
         'text', 'fontSize', 'fontFamily', 'fontWeight',
         'fontStyle', 'textAlign', 'lineHeight',
-        'charSpacing', 'styles', 'editable', 'width', 'height',
+        'charSpacing', 'styles', 'editable', 'listStyle', 'width', 'height',
         'src', // Include src for Image objects
         // Position and transform properties
         'left', 'top', 'scaleX', 'scaleY', 'angle', 'originX', 'originY'
@@ -237,6 +238,8 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
                         originX: objData.originX,
                         originY: objData.originY,
                     })
+                    // @ts-expect-error - Custom property
+                    if (objData.listStyle) newObj.listStyle = objData.listStyle
                 } else {
                     newObj = new fabric.IText(objData.text || 'Text', {
                         left: objData.left,
@@ -255,6 +258,8 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
                         originX: objData.originX,
                         originY: objData.originY,
                     })
+                    // @ts-expect-error - Custom property
+                    if (objData.listStyle) newObj.listStyle = objData.listStyle
                 }
                 break
             case 'rect':
@@ -381,6 +386,45 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
 }
 
 /**
+ * Aplica formato de bullet points al texto
+ */
+export const applyListFormatting = (text: string, listStyle: string): string => {
+    if (!text || listStyle === 'none') return text
+
+    // Split by line breaks
+    const lines = text.split('\n')
+
+    // Track number for numbered lists (only count non-empty lines)
+    let numberCounter = 1
+
+    // Apply formatting to each line
+    const formattedLines = lines.map((line) => {
+        // Skip empty lines (preserve them as-is)
+        if (!line.trim()) return line
+
+        // Remove existing bullets/numbers from the line
+        const cleanedLine = line.replace(/^(\s*)(•|\d+\.)\s*/, '$1')
+
+        let formattedLine = cleanedLine
+        switch (listStyle) {
+            case 'bullets':
+                formattedLine = cleanedLine ? `• ${cleanedLine}` : cleanedLine
+                break
+            case 'numbers':
+                formattedLine = cleanedLine ? `${numberCounter}. ${cleanedLine}` : cleanedLine
+                if (cleanedLine) numberCounter++
+                break
+            default:
+                formattedLine = cleanedLine
+        }
+
+        return formattedLine
+    })
+
+    return formattedLines.join('\n')
+}
+
+/**
  * Actualiza una propiedad de un objeto de texto
  */
 export const updateObjectProperty = (
@@ -390,6 +434,15 @@ export const updateObjectProperty = (
     canvas: fabric.Canvas
 ) => {
     obj.set(property as any, value)
+
+    // If updating listStyle, apply formatting to the text
+    if (property === 'listStyle' && (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox')) {
+        const textObj = obj as any
+        const currentText = textObj.text || ''
+        const formattedText = applyListFormatting(currentText, value)
+        textObj.set('text', formattedText)
+    }
+
     canvas.renderAll()
 }
 
