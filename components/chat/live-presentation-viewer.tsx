@@ -24,16 +24,77 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
     const [isRendered, setIsRendered] = useState(false);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [isLoadingSlide, setIsLoadingSlide] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
     const [isMounted, setIsMounted] = useState(false);
     const [currentSlide, setCurrentSlide] = useState<any>(null);
     const lastSlideHashRef = useRef<string>('');
+    const [containerScale, setContainerScale] = useState(1);
 
     // Detectar cuando el componente está montado
     useEffect(() => {
         setIsMounted(true);
         return () => setIsMounted(false);
     }, []);
+
+    // Detectar el ancho del contenedor y calcular la escala
+    useEffect(() => {
+        if (!containerElement) {
+            console.log('⚠️ containerElement not available yet');
+            return;
+        }
+
+        const updateScale = () => {
+            if (!containerElement) return;
+
+            const containerWidth = containerElement.clientWidth;
+            const canvasWidth = 800; // Ancho fijo del canvas
+
+            // Calcular padding basado en las clases: p-4 md:p-8 (16px mobile, 32px desktop en cada lado)
+            const isMobile = window.innerWidth < 768;
+            const paddingPerSide = isMobile ? 16 : 32;
+            const totalPadding = paddingPerSide * 2;
+
+            // Calcular la escala para que el canvas quepa en el contenedor
+            const availableWidth = containerWidth - totalPadding;
+            const rawScale = availableWidth / canvasWidth;
+            // Limitar la escala a máximo 1 para que nunca sea más grande que el original
+            const scale = Math.min(rawScale, 1);
+
+            console.log('🎯 Scale calculation:', {
+                containerWidth,
+                canvasWidth,
+                isMobile,
+                paddingPerSide,
+                totalPadding,
+                availableWidth,
+                rawScale,
+                finalScale: scale
+            });
+
+            setContainerScale(scale);
+        };
+
+        console.log('✅ Setting up scale calculation for container:', containerElement.clientWidth);
+
+        // Actualizar inmediatamente
+        updateScale();
+
+        // Actualizar con un pequeño delay para asegurar que el DOM esté listo
+        const timeout = setTimeout(updateScale, 100);
+
+        // Crear ResizeObserver para detectar cambios de tamaño
+        const resizeObserver = new ResizeObserver(updateScale);
+        resizeObserver.observe(containerElement);
+
+        // Listener para cambios de ventana
+        window.addEventListener('resize', updateScale);
+
+        return () => {
+            clearTimeout(timeout);
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateScale);
+        };
+    }, [containerElement]);
 
     // Extract all slides from files - MEMOIZED to prevent unnecessary re-renders
     const slides = useMemo(() => {
@@ -353,7 +414,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
 
     return (
         <div
-            ref={containerRef}
+            ref={setContainerElement}
             className="w-full h-full flex flex-col items-center justify-center bg-background p-4 md:p-8 gap-4 md:gap-6 overflow-hidden"
         >
             {/* Header */}
@@ -384,14 +445,28 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
 
             {/* Canvas Container - SIN OVERLAY */}
             <div className="relative flex-shrink-0 max-w-full">
-                <canvas
-                    ref={setCanvasElement}
-                    className="rounded-lg shadow-2xl border border-border max-w-full h-auto transition-opacity duration-200"
+                <div
+                    className="relative rounded-lg shadow-2xl border border-border transition-all duration-300 overflow-hidden"
                     style={{
+                        width: `${800 * containerScale}px`,
+                        height: `${400 * containerScale}px`,
                         boxShadow: '0 20px 60px -12px rgba(0, 0, 0, 0.3)',
-                        opacity: isLoadingSlide ? 0.5 : 1, // MODIFICADO: Efecto visual simple
                     }}
-                />
+                >
+                    <canvas
+                        ref={setCanvasElement}
+                        className="origin-top-left block"
+                        style={{
+                            width: '800px',
+                            height: '400px',
+                            opacity: isLoadingSlide ? 0.5 : 1,
+                            transform: `scale(${containerScale})`,
+                            transformOrigin: 'top left',
+                            transition: 'opacity 200ms, transform 300ms ease-out',
+                            display: 'block',
+                        }}
+                    />
+                </div>
             </div>
 
             {/* Navigation Controls */}
