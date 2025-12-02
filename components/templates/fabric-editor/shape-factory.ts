@@ -149,7 +149,7 @@ export const addImageToCanvas = async (canvas: fabric.Canvas, imgSrc: string) =>
     }
 }
 
-export const createImagePlaceholder = (canvas: fabric.Canvas) => {
+export const createImagePlaceholder = async (canvas: fabric.Canvas) => {
     const containerWidth = 400
     const containerHeight = 300
     const defaultBorderRadius = 8
@@ -187,68 +187,31 @@ export const createImagePlaceholder = (canvas: fabric.Canvas) => {
         originY: 'top',
     })
 
-    // Create Sparkles icon using paths (simplified sparkle shape)
-    const sparkleSize = 60
+    // Load logo image
+    const logo = await fabric.FabricImage.fromURL('/logo.png', {
+        crossOrigin: 'anonymous'
+    })
 
-    // Create a star/sparkle shape using a path
-    // The path coordinates go from 0 to 50, so we need to center it properly
-    const sparklePath = new fabric.Path(
-        'M 25 0 L 30 20 L 50 25 L 30 30 L 25 50 L 20 30 L 0 25 L 20 20 Z',
-        {
-            fill: '#f59e0b', // More vibrant amber
-            scaleX: sparkleSize / 50,
-            scaleY: sparkleSize / 50,
-            left: -25 * (sparkleSize / 50), // Center the path (25 is center of 0-50)
-            top: -25 * (sparkleSize / 50) - 20, // Center and move up
-            originX: 'left',
-            originY: 'top',
-        }
+    // Scale logo to fit nicely inside container (max 150px)
+    const logoMaxSize = 150
+    const logoScale = Math.min(
+        logoMaxSize / logo.width!,
+        logoMaxSize / logo.height!,
+        1
     )
 
-    // Add small sparkles around the main one
-    const smallSparkle1 = new fabric.Path(
-        'M 25 0 L 30 20 L 50 25 L 30 30 L 25 50 L 20 30 L 0 25 L 20 20 Z',
-        {
-            fill: '#fbbf24',
-            scaleX: 0.35,
-            scaleY: 0.35,
-            left: 35,
-            top: -40,
-            originX: 'center',
-            originY: 'center',
-            opacity: 0.8,
-        }
-    )
-
-    const smallSparkle2 = new fabric.Path(
-        'M 25 0 L 30 20 L 50 25 L 30 30 L 25 50 L 20 30 L 0 25 L 20 20 Z',
-        {
-            fill: '#fde047', // Lighter yellow
-            scaleX: 0.28,
-            scaleY: 0.28,
-            left: -35,
-            top: -25,
-            originX: 'center',
-            originY: 'center',
-            opacity: 0.7,
-        }
-    )
-
-    // Create text label - center it horizontally
-    const text = new fabric.Text('Add image', {
-        fontSize: 20,
-        fill: '#475569', // Darker slate for better readability
-        fontFamily: 'Arial',
-        fontWeight: '600',
+    logo.set({
+        scaleX: logoScale,
+        scaleY: logoScale,
+        left: 0,
+        top: 0,
         originX: 'center',
-        originY: 'top',
-        left: 0, // Centered
-        top: 25, // Below the sparkle
+        originY: 'center',
     })
 
     // Group all elements
     const group = new fabric.Group(
-        [rect, innerRect, sparklePath, smallSparkle1, smallSparkle2, text],
+        [rect, innerRect, logo],
         {
             left: 100,
             top: 100,

@@ -539,9 +539,9 @@ export function FabricSlideEditor({
 
     }
 
-    const handleAddImagePlaceholder = () => {
+    const handleAddImagePlaceholder = async () => {
         if (!fabricCanvasRef.current) return
-        createImagePlaceholder(fabricCanvasRef.current)
+        await createImagePlaceholder(fabricCanvasRef.current)
 
     }
 
