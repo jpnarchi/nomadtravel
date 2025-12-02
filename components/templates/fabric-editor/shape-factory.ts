@@ -200,6 +200,10 @@ export const createImagePlaceholder = async (canvas: fabric.Canvas) => {
         1
     )
 
+    // Store original logo dimensions for reference
+    const logoOriginalWidth = logo.width! * logoScale
+    const logoOriginalHeight = logo.height! * logoScale
+
     logo.set({
         scaleX: logoScale,
         scaleY: logoScale,
@@ -228,6 +232,38 @@ export const createImagePlaceholder = async (canvas: fabric.Canvas) => {
     ;(group as any).placeholderWidth = containerWidth
     ;(group as any).placeholderHeight = containerHeight
     ;(group as any).borderRadius = defaultBorderRadius
+    ;(group as any).logoOriginalWidth = logoOriginalWidth
+    ;(group as any).logoOriginalHeight = logoOriginalHeight
+
+    // Add event listener to maintain logo aspect ratio when scaling
+    group.on('scaling', function() {
+        const currentGroup = this as any
+        const groupScaleX = currentGroup.scaleX || 1
+        const groupScaleY = currentGroup.scaleY || 1
+
+        // Get the logo from the group
+        const groupLogo = currentGroup._objects[2] // Logo is the 3rd element
+
+        if (groupLogo) {
+            // Calculate the container's new dimensions
+            const newContainerWidth = containerWidth * groupScaleX
+            const newContainerHeight = containerHeight * groupScaleY
+
+            // Calculate scale to fit logo inside container while maintaining aspect ratio
+            // Use Math.min to ensure it fits (like object-fit: contain)
+            // The logo will scale proportionally with the container size
+            const fitScale = Math.min(
+                (newContainerWidth * 0.6) / logoOriginalWidth,  // Use 60% of container
+                (newContainerHeight * 0.6) / logoOriginalHeight
+            )
+
+            // Apply the scale to the logo to counteract group scaling
+            groupLogo.set({
+                scaleX: logoScale * fitScale / groupScaleX,
+                scaleY: logoScale * fitScale / groupScaleY,
+            })
+        }
+    })
 
     canvas.add(group)
     canvas.setActiveObject(group)
