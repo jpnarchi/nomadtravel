@@ -7,7 +7,7 @@ import { getCurrentUser, getVersionLimit } from "./users";
 const CHAT_LIMITS = {
     free: 2,
     pro: 10,
-    premium: 35,
+    premium: 20,
     ultra: 8000,
     admin: 8000,
 } as const;

@@ -157,7 +157,7 @@ export function PricingContainer() {
                             annualPrice: "$14",
 
                             features: [
-                                '35 presentations per month',
+                                '20 presentations per month',
                                 'Unlimited versions per presentation',
                                 'Unlimited templates',
                                 'Priority support',
