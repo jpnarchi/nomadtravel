@@ -327,10 +327,10 @@ ${templates.length === 0 ? '⚠️ No templates available - inform user to creat
    - If template has excess: deleteSlide for each extra → wait per deletion
    - If template has fewer: read existing + add new slides → wait per addition
 3. **Read All**: readFile each slide → wait per read
-4. **Fill Images** (MANDATORY):
+4. **Fill Images** (ONLY if placeholders exist):
    - Scan ALL slides for isImagePlaceholder: true
-   - fillImageContainer for EVERY container → wait for each
-   - Do NOT skip this step
+   - IF placeholders found: fillImageContainer for each → wait for each
+   - IF NO placeholders found: Skip to next step
 5. **Update Content**: updateSlideTexts for all placeholders → wait
 6. **Preview**: showPreview (only after all steps complete)
 
@@ -357,7 +357,7 @@ ${templates.length === 0 ? '⚠️ No templates available - inform user to creat
 Before calling showPreview, verify:
 - ✓ Slide count matches request${requestedSlidesCount ? ` (${requestedSlidesCount})` : ''}
 - ✓ All slides read
-- ✓ All image placeholders filled
+- ✓ All image placeholders filled (if any existed)
 - ✓ No "Lorem Ipsum" remains
 - ✓ All requested changes applied
 
@@ -366,7 +366,7 @@ Before calling showPreview, verify:
 - Batch similar operations when possible
 - Use specific tools (updateSlideTexts/Design) over generic (manageFile)
 - Wait for tool completion before next step
-- Never skip image filling if placeholders exist
+- Only fill images if placeholders (isImagePlaceholder: true) exist
 
 Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
 `.trim(),
@@ -407,22 +407,42 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                 },
 
                 updateSlideTexts: {
-                    description: 'Update slide text only. Default for text changes.',
+                    description: 'Update slide text content and properties. Use for text changes, colors, fonts, sizes, positions.',
                     inputSchema: z.object({
                         path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
                         textUpdates: z.array(z.object({
                             objectIndex: z.number().describe('Index of the text object in the objects array (0-based)'),
-                            newText: z.string().describe('New text content')
-                        })).describe('Array of text updates with object index and new text'),
+                            newText: z.string().optional().describe('New text content'),
+                            properties: z.object({
+                                fill: z.string().optional().describe('Text color (hex format like "#00ff00")'),
+                                backgroundColor: z.string().optional().describe('Background color for text'),
+                                fontSize: z.number().optional().describe('Font size'),
+                                fontFamily: z.string().optional().describe('Font family'),
+                                fontWeight: z.union([z.string(), z.number()]).optional().describe('Font weight (normal, bold, 100-900)'),
+                                fontStyle: z.string().optional().describe('Font style (normal, italic)'),
+                                textAlign: z.string().optional().describe('Text alignment (left, center, right)'),
+                                lineHeight: z.number().optional().describe('Line height'),
+                                charSpacing: z.number().optional().describe('Character spacing'),
+                                opacity: z.number().optional().describe('Opacity (0-1)'),
+                                left: z.number().optional().describe('X position'),
+                                top: z.number().optional().describe('Y position'),
+                                scaleX: z.number().optional().describe('Horizontal scale'),
+                                scaleY: z.number().optional().describe('Vertical scale'),
+                                angle: z.number().optional().describe('Rotation angle in degrees'),
+                                stroke: z.string().optional().describe('Stroke/border color'),
+                                strokeWidth: z.number().optional().describe('Stroke width'),
+                                underline: z.boolean().optional().describe('Underline text'),
+                                linethrough: z.boolean().optional().describe('Strikethrough text'),
+                                overline: z.boolean().optional().describe('Overline text'),
+                            }).optional().describe('Additional properties to update (only include properties you want to change)')
+                        })).describe('Array of text updates with object index, new text, and optional properties'),
                         explanation: z.string().describe('Explanation in 1 to 3 words of changes for non-technical users'),
                     }),
                     execute: async function ({ path, textUpdates, explanation }: any) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-
-                            // Work directly on the CURRENT version without creating a new one
                             const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
-
+                
                             const fileContent = allFiles[path];
                             if (!fileContent) {
                                 return {
@@ -430,30 +450,29 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                     error: `File not found: ${path}`
                                 };
                             }
-
-                            // Parse the slide JSON
+                
                             const slideData = JSON.parse(fileContent);
-
+                
                             if (!slideData.objects || !Array.isArray(slideData.objects)) {
                                 return {
                                     success: false,
                                     error: `Invalid slide structure in ${path}`
                                 };
                             }
-
+                
                             // Apply text updates
                             for (const update of textUpdates) {
-                                const { objectIndex, newText } = update;
-
+                                const { objectIndex, newText, properties } = update;
+                
                                 if (objectIndex < 0 || objectIndex >= slideData.objects.length) {
                                     return {
                                         success: false,
                                         error: `Invalid object index ${objectIndex}. Slide has ${slideData.objects.length} objects.`
                                     };
                                 }
-
+                
                                 const obj = slideData.objects[objectIndex];
-
+                
                                 // Verify it's a text object (case-insensitive check)
                                 const objType = (obj.type || '').toLowerCase();
                                 if (!['text', 'i-text', 'textbox', 'itext'].includes(objType)) {
@@ -462,12 +481,23 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                         error: `Object at index ${objectIndex} is type "${obj.type}", not a text object`
                                     };
                                 }
-
-                                // Update only the text property
-                                slideData.objects[objectIndex].text = newText;
+                
+                                // Update text content if provided
+                                if (newText !== undefined) {
+                                    slideData.objects[objectIndex].text = newText;
+                                }
+                
+                                // Update additional properties if provided
+                                if (properties) {
+                                    Object.keys(properties).forEach(key => {
+                                        if (properties[key] !== undefined) {
+                                            slideData.objects[objectIndex][key] = properties[key];
+                                        }
+                                    });
+                                }
                             }
-
-                            // Save the updated slide in the CURRENT version
+                
+                            // Save the updated slide
                             const updatedContent = JSON.stringify(slideData, null, 2);
                             await ctx.runMutation(api.files.updateByPath, {
                                 chatId: id,
@@ -475,11 +505,12 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                 content: updatedContent,
                                 version: currentVersion ?? 0
                             });
-
+                
                             return {
                                 success: true,
                                 message: explanation,
-                                textsUpdated: textUpdates.length
+                                textsUpdated: textUpdates.length,
+                                propertiesUpdated: textUpdates.some((u: any) => u.properties) ? true : false
                             };
                         } catch (error) {
                             console.error(`Error updating texts in ${path}:`, error);
