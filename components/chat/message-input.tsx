@@ -142,81 +142,68 @@ export const MessageInput = ({
                             rows={1}
                             disabled={isLoading || isUploading || disabled}
                         />
-                        <div className="flex gap-2 justify-end items-center mt-2 flex-shrink-0">
-                            {/* Microphone, Files, Submit buttons */}
-                            <div className="flex gap-2 items-center">
-                                <MicrophoneButton isDisabled={isLoading || isUploading || disabled} />
-
+                        <div className="flex gap-2 justify-between items-center mt-2 flex-shrink-0">
+                            {/* Left side - Files button and Templates selector */}
+                            <div className="flex gap-2">
                                 {files.length >= MAX_FILES ? (
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="inline-flex">
-                                            <Button
-                                                type="button"
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
-                                                onClick={handleFileClick}
-                                                disabled
-                                            >
-                                                <ClipIcon />
-                                            </Button>
-                                        </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                        Máximo {MAX_FILES} archivos
-                                    </TooltipContent>
-                                </Tooltip>
-                            ) : (
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
-                                    onClick={handleFileClick}
-                                    disabled={isLoading || isUploading || disabled}
-                                >
-                                    <ClipIcon />
-                                </Button>
-                            )}
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span className="inline-flex">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    className="h-12 px-4 rounded-full text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-2"
+                                                    onClick={handleFileClick}
+                                                    disabled
+                                                >
+                                                    <ClipIcon/>
+                                                    <span>Files</span>
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">
+                                            Máximo {MAX_FILES} archivos
+                                        </TooltipContent>
+                                    </Tooltip>
+                                ) : (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="h-12 px-4 rounded-full text-muted-foreground hover:text-foreground cursor-pointer flex items-center gap-2"
+                                        onClick={handleFileClick}
+                                        disabled={isLoading}
+                                    >
+                                        <ClipIcon />
+                                        <span>Files</span>
+                                    </Button>
+                                )}
 
-                            {isUploading && (
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={true}
-                                >
-                                    <LoaderIcon />
-                                </Button>
-                            )}
 
-                            {isLoading && (
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={disabled}
-                                    onClick={() => {
-                                        stop();
-                                        setIsLoading(false);
-                                        setShowSuggestions(false);
-                                    }}
-                                >
-                                    <StopIcon />
-                                </Button>
-                            )}
+                            </div>
 
-                            {!isLoading && !isUploading && (
-                                <Button
-                                    type="submit"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-full cursor-pointer"
-                                    disabled={!input.trim() && files.length === 0 || disabled}
-                                >
-                                    <ArrowUpIcon />
-                                </Button>
-                            )}
+                            {/* Right side - Submit/Loader button */}
+                            <div>
+                                {/* <MicrophoneButton isDisabled={isLoading} /> */}
+
+                                {isLoading ? (
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        className="h-12 w-12 rounded-full cursor-pointer"
+                                        disabled={true}
+                                    >
+                                        <LoaderIcon />
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        size="icon"
+                                        className="h-12 w-12 rounded-full cursor-pointer"
+                                        disabled={(!input.trim() && files.length === 0) || isLoading}
+                                    >
+                                        <ArrowUpIcon />
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
