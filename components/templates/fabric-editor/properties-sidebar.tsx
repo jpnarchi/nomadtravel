@@ -27,6 +27,8 @@ interface PropertiesSidebarProps {
     onUpdateTextProperty: (property: string, value: any) => void
     onUpdateFillColor: (color: string) => void
     onUpdateBorderRadius?: (radius: number) => void
+    onUpdateStrokeColor?: (color: string) => void
+    onUpdateStrokeWidth?: (width: number) => void
 }
 
 export function PropertiesSidebar({
@@ -36,6 +38,8 @@ export function PropertiesSidebar({
     onUpdateTextProperty,
     onUpdateFillColor,
     onUpdateBorderRadius,
+    onUpdateStrokeColor,
+    onUpdateStrokeWidth,
 }: PropertiesSidebarProps) {
     const isTextType = selectedObject &&
         (selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox')
@@ -265,14 +269,50 @@ export function PropertiesSidebar({
                             selectedObject.type !== 'i-text' &&
                             selectedObject.type !== 'textbox' &&
                             selectedObject.type !== 'image' && (
-                            <div>
-                                <Label className="text-xs text-gray-700 mb-2 block font-medium">Color</Label>
-                                <Input
-                                    type="color"
-                                    value={(selectedObject as any).fill as string || '#667eea'}
-                                    onChange={(e) => onUpdateFillColor(e.target.value)}
-                                    className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
-                                />
+                            <div className="space-y-3">
+                                <div>
+                                    <Label className="text-xs text-gray-700 mb-2 block font-medium">Color</Label>
+                                    <Input
+                                        type="color"
+                                        value={(selectedObject as any).fill as string || '#667eea'}
+                                        onChange={(e) => onUpdateFillColor(e.target.value)}
+                                        className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
+                                    />
+                                </div>
+
+                                {/* Stroke Color Control */}
+                                {onUpdateStrokeColor && (
+                                    <div>
+                                        <Label className="text-xs text-gray-700 mb-2 block font-medium">Border Color</Label>
+                                        <Input
+                                            type="color"
+                                            value={(selectedObject as any).stroke as string || '#000000'}
+                                            onChange={(e) => onUpdateStrokeColor(e.target.value)}
+                                            className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Stroke Width Control */}
+                                {onUpdateStrokeWidth && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs text-gray-700 font-medium">Border Width</Label>
+                                            <span className="text-xs text-gray-600 font-medium">
+                                                {Math.round((selectedObject as any).strokeWidth ?? 0)}px
+                                            </span>
+                                        </div>
+                                        <Input
+                                            type="range"
+                                            min="0"
+                                            max="20"
+                                            step="1"
+                                            value={(selectedObject as any).strokeWidth ?? 0}
+                                            onChange={(e) => onUpdateStrokeWidth(parseFloat(e.target.value))}
+                                            className="w-full h-2 cursor-pointer accent-blue-500"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
 

@@ -902,6 +902,28 @@ export function FabricSlideEditor({
         saveCanvas()
     }
 
+    const handleUpdateStrokeColor = (color: string) => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+
+        selectedObject.set({
+            stroke: color
+        })
+
+        fabricCanvasRef.current.renderAll()
+        saveCanvas()
+    }
+
+    const handleUpdateStrokeWidth = (width: number) => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+
+        selectedObject.set({
+            strokeWidth: width
+        })
+
+        fabricCanvasRef.current.renderAll()
+        saveCanvas()
+    }
+
     // ============================================================================
     // LAYER CONTROLS
     // ============================================================================
@@ -1156,6 +1178,8 @@ export function FabricSlideEditor({
                 onUpdateTextProperty={handleUpdateTextProperty}
                 onUpdateFillColor={handleUpdateFillColor}
                 onUpdateBorderRadius={handleUpdateBorderRadius}
+                onUpdateStrokeColor={handleUpdateStrokeColor}
+                onUpdateStrokeWidth={handleUpdateStrokeWidth}
             />
 
             {/* Image Upload Dialog */}

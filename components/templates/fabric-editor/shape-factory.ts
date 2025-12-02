@@ -236,8 +236,8 @@ export const createImagePlaceholder = async (canvas: fabric.Canvas) => {
     ;(group as any).logoOriginalHeight = logoOriginalHeight
 
     // Add event listener to maintain logo aspect ratio when scaling
-    group.on('scaling', function() {
-        const currentGroup = this as any
+    group.on('scaling', () => {
+        const currentGroup = group as any
         const groupScaleX = currentGroup.scaleX || 1
         const groupScaleY = currentGroup.scaleY || 1
 

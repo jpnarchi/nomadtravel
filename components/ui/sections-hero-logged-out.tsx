@@ -9,6 +9,7 @@ import {
 } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { useSignIn } from "@clerk/nextjs";
 
 
@@ -38,9 +39,11 @@ export const SectionsHero = () => {
           </div>
           {/* Imagen - aparece segunda en mobile, primera en desktop */}
           <div className="flex justify-center md:justify-start  items-center order-2 md:order-1">
-            <img
+            <Image
               src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIUKVt5E8q1a6YH7LJd9XybZVDQ3cPou2htEj8"
               alt="Logo"
+              width={800}
+              height={600}
               className="w-80 sm:w-64 md:w-full md:max-w-sm lg:max-w-lg z-50 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]"
             />
           </div>
@@ -59,9 +62,11 @@ export const SectionsHero = () => {
           </div>
           {/* Columna derecha - Imagen centrada */}
           <div className="flex justify-center md:justify-end  items-center order-2">
-            <img
+            <Image
               src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIPDfaavZOZFfYEbg0V6cMN3k75QdKXa8Wypwm"
               alt="Logo"
+              width={800}
+              height={600}
               className="w-80 sm:w-64 md:w-full md:max-w-sm lg:max-w-lg z-50 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]"
             />
           </div>
@@ -79,25 +84,31 @@ export const SectionsHero = () => {
           </div>
           {/* Imagen - aparece segunda en mobile, primera en desktop */}
           <div className="flex justify-center md:justify-start items-center order-2 md:order-1">
-            <img
+            <Image
               src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIHvnARO8M4kumSHLKgvAni1eobCXFrPaYOxIc"
               alt="Logo"
+              width={800}
+              height={600}
               className="w-80 sm:w-64 md:w-full md:max-w-sm lg:max-w-lg z-50 drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]"
             />
           </div></div>
         <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] py-12 md:py-20 lg:py-30 bg-gradient-to-t from-[#F4A7B6]/30  from-10% to-primary to-99% mt-10 md:mt-25">
           {/* Imágenes decorativas - Fuera del contenedor max-w */}
           {/* Imagen izquierda - Solo visible en desktop */}
-          <img
+          <Image
             src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
             alt="Decorative left"
+            width={480}
+            height={480}
             className="hidden lg:block absolute left-0 bottom-0 w-32 xl:w-120 h-auto opacity-80 -ml-40 mb-10"
           />
 
           {/* Imagen derecha - Solo visible en desktop */}
-          <img
+          <Image
             src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIT9jM2zUlgOP8WXqRbDcys6iZYpKNLMvldaEF"
             alt="Decorative right"
+            width={240}
+            height={240}
             className="hidden lg:block absolute right-0 bottom-0 w-32 xl:w-60 mr-10 h-auto opacity-80  mb-10 transform scale-x-[-1]"
           />
 
