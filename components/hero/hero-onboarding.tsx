@@ -30,10 +30,9 @@ export function HeroOnboarding({ onNavigate, onNavigateCancel }: { onNavigate?: 
         console.log('[Hero Onboarding] templateSource changed to:', templateSource);
     }, [templateSource]);
 
-    // Handler for slide changes - clears input when slides change
+    // Handler for slide changes
     const handleSlideChange = (numSlides: number) => {
         setSelectedSlides(numSlides);
-        setInput(''); // Clear input when user changes slide count
     };
 
     const router = useRouter();
