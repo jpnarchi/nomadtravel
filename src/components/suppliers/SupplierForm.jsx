@@ -21,7 +21,6 @@ const SUPPLIER_TYPES = [
   { value: 'plataforma', label: 'Plataforma (TBO, RateHawk, etc.)' },
   { value: 'transporte', label: 'Transporte / Traslados' },
   { value: 'tours', label: 'Tours / Actividades' },
-  { value: 'agencia_representante', label: 'Agencia Representante' },
   { value: 'otro', label: 'Otro' }
 ];
 
@@ -52,7 +51,7 @@ const CURRENCIES = [
   { value: 'otro', label: 'Otro' }
 ];
 
-export default function SupplierForm({ open, onClose, supplier, onSave, isLoading, showSmartImportOnOpen = false, allSuppliers = [] }) {
+export default function SupplierForm({ open, onClose, supplier, onSave, isLoading, showSmartImportOnOpen = false }) {
   const [smartImportText, setSmartImportText] = useState('');
   const [showSmartImport, setShowSmartImport] = useState(showSmartImportOnOpen);
   const [importing, setImporting] = useState(false);
@@ -132,8 +131,6 @@ Extrae estos campos si están disponibles:
   const [formData, setFormData] = useState({
     name: '',
     type: '',
-    represents: [],
-    represented_by: '',
     contact1_name: '',
     contact1_phone: '',
     contact1_email: '',
@@ -159,24 +156,11 @@ Extrae estos campos si están disponibles:
     issues: ''
   });
 
-  // Filtrar agencias representantes y proveedores representables
-  const agenciasRepresentantes = allSuppliers.filter(s => s.type === 'agencia_representante' && s.id !== supplier?.id);
-  const proveedoresRepresentables = allSuppliers.filter(s => s.type !== 'agencia_representante' && s.id !== supplier?.id);
-  
-  // Obtener proveedores representados por la agencia seleccionada
-  const getRepresentedSuppliers = (agencyId) => {
-    const agency = allSuppliers.find(s => s.id === agencyId);
-    if (!agency?.represents) return [];
-    return allSuppliers.filter(s => agency.represents.includes(s.id));
-  };
-
   useEffect(() => {
     if (supplier) {
       setFormData({
         name: supplier.name || '',
         type: supplier.type || '',
-        represents: supplier.represents || [],
-        represented_by: supplier.represented_by || '',
         contact1_name: supplier.contact1_name || '',
         contact1_phone: supplier.contact1_phone || '',
         contact1_email: supplier.contact1_email || '',
@@ -205,8 +189,6 @@ Extrae estos campos si están disponibles:
       setFormData({
         name: '',
         type: '',
-        represents: [],
-        represented_by: '',
         contact1_name: '',
         contact1_phone: '',
         contact1_email: '',
@@ -372,7 +354,7 @@ Extrae estos campos si están disponibles:
                 </div>
                 <div className="space-y-2">
                   <Label>Tipo de Proveedor *</Label>
-                  <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v, represents: [], represented_by: '' })}>
+                  <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       {SUPPLIER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -380,69 +362,6 @@ Extrae estos campos si están disponibles:
                   </Select>
                 </div>
               </div>
-
-              {/* Si es Agencia Representante - seleccionar qué proveedores representa */}
-              {formData.type === 'agencia_representante' && (
-                <div className="p-4 bg-amber-50 rounded-xl space-y-3 border border-amber-200">
-                  <Label className="font-semibold text-amber-800">Proveedores que representa</Label>
-                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                    {proveedoresRepresentables.map(prov => (
-                      <Badge 
-                        key={prov.id}
-                        variant={formData.represents?.includes(prov.id) ? "default" : "outline"}
-                        className="cursor-pointer"
-                        onClick={() => {
-                          const current = formData.represents || [];
-                          if (current.includes(prov.id)) {
-                            setFormData({ ...formData, represents: current.filter(id => id !== prov.id) });
-                          } else {
-                            setFormData({ ...formData, represents: [...current, prov.id] });
-                          }
-                        }}
-                      >
-                        {prov.name}
-                      </Badge>
-                    ))}
-                  </div>
-                  {proveedoresRepresentables.length === 0 && (
-                    <p className="text-sm text-amber-600">No hay proveedores disponibles para representar</p>
-                  )}
-                </div>
-              )}
-
-              {/* Si NO es Agencia Representante - puede seleccionar una agencia que lo represente */}
-              {formData.type && formData.type !== 'agencia_representante' && agenciasRepresentantes.length > 0 && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Agencia Representante</Label>
-                    <Select 
-                      value={formData.represented_by || 'none'} 
-                      onValueChange={(v) => setFormData({ ...formData, represented_by: v === 'none' ? '' : v })}
-                    >
-                      <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Sin agencia</SelectItem>
-                        {agenciasRepresentantes.map(ag => (
-                          <SelectItem key={ag.id} value={ag.id}>{ag.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {formData.represented_by && (
-                    <div className="space-y-2">
-                      <Label>Representa a</Label>
-                      <div className="flex flex-wrap gap-1 p-2 bg-stone-50 rounded-xl min-h-10 items-center">
-                        {getRepresentedSuppliers(formData.represented_by).map(s => (
-                          <Badge key={s.id} variant="secondary" className="text-xs">{s.name}</Badge>
-                        ))}
-                        {getRepresentedSuppliers(formData.represented_by).length === 0 && (
-                          <span className="text-xs text-stone-400">Esta agencia no tiene proveedores asignados</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Contacto 1 */}
               <div className="p-4 bg-stone-50 rounded-xl space-y-3">
