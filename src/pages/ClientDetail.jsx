@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import TripRequestForm from '@/components/clients/TripRequestForm';
+import TravelDocumentsList from '@/components/documents/TravelDocumentsList';
 
 const SOURCE_LABELS = {
   referido: 'Referido',
@@ -40,6 +41,36 @@ export default function ClientDetail() {
     queryKey: ['clientTrips', clientId],
     queryFn: () => base44.entities.Trip.filter({ client_id: clientId }),
     enabled: !!clientId
+  });
+
+  const { data: documents = [] } = useQuery({
+    queryKey: ['clientDocuments', clientId],
+    queryFn: () => base44.entities.TravelDocument.filter({ client_id: clientId }),
+    enabled: !!clientId
+  });
+
+  const createDocMutation = useMutation({
+    mutationFn: (data) => base44.entities.TravelDocument.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clientDocuments', clientId] });
+      toast.success('Documento guardado');
+    }
+  });
+
+  const updateDocMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.TravelDocument.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clientDocuments', clientId] });
+      toast.success('Documento actualizado');
+    }
+  });
+
+  const deleteDocMutation = useMutation({
+    mutationFn: (id) => base44.entities.TravelDocument.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clientDocuments', clientId] });
+      toast.success('Documento eliminado');
+    }
   });
 
   const createTripMutation = useMutation({
@@ -194,6 +225,19 @@ export default function ClientDetail() {
                 <ExternalLink className="w-4 h-4" />
               </Button>
             </div>
+          </div>
+
+          {/* Travel Documents */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+            <TravelDocumentsList
+              documents={documents}
+              clientId={clientId}
+              onCreate={(data) => createDocMutation.mutate(data)}
+              onUpdate={(id, data) => updateDocMutation.mutate({ id, data })}
+              onDelete={(id) => deleteDocMutation.mutate(id)}
+              isCreating={createDocMutation.isPending}
+              isUpdating={updateDocMutation.isPending}
+            />
           </div>
         </div>
 
