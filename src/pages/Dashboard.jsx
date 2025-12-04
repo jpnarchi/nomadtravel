@@ -95,13 +95,13 @@ export default function Dashboard() {
         <StatsCard
           title="Ventas del Mes"
           value={`$${monthlySales.toLocaleString()}`}
-          subtitle="MXN"
+          subtitle="USD"
           icon={DollarSign}
         />
         <StatsCard
           title="Comisiones del Mes"
           value={`$${monthlyCommission.toLocaleString()}`}
-          subtitle="MXN"
+          subtitle="USD"
           icon={TrendingUp}
         />
         <StatsCard
