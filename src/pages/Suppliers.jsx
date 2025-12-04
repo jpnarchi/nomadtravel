@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plus, Search, Building2, Star, MapPin, 
   Phone, Mail, ExternalLink, Edit2, Trash2, 
-  Loader2, Filter, ChevronRight
+  Loader2, Filter, ChevronRight, Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -42,6 +42,7 @@ export default function Suppliers() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
+  const [smartImportMode, setSmartImportMode] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const queryClient = useQueryClient();
@@ -115,13 +116,22 @@ export default function Suppliers() {
           <h1 className="text-2xl font-bold text-stone-800">Proveedores</h1>
           <p className="text-stone-500 text-sm mt-1">Gestiona tus proveedores y contactos</p>
         </div>
-        <Button 
-          onClick={() => { setEditingSupplier(null); setFormOpen(true); }}
-          className="text-white rounded-xl"
-          style={{ backgroundColor: '#2E442A' }}
-        >
-          <Plus className="w-4 h-4 mr-2" /> Nuevo Proveedor
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => { setEditingSupplier(null); setSmartImportMode(true); setFormOpen(true); }}
+            variant="outline"
+            className="rounded-xl"
+          >
+            <Sparkles className="w-4 h-4 mr-2" style={{ color: '#2E442A' }} /> Smart Import
+          </Button>
+          <Button 
+            onClick={() => { setEditingSupplier(null); setSmartImportMode(false); setFormOpen(true); }}
+            className="text-white rounded-xl"
+            style={{ backgroundColor: '#2E442A' }}
+          >
+            <Plus className="w-4 h-4 mr-2" /> Nuevo Proveedor
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -245,10 +255,11 @@ export default function Suppliers() {
       {/* Form Dialog */}
       <SupplierForm
         open={formOpen}
-        onClose={() => { setFormOpen(false); setEditingSupplier(null); }}
+        onClose={() => { setFormOpen(false); setEditingSupplier(null); setSmartImportMode(false); }}
         supplier={editingSupplier}
         onSave={handleSave}
         isLoading={createMutation.isPending || updateMutation.isPending}
+        showSmartImportOnOpen={smartImportMode}
       />
 
       {/* Delete Confirmation */}

@@ -51,9 +51,9 @@ const CURRENCIES = [
   { value: 'otro', label: 'Otro' }
 ];
 
-export default function SupplierForm({ open, onClose, supplier, onSave, isLoading }) {
+export default function SupplierForm({ open, onClose, supplier, onSave, isLoading, showSmartImportOnOpen = false }) {
   const [smartImportText, setSmartImportText] = useState('');
-  const [showSmartImport, setShowSmartImport] = useState(false);
+  const [showSmartImport, setShowSmartImport] = useState(showSmartImportOnOpen);
   const [importing, setImporting] = useState(false);
 
   const handleSmartImport = async () => {
@@ -192,6 +192,12 @@ Extrae estos campos si están disponibles:
       });
     }
   }, [supplier, open]);
+
+  useEffect(() => {
+    if (open) {
+      setShowSmartImport(showSmartImportOnOpen);
+    }
+  }, [open, showSmartImportOnOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
