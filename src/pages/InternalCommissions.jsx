@@ -47,7 +47,7 @@ export default function InternalCommissions() {
 
   const queryClient = useQueryClient();
 
-  const { data: commissions = [], isLoading } = useQuery({
+  const { data: internalCommissions = [], isLoading: loadingInternal } = useQuery({
     queryKey: ['internalCommissions'],
     queryFn: () => base44.entities.InternalCommission.list('-created_date')
   });
@@ -57,10 +57,83 @@ export default function InternalCommissions() {
     queryFn: () => base44.entities.User.list()
   });
 
-  const { data: soldTrips = [] } = useQuery({
+  const { data: soldTrips = [], isLoading: loadingTrips } = useQuery({
     queryKey: ['soldTrips'],
     queryFn: () => base44.entities.SoldTrip.list()
   });
+
+  const { data: tripServices = [], isLoading: loadingServices } = useQuery({
+    queryKey: ['tripServices'],
+    queryFn: () => base44.entities.TripService.list()
+  });
+
+  const isLoading = loadingInternal || loadingTrips || loadingServices;
+
+  // Combine internal commissions with trip services that have commission
+  const commissions = React.useMemo(() => {
+    // Internal commissions keep their structure
+    const internal = internalCommissions.map(c => ({
+      ...c,
+      source: 'internal'
+    }));
+
+    // Trip services with commission > 0
+    const fromServices = tripServices
+      .filter(s => s.commission && s.commission > 0)
+      .map(s => {
+        const trip = soldTrips.find(t => t.id === s.sold_trip_id);
+        // Determine agent from trip's created_by
+        const agentEmail = trip?.created_by || '';
+        const agent = users.find(u => u.email === agentEmail);
+        
+        return {
+          id: `service_${s.id}`,
+          service_id: s.id,
+          agent_email: agentEmail,
+          agent_name: agent?.full_name || agentEmail || 'Sin asignar',
+          sold_trip_id: s.sold_trip_id,
+          sold_trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje',
+          service_provider: getServiceProviderName(s),
+          estimated_amount: s.commission || 0,
+          estimated_payment_date: s.commission_payment_date || null,
+          iata_used: s.booked_by === 'montecito' ? 'montecito' : 'nomad',
+          status: s.commission_paid ? 'recibida' : 'pendiente',
+          received_date: s.commission_paid ? s.commission_payment_date : null,
+          received_amount: s.commission_paid ? s.commission : null,
+          agent_commission: s.commission_paid ? calculateAgentCut(s.commission, s.booked_by) : 0,
+          nomad_commission: s.commission_paid ? calculateNomadCut(s.commission, s.booked_by) : 0,
+          source: 'tripService'
+        };
+      });
+
+    return [...internal, ...fromServices];
+  }, [internalCommissions, tripServices, soldTrips, users]);
+
+  // Helper to get service provider name
+  function getServiceProviderName(service) {
+    switch (service.service_type) {
+      case 'hotel':
+        return service.hotel_name || service.hotel_chain || 'Hotel';
+      case 'vuelo':
+        return service.airline || 'Vuelo';
+      case 'traslado':
+        return `Traslado ${service.transfer_origin || ''} - ${service.transfer_destination || ''}`;
+      case 'tour':
+        return service.tour_name || 'Tour';
+      default:
+        return service.other_name || 'Servicio';
+    }
+  }
+
+  // Calculate agent commission cut
+  function calculateAgentCut(amount, bookedBy) {
+    return amount * 0.50;
+  }
+
+  // Calculate Nomad commission cut
+  function calculateNomadCut(amount, bookedBy) {
+    return bookedBy === 'montecito' ? amount * 0.35 : amount * 0.50;
+  }
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.InternalCommission.create(data),
