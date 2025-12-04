@@ -87,7 +87,10 @@ export default function Suppliers() {
   };
 
   const filteredSuppliers = suppliers.filter(s => {
-    const matchesSearch = s.name?.toLowerCase().includes(search.toLowerCase());
+    const searchLower = search.toLowerCase();
+    const matchesName = s.name?.toLowerCase().includes(searchLower);
+    const matchesDestination = s.destinations?.some(d => d.toLowerCase().includes(searchLower));
+    const matchesSearch = matchesName || matchesDestination;
     const matchesType = typeFilter === 'all' || s.type === typeFilter;
     return matchesSearch && matchesType;
   });
@@ -140,7 +143,7 @@ export default function Suppliers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <Input
-            placeholder="Buscar proveedor..."
+            placeholder="Buscar por nombre o destino..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 rounded-xl"
