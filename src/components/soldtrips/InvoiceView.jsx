@@ -1,37 +1,20 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Printer, MapPin } from 'lucide-react';
+import { Printer, Plane, Hotel, Car, Compass, Package, Calendar, Users, MapPin } from 'lucide-react';
 
-const SERVICE_LABELS = {
-  hotel: 'Hotel',
-  vuelo: 'Vuelo',
-  traslado: 'Traslado',
-  tour: 'Tour',
-  otro: 'Servicio'
+const SERVICE_CONFIG = {
+  hotel: { label: 'Hospedaje', icon: Hotel, color: '#6366f1' },
+  vuelo: { label: 'Vuelo', icon: Plane, color: '#0ea5e9' },
+  traslado: { label: 'Traslado', icon: Car, color: '#22c55e' },
+  tour: { label: 'Tour', icon: Compass, color: '#f59e0b' },
+  otro: { label: 'Servicio', icon: Package, color: '#8b5cf6' }
 };
 
 export default function InvoiceView({ open, onClose, soldTrip, services }) {
   if (!soldTrip) return null;
-
-  const getServiceName = (service) => {
-    switch (service.service_type) {
-      case 'hotel':
-        return service.hotel_name || 'Hotel';
-      case 'vuelo':
-        return `${service.airline || 'Vuelo'} - ${service.route || ''}`;
-      case 'traslado':
-        return `Traslado ${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
-      case 'tour':
-        return service.tour_name || 'Tour';
-      case 'otro':
-        return service.other_name || 'Servicio';
-      default:
-        return SERVICE_LABELS[service.service_type] || 'Servicio';
-    }
-  };
 
   const MEAL_PLAN_LABELS = {
     solo_habitacion: 'Solo habitación',
@@ -39,47 +22,64 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
     all_inclusive: 'All Inclusive'
   };
 
+  const getServiceName = (service) => {
+    switch (service.service_type) {
+      case 'hotel':
+        return service.hotel_name || 'Hotel';
+      case 'vuelo':
+        return `${service.airline || 'Vuelo'} ${service.route ? `• ${service.route}` : ''}`;
+      case 'traslado':
+        return `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
+      case 'tour':
+        return service.tour_name || 'Tour';
+      case 'otro':
+        return service.other_name || 'Servicio';
+      default:
+        return 'Servicio';
+    }
+  };
+
   const getServiceDetails = (service) => {
     const details = [];
     
     switch (service.service_type) {
       case 'hotel':
-        if (service.hotel_city) details.push(service.hotel_city);
+        if (service.hotel_city) details.push({ label: 'Ubicación', value: service.hotel_city });
         if (service.check_in && service.check_out) {
-          details.push(`${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM yyyy', { locale: es })}`);
+          details.push({ label: 'Fechas', value: `${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM yyyy', { locale: es })}` });
         }
-        if (service.nights) details.push(`${service.nights} noches`);
-        if (service.num_rooms) details.push(`${service.num_rooms} habitación(es)`);
-        if (service.room_type) details.push(service.room_type);
-        if (service.meal_plan) details.push(MEAL_PLAN_LABELS[service.meal_plan] || service.meal_plan);
-        if (service.reservation_number) details.push(`Reserva: ${service.reservation_number}`);
+        if (service.nights) details.push({ label: 'Noches', value: service.nights });
+        if (service.num_rooms) details.push({ label: 'Habitaciones', value: service.num_rooms });
+        if (service.room_type) details.push({ label: 'Tipo', value: service.room_type });
+        if (service.meal_plan) details.push({ label: 'Plan', value: MEAL_PLAN_LABELS[service.meal_plan] || service.meal_plan, highlight: true });
+        if (service.reservation_number) details.push({ label: 'Confirmación', value: service.reservation_number });
         break;
       case 'vuelo':
-        if (service.flight_date) details.push(format(new Date(service.flight_date), 'd MMM yyyy', { locale: es }));
-        if (service.flight_number) details.push(`Vuelo ${service.flight_number}`);
-        if (service.departure_time && service.arrival_time) details.push(`${service.departure_time} - ${service.arrival_time}`);
-        if (service.passengers) details.push(`${service.passengers} pasajero(s)`);
-        if (service.flight_class) details.push(service.flight_class);
-        if (service.baggage_included) details.push(`Equipaje: ${service.baggage_included}`);
-        if (service.flight_reservation_number) details.push(`Reserva: ${service.flight_reservation_number}`);
+        if (service.flight_date) details.push({ label: 'Fecha', value: format(new Date(service.flight_date), 'd MMM yyyy', { locale: es }) });
+        if (service.flight_number) details.push({ label: 'Vuelo', value: service.flight_number });
+        if (service.departure_time && service.arrival_time) details.push({ label: 'Horario', value: `${service.departure_time} - ${service.arrival_time}` });
+        if (service.passengers) details.push({ label: 'Pasajeros', value: service.passengers });
+        if (service.flight_class) details.push({ label: 'Clase', value: service.flight_class, highlight: true });
+        if (service.baggage_included) details.push({ label: 'Equipaje', value: service.baggage_included, highlight: true });
+        if (service.flight_reservation_number) details.push({ label: 'Confirmación', value: service.flight_reservation_number });
         break;
       case 'traslado':
-        if (service.transfer_datetime) details.push(format(new Date(service.transfer_datetime), 'd MMM yyyy HH:mm', { locale: es }));
-        if (service.transfer_type) details.push(service.transfer_type === 'privado' ? 'Privado' : 'Compartido');
-        if (service.vehicle) details.push(service.vehicle);
-        if (service.transfer_passengers) details.push(`${service.transfer_passengers} pasajero(s)`);
+        if (service.transfer_datetime) details.push({ label: 'Fecha y hora', value: format(new Date(service.transfer_datetime), "d MMM yyyy 'a las' HH:mm", { locale: es }) });
+        if (service.transfer_type) details.push({ label: 'Tipo', value: service.transfer_type === 'privado' ? 'Privado' : 'Compartido' });
+        if (service.vehicle) details.push({ label: 'Vehículo', value: service.vehicle });
+        if (service.transfer_passengers) details.push({ label: 'Pasajeros', value: service.transfer_passengers });
         break;
       case 'tour':
-        if (service.tour_city) details.push(service.tour_city);
-        if (service.tour_date) details.push(format(new Date(service.tour_date), 'd MMM yyyy', { locale: es }));
-        if (service.tour_duration) details.push(service.tour_duration);
-        if (service.tour_people) details.push(`${service.tour_people} persona(s)`);
-        if (service.tour_includes) details.push(`Incluye: ${service.tour_includes}`);
-        if (service.tour_reservation_number) details.push(`Reserva: ${service.tour_reservation_number}`);
+        if (service.tour_city) details.push({ label: 'Ubicación', value: service.tour_city });
+        if (service.tour_date) details.push({ label: 'Fecha', value: format(new Date(service.tour_date), 'd MMM yyyy', { locale: es }) });
+        if (service.tour_duration) details.push({ label: 'Duración', value: service.tour_duration });
+        if (service.tour_people) details.push({ label: 'Personas', value: service.tour_people });
+        if (service.tour_includes) details.push({ label: 'Incluye', value: service.tour_includes, highlight: true });
+        if (service.tour_reservation_number) details.push({ label: 'Confirmación', value: service.tour_reservation_number });
         break;
       case 'otro':
-        if (service.other_date) details.push(format(new Date(service.other_date), 'd MMM yyyy', { locale: es }));
-        if (service.other_description) details.push(service.other_description);
+        if (service.other_date) details.push({ label: 'Fecha', value: format(new Date(service.other_date), 'd MMM yyyy', { locale: es }) });
+        if (service.other_description) details.push({ label: 'Descripción', value: service.other_description });
         break;
     }
     
@@ -94,115 +94,151 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle className="text-xl font-bold" style={{ color: '#2E442A' }}>
-            Invoice
-          </DialogTitle>
-          <Button variant="outline" size="sm" onClick={handlePrint} className="rounded-xl">
-            <Printer className="w-4 h-4 mr-2" /> Imprimir
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Print Button - Fixed */}
+        <div className="sticky top-0 z-10 bg-white border-b border-stone-100 p-4 flex justify-end print:hidden">
+          <Button onClick={handlePrint} className="rounded-xl text-white" style={{ backgroundColor: '#2E442A' }}>
+            <Printer className="w-4 h-4 mr-2" /> Imprimir / Guardar PDF
           </Button>
-        </DialogHeader>
+        </div>
 
-        <div className="mt-6 print:mt-0" id="invoice-content">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-8 pb-6 border-b border-stone-200">
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: '#2E442A' }}
-              >
-                <MapPin className="w-6 h-6 text-white" />
+        <div className="p-8 print:p-6" id="invoice-content">
+          {/* Header with gradient */}
+          <div className="relative mb-8 pb-8 border-b border-stone-200">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <div 
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  <MapPin className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#2E442A' }}>
+                    Nomad Travel Society
+                  </h1>
+                  <p className="text-sm text-stone-500 mt-1">Tu viaje, nuestra pasión</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-bold" style={{ color: '#2E442A' }}>Nomad Travel Society</h2>
-                <p className="text-xs text-stone-500">San Pedro Garza García, N.L.</p>
+              <div className="text-right">
+                <div className="inline-block px-4 py-2 rounded-xl bg-stone-100">
+                  <p className="text-xs text-stone-500 uppercase tracking-wide">Cotización</p>
+                  <p className="text-lg font-bold text-stone-800">{format(new Date(), 'd MMM yyyy', { locale: es })}</p>
+                </div>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-stone-500">Fecha</p>
-              <p className="font-medium">{format(new Date(), 'd MMMM yyyy', { locale: es })}</p>
+          </div>
+
+          {/* Trip & Client Info Cards */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-stone-50 to-stone-100 border border-stone-200">
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2">Cliente</p>
+              <p className="text-xl font-bold text-stone-800">{soldTrip.client_name}</p>
             </div>
-          </div>
-
-          {/* Client Info */}
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-stone-500 mb-2">Cliente</h3>
-            <p className="text-lg font-semibold text-stone-800">{soldTrip.client_name}</p>
-            <p className="text-sm text-stone-600">
-              Viaje: {soldTrip.destination} | {format(new Date(soldTrip.start_date), 'd MMM yyyy', { locale: es })}
-              {soldTrip.end_date && ` - ${format(new Date(soldTrip.end_date), 'd MMM yyyy', { locale: es })}`}
-            </p>
-            <p className="text-sm text-stone-600">{soldTrip.travelers} viajero(s)</p>
-          </div>
-
-          {/* Services Table */}
-          <div className="mb-8">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-stone-200">
-                  <th className="text-left py-3 text-sm font-semibold text-stone-600">Servicio</th>
-                  <th className="text-left py-3 text-sm font-semibold text-stone-600">Detalle</th>
-                  <th className="text-right py-3 text-sm font-semibold text-stone-600">Precio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.map((service, index) => {
-                  const details = getServiceDetails(service);
-                  return (
-                    <tr key={index} className="border-b border-stone-100">
-                      <td className="py-3">
-                        <span 
-                          className="px-2 py-1 rounded-md text-xs font-medium"
-                          style={{ backgroundColor: '#2E442A15', color: '#2E442A' }}
-                        >
-                          {SERVICE_LABELS[service.service_type]}
-                        </span>
-                        <p className="font-medium text-stone-800 mt-1">{getServiceName(service)}</p>
-                      </td>
-                      <td className="py-3 text-sm text-stone-600">
-                        <ul className="space-y-0.5">
-                          {details.map((detail, i) => (
-                            <li key={i}>• {detail}</li>
-                          ))}
-                        </ul>
-                      </td>
-                      <td className="py-3 text-right font-semibold align-top">
-                        ${(service.total_price || 0).toLocaleString()}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Total */}
-          <div className="flex justify-end">
-            <div className="w-64 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Subtotal</span>
-                <span className="font-medium">${total.toLocaleString()}</span>
-              </div>
-              <div 
-                className="flex justify-between pt-3 border-t-2"
-                style={{ borderColor: '#2E442A' }}
-              >
-                <span className="font-semibold" style={{ color: '#2E442A' }}>Total</span>
-                <span className="text-xl font-bold" style={{ color: '#2E442A' }}>
-                  ${total.toLocaleString()} MXN
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#2E442A]/5 to-[#2E442A]/10 border border-[#2E442A]/20">
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#2E442A' }}>Destino</p>
+              <p className="text-xl font-bold" style={{ color: '#2E442A' }}>{soldTrip.destination}</p>
+              <div className="flex items-center gap-4 mt-2 text-sm text-stone-600">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  {format(new Date(soldTrip.start_date), 'd MMM', { locale: es })}
+                  {soldTrip.end_date && ` - ${format(new Date(soldTrip.end_date), 'd MMM yyyy', { locale: es })}`}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  {soldTrip.travelers} viajero(s)
                 </span>
               </div>
             </div>
           </div>
 
+          {/* Services */}
+          <div className="mb-8">
+            <h2 className="text-lg font-bold text-stone-800 mb-4">Servicios Incluidos</h2>
+            <div className="space-y-4">
+              {services.map((service, index) => {
+                const config = SERVICE_CONFIG[service.service_type] || SERVICE_CONFIG.otro;
+                const Icon = config.icon;
+                const details = getServiceDetails(service);
+                
+                return (
+                  <div 
+                    key={index} 
+                    className="rounded-2xl border border-stone-200 overflow-hidden bg-white shadow-sm"
+                  >
+                    {/* Service Header */}
+                    <div 
+                      className="px-5 py-3 flex items-center justify-between"
+                      style={{ backgroundColor: `${config.color}10` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: config.color }}
+                        >
+                          <Icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: config.color }}>
+                            {config.label}
+                          </p>
+                          <p className="font-bold text-stone-800">{getServiceName(service)}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold" style={{ color: '#2E442A' }}>
+                          ${(service.total_price || 0).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-stone-500">MXN</p>
+                      </div>
+                    </div>
+                    
+                    {/* Service Details */}
+                    {details.length > 0 && (
+                      <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {details.map((detail, i) => (
+                          <div key={i} className={detail.highlight ? 'col-span-2 md:col-span-3' : ''}>
+                            <p className="text-xs text-stone-400 uppercase tracking-wide">{detail.label}</p>
+                            <p className={`text-sm font-medium text-stone-700 ${detail.highlight ? 'text-[#2E442A] font-semibold' : ''}`}>
+                              {detail.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="rounded-2xl p-6 mb-8" style={{ backgroundColor: '#2E442A' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white/70 text-sm">Total de tu viaje</p>
+                <p className="text-white/50 text-xs mt-1">{services.length} servicio(s) incluido(s)</p>
+              </div>
+              <div className="text-right">
+                <p className="text-4xl font-bold text-white">
+                  ${total.toLocaleString()}
+                </p>
+                <p className="text-white/70 text-sm">MXN</p>
+              </div>
+            </div>
+          </div>
+
           {/* Footer */}
-          <div className="mt-12 pt-6 border-t border-stone-200 text-center">
-            <p className="text-sm text-stone-500">
-              Gracias por confiar en Nomad Travel Society
+          <div className="text-center pt-6 border-t border-stone-200">
+            <p className="text-lg font-semibold" style={{ color: '#2E442A' }}>
+              ¡Gracias por viajar con nosotros!
             </p>
-            <p className="text-xs text-stone-400 mt-1">
-              contacto@nomadtravelsociety.com | San Pedro Garza García, N.L.
+            <p className="text-sm text-stone-500 mt-2">
+              contacto@nomadtravelsociety.com • San Pedro Garza García, N.L.
+            </p>
+            <p className="text-xs text-stone-400 mt-4">
+              Esta cotización es válida por 7 días a partir de la fecha de emisión.
+              Precios sujetos a disponibilidad.
             </p>
           </div>
         </div>
