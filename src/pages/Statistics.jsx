@@ -1,0 +1,409 @@
+import React, { useState, useMemo } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { format, getMonth, getYear, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { 
+  Loader2, TrendingUp, Users, Plane, DollarSign, 
+  Calendar, MapPin, Hotel, Building2, Filter, X
+} from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+import GeneralStats from '@/components/statistics/GeneralStats';
+import DestinationsChart from '@/components/statistics/DestinationsChart';
+import SeasonalityChart from '@/components/statistics/SeasonalityChart';
+import TripTypesChart from '@/components/statistics/TripTypesChart';
+import HotelChainsChart from '@/components/statistics/HotelChainsChart';
+import ProvidersChart from '@/components/statistics/ProvidersChart';
+
+const MONTHS = [
+  { value: '0', label: 'Enero' },
+  { value: '1', label: 'Febrero' },
+  { value: '2', label: 'Marzo' },
+  { value: '3', label: 'Abril' },
+  { value: '4', label: 'Mayo' },
+  { value: '5', label: 'Junio' },
+  { value: '6', label: 'Julio' },
+  { value: '7', label: 'Agosto' },
+  { value: '8', label: 'Septiembre' },
+  { value: '9', label: 'Octubre' },
+  { value: '10', label: 'Noviembre' },
+  { value: '11', label: 'Diciembre' },
+];
+
+const SEASONS = [
+  { value: 'semana_santa', label: 'Semana Santa', months: [2, 3] },
+  { value: 'verano', label: 'Verano', months: [5, 6, 7] },
+  { value: 'navidad', label: 'Navidad / Año Nuevo', months: [11, 0] },
+  { value: 'puentes', label: 'Puentes', months: [10, 1, 4] },
+];
+
+export default function Statistics() {
+  const [filters, setFilters] = useState({
+    year: new Date().getFullYear().toString(),
+    saleMonth: 'all',
+    travelMonth: 'all',
+    season: 'all',
+    destination: 'all',
+    client: 'all',
+    provider: 'all',
+    hotelChain: 'all',
+    tripType: 'all'
+  });
+
+  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
+    queryKey: ['soldTrips'],
+    queryFn: () => base44.entities.SoldTrip.list()
+  });
+
+  const { data: services = [], isLoading: servicesLoading } = useQuery({
+    queryKey: ['services'],
+    queryFn: () => base44.entities.TripService.list()
+  });
+
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
+    queryKey: ['clients'],
+    queryFn: () => base44.entities.Client.list()
+  });
+
+  const { data: trips = [], isLoading: rawTripsLoading } = useQuery({
+    queryKey: ['trips'],
+    queryFn: () => base44.entities.Trip.list()
+  });
+
+  const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading;
+
+  // Get available years
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    soldTrips.forEach(t => {
+      if (t.created_date) years.add(getYear(parseISO(t.created_date)));
+      if (t.start_date) years.add(getYear(parseISO(t.start_date)));
+    });
+    const currentYear = new Date().getFullYear();
+    years.add(currentYear);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [soldTrips]);
+
+  // Get unique destinations
+  const uniqueDestinations = useMemo(() => {
+    const dests = new Set();
+    soldTrips.forEach(t => {
+      if (t.destination) {
+        t.destination.split(', ').forEach(d => dests.add(d));
+      }
+    });
+    return Array.from(dests).sort();
+  }, [soldTrips]);
+
+  // Get unique hotel chains
+  const uniqueHotelChains = useMemo(() => {
+    const chains = new Set();
+    services.forEach(s => {
+      if (s.hotel_chain) chains.add(s.hotel_chain);
+    });
+    return Array.from(chains).sort();
+  }, [services]);
+
+  // Get unique providers
+  const uniqueProviders = useMemo(() => {
+    const providers = new Set();
+    services.forEach(s => {
+      if (s.reserved_by) providers.add(s.reserved_by);
+    });
+    return Array.from(providers);
+  }, [services]);
+
+  // Filter data
+  const filteredData = useMemo(() => {
+    let filteredTrips = [...soldTrips];
+    let filteredServices = [...services];
+
+    // Filter by year
+    if (filters.year !== 'all') {
+      const year = parseInt(filters.year);
+      filteredTrips = filteredTrips.filter(t => {
+        const saleYear = t.created_date ? getYear(parseISO(t.created_date)) : null;
+        const travelYear = t.start_date ? getYear(parseISO(t.start_date)) : null;
+        return saleYear === year || travelYear === year;
+      });
+    }
+
+    // Filter by sale month
+    if (filters.saleMonth !== 'all') {
+      const month = parseInt(filters.saleMonth);
+      filteredTrips = filteredTrips.filter(t => {
+        if (!t.created_date) return false;
+        return getMonth(parseISO(t.created_date)) === month;
+      });
+    }
+
+    // Filter by travel month
+    if (filters.travelMonth !== 'all') {
+      const month = parseInt(filters.travelMonth);
+      filteredTrips = filteredTrips.filter(t => {
+        if (!t.start_date) return false;
+        return getMonth(parseISO(t.start_date)) === month;
+      });
+    }
+
+    // Filter by season
+    if (filters.season !== 'all') {
+      const season = SEASONS.find(s => s.value === filters.season);
+      if (season) {
+        filteredTrips = filteredTrips.filter(t => {
+          if (!t.start_date) return false;
+          const month = getMonth(parseISO(t.start_date));
+          return season.months.includes(month);
+        });
+      }
+    }
+
+    // Filter by destination
+    if (filters.destination !== 'all') {
+      filteredTrips = filteredTrips.filter(t => 
+        t.destination?.includes(filters.destination)
+      );
+    }
+
+    // Filter by client
+    if (filters.client !== 'all') {
+      filteredTrips = filteredTrips.filter(t => t.client_id === filters.client);
+    }
+
+    // Get trip IDs for service filtering
+    const tripIds = new Set(filteredTrips.map(t => t.id));
+    filteredServices = filteredServices.filter(s => tripIds.has(s.sold_trip_id));
+
+    // Filter services by provider
+    if (filters.provider !== 'all') {
+      filteredServices = filteredServices.filter(s => s.reserved_by === filters.provider);
+    }
+
+    // Filter services by hotel chain
+    if (filters.hotelChain !== 'all') {
+      filteredServices = filteredServices.filter(s => s.hotel_chain === filters.hotelChain);
+    }
+
+    return { filteredTrips, filteredServices };
+  }, [soldTrips, services, filters]);
+
+  const clearFilters = () => {
+    setFilters({
+      year: new Date().getFullYear().toString(),
+      saleMonth: 'all',
+      travelMonth: 'all',
+      season: 'all',
+      destination: 'all',
+      client: 'all',
+      provider: 'all',
+      hotelChain: 'all',
+      tripType: 'all'
+    });
+  };
+
+  const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
+    if (key === 'year') return value !== new Date().getFullYear().toString();
+    return value !== 'all';
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#2E442A' }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">Mi Progreso</h1>
+          <p className="text-stone-500 mt-1">Análisis de ventas, tendencias y desempeño</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-4 h-4 text-stone-500" />
+          <span className="text-sm font-medium text-stone-700">Filtros</span>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="ml-auto text-xs">
+              <X className="w-3 h-3 mr-1" />
+              Limpiar filtros
+            </Button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <Select value={filters.year} onValueChange={(v) => setFilters({...filters, year: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Año" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los años</SelectItem>
+              {availableYears.map(y => (
+                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.saleMonth} onValueChange={(v) => setFilters({...filters, saleMonth: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Mes de venta" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos (venta)</SelectItem>
+              {MONTHS.map(m => (
+                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.travelMonth} onValueChange={(v) => setFilters({...filters, travelMonth: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Mes de viaje" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos (viaje)</SelectItem>
+              {MONTHS.map(m => (
+                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.season} onValueChange={(v) => setFilters({...filters, season: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Temporada" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las temporadas</SelectItem>
+              {SEASONS.map(s => (
+                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.destination} onValueChange={(v) => setFilters({...filters, destination: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Destino" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los destinos</SelectItem>
+              {uniqueDestinations.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.client} onValueChange={(v) => setFilters({...filters, client: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Cliente" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los clientes</SelectItem>
+              {clients.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.provider} onValueChange={(v) => setFilters({...filters, provider: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Proveedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los proveedores</SelectItem>
+              {uniqueProviders.map(p => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.hotelChain} onValueChange={(v) => setFilters({...filters, hotelChain: v})}>
+            <SelectTrigger className="rounded-xl text-xs">
+              <SelectValue placeholder="Cadena hotelera" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las cadenas</SelectItem>
+              {uniqueHotelChains.map(c => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="general" className="space-y-6">
+        <TabsList className="bg-white border border-stone-200 p-1 rounded-xl flex-wrap h-auto">
+          <TabsTrigger value="general" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            General
+          </TabsTrigger>
+          <TabsTrigger value="destinations" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            Destinos
+          </TabsTrigger>
+          <TabsTrigger value="seasonality" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            Temporadas
+          </TabsTrigger>
+          <TabsTrigger value="trip-types" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            Tipos de Viaje
+          </TabsTrigger>
+          <TabsTrigger value="hotels" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            Hoteles
+          </TabsTrigger>
+          <TabsTrigger value="providers" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            Proveedores
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="general">
+          <GeneralStats 
+            soldTrips={filteredData.filteredTrips} 
+            services={filteredData.filteredServices}
+            clients={clients}
+            allSoldTrips={soldTrips}
+          />
+        </TabsContent>
+
+        <TabsContent value="destinations">
+          <DestinationsChart 
+            soldTrips={filteredData.filteredTrips}
+            services={filteredData.filteredServices}
+          />
+        </TabsContent>
+
+        <TabsContent value="seasonality">
+          <SeasonalityChart 
+            soldTrips={filteredData.filteredTrips}
+            allSoldTrips={soldTrips}
+          />
+        </TabsContent>
+
+        <TabsContent value="trip-types">
+          <TripTypesChart 
+            soldTrips={filteredData.filteredTrips}
+            trips={trips}
+          />
+        </TabsContent>
+
+        <TabsContent value="hotels">
+          <HotelChainsChart 
+            services={filteredData.filteredServices}
+          />
+        </TabsContent>
+
+        <TabsContent value="providers">
+          <ProvidersChart 
+            services={filteredData.filteredServices}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

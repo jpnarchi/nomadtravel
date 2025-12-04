@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { 
-  LayoutDashboard, 
-  Users, 
-  Plane, 
-  CheckCircle, 
-  Menu, 
-  X,
-  MapPin,
-  DollarSign,
-  Loader2,
-  Building2
-} from 'lucide-react';
+        LayoutDashboard, 
+        Users, 
+        Plane, 
+        CheckCircle, 
+        Menu, 
+        X,
+        MapPin,
+        DollarSign,
+        Loader2,
+        Building2,
+        BarChart3
+      } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
@@ -47,13 +48,14 @@ export default function Layout({ children, currentPageName }) {
   }, []);
 
   const navigation = [
-    { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
-    { name: 'Clientes', page: 'Clients', icon: Users },
-    { name: 'Viajes', page: 'Trips', icon: Plane },
-    { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
-    { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
-    { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
-  ];
+            { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+            { name: 'Clientes', page: 'Clients', icon: Users },
+            { name: 'Viajes', page: 'Trips', icon: Plane },
+            { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
+            { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
+            { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
+            { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
+          ];
 
   return (
     <div className="min-h-screen bg-stone-50" style={{ fontFamily: "'Montserrat', sans-serif" }}>
