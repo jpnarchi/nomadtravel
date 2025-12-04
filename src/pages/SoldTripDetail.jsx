@@ -462,28 +462,21 @@ export default function SoldTripDetail() {
 
       {/* Payment Alerts */}
       {pendingPaymentAlerts.length > 0 && (
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-5 shadow-sm border border-red-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-red-100">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-red-800">Alertas de Pagos Pendientes</h3>
-              <p className="text-sm text-red-600">{pendingPaymentAlerts.length} servicio(s) con vencimiento próximo</p>
-            </div>
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4 shadow-sm border border-red-200">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <h3 className="font-semibold text-sm text-red-800">Pagos Pendientes ({pendingPaymentAlerts.length})</h3>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             {pendingPaymentAlerts.map((service) => {
               const Icon = SERVICE_ICONS[service.service_type] || Package;
               const details = getServiceDetails(service);
               
               return (
-                <motion.div
+                <div
                   key={service.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`p-4 rounded-xl border ${
+                  className={`p-3 rounded-lg border text-sm ${
                     service.isOverdue 
                       ? 'bg-red-100 border-red-300' 
                       : service.daysUntilDue <= 7 
@@ -491,35 +484,19 @@ export default function SoldTripDetail() {
                         : 'bg-yellow-50 border-yellow-300'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        service.isOverdue ? 'bg-red-200' : service.daysUntilDue <= 7 ? 'bg-orange-200' : 'bg-yellow-100'
-                      }`}>
-                        <Icon className={`w-5 h-5 ${
-                          service.isOverdue ? 'text-red-700' : service.daysUntilDue <= 7 ? 'text-orange-700' : 'text-yellow-700'
-                        }`} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-stone-800">{details.title}</p>
-                        <p className="text-sm text-stone-600">{SERVICE_LABELS[service.service_type]} • {details.subtitle}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={`text-xs ${
-                            service.reservation_status === 'cancelado' ? 'border-gray-300 text-gray-600' : 'border-yellow-400 text-yellow-700'
-                          }`}>
-                            {service.reservation_status === 'reservado' ? 'Reservado' : service.reservation_status === 'cancelado' ? 'Cancelado' : 'Pagado'}
-                          </Badge>
-                          <span className="text-xs text-stone-500">
-                            Vence: {format(new Date(service.payment_due_date), 'd MMM yyyy', { locale: es })}
-                          </span>
-                        </div>
-                      </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Icon className={`w-4 h-4 flex-shrink-0 ${
+                        service.isOverdue ? 'text-red-700' : service.daysUntilDue <= 7 ? 'text-orange-700' : 'text-yellow-700'
+                      }`} />
+                      <span className="font-medium text-stone-800 truncate">{details.title}</span>
+                      <span className="text-xs text-stone-500 hidden sm:inline">• {SERVICE_LABELS[service.service_type]}</span>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold text-lg" style={{ color: '#2E442A' }}>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="font-semibold" style={{ color: '#2E442A' }}>
                         ${(service.total_price || 0).toLocaleString()}
-                      </p>
-                      <Badge className={`mt-1 ${
+                      </span>
+                      <Badge className={`text-xs ${
                         service.isOverdue 
                           ? 'bg-red-600 text-white' 
                           : service.daysUntilDue <= 7 
@@ -527,14 +504,14 @@ export default function SoldTripDetail() {
                             : 'bg-yellow-500 text-white'
                       }`}>
                         {service.isOverdue 
-                          ? `Vencido hace ${Math.abs(service.daysUntilDue)} día(s)` 
+                          ? `Vencido ${Math.abs(service.daysUntilDue)}d` 
                           : service.daysUntilDue === 0 
-                            ? '¡Vence hoy!' 
-                            : `Vence en ${service.daysUntilDue} día(s)`}
+                            ? '¡Hoy!' 
+                            : `${service.daysUntilDue}d`}
                       </Badge>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
