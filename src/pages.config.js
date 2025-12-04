@@ -12,6 +12,7 @@ import TripDetail from './pages/TripDetail';
 import Statistics from './pages/Statistics';
 import Reviews from './pages/Reviews';
 import Credentials from './pages/Credentials';
+import InternalCommissions from './pages/InternalCommissions';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "Statistics": Statistics,
     "Reviews": Reviews,
     "Credentials": Credentials,
+    "InternalCommissions": InternalCommissions,
 }
 
 export const pagesConfig = {
