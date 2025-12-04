@@ -26,6 +26,17 @@ const BOOKED_BY = [
   { value: 'iata_nomad', label: 'IATA Nomad' }
 ];
 
+const RESERVED_BY = [
+  { value: 'virtuoso', label: 'Virtuoso' },
+  { value: 'preferred_partner', label: 'Preferred Partner' },
+  { value: 'tbo', label: 'TBO' },
+  { value: 'expedia_taap', label: 'Expedia TAAP' },
+  { value: 'ratehawk', label: 'RateHawk' },
+  { value: 'tablet_hotels', label: 'Tablet Hotels' },
+  { value: 'dmc', label: 'DMC' },
+  { value: 'otro', label: 'Otro' }
+];
+
 const HOTEL_CHAINS = [
   { value: 'hilton', label: 'Hilton' },
   { value: 'marriott', label: 'Marriott Bonvoy' },
@@ -599,14 +610,27 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Bookeado por</Label>
-              <Select value={formData.booked_by || 'montecito'} onValueChange={(v) => updateField('booked_by', v)}>
-                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {BOOKED_BY.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <div className={`grid gap-4 ${formData.service_type === 'hotel' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className="space-y-2">
+                <Label>Bookeado por</Label>
+                <Select value={formData.booked_by || 'montecito'} onValueChange={(v) => updateField('booked_by', v)}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {BOOKED_BY.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              {formData.service_type === 'hotel' && (
+                <div className="space-y-2">
+                  <Label>Reservado por</Label>
+                  <Select value={formData.reserved_by || ''} onValueChange={(v) => updateField('reserved_by', v)}>
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      {RESERVED_BY.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Notas</Label>
