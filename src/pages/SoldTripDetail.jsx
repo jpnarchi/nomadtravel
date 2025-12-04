@@ -823,6 +823,7 @@ export default function SoldTripDetail() {
         onClose={() => setInvoiceOpen(false)}
         soldTrip={soldTrip}
         services={services}
+        clientPayments={clientPayments}
       />
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
