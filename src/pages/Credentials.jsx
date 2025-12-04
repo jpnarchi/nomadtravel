@@ -154,135 +154,101 @@ export default function Credentials() {
           onAction={() => setFormOpen(true)}
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredCredentials.map((credential) => {
-            const category = CATEGORIES[credential.category] || CATEGORIES.otro;
-            const isPasswordVisible = visiblePasswords[credential.id];
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-stone-50 border-b border-stone-100">
+                <tr>
+                  <th className="text-left p-4 font-medium text-stone-600">Nombre</th>
+                  <th className="text-left p-4 font-medium text-stone-600">Categoría</th>
+                  <th className="text-left p-4 font-medium text-stone-600">Usuario</th>
+                  <th className="text-left p-4 font-medium text-stone-600">Contraseña</th>
+                  <th className="text-left p-4 font-medium text-stone-600">ID Agente</th>
+                  <th className="text-right p-4 font-medium text-stone-600">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCredentials.map((credential) => {
+                  const category = CATEGORIES[credential.category] || CATEGORIES.otro;
+                  const isPasswordVisible = visiblePasswords[credential.id];
 
-            return (
-              <div
-                key={credential.id}
-                className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5 hover:shadow-md transition-all"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
-                      <Key className="w-5 h-5" style={{ color: '#2E442A' }} />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-stone-800">{credential.name}</h3>
-                      <Badge className={`${category.color} text-xs mt-1`}>{category.label}</Badge>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => { setEditingCredential(credential); setFormOpen(true); }}
-                    >
-                      <Edit2 className="w-4 h-4 text-stone-400" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => setDeleteConfirm(credential)}
-                    >
-                      <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
-                    </Button>
-                  </div>
-                </div>
-
-                {credential.website && (
-                  <a 
-                    href={credential.website.startsWith('http') ? credential.website : `https://${credential.website}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-700 mb-3"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    <span className="truncate">{credential.website}</span>
-                  </a>
-                )}
-
-                <div className="space-y-2 text-sm">
-                  {credential.username && (
-                    <div className="flex items-center justify-between p-2 bg-stone-50 rounded-lg">
-                      <div>
-                        <span className="text-stone-400 text-xs">Usuario</span>
-                        <p className="text-stone-700 font-mono">{credential.username}</p>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7"
-                        onClick={() => copyToClipboard(credential.username, 'Usuario')}
-                      >
-                        <Copy className="w-3 h-3 text-stone-400" />
-                      </Button>
-                    </div>
-                  )}
-
-                  {credential.password && (
-                    <div className="flex items-center justify-between p-2 bg-stone-50 rounded-lg">
-                      <div className="flex-1 min-w-0">
-                        <span className="text-stone-400 text-xs">Contraseña</span>
-                        <p className="text-stone-700 font-mono truncate">
-                          {isPasswordVisible ? credential.password : '••••••••'}
-                        </p>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7"
-                          onClick={() => togglePasswordVisibility(credential.id)}
-                        >
-                          {isPasswordVisible ? (
-                            <EyeOff className="w-3 h-3 text-stone-400" />
-                          ) : (
-                            <Eye className="w-3 h-3 text-stone-400" />
-                          )}
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7"
-                          onClick={() => copyToClipboard(credential.password, 'Contraseña')}
-                        >
-                          <Copy className="w-3 h-3 text-stone-400" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {credential.agent_id && (
-                    <div className="flex items-center justify-between p-2 bg-stone-50 rounded-lg">
-                      <div>
-                        <span className="text-stone-400 text-xs">ID de Agente</span>
-                        <p className="text-stone-700 font-mono">{credential.agent_id}</p>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7"
-                        onClick={() => copyToClipboard(credential.agent_id, 'ID')}
-                      >
-                        <Copy className="w-3 h-3 text-stone-400" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                {credential.notes && (
-                  <p className="text-xs text-stone-500 mt-3 pt-3 border-t border-stone-100">
-                    {credential.notes}
-                  </p>
-                )}
-              </div>
-            );
-          })}
+                  return (
+                    <tr key={credential.id} className="border-b border-stone-50 hover:bg-stone-50/50">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2E442A15' }}>
+                            <Key className="w-4 h-4" style={{ color: '#2E442A' }} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-stone-800 truncate">{credential.name}</p>
+                            {credential.website && (
+                              <a 
+                                href={credential.website.startsWith('http') ? credential.website : `https://${credential.website}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span className="truncate max-w-[150px]">{credential.website.replace(/^https?:\/\//, '')}</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Badge className={`${category.color} text-xs`}>{category.label}</Badge>
+                      </td>
+                      <td className="p-4">
+                        {credential.username ? (
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-xs text-stone-600 truncate max-w-[150px]">{credential.username}</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(credential.username, 'Usuario')}>
+                              <Copy className="w-3 h-3 text-stone-400" />
+                            </Button>
+                          </div>
+                        ) : <span className="text-stone-300">-</span>}
+                      </td>
+                      <td className="p-4">
+                        {credential.password ? (
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-xs text-stone-600 truncate max-w-[100px]">
+                              {isPasswordVisible ? credential.password : '••••••••'}
+                            </span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => togglePasswordVisibility(credential.id)}>
+                              {isPasswordVisible ? <EyeOff className="w-3 h-3 text-stone-400" /> : <Eye className="w-3 h-3 text-stone-400" />}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(credential.password, 'Contraseña')}>
+                              <Copy className="w-3 h-3 text-stone-400" />
+                            </Button>
+                          </div>
+                        ) : <span className="text-stone-300">-</span>}
+                      </td>
+                      <td className="p-4">
+                        {credential.agent_id ? (
+                          <div className="flex items-center gap-1">
+                            <span className="font-mono text-xs text-stone-600">{credential.agent_id}</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(credential.agent_id, 'ID')}>
+                              <Copy className="w-3 h-3 text-stone-400" />
+                            </Button>
+                          </div>
+                        ) : <span className="text-stone-300">-</span>}
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingCredential(credential); setFormOpen(true); }}>
+                            <Edit2 className="w-4 h-4 text-stone-400" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteConfirm(credential)}>
+                            <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
