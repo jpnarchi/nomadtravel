@@ -12,7 +12,8 @@ const STAGES = [
   { value: 'cotizando', label: 'Cotizando' },
   { value: 'propuesta_enviada', label: 'Propuesta Enviada' },
   { value: 'aceptado', label: 'Aceptado' },
-  { value: 'vendido', label: 'Vendido' }
+  { value: 'vendido', label: 'Vendido' },
+  { value: 'perdido', label: 'Perdido' }
 ];
 
 export default function TripForm({ open, onClose, trip, clients, onSave, isLoading }) {
@@ -26,7 +27,8 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
     budget: '',
     mood: '',
     stage: 'nuevo',
-    notes: ''
+    notes: '',
+    lost_reason: ''
   });
 
   useEffect(() => {
@@ -41,7 +43,8 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
         budget: trip.budget || '',
         mood: trip.mood || '',
         stage: trip.stage || 'nuevo',
-        notes: trip.notes || ''
+        notes: trip.notes || '',
+        lost_reason: trip.lost_reason || ''
       });
     } else {
       setFormData({
@@ -54,7 +57,8 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
         budget: '',
         mood: '',
         stage: 'nuevo',
-        notes: ''
+        notes: '',
+        lost_reason: ''
       });
     }
   }, [trip, open]);
@@ -199,6 +203,21 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
               className="rounded-xl resize-none"
             />
           </div>
+
+          {formData.stage === 'perdido' && (
+            <div className="space-y-2 p-4 bg-red-50 rounded-xl border border-red-200">
+              <Label htmlFor="lost_reason" className="text-red-700">Motivo de pérdida *</Label>
+              <Textarea
+                id="lost_reason"
+                value={formData.lost_reason}
+                onChange={(e) => setFormData({ ...formData, lost_reason: e.target.value })}
+                rows={2}
+                className="rounded-xl resize-none border-red-200"
+                placeholder="Ej: Precio muy alto, eligió otra agencia, cambió de planes..."
+                required={formData.stage === 'perdido'}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">

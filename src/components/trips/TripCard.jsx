@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { MapPin, Calendar, Users, DollarSign, Edit2, Trash2, ArrowRight } from 'lucide-react';
+import { MapPin, Calendar, Users, DollarSign, Edit2, Trash2, ArrowRight, XCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -11,7 +11,8 @@ const STAGE_CONFIG = {
   cotizando: { label: 'Cotizando', color: 'bg-yellow-100 text-yellow-700' },
   propuesta_enviada: { label: 'Propuesta Enviada', color: 'bg-purple-100 text-purple-700' },
   aceptado: { label: 'Aceptado', color: 'bg-green-100 text-green-700' },
-  vendido: { label: 'Vendido', color: 'bg-emerald-100 text-emerald-800' }
+  vendido: { label: 'Vendido', color: 'bg-emerald-100 text-emerald-800' },
+  perdido: { label: 'Perdido', color: 'bg-red-100 text-red-700' }
 };
 
 export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
@@ -90,7 +91,19 @@ export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
         </div>
       )}
 
-      {trip.stage !== 'vendido' && (
+      {trip.stage === 'perdido' && trip.lost_reason && (
+        <div className="mt-3 pt-3 border-t border-red-100 bg-red-50 -mx-4 -mb-4 px-4 pb-4 rounded-b-xl">
+          <div className="flex items-start gap-2">
+            <XCircle className="w-3.5 h-3.5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="text-xs text-red-600 font-medium">Motivo:</span>
+              <p className="text-xs text-red-700 mt-0.5">{trip.lost_reason}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {trip.stage !== 'vendido' && trip.stage !== 'perdido' && (
         <Button
           variant="ghost"
           size="sm"
