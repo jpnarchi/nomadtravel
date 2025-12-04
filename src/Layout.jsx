@@ -12,7 +12,8 @@ import {
         DollarSign,
         Loader2,
         Building2,
-        BarChart3
+        BarChart3,
+        BookOpen
       } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import { cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ export default function Layout({ children, currentPageName }) {
             { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
             { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
             { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
+            { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
           ];
 
   return (
