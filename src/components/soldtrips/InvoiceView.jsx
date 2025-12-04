@@ -168,15 +168,15 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
                   >
                     {/* Service Header */}
                     <div 
-                      className="px-5 py-3 flex items-center justify-between"
+                      className="px-4 py-2 flex items-center justify-between"
                       style={{ backgroundColor: `${config.color}10` }}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
                           style={{ backgroundColor: config.color }}
                         >
-                          <Icon className="w-5 h-5 text-white" />
+                          <Icon className="w-4 h-4 text-white" />
                         </div>
                         <div>
                           <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: config.color }}>
@@ -186,10 +186,9 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold" style={{ color: '#2E442A' }}>
-                          ${(service.total_price || 0).toLocaleString()}
+                        <p className="text-lg font-bold" style={{ color: '#2E442A' }}>
+                          ${(service.total_price || 0).toLocaleString()} <span className="text-xs font-normal text-stone-500">MXN</span>
                         </p>
-                        <p className="text-xs text-stone-500">MXN</p>
                       </div>
                     </div>
                     
