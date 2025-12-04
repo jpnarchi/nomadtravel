@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, User, Building2 } from 'lucide-react';
+import { Loader2, User, Building2, Upload, FileText, X } from 'lucide-react';
 import { toast } from "sonner";
 
 const PAYMENT_METHODS = [
@@ -26,8 +26,10 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     amount: '',
     method: 'transferencia',
     supplier: '',
-    notes: ''
+    notes: '',
+    receipt_url: ''
   });
+  const [uploading, setUploading] = useState(false);
 
   const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips'],
@@ -42,10 +44,27 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         amount: '',
         method: 'transferencia',
         supplier: '',
-        notes: ''
+        notes: '',
+        receipt_url: ''
       });
     }
   }, [open]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData({ ...formData, receipt_url: file_url });
+      toast.success('Comprobante subido');
+    } catch (error) {
+      toast.error('Error al subir archivo');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const clientPaymentMutation = useMutation({
     mutationFn: async (data) => {
@@ -105,7 +124,8 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
       date: formData.date,
       amount: parseFloat(formData.amount),
       method: formData.method,
-      notes: formData.notes
+      notes: formData.notes,
+      receipt_url: formData.receipt_url || undefined
     };
 
     if (type === 'client') {
@@ -118,7 +138,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     }
   };
 
-  const isLoading = clientPaymentMutation.isPending || supplierPaymentMutation.isPending;
+  const isLoading = clientPaymentMutation.isPending || supplierPaymentMutation.isPending || uploading;
   const selectedTrip = soldTrips.find(t => t.id === formData.sold_trip_id);
 
   return (
@@ -218,6 +238,53 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Receipt Upload */}
+          <div className="space-y-2">
+            <Label>Comprobante de Pago</Label>
+            {formData.receipt_url ? (
+              <div className="flex items-center gap-2 p-2 bg-stone-50 rounded-xl border">
+                <FileText className="w-4 h-4 text-stone-500" />
+                <a 
+                  href={formData.receipt_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline flex-1 truncate"
+                >
+                  Ver comprobante
+                </a>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setFormData({ ...formData, receipt_url: '' })}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={uploading}
+                />
+                <div className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-stone-200 rounded-xl hover:border-stone-300 transition-colors">
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
+                  ) : (
+                    <Upload className="w-4 h-4 text-stone-400" />
+                  )}
+                  <span className="text-sm text-stone-500">
+                    {uploading ? 'Subiendo...' : 'Subir PDF o imagen'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Notes */}
