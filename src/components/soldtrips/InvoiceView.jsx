@@ -149,77 +149,112 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
             </div>
           </div>
 
-          {/* Services */}
-          <div className="mb-8">
-            <h2 className="text-lg font-bold text-stone-800 mb-4">Servicios Incluidos</h2>
-            <div className="space-y-4">
-              {services.map((service, index) => {
-                const config = SERVICE_CONFIG[service.service_type] || SERVICE_CONFIG.otro;
-                const Icon = config.icon;
-                const details = getServiceDetails(service);
-                
-                return (
-                  <div 
-                    key={index} 
-                    className="rounded-2xl border border-stone-200 overflow-hidden bg-white shadow-sm"
-                  >
-                    {/* Service Header */}
-                    <div 
-                      className="px-4 py-2 flex items-center justify-between"
-                      style={{ backgroundColor: `${config.color}10` }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-8 h-8 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: config.color }}
-                        >
-                          <Icon className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: config.color }}>
-                            {config.label}
-                          </p>
-                          <p className="font-bold text-stone-800">{getServiceName(service)}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold" style={{ color: '#2E442A' }}>
-                          ${(service.total_price || 0).toLocaleString()} <span className="text-xs font-normal text-stone-500">MXN</span>
-                        </p>
-                      </div>
-                    </div>
+          {/* Services - Compact Table */}
+          <div className="mb-6">
+            <h2 className="text-sm font-bold text-stone-700 uppercase tracking-wide mb-3">Servicios Incluidos</h2>
+            <div className="border border-stone-200 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-stone-50 border-b border-stone-200">
+                    <th className="text-left py-2 px-3 font-semibold text-stone-600">Servicio</th>
+                    <th className="text-left py-2 px-3 font-semibold text-stone-600">Detalle</th>
+                    <th className="text-right py-2 px-3 font-semibold text-stone-600">Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {services.map((service, index) => {
+                    const config = SERVICE_CONFIG[service.service_type] || SERVICE_CONFIG.otro;
+                    const Icon = config.icon;
+                    const summary = getServiceSummary(service);
                     
-                    {/* Service Details */}
-                    {details.length > 0 && (
-                      <div className="px-5 py-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {details.map((detail, i) => (
-                          <div key={i} className={detail.highlight ? 'col-span-2 md:col-span-3' : ''}>
-                            <p className="text-xs text-stone-400 uppercase tracking-wide">{detail.label}</p>
-                            <p className={`text-sm font-medium text-stone-700 ${detail.highlight ? 'text-[#2E442A] font-semibold' : ''}`}>
-                              {detail.value}
-                            </p>
+                    return (
+                      <tr key={index} className="border-b border-stone-100 last:border-b-0">
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0"
+                              style={{ backgroundColor: `${config.color}20` }}
+                            >
+                              <Icon className="w-3.5 h-3.5" style={{ color: config.color }} />
+                            </div>
+                            <span className="font-medium text-stone-800">{summary.name}</span>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                        </td>
+                        <td className="py-2.5 px-3 text-stone-500 text-xs">{summary.details}</td>
+                        <td className="py-2.5 px-3 text-right font-semibold" style={{ color: '#2E442A' }}>
+                          ${(service.total_price || 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-stone-50 border-t border-stone-200">
+                    <td colSpan="2" className="py-3 px-3 text-right font-bold text-stone-700">Total</td>
+                    <td className="py-3 px-3 text-right text-lg font-bold" style={{ color: '#2E442A' }}>
+                      ${total.toLocaleString()} MXN
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
 
-          {/* Total */}
-          <div className="rounded-2xl p-6 mb-8" style={{ backgroundColor: '#2E442A' }}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/70 text-sm">Total de tu viaje</p>
-                <p className="text-white/50 text-xs mt-1">{services.length} servicio(s) incluido(s)</p>
+          {/* Payments Section */}
+          {clientPayments.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-sm font-bold text-stone-700 uppercase tracking-wide mb-3">Pagos Recibidos</h2>
+              <div className="border border-stone-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-green-50 border-b border-green-200">
+                      <th className="text-left py-2 px-3 font-semibold text-green-700">Fecha</th>
+                      <th className="text-left py-2 px-3 font-semibold text-green-700">Método</th>
+                      <th className="text-right py-2 px-3 font-semibold text-green-700">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientPayments.sort((a, b) => new Date(a.date) - new Date(b.date)).map((payment, index) => (
+                      <tr key={index} className="border-b border-stone-100 last:border-b-0">
+                        <td className="py-2.5 px-3 text-stone-700">
+                          {format(new Date(payment.date), 'd MMM yyyy', { locale: es })}
+                        </td>
+                        <td className="py-2.5 px-3 text-stone-500 capitalize">{payment.method}</td>
+                        <td className="py-2.5 px-3 text-right font-semibold text-green-600">
+                          ${(payment.amount || 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-green-50 border-t border-green-200">
+                      <td colSpan="2" className="py-2.5 px-3 text-right font-bold text-green-700">Total Pagado</td>
+                      <td className="py-2.5 px-3 text-right font-bold text-green-600">
+                        ${totalPaid.toLocaleString()} MXN
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
-              <div className="text-right">
-                <p className="text-4xl font-bold text-white">
-                  ${total.toLocaleString()}
+            </div>
+          )}
+
+          {/* Balance Summary */}
+          <div className="rounded-xl p-4 mb-6" style={{ backgroundColor: '#2E442A' }}>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <p className="text-white/60 text-xs uppercase tracking-wide">Total Viaje</p>
+                <p className="text-xl font-bold text-white">${total.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-white/60 text-xs uppercase tracking-wide">Pagado</p>
+                <p className="text-xl font-bold text-green-400">${totalPaid.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-white/60 text-xs uppercase tracking-wide">Saldo</p>
+                <p className={`text-xl font-bold ${balance > 0 ? 'text-orange-400' : 'text-green-400'}`}>
+                  ${balance.toLocaleString()}
                 </p>
-                <p className="text-white/70 text-sm">MXN</p>
               </div>
             </div>
           </div>
