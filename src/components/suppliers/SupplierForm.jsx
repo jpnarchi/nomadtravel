@@ -76,10 +76,12 @@ Extrae estos campos si están disponibles:
 - services: array de servicios (ej: ["Hoteles", "Tours"])
 - website: sitio web
 - internal_notes: resumen o descripción del proveedor
-- contact_name: nombre del contacto principal
-- contact_email: email del contacto
-- contact_phone: teléfono del contacto
-- contact_position: puesto del contacto`,
+- contact1_name: nombre del contacto principal
+- contact1_email: email del contacto principal
+- contact1_phone: teléfono del contacto principal
+- contact2_name: nombre del segundo contacto (si existe)
+- contact2_email: email del segundo contacto
+- contact2_phone: teléfono del segundo contacto`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -89,10 +91,12 @@ Extrae estos campos si están disponibles:
             services: { type: "array", items: { type: "string" } },
             website: { type: "string" },
             internal_notes: { type: "string" },
-            contact_name: { type: "string" },
-            contact_email: { type: "string" },
-            contact_phone: { type: "string" },
-            contact_position: { type: "string" }
+            contact1_name: { type: "string" },
+            contact1_email: { type: "string" },
+            contact1_phone: { type: "string" },
+            contact2_name: { type: "string" },
+            contact2_email: { type: "string" },
+            contact2_phone: { type: "string" }
           }
         }
       });
@@ -104,15 +108,16 @@ Extrae estos campos si están disponibles:
         destinations: result.destinations?.length ? result.destinations : prev.destinations,
         services: result.services?.length ? result.services : prev.services,
         website: result.website || prev.website,
-        internal_notes: result.internal_notes || prev.internal_notes
+        internal_notes: result.internal_notes || prev.internal_notes,
+        contact1_name: result.contact1_name || prev.contact1_name,
+        contact1_email: result.contact1_email || prev.contact1_email,
+        contact1_phone: result.contact1_phone || prev.contact1_phone,
+        contact2_name: result.contact2_name || prev.contact2_name,
+        contact2_email: result.contact2_email || prev.contact2_email,
+        contact2_phone: result.contact2_phone || prev.contact2_phone
       }));
 
-      // Store contact info for later use
-      if (result.contact_name || result.contact_email) {
-        toast.success(`Datos importados. Contacto: ${result.contact_name || ''} ${result.contact_email || ''}`);
-      } else {
-        toast.success('Datos importados correctamente');
-      }
+      toast.success('Datos importados correctamente');
       
       setShowSmartImport(false);
       setSmartImportText('');
@@ -126,6 +131,13 @@ Extrae estos campos si están disponibles:
   const [formData, setFormData] = useState({
     name: '',
     type: '',
+    contact1_name: '',
+    contact1_phone: '',
+    contact1_email: '',
+    contact2_name: '',
+    contact2_phone: '',
+    contact2_email: '',
+    internal_notes: '',
     destinations: [],
     services: [],
     commission: '',
@@ -139,7 +151,6 @@ Extrae estos campos si están disponibles:
     policies: '',
     business_hours: '',
     confirmation_time: '',
-    internal_notes: '',
     rating: 0,
     team_comments: '',
     issues: ''
@@ -150,6 +161,13 @@ Extrae estos campos si están disponibles:
       setFormData({
         name: supplier.name || '',
         type: supplier.type || '',
+        contact1_name: supplier.contact1_name || '',
+        contact1_phone: supplier.contact1_phone || '',
+        contact1_email: supplier.contact1_email || '',
+        contact2_name: supplier.contact2_name || '',
+        contact2_phone: supplier.contact2_phone || '',
+        contact2_email: supplier.contact2_email || '',
+        internal_notes: supplier.internal_notes || '',
         destinations: supplier.destinations || [],
         services: supplier.services || [],
         commission: supplier.commission || '',
@@ -163,7 +181,6 @@ Extrae estos campos si están disponibles:
         policies: supplier.policies || '',
         business_hours: supplier.business_hours || '',
         confirmation_time: supplier.confirmation_time || '',
-        internal_notes: supplier.internal_notes || '',
         rating: supplier.rating || 0,
         team_comments: supplier.team_comments || '',
         issues: supplier.issues || ''
@@ -172,6 +189,13 @@ Extrae estos campos si están disponibles:
       setFormData({
         name: '',
         type: '',
+        contact1_name: '',
+        contact1_phone: '',
+        contact1_email: '',
+        contact2_name: '',
+        contact2_phone: '',
+        contact2_email: '',
+        internal_notes: '',
         destinations: [],
         services: [],
         commission: '',
@@ -185,7 +209,6 @@ Extrae estos campos si están disponibles:
         policies: '',
         business_hours: '',
         confirmation_time: '',
-        internal_notes: '',
         rating: 0,
         team_comments: '',
         issues: ''
@@ -340,6 +363,86 @@ Extrae estos campos si están disponibles:
                 </div>
               </div>
 
+              {/* Contacto 1 */}
+              <div className="p-4 bg-stone-50 rounded-xl space-y-3">
+                <Label className="font-semibold text-stone-700">Contacto 1</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-stone-500">Nombre</Label>
+                    <Input
+                      value={formData.contact1_name}
+                      onChange={(e) => setFormData({ ...formData, contact1_name: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="Nombre completo"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-stone-500">Teléfono</Label>
+                    <Input
+                      value={formData.contact1_phone}
+                      onChange={(e) => setFormData({ ...formData, contact1_phone: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="+52 81..."
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-stone-500">Email</Label>
+                    <Input
+                      value={formData.contact1_email}
+                      onChange={(e) => setFormData({ ...formData, contact1_email: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="email@ejemplo.com"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Contacto 2 */}
+              <div className="p-4 bg-stone-50 rounded-xl space-y-3">
+                <Label className="font-semibold text-stone-700">Contacto 2</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-stone-500">Nombre</Label>
+                    <Input
+                      value={formData.contact2_name}
+                      onChange={(e) => setFormData({ ...formData, contact2_name: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="Nombre completo"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-stone-500">Teléfono</Label>
+                    <Input
+                      value={formData.contact2_phone}
+                      onChange={(e) => setFormData({ ...formData, contact2_phone: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="+52 81..."
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-stone-500">Email</Label>
+                    <Input
+                      value={formData.contact2_email}
+                      onChange={(e) => setFormData({ ...formData, contact2_email: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="email@ejemplo.com"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Notas internas */}
+              <div className="space-y-2">
+                <Label>Notas internas</Label>
+                <Textarea
+                  value={formData.internal_notes}
+                  onChange={(e) => setFormData({ ...formData, internal_notes: e.target.value })}
+                  className="rounded-xl resize-none"
+                  rows={3}
+                  placeholder="Notas generales sobre el proveedor..."
+                />
+              </div>
+
               <MultiSelectField label="Destinos en los que opera" field="destinations" options={DESTINATIONS} />
               <MultiSelectField label="Servicios que ofrece" field="services" options={SERVICES} />
 
@@ -457,15 +560,6 @@ Extrae estos campos si están disponibles:
                     placeholder="Ej: 24-48 hrs"
                   />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Notas internas del equipo</Label>
-                <Textarea
-                  value={formData.internal_notes}
-                  onChange={(e) => setFormData({ ...formData, internal_notes: e.target.value })}
-                  className="rounded-xl resize-none"
-                  rows={3}
-                />
               </div>
             </TabsContent>
 
