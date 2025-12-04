@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Plus, Search, Edit2, Trash2, Mail, Phone, 
-  Calendar, Loader2, Users, Link2, Copy, Check
+  Calendar, CreditCard, Loader2, Users 
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,19 +22,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import ClientForm from '@/components/clients/ClientForm';
 import EmptyState from '@/components/ui/EmptyState';
-import { createPageUrl } from '@/utils';
 
 export default function Clients() {
   const [search, setSearch] = useState('');
-  const [linkCopied, setLinkCopied] = useState(false);
-
-  const formLink = window.location.origin + createPageUrl('TripRequestForm');
-
-  const copyFormLink = () => {
-    navigator.clipboard.writeText(formLink);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
-  };
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -105,24 +95,14 @@ export default function Clients() {
           <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">Clientes</h1>
           <p className="text-stone-500 mt-1">{clients.length} clientes registrados</p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={copyFormLink}
-            variant="outline"
-            className="rounded-xl"
-          >
-            {linkCopied ? <Check className="w-4 h-4 mr-2 text-green-600" /> : <Link2 className="w-4 h-4 mr-2" />}
-            {linkCopied ? 'Copiado' : 'Link Formulario'}
-          </Button>
-          <Button 
-            onClick={() => { setEditingClient(null); setFormOpen(true); }}
-            className="text-white rounded-xl"
-            style={{ backgroundColor: '#2E442A' }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Cliente
-          </Button>
-        </div>
+        <Button 
+          onClick={() => { setEditingClient(null); setFormOpen(true); }}
+          className="text-white rounded-xl"
+          style={{ backgroundColor: '#2E442A' }}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nuevo Cliente
+        </Button>
       </div>
 
       {/* Search */}
@@ -211,7 +191,17 @@ export default function Clients() {
                       <span>{format(new Date(client.birth_date), 'd MMM yyyy', { locale: es })}</span>
                     </div>
                   )}
-                  
+                  {client.passport_number && (
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <CreditCard className="w-4 h-4 text-stone-400" />
+                      <span>{client.passport_number}</span>
+                      {client.passport_expiry && (
+                        <span className="text-xs text-stone-400">
+                          (vence {format(new Date(client.passport_expiry), 'MMM yyyy', { locale: es })})
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {client.notes && (

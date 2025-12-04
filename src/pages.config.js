@@ -6,7 +6,6 @@ import SoldTripDetail from './pages/SoldTripDetail';
 import Suppliers from './pages/Suppliers';
 import SupplierDetail from './pages/SupplierDetail';
 import Commissions from './pages/Commissions';
-import TripRequestForm from './pages/TripRequestForm';
 import __Layout from './Layout.jsx';
 
 
@@ -19,7 +18,6 @@ export const PAGES = {
     "Suppliers": Suppliers,
     "SupplierDetail": SupplierDetail,
     "Commissions": Commissions,
-    "TripRequestForm": TripRequestForm,
 }
 
 export const pagesConfig = {
