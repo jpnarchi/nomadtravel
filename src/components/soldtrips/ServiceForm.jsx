@@ -27,7 +27,7 @@ const MEAL_PLANS = [
 
 const BOOKED_BY = [
   { value: 'montecito', label: 'Montecito' },
-  { value: 'iata_nomad', label: 'Nomad' }
+  { value: 'iata_nomad', label: 'IATA Nomad' }
 ];
 
 const FLIGHT_CONSOLIDATORS = {
@@ -837,7 +837,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
             </div>
             <div className={`grid gap-4 ${formData.service_type === 'hotel' || formData.service_type === 'vuelo' ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="space-y-2">
-                <Label>IATA</Label>
+                <Label>Bookeado por</Label>
                 <Select 
                   value={formData.booked_by || 'montecito'} 
                   onValueChange={(v) => {

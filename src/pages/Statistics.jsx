@@ -18,7 +18,6 @@ import SeasonalityChart from '@/components/statistics/SeasonalityChart';
 import TripTypesChart from '@/components/statistics/TripTypesChart';
 import HotelChainsChart from '@/components/statistics/HotelChainsChart';
 import ProvidersChart from '@/components/statistics/ProvidersChart';
-import useCurrentUser from '@/components/hooks/useCurrentUser';
 
 const MONTHS = [
   { value: '0', label: 'Enero' },
@@ -43,8 +42,6 @@ const SEASONS = [
 ];
 
 export default function Statistics() {
-  const { user, loading: userLoading, isAdmin } = useCurrentUser();
-
   const [filters, setFilters] = useState({
     year: new Date().getFullYear().toString(),
     saleMonth: 'all',
@@ -57,38 +54,27 @@ export default function Statistics() {
     tripType: 'all'
   });
 
-  const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
+  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list(),
-    enabled: !!user
+    queryFn: () => base44.entities.SoldTrip.list()
   });
 
-  const { data: allServices = [], isLoading: servicesLoading } = useQuery({
+  const { data: services = [], isLoading: servicesLoading } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.TripService.list(),
-    enabled: !!user
+    queryFn: () => base44.entities.TripService.list()
   });
 
-  const { data: allClients = [], isLoading: clientsLoading } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list(),
-    enabled: !!user
+    queryFn: () => base44.entities.Client.list()
   });
 
-  const { data: allTrips = [], isLoading: rawTripsLoading } = useQuery({
+  const { data: trips = [], isLoading: rawTripsLoading } = useQuery({
     queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list(),
-    enabled: !!user
+    queryFn: () => base44.entities.Trip.list()
   });
 
-  // Filter based on user role
-  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
-  const soldTripIds = new Set(soldTrips.map(t => t.id));
-  const services = isAdmin ? allServices : allServices.filter(s => soldTripIds.has(s.sold_trip_id));
-  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
-  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
-
-  const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading || userLoading;
+  const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading;
 
   // Get available years
   const availableYears = useMemo(() => {

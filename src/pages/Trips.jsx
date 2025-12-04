@@ -17,7 +17,6 @@ import {
 import TripForm from '@/components/trips/TripForm';
 import TripCard from '@/components/trips/TripCard';
 import EmptyState from '@/components/ui/EmptyState';
-import useCurrentUser from '@/components/hooks/useCurrentUser';
 
 const STAGES = [
   { key: 'nuevo', label: 'Nuevo', color: '#3b82f6' },
@@ -36,24 +35,16 @@ export default function Trips() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const queryClient = useQueryClient();
-  const { user, loading: userLoading, isAdmin } = useCurrentUser();
 
-  const { data: allTrips = [], isLoading: tripsDataLoading } = useQuery({
+  const { data: trips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list('-created_date'),
-    enabled: !!user
+    queryFn: () => base44.entities.Trip.list('-created_date')
   });
 
-  const { data: allClients = [] } = useQuery({
+  const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list(),
-    enabled: !!user
+    queryFn: () => base44.entities.Client.list()
   });
-
-  // Filter based on user role
-  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
-  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
-  const tripsLoading = tripsDataLoading || userLoading;
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Trip.create(data),
