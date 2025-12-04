@@ -5,7 +5,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, X } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const DESTINATIONS = [
+  'Sudeste Asiático',
+  'Asia Oriental',
+  'Asia del Sur',
+  'Medio Oriente',
+  'Europa Occidental',
+  'Europa del Este',
+  'Europa del Norte',
+  'Europa del Sur',
+  'África del Norte',
+  'África del Este',
+  'África del Sur',
+  'África Occidental',
+  'Oceanía / Pacífico',
+  'Norteamérica',
+  'Caribe',
+  'Centroamérica',
+  'Sudamérica',
+  'Islas del Índico',
+  'Islas del Mediterráneo'
+];
 
 const STAGES = [
   { value: 'nuevo', label: 'Nuevo' },
@@ -104,15 +129,60 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="destination">Destino *</Label>
-            <Input
-              id="destination"
-              value={formData.destination}
-              onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-              required
-              className="rounded-xl"
-              placeholder="Ej: París, Francia"
-            />
+            <Label>Destino *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start rounded-xl font-normal h-auto min-h-10 py-2"
+                >
+                  {formData.destination ? (
+                    <div className="flex flex-wrap gap-1">
+                      {formData.destination.split(', ').map((dest) => (
+                        <Badge key={dest} variant="secondary" className="text-xs">
+                          {dest}
+                          <X
+                            className="w-3 h-3 ml-1 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newDests = formData.destination.split(', ').filter(d => d !== dest);
+                              setFormData({ ...formData, destination: newDests.join(', ') });
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-stone-400">Seleccionar destinos</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-3 max-h-64 overflow-y-auto">
+                <div className="space-y-2">
+                  {DESTINATIONS.map((dest) => {
+                    const isSelected = formData.destination?.split(', ').includes(dest);
+                    return (
+                      <div key={dest} className="flex items-center gap-2">
+                        <Checkbox
+                          id={dest}
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            let currentDests = formData.destination ? formData.destination.split(', ').filter(d => d) : [];
+                            if (checked) {
+                              currentDests.push(dest);
+                            } else {
+                              currentDests = currentDests.filter(d => d !== dest);
+                            }
+                            setFormData({ ...formData, destination: currentDests.join(', ') });
+                          }}
+                        />
+                        <label htmlFor={dest} className="text-sm cursor-pointer">{dest}</label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
