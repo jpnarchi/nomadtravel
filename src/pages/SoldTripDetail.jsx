@@ -590,16 +590,23 @@ export default function SoldTripDetail() {
                                       <Badge variant="outline" className="text-xs">
                                         {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
                                       </Badge>
-                                      {service.reservation_status && (
-                                        <Badge className={`text-xs ${
+                                      <Select
+                                        value={service.reservation_status || 'reservado'}
+                                        onValueChange={(value) => updateServiceMutation.mutate({ id: service.id, data: { reservation_status: value } })}
+                                      >
+                                        <SelectTrigger className={`h-6 w-auto text-xs rounded-md border-0 px-2 ${
                                           service.reservation_status === 'pagado' ? 'bg-green-100 text-green-700' :
                                           service.reservation_status === 'cancelado' ? 'bg-red-100 text-red-700' :
                                           'bg-yellow-100 text-yellow-700'
                                         }`}>
-                                          {service.reservation_status === 'pagado' ? 'Pagado' :
-                                           service.reservation_status === 'cancelado' ? 'Cancelado' : 'Reservado'}
-                                        </Badge>
-                                      )}
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="reservado">Reservado</SelectItem>
+                                          <SelectItem value="pagado">Pagado</SelectItem>
+                                          <SelectItem value="cancelado">Cancelado</SelectItem>
+                                        </SelectContent>
+                                      </Select>
                                     </div>
                                     <p className="text-sm text-stone-600">{details.subtitle}</p>
                                     {details.extra && (
