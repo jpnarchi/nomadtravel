@@ -217,68 +217,77 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
             <p className="text-sm text-stone-600">{soldTrip.travelers} viajero(s)</p>
           </div>
 
-          {/* Services Table */}
-          <div className="mb-8">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-stone-200">
-                  <th className="text-left py-2 font-semibold text-stone-600">Servicio</th>
-                  <th className="text-right py-2 font-semibold text-stone-600">Precio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {services.map((service, index) => (
-                  <tr key={index} className="border-b border-stone-100">
-                    <td className="py-2">
-                      <div className="flex items-start gap-2">
-                        <span 
-                          className="px-1.5 py-0.5 rounded text-xs font-medium shrink-0 mt-0.5"
-                          style={{ backgroundColor: '#2E442A15', color: '#2E442A' }}
-                        >
-                          {SERVICE_LABELS[service.service_type]}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="font-medium text-stone-800 text-sm">{getServiceName(service)}</p>
-                          <p className="text-xs text-stone-500">{getServiceDetails(service)}</p>
-                          {service.reservation_number && (
-                            <p className="text-xs text-stone-400">Conf: {service.reservation_number}</p>
-                          )}
-                          {service.flight_reservation_number && (
-                            <p className="text-xs text-stone-400">Conf: {service.flight_reservation_number}</p>
-                          )}
-                          {service.tour_reservation_number && (
-                            <p className="text-xs text-stone-400">Conf: {service.tour_reservation_number}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-2 text-right font-semibold align-top">
-                      ${(service.total_price || 0).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          {/* Services by Type */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-stone-500 mb-4">Servicios Incluidos</h3>
+            {Object.entries(servicesByType).map(([type, typeServices]) => 
+              renderServiceSection(type, typeServices)
+            )}
           </div>
 
-          {/* Total and Payments */}
+          {/* Services Total */}
+          <div className="flex justify-end mb-6 pb-4 border-b border-stone-200">
+            <div className="w-64">
+              <div className="flex justify-between text-sm font-semibold">
+                <span style={{ color: '#2E442A' }}>Total Servicios</span>
+                <span style={{ color: '#2E442A' }}>${total.toLocaleString()} USD</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Client Payments Section */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-stone-500 mb-3">Pagos Realizados por el Cliente</h3>
+            {clientPayments.length > 0 ? (
+              <div className="bg-stone-50 rounded-lg p-3">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-stone-200">
+                      <th className="text-left py-2 font-semibold text-stone-600">Fecha</th>
+                      <th className="text-left py-2 font-semibold text-stone-600">Método</th>
+                      <th className="text-right py-2 font-semibold text-stone-600">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientPayments.sort((a, b) => new Date(a.date) - new Date(b.date)).map((payment, index) => (
+                      <tr key={index} className="border-b border-stone-100 last:border-0">
+                        <td className="py-2 text-stone-700">
+                          {format(new Date(payment.date), 'd MMM yyyy', { locale: es })}
+                        </td>
+                        <td className="py-2 text-stone-700">
+                          {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
+                        </td>
+                        <td className="py-2 text-right font-semibold text-green-600">
+                          ${(payment.amount || 0).toLocaleString()} USD
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-400 italic">No se han registrado pagos</p>
+            )}
+          </div>
+
+          {/* Final Summary */}
           <div className="flex justify-end">
-            <div className="w-72 space-y-2">
+            <div className="w-72 space-y-2 bg-stone-50 rounded-lg p-4">
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Total</span>
+                <span className="text-stone-600">Total del Viaje</span>
                 <span className="font-medium">${total.toLocaleString()} USD</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Pagado</span>
-                <span className="font-medium text-green-600">- ${totalPaid.toLocaleString()} USD</span>
+                <span className="text-stone-600">Total Pagado</span>
+                <span className="font-medium text-green-600">${totalPaid.toLocaleString()} USD</span>
               </div>
               <div 
                 className="flex justify-between pt-3 border-t-2"
                 style={{ borderColor: '#2E442A' }}
               >
-                <span className="font-semibold" style={{ color: '#2E442A' }}>Saldo Pendiente</span>
-                <span className="text-xl font-bold" style={{ color: (total - totalPaid) > 0 ? '#dc2626' : '#2E442A' }}>
-                  ${(total - totalPaid).toLocaleString()} USD
+                <span className="font-bold" style={{ color: '#2E442A' }}>Saldo Pendiente</span>
+                <span className="text-lg font-bold" style={{ color: balance > 0 ? '#dc2626' : '#16a34a' }}>
+                  ${balance.toLocaleString()} USD
                 </span>
               </div>
             </div>
