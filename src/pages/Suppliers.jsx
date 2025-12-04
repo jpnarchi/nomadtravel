@@ -34,6 +34,7 @@ const SUPPLIER_TYPES = {
   plataforma: { label: 'Plataforma', color: 'bg-amber-100 text-amber-700' },
   transporte: { label: 'Transporte', color: 'bg-emerald-100 text-emerald-700' },
   tours: { label: 'Tours / Actividades', color: 'bg-pink-100 text-pink-700' },
+  agencia_representante: { label: 'Agencia Representante', color: 'bg-teal-100 text-teal-700' },
   otro: { label: 'Otro', color: 'bg-stone-100 text-stone-700' }
 };
 

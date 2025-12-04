@@ -21,6 +21,7 @@ const SUPPLIER_TYPES = [
   { value: 'plataforma', label: 'Plataforma (TBO, RateHawk, etc.)' },
   { value: 'transporte', label: 'Transporte / Traslados' },
   { value: 'tours', label: 'Tours / Actividades' },
+  { value: 'agencia_representante', label: 'Agencia Representante' },
   { value: 'otro', label: 'Otro' }
 ];
 
