@@ -585,11 +585,21 @@ export default function SoldTripDetail() {
                               >
                                 <div className="flex items-start justify-between gap-4">
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
+                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                                       <p className="font-semibold text-stone-800">{details.title}</p>
                                       <Badge variant="outline" className="text-xs">
                                         {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
                                       </Badge>
+                                      {service.reservation_status && (
+                                        <Badge className={`text-xs ${
+                                          service.reservation_status === 'pagado' ? 'bg-green-100 text-green-700' :
+                                          service.reservation_status === 'cancelado' ? 'bg-red-100 text-red-700' :
+                                          'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                          {service.reservation_status === 'pagado' ? 'Pagado' :
+                                           service.reservation_status === 'cancelado' ? 'Cancelado' : 'Reservado'}
+                                        </Badge>
+                                      )}
                                     </div>
                                     <p className="text-sm text-stone-600">{details.subtitle}</p>
                                     {details.extra && (
