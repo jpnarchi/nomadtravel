@@ -540,24 +540,28 @@ export default function InternalCommissions() {
                                 {commission.received_amount ? `$${commission.received_amount.toLocaleString()}` : '-'}
                               </td>
                               <td className="p-3 text-right">
-                                <div className="flex justify-end gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8"
-                                    onClick={() => { setEditingCommission(commission); setFormOpen(true); }}
-                                  >
-                                    <Edit2 className="w-4 h-4 text-stone-400" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8"
-                                    onClick={() => setDeleteConfirm(commission)}
-                                  >
-                                    <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
-                                  </Button>
-                                </div>
+                                {commission.source === 'internal' ? (
+                                  <div className="flex justify-end gap-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8"
+                                      onClick={() => { setEditingCommission(commission); setFormOpen(true); }}
+                                    >
+                                      <Edit2 className="w-4 h-4 text-stone-400" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-8 w-8"
+                                      onClick={() => setDeleteConfirm(commission)}
+                                    >
+                                      <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Badge variant="outline" className="text-xs">Auto</Badge>
+                                )}
                               </td>
                             </tr>
                           ))}
