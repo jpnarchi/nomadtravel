@@ -5,8 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const SERVICE_TYPES = [
   { value: 'hotel', label: 'Hotel' },
@@ -36,6 +39,32 @@ const RESERVED_BY = [
   { value: 'tablet_hotels', label: 'Tablet Hotels' },
   { value: 'dmc', label: 'DMC' },
   { value: 'otro', label: 'Otro' }
+];
+
+const AIRLINES = [
+  'Aer Lingus', 'Aeroflot', 'Aerolineas Argentinas', 'Aeroméxico', 'Air Asia', 'Air Asia X',
+  'Air Canada', 'Air Caraïbes', 'Air China', 'Air Europa', 'Air France', 'Air India',
+  'Air India Express', 'Air Japan', 'Air Malta', 'Air New Zealand', 'Air Serbia',
+  'Air Tahiti Nui', 'Air Transat', 'Alaska Airlines', 'Allegiant Air', 'American Airlines',
+  'ANA – All Nippon Airways', 'Asiana Airlines', 'Austrian Airlines', 'Avianca',
+  'Azul Brazilian Airlines', 'Batik Air', 'British Airways', 'Brussels Airlines',
+  'Bulgaria Air', 'Cabo Verde Airlines', 'Cathay Pacific', 'Cebu Pacific', 'China Airlines',
+  'China Eastern', 'China Southern', 'Condor', 'Copa Airlines', 'Corsair', 'Croatia Airlines',
+  'Delta Air Lines', 'EasyJet', 'Edelweiss Air', 'EgyptAir', 'El Al', 'Emirates',
+  'Ethiopian Airlines', 'Etihad Airways', 'Eurowings', 'EVA Air', 'Fiji Airways', 'Finnair',
+  'Flair Airlines', 'FlyDubai', 'Frontier Airlines', 'Garuda Indonesia', 'Gol Linhas Aéreas',
+  'Gulf Air', 'Hainan Airlines', 'Hawaiian Airlines', 'Iberia', 'Icelandair', 'IndiGo',
+  'ITA Airways', 'Japan Airlines (JAL)', 'Jeju Air', 'JetBlue', 'Jetstar', 'KLM', 'Korean Air',
+  'Kuwait Airways', 'La Compagnie', 'LATAM Airlines', 'Lion Air', 'LOT Polish Airlines',
+  'Lufthansa', 'Luxair', 'Malaysia Airlines', 'Middle East Airlines (MEA)', 'Norwegian Air',
+  'Oman Air', 'Philippine Airlines', 'Porter Airlines', 'Qantas', 'Qatar Airways',
+  'Royal Air Maroc', 'Royal Brunei Airlines', 'Royal Jordanian', 'Ryanair', 'S7 Airlines',
+  'Saudia', 'Scandinavian Airlines (SAS)', 'Scoot', 'Shenzhen Airlines', 'Singapore Airlines',
+  'Sky Airline', 'South African Airways', 'Southwest Airlines', 'SpiceJet', 'Spirit Airlines',
+  'SriLankan Airlines', 'Sun Country Airlines', 'Swiss International Air Lines', 'TAP Air Portugal',
+  'TAROM', 'Thai Airways', 'Transavia', 'Turkish Airlines', 'United Airlines', 'Uzbekistan Airways',
+  'VietJet Air', 'Vietnam Airlines', 'Virgin Atlantic', 'Virgin Australia', 'Viva Aerobus',
+  'Volaris', 'Vueling', 'WestJet', 'Wizz Air', 'XiamenAir', 'Otro'
 ];
 
 const HOTEL_CHAINS = [
@@ -329,16 +358,57 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     </>
   );
 
+  const [airlineOpen, setAirlineOpen] = React.useState(false);
+
   const renderVueloFields = () => (
     <>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Aerolínea</Label>
-          <Input
-            value={formData.airline || ''}
-            onChange={(e) => updateField('airline', e.target.value)}
-            className="rounded-xl"
-          />
+          <Popover open={airlineOpen} onOpenChange={setAirlineOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={airlineOpen}
+                className="w-full justify-between rounded-xl font-normal"
+              >
+                {formData.airline || "Seleccionar aerolínea"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Buscar aerolínea..." />
+                <CommandList>
+                  <CommandEmpty>No se encontró aerolínea.</CommandEmpty>
+                  <CommandGroup className="max-h-[200px] overflow-y-auto">
+                    {AIRLINES.map((airline) => (
+                      <CommandItem
+                        key={airline}
+                        value={airline}
+                        onSelect={() => {
+                          updateField('airline', airline);
+                          if (airline !== 'Otro') {
+                            updateField('airline_other', '');
+                          }
+                          setAirlineOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            formData.airline === airline ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {airline}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-2">
           <Label>Ruta (Origen → Destino)</Label>
@@ -350,6 +420,17 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           />
         </div>
       </div>
+      {formData.airline === 'Otro' && (
+        <div className="space-y-2">
+          <Label>Especificar Aerolínea</Label>
+          <Input
+            value={formData.airline_other || ''}
+            onChange={(e) => updateField('airline_other', e.target.value)}
+            className="rounded-xl"
+            placeholder="Nombre de la aerolínea"
+          />
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label>Número de Vuelo</Label>
