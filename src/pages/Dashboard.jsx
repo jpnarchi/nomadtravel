@@ -8,34 +8,48 @@ import FunnelChart from '@/components/dashboard/FunnelChart';
 import UpcomingTrips from '@/components/dashboard/UpcomingTrips';
 import TasksList from '@/components/dashboard/TasksList';
 import UpcomingPayments from '@/components/dashboard/UpcomingPayments';
+import useCurrentUser from '@/components/hooks/useCurrentUser';
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
+  const { user, loading: userLoading, isAdmin } = useCurrentUser();
 
-  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+  const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list()
+    queryFn: () => base44.entities.Trip.list(),
+    enabled: !!user
   });
 
-  const { data: soldTrips = [], isLoading: soldLoading } = useQuery({
+  const { data: allSoldTrips = [], isLoading: soldLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+    queryFn: () => base44.entities.SoldTrip.list(),
+    enabled: !!user
   });
 
-  const { data: clients = [] } = useQuery({
+  const { data: allClients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
+    queryFn: () => base44.entities.Client.list(),
+    enabled: !!user
   });
 
-  const { data: tasks = [] } = useQuery({
+  const { data: allTasks = [] } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list()
+    queryFn: () => base44.entities.Task.list(),
+    enabled: !!user
   });
 
-  const { data: services = [] } = useQuery({
+  const { data: allServices = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => base44.entities.TripService.list()
+    queryFn: () => base44.entities.TripService.list(),
+    enabled: !!user
   });
+
+  // Filter data based on user role
+  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
+  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
+  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
+  const tasks = isAdmin ? allTasks : allTasks.filter(t => t.created_by === user?.email);
+  const services = isAdmin ? allServices : allServices.filter(s => s.created_by === user?.email);
 
   const createTaskMutation = useMutation({
     mutationFn: (data) => base44.entities.Task.create(data),
@@ -72,7 +86,7 @@ export default function Dashboard() {
     })
     .reduce((sum, trip) => sum + (trip.total_commission || 0), 0);
 
-  const isLoading = tripsLoading || soldLoading;
+  const isLoading = tripsLoading || soldLoading || userLoading;
 
   if (isLoading) {
     return (
@@ -87,7 +101,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">Dashboard</h1>
-        <p className="text-stone-500 mt-1">Bienvenido a Nomad Travel Society</p>
+        <p className="text-stone-500 mt-1">Bienvenido{user?.full_name ? `, ${user.full_name}` : ''}</p>
       </div>
 
       {/* Stats Grid */}
