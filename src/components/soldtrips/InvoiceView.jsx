@@ -33,21 +33,57 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
     }
   };
 
+  const MEAL_PLAN_LABELS = {
+    solo_habitacion: 'Solo habitación',
+    desayuno: 'Desayuno incluido',
+    all_inclusive: 'All Inclusive'
+  };
+
   const getServiceDetails = (service) => {
+    const details = [];
+    
     switch (service.service_type) {
       case 'hotel':
-        return `${service.nights || 0} noches - ${service.room_type || 'Habitación'}`;
+        if (service.hotel_city) details.push(service.hotel_city);
+        if (service.check_in && service.check_out) {
+          details.push(`${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM yyyy', { locale: es })}`);
+        }
+        if (service.nights) details.push(`${service.nights} noches`);
+        if (service.num_rooms) details.push(`${service.num_rooms} habitación(es)`);
+        if (service.room_type) details.push(service.room_type);
+        if (service.meal_plan) details.push(MEAL_PLAN_LABELS[service.meal_plan] || service.meal_plan);
+        if (service.reservation_number) details.push(`Reserva: ${service.reservation_number}`);
+        break;
       case 'vuelo':
-        return `${service.passengers || 1} pasajero(s) - ${service.flight_class || 'Económica'}`;
+        if (service.flight_date) details.push(format(new Date(service.flight_date), 'd MMM yyyy', { locale: es }));
+        if (service.flight_number) details.push(`Vuelo ${service.flight_number}`);
+        if (service.departure_time && service.arrival_time) details.push(`${service.departure_time} - ${service.arrival_time}`);
+        if (service.passengers) details.push(`${service.passengers} pasajero(s)`);
+        if (service.flight_class) details.push(service.flight_class);
+        if (service.baggage_included) details.push(`Equipaje: ${service.baggage_included}`);
+        if (service.flight_reservation_number) details.push(`Reserva: ${service.flight_reservation_number}`);
+        break;
       case 'traslado':
-        return `${service.transfer_type || 'Privado'} - ${service.transfer_passengers || 1} pasajero(s)`;
+        if (service.transfer_datetime) details.push(format(new Date(service.transfer_datetime), 'd MMM yyyy HH:mm', { locale: es }));
+        if (service.transfer_type) details.push(service.transfer_type === 'privado' ? 'Privado' : 'Compartido');
+        if (service.vehicle) details.push(service.vehicle);
+        if (service.transfer_passengers) details.push(`${service.transfer_passengers} pasajero(s)`);
+        break;
       case 'tour':
-        return `${service.tour_people || 1} persona(s) - ${service.tour_duration || ''}`;
+        if (service.tour_city) details.push(service.tour_city);
+        if (service.tour_date) details.push(format(new Date(service.tour_date), 'd MMM yyyy', { locale: es }));
+        if (service.tour_duration) details.push(service.tour_duration);
+        if (service.tour_people) details.push(`${service.tour_people} persona(s)`);
+        if (service.tour_includes) details.push(`Incluye: ${service.tour_includes}`);
+        if (service.tour_reservation_number) details.push(`Reserva: ${service.tour_reservation_number}`);
+        break;
       case 'otro':
-        return service.other_description || '';
-      default:
-        return '';
+        if (service.other_date) details.push(format(new Date(service.other_date), 'd MMM yyyy', { locale: es }));
+        if (service.other_description) details.push(service.other_description);
+        break;
     }
+    
+    return details;
   };
 
   const total = services.reduce((sum, s) => sum + (s.total_price || 0), 0);
@@ -111,25 +147,32 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
                 </tr>
               </thead>
               <tbody>
-                {services.map((service, index) => (
-                  <tr key={index} className="border-b border-stone-100">
-                    <td className="py-3">
-                      <span 
-                        className="px-2 py-1 rounded-md text-xs font-medium"
-                        style={{ backgroundColor: '#2E442A15', color: '#2E442A' }}
-                      >
-                        {SERVICE_LABELS[service.service_type]}
-                      </span>
-                      <p className="font-medium text-stone-800 mt-1">{getServiceName(service)}</p>
-                    </td>
-                    <td className="py-3 text-sm text-stone-600">
-                      {getServiceDetails(service)}
-                    </td>
-                    <td className="py-3 text-right font-semibold">
-                      ${(service.total_price || 0).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                {services.map((service, index) => {
+                  const details = getServiceDetails(service);
+                  return (
+                    <tr key={index} className="border-b border-stone-100">
+                      <td className="py-3">
+                        <span 
+                          className="px-2 py-1 rounded-md text-xs font-medium"
+                          style={{ backgroundColor: '#2E442A15', color: '#2E442A' }}
+                        >
+                          {SERVICE_LABELS[service.service_type]}
+                        </span>
+                        <p className="font-medium text-stone-800 mt-1">{getServiceName(service)}</p>
+                      </td>
+                      <td className="py-3 text-sm text-stone-600">
+                        <ul className="space-y-0.5">
+                          {details.map((detail, i) => (
+                            <li key={i}>• {detail}</li>
+                          ))}
+                        </ul>
+                      </td>
+                      <td className="py-3 text-right font-semibold align-top">
+                        ${(service.total_price || 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
