@@ -50,6 +50,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Clientes', page: 'Clients', icon: Users },
     { name: 'Viajes', page: 'Trips', icon: Plane },
     { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
+    { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
     { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
   ];
 
