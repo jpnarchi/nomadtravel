@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { Plus, X, User, Building2 } from 'lucide-react';
+import { Plus, X, User, Building2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
 import QuickPaymentDialog from './QuickPaymentDialog';
+import SupplierForm from '@/components/suppliers/SupplierForm';
 
 export default function QuickPaymentFAB() {
   const [isOpen, setIsOpen] = useState(false);
   const [paymentType, setPaymentType] = useState(null);
+  const [smartImportOpen, setSmartImportOpen] = useState(false);
 
   const handleOpenPayment = (type) => {
     setPaymentType(type);
+    setIsOpen(false);
+  };
+
+  const handleOpenSmartImport = () => {
+    setSmartImportOpen(true);
     setIsOpen(false);
   };
 
@@ -50,6 +57,22 @@ export default function QuickPaymentFAB() {
                   Pago a Proveedor
                 </Button>
               </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.8 }}
+                transition={{ duration: 0.15, delay: 0.1 }}
+              >
+                <Button
+                  onClick={handleOpenSmartImport}
+                  className="rounded-full shadow-lg flex items-center gap-2 pr-4"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Smart Import Proveedor
+                </Button>
+              </motion.div>
             </>
           )}
         </AnimatePresence>
@@ -69,6 +92,19 @@ export default function QuickPaymentFAB() {
         open={!!paymentType}
         onClose={() => setPaymentType(null)}
         type={paymentType}
+      />
+
+      <SupplierForm
+        open={smartImportOpen}
+        onClose={() => setSmartImportOpen(false)}
+        supplier={null}
+        onSave={async (data) => {
+          const { base44 } = await import('@/api/base44Client');
+          await base44.entities.Supplier.create(data);
+          setSmartImportOpen(false);
+        }}
+        isLoading={false}
+        showSmartImportOnOpen={true}
       />
     </>
   );
