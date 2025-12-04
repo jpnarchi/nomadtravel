@@ -518,6 +518,28 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           />
         </div>
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado de Reservación</Label>
+          <Select value={formData.reservation_status || 'reservado'} onValueChange={(v) => updateField('reservation_status', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reservado">Reservado</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Vencimiento de Pago</Label>
+          <Input
+            type="date"
+            value={formData.payment_due_date || ''}
+            onChange={(e) => updateField('payment_due_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
     </>
   );
 
@@ -577,6 +599,28 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
             type="number"
             value={formData.transfer_passengers || ''}
             onChange={(e) => updateField('transfer_passengers', parseInt(e.target.value) || 0)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado de Reservación</Label>
+          <Select value={formData.reservation_status || 'reservado'} onValueChange={(v) => updateField('reservation_status', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reservado">Reservado</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Vencimiento de Pago</Label>
+          <Input
+            type="date"
+            value={formData.payment_due_date || ''}
+            onChange={(e) => updateField('payment_due_date', e.target.value)}
             className="rounded-xl"
           />
         </div>
@@ -653,6 +697,28 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           />
         </div>
       </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado de Reservación</Label>
+          <Select value={formData.reservation_status || 'reservado'} onValueChange={(v) => updateField('reservation_status', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reservado">Reservado</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Vencimiento de Pago</Label>
+          <Input
+            type="date"
+            value={formData.payment_due_date || ''}
+            onChange={(e) => updateField('payment_due_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
     </>
   );
 
@@ -683,6 +749,28 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           onChange={(e) => updateField('other_date', e.target.value)}
           className="rounded-xl"
         />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado de Reservación</Label>
+          <Select value={formData.reservation_status || 'reservado'} onValueChange={(v) => updateField('reservation_status', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reservado">Reservado</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Vencimiento de Pago</Label>
+          <Input
+            type="date"
+            value={formData.payment_due_date || ''}
+            onChange={(e) => updateField('payment_due_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
       </div>
     </>
   );
