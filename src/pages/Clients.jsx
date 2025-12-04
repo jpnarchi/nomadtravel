@@ -211,17 +211,7 @@ export default function Clients() {
                       <span>{format(new Date(client.birth_date), 'd MMM yyyy', { locale: es })}</span>
                     </div>
                   )}
-                  {client.passport_number && (
-                    <div className="flex items-center gap-2 text-stone-600">
-                      <CreditCard className="w-4 h-4 text-stone-400" />
-                      <span>{client.passport_number}</span>
-                      {client.passport_expiry && (
-                        <span className="text-xs text-stone-400">
-                          (vence {format(new Date(client.passport_expiry), 'MMM yyyy', { locale: es })})
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  
                 </div>
 
                 {client.notes && (
