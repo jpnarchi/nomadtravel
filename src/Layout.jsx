@@ -199,6 +199,9 @@ export default function Layout({ children, currentPageName }) {
           {children}
         </div>
       </main>
+
+      {/* Quick Payment FAB */}
+      <QuickPaymentFAB />
     </div>
   );
 }
