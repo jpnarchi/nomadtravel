@@ -4,6 +4,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapPin, Loader2, CheckCircle } from 'lucide-react';
 import TripRequestForm from '@/components/clients/TripRequestForm';
 
+TripRequestPublic.publicAccess = true;
+
 export default function TripRequestPublic() {
   const urlParams = new URLSearchParams(window.location.search);
   const clientId = urlParams.get('clientId');
