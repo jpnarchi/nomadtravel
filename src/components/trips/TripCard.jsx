@@ -90,7 +90,7 @@ export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
         {trip.budget && (
           <div className="flex items-center gap-2">
             <DollarSign className="w-3.5 h-3.5" />
-            <span>${trip.budget.toLocaleString()} MXN</span>
+            <span>${trip.budget.toLocaleString()} USD</span>
           </div>
         )}
       </div>
