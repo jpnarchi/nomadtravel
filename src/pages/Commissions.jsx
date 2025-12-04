@@ -61,6 +61,30 @@ export default function Commissions() {
     }
   });
 
+  const updateSoldTripMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+    }
+  });
+
+  const updateCommission = async (service, newCommission) => {
+    const commission = parseFloat(newCommission) || 0;
+    await updateServiceMutation.mutateAsync({ id: service.id, data: { commission } });
+    
+    // Recalculate total commission for the sold trip
+    const tripServices = services.filter(s => s.sold_trip_id === service.sold_trip_id);
+    const totalCommission = tripServices.reduce((sum, s) => {
+      if (s.id === service.id) return sum + commission;
+      return sum + (s.commission || 0);
+    }, 0);
+    
+    await updateSoldTripMutation.mutateAsync({ 
+      id: service.sold_trip_id, 
+      data: { total_commission: totalCommission } 
+    });
+  };
+
   const togglePaid = (service) => {
     updateServiceMutation.mutate({
       id: service.id,
