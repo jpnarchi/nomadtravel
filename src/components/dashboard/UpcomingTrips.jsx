@@ -9,7 +9,14 @@ export default function UpcomingTrips({ soldTrips }) {
   const today = new Date();
   
   const upcoming = soldTrips
-    .filter(trip => new Date(trip.start_date) >= today)
+    .filter(trip => {
+      if (!trip.start_date) return false;
+      const tripDate = new Date(trip.start_date);
+      tripDate.setHours(0, 0, 0, 0);
+      const todayStart = new Date(today);
+      todayStart.setHours(0, 0, 0, 0);
+      return tripDate >= todayStart;
+    })
     .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
     .slice(0, 5);
 

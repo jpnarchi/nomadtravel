@@ -43,6 +43,7 @@ const STAGES = [
 
 export default function TripForm({ open, onClose, trip, clients, onSave, isLoading }) {
   const [formData, setFormData] = useState({
+    trip_name: '',
     client_id: '',
     client_name: '',
     destination: '',
@@ -59,6 +60,7 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
   useEffect(() => {
     if (trip) {
       setFormData({
+        trip_name: trip.trip_name || '',
         client_id: trip.client_id || '',
         client_name: trip.client_name || '',
         destination: trip.destination || '',
@@ -73,6 +75,7 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
       });
     } else {
       setFormData({
+        trip_name: '',
         client_id: '',
         client_name: '',
         destination: '',
@@ -112,6 +115,17 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="trip_name">Nombre del Viaje</Label>
+            <Input
+              id="trip_name"
+              value={formData.trip_name}
+              onChange={(e) => setFormData({ ...formData, trip_name: e.target.value })}
+              className="rounded-xl"
+              placeholder="Ej: Luna de miel Europa"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label>Cliente *</Label>
             <Select value={formData.client_id} onValueChange={handleClientChange}>
