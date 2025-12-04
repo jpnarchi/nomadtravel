@@ -1,35 +1,24 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { MapPin, Calendar, Users, Plane } from 'lucide-react';
+import { Plane } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function UpcomingTrips({ soldTrips }) {
-  const today = new Date();
-  
-  const upcoming = soldTrips
-    .filter(trip => {
-      if (!trip.start_date) return false;
-      const tripDate = new Date(trip.start_date);
-      tripDate.setHours(0, 0, 0, 0);
-      const todayStart = new Date(today);
-      todayStart.setHours(0, 0, 0, 0);
-      return tripDate >= todayStart;
-    })
-    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
-    .slice(0, 5);
+  const sortedTrips = [...soldTrips]
+    .filter(trip => trip.start_date)
+    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
 
-  if (upcoming.length === 0) {
+  if (sortedTrips.length === 0) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
-        <div className="p-6 border-b border-stone-100">
-          <h3 className="text-lg font-semibold text-stone-800">Próximos Viajes</h3>
+        <div className="p-4 border-b border-stone-100">
+          <h3 className="text-sm font-semibold text-stone-800">Viajes Vendidos</h3>
         </div>
         <EmptyState
           icon={Plane}
-          title="Sin viajes próximos"
-          description="Los viajes vendidos con fechas futuras aparecerán aquí"
+          title="Sin viajes"
+          description="Los viajes vendidos aparecerán aquí"
         />
       </div>
     );
@@ -37,55 +26,24 @@ export default function UpcomingTrips({ soldTrips }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
-      <div className="p-6 border-b border-stone-100">
-        <h3 className="text-lg font-semibold text-stone-800">Próximos Viajes</h3>
+      <div className="p-4 border-b border-stone-100">
+        <h3 className="text-sm font-semibold text-stone-800">Viajes Vendidos</h3>
       </div>
       
-      <div className="divide-y divide-stone-100">
-        {upcoming.map((trip, index) => {
-          const daysUntil = differenceInDays(new Date(trip.start_date), today);
-          
-          return (
-            <motion.div
-              key={trip.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="p-4 hover:bg-stone-50 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className="font-medium text-stone-800 text-sm">{trip.client_name}</h4>
-                  <div className="flex items-center gap-1 mt-1">
-                    <MapPin className="w-3.5 h-3.5" style={{ color: '#2E442A' }} />
-                    <span className="text-sm text-stone-600">{trip.destination}</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-stone-400">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>{format(new Date(trip.start_date), 'd MMM', { locale: es })}</span>
-                    </div>
-                    {trip.travelers && (
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        <span>{trip.travelers}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div 
-                  className="px-3 py-1 rounded-full text-xs font-medium"
-                  style={{ 
-                    backgroundColor: daysUntil <= 7 ? '#fef2f2' : '#2E442A15',
-                    color: daysUntil <= 7 ? '#dc2626' : '#2E442A'
-                  }}
-                >
-                  {daysUntil === 0 ? 'Hoy' : daysUntil === 1 ? 'Mañana' : `${daysUntil} días`}
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
+      <div className="p-3 max-h-64 overflow-y-auto">
+        {sortedTrips.map((trip) => (
+          <div
+            key={trip.id}
+            className="flex items-center justify-between py-1.5 px-2 hover:bg-stone-50 rounded text-xs"
+          >
+            <span className="text-stone-700 truncate flex-1 mr-2">
+              {trip.client_name} - {trip.destination}
+            </span>
+            <span className="text-stone-400 whitespace-nowrap">
+              {format(new Date(trip.start_date), 'd MMM yy', { locale: es })}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
