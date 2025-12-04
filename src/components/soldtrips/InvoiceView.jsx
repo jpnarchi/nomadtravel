@@ -13,8 +13,10 @@ const SERVICE_LABELS = {
   otro: 'Servicio'
 };
 
-export default function InvoiceView({ open, onClose, soldTrip, services }) {
+export default function InvoiceView({ open, onClose, soldTrip, services, clientPayments = [] }) {
   if (!soldTrip) return null;
+
+  const totalPaid = clientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
   const getServiceName = (service) => {
     switch (service.service_type) {
@@ -124,30 +126,40 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
 
           {/* Services Table */}
           <div className="mb-8">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b-2 border-stone-200">
-                  <th className="text-left py-3 text-sm font-semibold text-stone-600">Servicio</th>
-                  <th className="text-left py-3 text-sm font-semibold text-stone-600">Detalle</th>
-                  <th className="text-right py-3 text-sm font-semibold text-stone-600">Precio</th>
+                  <th className="text-left py-2 font-semibold text-stone-600">Servicio</th>
+                  <th className="text-right py-2 font-semibold text-stone-600">Precio</th>
                 </tr>
               </thead>
               <tbody>
                 {services.map((service, index) => (
                   <tr key={index} className="border-b border-stone-100">
-                    <td className="py-3">
-                      <span 
-                        className="px-2 py-1 rounded-md text-xs font-medium"
-                        style={{ backgroundColor: '#2E442A15', color: '#2E442A' }}
-                      >
-                        {SERVICE_LABELS[service.service_type]}
-                      </span>
-                      <p className="font-medium text-stone-800 mt-1">{getServiceName(service)}</p>
+                    <td className="py-2">
+                      <div className="flex items-start gap-2">
+                        <span 
+                          className="px-1.5 py-0.5 rounded text-xs font-medium shrink-0 mt-0.5"
+                          style={{ backgroundColor: '#2E442A15', color: '#2E442A' }}
+                        >
+                          {SERVICE_LABELS[service.service_type]}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-stone-800 text-sm">{getServiceName(service)}</p>
+                          <p className="text-xs text-stone-500">{getServiceDetails(service)}</p>
+                          {service.reservation_number && (
+                            <p className="text-xs text-stone-400">Conf: {service.reservation_number}</p>
+                          )}
+                          {service.flight_reservation_number && (
+                            <p className="text-xs text-stone-400">Conf: {service.flight_reservation_number}</p>
+                          )}
+                          {service.tour_reservation_number && (
+                            <p className="text-xs text-stone-400">Conf: {service.tour_reservation_number}</p>
+                          )}
+                        </div>
+                      </div>
                     </td>
-                    <td className="py-3 text-sm text-stone-600">
-                      {getServiceDetails(service)}
-                    </td>
-                    <td className="py-3 text-right font-semibold">
+                    <td className="py-2 text-right font-semibold align-top">
                       ${(service.total_price || 0).toLocaleString()}
                     </td>
                   </tr>
@@ -156,20 +168,24 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
             </table>
           </div>
 
-          {/* Total */}
+          {/* Total and Payments */}
           <div className="flex justify-end">
-            <div className="w-64 space-y-2">
+            <div className="w-72 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-stone-500">Subtotal</span>
-                <span className="font-medium">${total.toLocaleString()}</span>
+                <span className="text-stone-500">Total</span>
+                <span className="font-medium">${total.toLocaleString()} USD</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-stone-500">Pagado</span>
+                <span className="font-medium text-green-600">- ${totalPaid.toLocaleString()} USD</span>
               </div>
               <div 
                 className="flex justify-between pt-3 border-t-2"
                 style={{ borderColor: '#2E442A' }}
               >
-                <span className="font-semibold" style={{ color: '#2E442A' }}>Total</span>
-                <span className="text-xl font-bold" style={{ color: '#2E442A' }}>
-                  ${total.toLocaleString()} USD
+                <span className="font-semibold" style={{ color: '#2E442A' }}>Saldo Pendiente</span>
+                <span className="text-xl font-bold" style={{ color: (total - totalPaid) > 0 ? '#dc2626' : '#2E442A' }}>
+                  ${(total - totalPaid).toLocaleString()} USD
                 </span>
               </div>
             </div>
