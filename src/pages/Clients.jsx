@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Plus, Search, Edit2, Trash2, Mail, Phone, 
-  Calendar, CreditCard, Loader2, Users 
+  Calendar, Loader2, Users, Link2, Copy, Check
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,9 +22,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import ClientForm from '@/components/clients/ClientForm';
 import EmptyState from '@/components/ui/EmptyState';
+import { createPageUrl } from '@/utils';
 
 export default function Clients() {
   const [search, setSearch] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const formLink = window.location.origin + createPageUrl('TripRequestForm');
+
+  const copyFormLink = () => {
+    navigator.clipboard.writeText(formLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -95,14 +105,24 @@ export default function Clients() {
           <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">Clientes</h1>
           <p className="text-stone-500 mt-1">{clients.length} clientes registrados</p>
         </div>
-        <Button 
-          onClick={() => { setEditingClient(null); setFormOpen(true); }}
-          className="text-white rounded-xl"
-          style={{ backgroundColor: '#2E442A' }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={copyFormLink}
+            variant="outline"
+            className="rounded-xl"
+          >
+            {linkCopied ? <Check className="w-4 h-4 mr-2 text-green-600" /> : <Link2 className="w-4 h-4 mr-2" />}
+            {linkCopied ? 'Copiado' : 'Link Formulario'}
+          </Button>
+          <Button 
+            onClick={() => { setEditingClient(null); setFormOpen(true); }}
+            className="text-white rounded-xl"
+            style={{ backgroundColor: '#2E442A' }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
