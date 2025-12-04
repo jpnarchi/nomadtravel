@@ -23,7 +23,8 @@ const STAGES = [
   { key: 'cotizando', label: 'Cotizando', color: '#eab308' },
   { key: 'propuesta_enviada', label: 'Propuesta Enviada', color: '#a855f7' },
   { key: 'aceptado', label: 'Aceptado', color: '#22c55e' },
-  { key: 'vendido', label: 'Vendido', color: '#2E442A' }
+  { key: 'vendido', label: 'Vendido', color: '#2E442A' },
+  { key: 'perdido', label: 'Perdido', color: '#ef4444' }
 ];
 
 const STAGE_ORDER = ['nuevo', 'cotizando', 'propuesta_enviada', 'aceptado', 'vendido'];
