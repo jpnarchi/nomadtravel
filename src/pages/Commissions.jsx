@@ -259,9 +259,22 @@ export default function Commissions() {
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <span className={`font-semibold ${service.commission_paid ? 'text-green-600' : 'text-stone-800'}`}>
-                        ${(service.commission || 0).toLocaleString()}
-                      </span>
+                      <Input
+                        type="number"
+                        defaultValue={service.commission || 0}
+                        onBlur={(e) => {
+                          const newValue = parseFloat(e.target.value) || 0;
+                          if (newValue !== service.commission) {
+                            updateCommission(service, newValue);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.target.blur();
+                          }
+                        }}
+                        className={`w-24 text-right font-semibold rounded-lg h-8 ${service.commission_paid ? 'text-green-600' : 'text-stone-800'}`}
+                      />
                     </td>
                   </tr>
                 );
