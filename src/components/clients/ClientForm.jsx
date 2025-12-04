@@ -4,18 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
+
+const SOURCE_OPTIONS = [
+  { value: 'referido', label: 'Referido' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'otro', label: 'Otro' }
+];
 
 export default function ClientForm({ open, onClose, client, onSave, isLoading }) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    birth_date: '',
-    phone: '',
     email: '',
-    nationality: '',
-    passport_number: '',
-    passport_expiry: '',
+    phone: '',
+    birth_date: '',
+    source: '',
     notes: ''
   });
 
@@ -24,24 +30,20 @@ export default function ClientForm({ open, onClose, client, onSave, isLoading })
       setFormData({
         first_name: client.first_name || '',
         last_name: client.last_name || '',
-        birth_date: client.birth_date || '',
-        phone: client.phone || '',
         email: client.email || '',
-        nationality: client.nationality || '',
-        passport_number: client.passport_number || '',
-        passport_expiry: client.passport_expiry || '',
+        phone: client.phone || '',
+        birth_date: client.birth_date || '',
+        source: client.source || '',
         notes: client.notes || ''
       });
     } else {
       setFormData({
         first_name: '',
         last_name: '',
-        birth_date: '',
-        phone: '',
         email: '',
-        nationality: '',
-        passport_number: '',
-        passport_expiry: '',
+        phone: '',
+        birth_date: '',
+        source: '',
         notes: ''
       });
     }
@@ -98,12 +100,13 @@ export default function ClientForm({ open, onClose, client, onSave, isLoading })
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
+              <Label htmlFor="phone">WhatsApp</Label>
               <Input
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="rounded-xl"
+                placeholder="+52 81 1234 5678"
               />
             </div>
           </div>
@@ -120,35 +123,17 @@ export default function ClientForm({ open, onClose, client, onSave, isLoading })
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nationality">Nacionalidad</Label>
-              <Input
-                id="nationality"
-                value={formData.nationality}
-                onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="passport_number">Número de pasaporte</Label>
-              <Input
-                id="passport_number"
-                value={formData.passport_number}
-                onChange={(e) => setFormData({ ...formData, passport_number: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="passport_expiry">Vencimiento pasaporte</Label>
-              <Input
-                id="passport_expiry"
-                type="date"
-                value={formData.passport_expiry}
-                onChange={(e) => setFormData({ ...formData, passport_expiry: e.target.value })}
-                className="rounded-xl"
-              />
+              <Label>Cómo llegó con nosotros</Label>
+              <Select value={formData.source} onValueChange={(v) => setFormData({ ...formData, source: v })}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Seleccionar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SOURCE_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
