@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
+import { differenceInDays } from 'date-fns';
 
 const SERVICE_TYPES = [
   { value: 'hotel', label: 'Hotel' },
@@ -221,13 +222,20 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label>Check-in</Label>
           <Input
             type="date"
             value={formData.check_in || ''}
-            onChange={(e) => updateField('check_in', e.target.value)}
+            onChange={(e) => {
+              const checkIn = e.target.value;
+              updateField('check_in', checkIn);
+              if (checkIn && formData.check_out) {
+                const nights = differenceInDays(new Date(formData.check_out), new Date(checkIn));
+                if (nights > 0) updateField('nights', nights);
+              }
+            }}
             className="rounded-xl"
           />
         </div>
@@ -236,8 +244,24 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           <Input
             type="date"
             value={formData.check_out || ''}
-            onChange={(e) => updateField('check_out', e.target.value)}
+            onChange={(e) => {
+              const checkOut = e.target.value;
+              updateField('check_out', checkOut);
+              if (formData.check_in && checkOut) {
+                const nights = differenceInDays(new Date(checkOut), new Date(formData.check_in));
+                if (nights > 0) updateField('nights', nights);
+              }
+            }}
             className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Noches</Label>
+          <Input
+            type="number"
+            value={formData.nights || ''}
+            readOnly
+            className="rounded-xl bg-stone-50"
           />
         </div>
       </div>
@@ -277,15 +301,6 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
             onChange={(e) => updateField('reservation_number', e.target.value)}
             className="rounded-xl"
             placeholder="Ej: ABC123456"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Noches</Label>
-          <Input
-            type="number"
-            value={formData.nights || ''}
-            onChange={(e) => updateField('nights', parseInt(e.target.value) || 0)}
-            className="rounded-xl"
           />
         </div>
       </div>
@@ -611,7 +626,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
 
           {/* Common Fields */}
           <div className="border-t border-stone-200 pt-5 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Precio Total *</Label>
                 <Input
@@ -628,6 +643,15 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                   type="number"
                   value={formData.commission || ''}
                   onChange={(e) => updateField('commission', parseFloat(e.target.value) || 0)}
+                  className="rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fecha Pago Comisión</Label>
+                <Input
+                  type="date"
+                  value={formData.commission_payment_date || ''}
+                  onChange={(e) => updateField('commission_payment_date', e.target.value)}
                   className="rounded-xl"
                 />
               </div>
