@@ -1,0 +1,152 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from './utils';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Plane, 
+  CheckCircle, 
+  Menu, 
+  X,
+  MapPin
+} from 'lucide-react';
+import { cn } from "@/lib/utils";
+
+export default function Layout({ children, currentPageName }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const navigation = [
+    { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+    { name: 'Clientes', page: 'Clients', icon: Users },
+    { name: 'Viajes', page: 'Trips', icon: Plane },
+    { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
+  ];
+
+  return (
+    <div className="min-h-screen bg-stone-50" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+          
+          * {
+            font-family: 'Montserrat', sans-serif;
+          }
+          
+          :root {
+            --nomad-green: #2E442A;
+            --nomad-green-light: #3d5a37;
+            --nomad-green-dark: #1f2e1c;
+          }
+          
+          .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+          }
+          
+          .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f5f5f4;
+          }
+          
+          .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #2E442A;
+            border-radius: 3px;
+          }
+        `}
+      </style>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-stone-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#2E442A' }}>
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm font-bold" style={{ color: '#2E442A' }}>Nomad Travel Society</h1>
+              <p className="text-xs text-stone-500">CRM</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 rounded-lg hover:bg-stone-100 transition-colors"
+          >
+            {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed top-0 left-0 z-50 h-full w-72 bg-white border-r border-stone-200 transform transition-transform duration-300 ease-out",
+        "lg:translate-x-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="p-6 border-b border-stone-100">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#2E442A' }}>
+                <MapPin className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold tracking-tight" style={{ color: '#2E442A' }}>
+                  Nomad Travel
+                </h1>
+                <p className="text-xs text-stone-500 font-medium">Society CRM</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin">
+            {navigation.map((item) => {
+              const isActive = currentPageName === item.page;
+              return (
+                <Link
+                  key={item.page}
+                  to={createPageUrl(item.page)}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                    isActive 
+                      ? "text-white shadow-lg" 
+                      : "text-stone-600 hover:bg-stone-100"
+                  )}
+                  style={isActive ? { backgroundColor: '#2E442A' } : {}}
+                >
+                  <item.icon className={cn(
+                    "w-5 h-5 transition-transform group-hover:scale-110",
+                    isActive ? "text-white" : "text-stone-400"
+                  )} />
+                  <span className="font-medium text-sm">{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-stone-100">
+            <div className="px-4 py-3 rounded-xl bg-stone-50">
+              <p className="text-xs text-stone-500 font-medium">San Pedro Garza García</p>
+              <p className="text-xs text-stone-400">Nuevo León, México</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="lg:pl-72 pt-16 lg:pt-0 min-h-screen">
+        <div className="p-4 lg:p-8">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}

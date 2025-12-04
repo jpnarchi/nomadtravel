@@ -1,0 +1,106 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { MapPin, Calendar, Users, DollarSign, Edit2, Trash2, ArrowRight } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+const STAGE_CONFIG = {
+  nuevo: { label: 'Nuevo', color: 'bg-blue-100 text-blue-700' },
+  cotizando: { label: 'Cotizando', color: 'bg-yellow-100 text-yellow-700' },
+  propuesta_enviada: { label: 'Propuesta Enviada', color: 'bg-purple-100 text-purple-700' },
+  aceptado: { label: 'Aceptado', color: 'bg-green-100 text-green-700' },
+  vendido: { label: 'Vendido', color: 'bg-emerald-100 text-emerald-800' }
+};
+
+export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
+  const stageConfig = STAGE_CONFIG[trip.stage] || STAGE_CONFIG.nuevo;
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    return format(new Date(dateStr), 'd MMM yyyy', { locale: es });
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="bg-white rounded-xl p-4 shadow-sm border border-stone-100 hover:shadow-md transition-all duration-200"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <Badge className={`${stageConfig.color} font-medium text-xs`}>
+          {stageConfig.label}
+        </Badge>
+        <div className="flex gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 text-stone-400 hover:text-stone-600"
+            onClick={() => onEdit(trip)}
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 text-stone-400 hover:text-red-500"
+            onClick={() => onDelete(trip)}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <h4 className="font-semibold text-stone-800 mb-1 text-sm">{trip.client_name}</h4>
+      
+      <div className="flex items-center gap-1 text-stone-600 mb-3">
+        <MapPin className="w-3.5 h-3.5" style={{ color: '#2E442A' }} />
+        <span className="text-sm font-medium">{trip.destination}</span>
+      </div>
+
+      <div className="space-y-1.5 text-xs text-stone-500">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-3.5 h-3.5" />
+          <span>
+            {formatDate(trip.start_date)}
+            {trip.end_date && ` - ${formatDate(trip.end_date)}`}
+          </span>
+        </div>
+        {trip.travelers && (
+          <div className="flex items-center gap-2">
+            <Users className="w-3.5 h-3.5" />
+            <span>{trip.travelers} {trip.travelers === 1 ? 'persona' : 'personas'}</span>
+          </div>
+        )}
+        {trip.budget && (
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>${trip.budget.toLocaleString()} MXN</span>
+          </div>
+        )}
+      </div>
+
+      {trip.mood && (
+        <div className="mt-3 pt-3 border-t border-stone-100">
+          <span className="text-xs text-stone-400">Mood:</span>
+          <span className="text-xs text-stone-600 ml-1">{trip.mood}</span>
+        </div>
+      )}
+
+      {trip.stage !== 'vendido' && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full mt-3 text-xs font-medium"
+          style={{ color: '#2E442A' }}
+          onClick={() => onMoveStage(trip)}
+        >
+          Avanzar etapa <ArrowRight className="w-3 h-3 ml-1" />
+        </Button>
+      )}
+    </motion.div>
+  );
+}
