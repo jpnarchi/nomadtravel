@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, X, Star, Sparkles } from 'lucide-react';
+import { Loader2, X, Star, Sparkles, Upload, Image } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -57,6 +57,8 @@ export default function SupplierForm({ open, onClose, supplier, onSave, isLoadin
   const [showSmartImport, setShowSmartImport] = useState(showSmartImportOnOpen);
   const [importing, setImporting] = useState(false);
   const [representativeAgencies, setRepresentativeAgencies] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const fetchAgencies = async () => {
@@ -67,6 +69,99 @@ export default function SupplierForm({ open, onClose, supplier, onSave, isLoadin
       fetchAgencies();
     }
   }, [open]);
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    
+    setUploadingImage(true);
+    try {
+      const urls = [];
+      for (const file of files) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        urls.push(file_url);
+      }
+      setUploadedImages(prev => [...prev, ...urls]);
+      toast.success('Imagen(es) subida(s)');
+    } catch (error) {
+      toast.error('Error al subir imagen');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSmartImportFromImages = async () => {
+    if (uploadedImages.length === 0) {
+      toast.error('Sube al menos una imagen');
+      return;
+    }
+    setImporting(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Extrae la información del proveedor de viajes de estas imágenes (pueden ser tarjetas de presentación, emails, capturas de pantalla, etc.) y devuélvela en formato JSON.
+
+Extrae estos campos si están disponibles:
+- name: nombre del proveedor/empresa
+- type: tipo (dmc, hotel_directo, cadena_hotelera, aerolinea, plataforma, transporte, tours, otro)
+- destinations: array de regiones donde opera (ej: ["Europa del Sur", "Europa Occidental"])
+- services: array de servicios (ej: ["Hoteles", "Tours"])
+- website: sitio web
+- internal_notes: resumen o descripción del proveedor
+- contact1_name: nombre del contacto principal
+- contact1_email: email del contacto principal
+- contact1_phone: teléfono del contacto principal
+- contact2_name: nombre del segundo contacto (si existe)
+- contact2_email: email del segundo contacto
+- contact2_phone: teléfono del segundo contacto`,
+        file_urls: uploadedImages,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            type: { type: "string" },
+            destinations: { type: "array", items: { type: "string" } },
+            services: { type: "array", items: { type: "string" } },
+            website: { type: "string" },
+            internal_notes: { type: "string" },
+            contact1_name: { type: "string" },
+            contact1_email: { type: "string" },
+            contact1_phone: { type: "string" },
+            contact2_name: { type: "string" },
+            contact2_email: { type: "string" },
+            contact2_phone: { type: "string" }
+          }
+        }
+      });
+
+      applyImportedData(result);
+      setUploadedImages([]);
+      toast.success('Datos importados correctamente');
+    } catch (error) {
+      toast.error('Error al procesar las imágenes');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const applyImportedData = (result) => {
+    setFormData(prev => ({
+      ...prev,
+      name: result.name || prev.name,
+      type: result.type || prev.type,
+      destinations: result.destinations?.length ? result.destinations : prev.destinations,
+      services: result.services?.length ? result.services : prev.services,
+      website: result.website || prev.website,
+      internal_notes: result.internal_notes || prev.internal_notes,
+      contact1_name: result.contact1_name || prev.contact1_name,
+      contact1_email: result.contact1_email || prev.contact1_email,
+      contact1_phone: result.contact1_phone || prev.contact1_phone,
+      contact2_name: result.contact2_name || prev.contact2_name,
+      contact2_email: result.contact2_email || prev.contact2_email,
+      contact2_phone: result.contact2_phone || prev.contact2_phone
+    }));
+    setShowSmartImport(false);
+    setSmartImportText('');
+  };
 
   const handleSmartImport = async () => {
     if (!smartImportText.trim()) {
@@ -113,26 +208,8 @@ Extrae estos campos si están disponibles:
         }
       });
 
-      setFormData(prev => ({
-        ...prev,
-        name: result.name || prev.name,
-        type: result.type || prev.type,
-        destinations: result.destinations?.length ? result.destinations : prev.destinations,
-        services: result.services?.length ? result.services : prev.services,
-        website: result.website || prev.website,
-        internal_notes: result.internal_notes || prev.internal_notes,
-        contact1_name: result.contact1_name || prev.contact1_name,
-        contact1_email: result.contact1_email || prev.contact1_email,
-        contact1_phone: result.contact1_phone || prev.contact1_phone,
-        contact2_name: result.contact2_name || prev.contact2_name,
-        contact2_email: result.contact2_email || prev.contact2_email,
-        contact2_phone: result.contact2_phone || prev.contact2_phone
-      }));
-
+      applyImportedData(result);
       toast.success('Datos importados correctamente');
-      
-      setShowSmartImport(false);
-      setSmartImportText('');
     } catch (error) {
       toast.error('Error al procesar el texto');
     } finally {
@@ -313,32 +390,78 @@ Extrae estos campos si están disponibles:
         </DialogHeader>
 
         {showSmartImport && (
-          <div className="p-4 bg-stone-50 rounded-xl space-y-3 border border-stone-200">
-            <p className="text-sm text-stone-600">
-              Pega la información del proveedor (texto, email, etc.) y la IA extraerá los datos automáticamente:
-            </p>
-            <textarea
-              value={smartImportText}
-              onChange={(e) => setSmartImportText(e.target.value)}
-              className="w-full h-32 p-3 text-sm border border-stone-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#2E442A]"
-              placeholder="Starhotels – Italy&#10;Contacto: Diego Rumazza – Global Director of Sales&#10;📧 d.rumazza@starhotels.com&#10;📱 +39 335 628 5026&#10;🌍 starhotels.com&#10;&#10;Resumen: Cadena hotelera italiana..."
-            />
-            <div className="flex gap-2">
+          <div className="p-4 bg-stone-50 rounded-xl space-y-4 border border-stone-200">
+            {/* Opción 1: Texto */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-stone-700">Opción 1: Pegar texto</p>
+              <textarea
+                value={smartImportText}
+                onChange={(e) => setSmartImportText(e.target.value)}
+                className="w-full h-24 p-3 text-sm border border-stone-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#2E442A]"
+                placeholder="Pega el texto del proveedor (email, info de contacto, etc.)"
+              />
               <Button
                 type="button"
                 onClick={handleSmartImport}
-                disabled={importing}
+                disabled={importing || !smartImportText.trim()}
                 className="rounded-xl text-white text-xs"
                 style={{ backgroundColor: '#2E442A' }}
               >
                 {importing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
-                {importing ? 'Procesando...' : 'Importar'}
+                Importar desde texto
               </Button>
+            </div>
+
+            <div className="border-t border-stone-200 pt-4">
+              {/* Opción 2: Imágenes */}
+              <p className="text-sm font-medium text-stone-700 mb-2">Opción 2: Subir imágenes</p>
+              <p className="text-xs text-stone-500 mb-2">Sube fotos de tarjetas de presentación, capturas de pantalla, emails, etc.</p>
+              
+              {uploadedImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {uploadedImages.map((url, i) => (
+                    <div key={i} className="relative">
+                      <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg" />
+                      <button 
+                        type="button" 
+                        onClick={() => setUploadedImages(prev => prev.filter((_, idx) => idx !== i))}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <label className="flex items-center gap-2 px-3 py-2 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-100 transition-colors text-xs">
+                  {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  <span>{uploadingImage ? 'Subiendo...' : 'Subir imagen'}</span>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
+                </label>
+                
+                {uploadedImages.length > 0 && (
+                  <Button
+                    type="button"
+                    onClick={handleSmartImportFromImages}
+                    disabled={importing}
+                    className="rounded-xl text-white text-xs"
+                    style={{ backgroundColor: '#2E442A' }}
+                  >
+                    {importing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Image className="w-4 h-4 mr-1" />}
+                    Importar desde imágenes
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-stone-200">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => { setShowSmartImport(false); setSmartImportText(''); }}
+                onClick={() => { setShowSmartImport(false); setSmartImportText(''); setUploadedImages([]); }}
                 className="rounded-xl text-xs"
               >
                 Cancelar
