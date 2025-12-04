@@ -222,7 +222,7 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="budget">Presupuesto (MXN)</Label>
+              <Label htmlFor="budget">Presupuesto (USD)</Label>
               <Input
                 id="budget"
                 type="number"
