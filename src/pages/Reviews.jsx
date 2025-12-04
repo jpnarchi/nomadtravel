@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ReviewForm from '@/components/reviews/ReviewForm';
 import ReviewDetail from '@/components/reviews/ReviewDetail';
 import EmptyState from '@/components/ui/EmptyState';
@@ -58,6 +59,8 @@ export default function Reviews() {
   const [editingReview, setEditingReview] = useState(null);
   const [viewingReview, setViewingReview] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 12;
 
   const queryClient = useQueryClient();
 
@@ -124,6 +127,18 @@ export default function Reviews() {
   };
 
   const hasActiveFilters = Object.values(filters).some(v => v !== 'all') || search;
+
+  // Pagination
+  const totalPages = Math.ceil(filteredReviews.length / ITEMS_PER_PAGE);
+  const paginatedReviews = filteredReviews.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, search]);
 
   if (isLoading) {
     return (
@@ -250,7 +265,7 @@ export default function Reviews() {
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredReviews.map((review) => (
+          {paginatedReviews.map((review) => (
             <div
               key={review.id}
               className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100 hover:shadow-md transition-shadow"
@@ -355,6 +370,47 @@ export default function Reviews() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="rounded-xl"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <div className="flex items-center gap-1">
+            {[...Array(totalPages)].map((_, i) => (
+              <Button
+                key={i}
+                variant={currentPage === i + 1 ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCurrentPage(i + 1)}
+                className={`rounded-xl w-8 h-8 p-0 ${currentPage === i + 1 ? 'text-white' : ''}`}
+                style={currentPage === i + 1 ? { backgroundColor: '#2E442A' } : {}}
+              >
+                {i + 1}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="rounded-xl"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+          <span className="text-sm text-stone-500 ml-2">
+            {filteredReviews.length} reviews
+          </span>
         </div>
       )}
 
