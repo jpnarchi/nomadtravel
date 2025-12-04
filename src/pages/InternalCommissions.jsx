@@ -188,8 +188,11 @@ export default function InternalCommissions() {
     }
   };
 
-  // Get unique agents from commissions
-  const uniqueAgents = [...new Set(commissions.map(c => c.agent_name))].filter(Boolean);
+  // Get unique agents from commissions and users
+  const uniqueAgents = [...new Set([
+    ...commissions.map(c => c.agent_name),
+    ...users.map(u => u.full_name)
+  ])].filter(Boolean);
 
   // Filter commissions
   const filteredCommissions = commissions.filter(c => {
