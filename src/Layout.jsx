@@ -13,6 +13,7 @@ import {
   Loader2,
   Building2
 } from 'lucide-react';
+import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
 
