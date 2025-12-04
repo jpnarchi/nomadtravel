@@ -11,6 +11,7 @@ import TripRequestPublic from './pages/TripRequestPublic';
 import TripDetail from './pages/TripDetail';
 import Statistics from './pages/Statistics';
 import Reviews from './pages/Reviews';
+import Credentials from './pages/Credentials';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +29,7 @@ export const PAGES = {
     "TripDetail": TripDetail,
     "Statistics": Statistics,
     "Reviews": Reviews,
+    "Credentials": Credentials,
 }
 
 export const pagesConfig = {

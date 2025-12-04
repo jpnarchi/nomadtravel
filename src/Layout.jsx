@@ -13,7 +13,8 @@ import {
         Loader2,
         Building2,
         BarChart3,
-        BookOpen
+        BookOpen,
+        Key
       } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import { cn } from "@/lib/utils";
@@ -57,7 +58,8 @@ export default function Layout({ children, currentPageName }) {
             { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
             { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
             { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
-          ];
+                      { name: 'Contraseñas', page: 'Credentials', icon: Key },
+                    ];
 
   return (
     <div className="min-h-screen bg-stone-50" style={{ fontFamily: "'Montserrat', sans-serif" }}>
