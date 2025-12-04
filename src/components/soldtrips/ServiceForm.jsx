@@ -30,6 +30,16 @@ const BOOKED_BY = [
   { value: 'iata_nomad', label: 'IATA Nomad' }
 ];
 
+const FLIGHT_CONSOLIDATORS = {
+  montecito: [{ value: 'ytc', label: 'YTC' }],
+  iata_nomad: [
+    { value: 'directo', label: 'Directo' },
+    { value: 'ez_travel', label: 'EZ Travel' },
+    { value: 'lozano_travel', label: 'Lozano Travel' },
+    { value: 'consofly', label: 'Consofly' }
+  ]
+};
+
 const RESERVED_BY = [
   { value: 'virtuoso', label: 'Virtuoso' },
   { value: 'preferred_partner', label: 'Preferred Partner' },
@@ -490,12 +500,12 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Precio por Pasajero</Label>
+          <Label>Número de Reservación</Label>
           <Input
-            type="number"
-            value={formData.price_per_passenger || ''}
-            onChange={(e) => updateField('price_per_passenger', parseFloat(e.target.value) || 0)}
+            value={formData.flight_reservation_number || ''}
+            onChange={(e) => updateField('flight_reservation_number', e.target.value)}
             className="rounded-xl"
+            placeholder="Ej: ABC123"
           />
         </div>
         <div className="space-y-2">
@@ -737,10 +747,23 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 />
               </div>
             </div>
-            <div className={`grid gap-4 ${formData.service_type === 'hotel' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className={`grid gap-4 ${formData.service_type === 'hotel' || formData.service_type === 'vuelo' ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="space-y-2">
                 <Label>Bookeado por</Label>
-                <Select value={formData.booked_by || 'montecito'} onValueChange={(v) => updateField('booked_by', v)}>
+                <Select 
+                  value={formData.booked_by || 'montecito'} 
+                  onValueChange={(v) => {
+                    updateField('booked_by', v);
+                    // Auto-select consolidator for flights
+                    if (formData.service_type === 'vuelo') {
+                      if (v === 'montecito') {
+                        updateField('flight_consolidator', 'ytc');
+                      } else {
+                        updateField('flight_consolidator', '');
+                      }
+                    }
+                  }}
+                >
                   <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {BOOKED_BY.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
@@ -754,6 +777,23 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       {RESERVED_BY.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {formData.service_type === 'vuelo' && (
+                <div className="space-y-2">
+                  <Label>Consolidador</Label>
+                  <Select 
+                    value={formData.flight_consolidator || ''} 
+                    onValueChange={(v) => updateField('flight_consolidator', v)}
+                    disabled={formData.booked_by === 'montecito'}
+                  >
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      {(FLIGHT_CONSOLIDATORS[formData.booked_by] || []).map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
