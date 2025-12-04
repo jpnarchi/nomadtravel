@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { 
@@ -8,12 +8,41 @@ import {
   CheckCircle, 
   Menu, 
   X,
-  MapPin
+  MapPin,
+  DollarSign,
+  Loader2
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { base44 } from '@/api/base44Client';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [rateLoading, setRateLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      try {
+        const result = await base44.integrations.Core.InvokeLLM({
+          prompt: "¿Cuál es el tipo de cambio de compra de dólares USD a pesos mexicanos MXN de BBVA México hoy? Solo responde con el número del tipo de cambio de compra (el precio al que BBVA compra dólares), nada más.",
+          add_context_from_internet: true,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              buy_rate: { type: "number", description: "Tipo de cambio de compra USD a MXN" },
+              date: { type: "string", description: "Fecha de la consulta" }
+            }
+          }
+        });
+        setExchangeRate(result);
+      } catch (error) {
+        console.error('Error fetching exchange rate:', error);
+      } finally {
+        setRateLoading(false);
+      }
+    };
+    fetchExchangeRate();
+  }, []);
 
   const navigation = [
     { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
@@ -101,6 +130,26 @@ export default function Layout({ children, currentPageName }) {
                 </h1>
                 <p className="text-xs text-stone-500 font-medium">Society CRM</p>
               </div>
+            </div>
+
+            {/* Exchange Rate */}
+            <div className="mt-4 p-3 bg-stone-50 rounded-xl">
+              <div className="flex items-center gap-2 text-xs text-stone-500 mb-1">
+                <DollarSign className="w-3 h-3" />
+                <span>USD/MXN BBVA Compra</span>
+              </div>
+              {rateLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
+                  <span className="text-xs text-stone-400">Cargando...</span>
+                </div>
+              ) : exchangeRate?.buy_rate ? (
+                <p className="text-lg font-bold" style={{ color: '#2E442A' }}>
+                  ${exchangeRate.buy_rate.toFixed(2)} MXN
+                </p>
+              ) : (
+                <p className="text-xs text-stone-400">No disponible</p>
+              )}
             </div>
           </div>
 
