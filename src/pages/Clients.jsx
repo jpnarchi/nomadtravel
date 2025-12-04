@@ -38,7 +38,7 @@ export default function Clients() {
   const { data: allClients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
     queryFn: () => base44.entities.Client.list('-created_date'),
-    enabled: !!user
+    enabled: !userLoading
   });
 
   // Filter clients based on user role
