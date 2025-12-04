@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ClientForm from '@/components/clients/ClientForm';
 import EmptyState from '@/components/ui/EmptyState';
+import useCurrentUser from '@/components/hooks/useCurrentUser';
 
 export default function Clients() {
   const [search, setSearch] = useState('');
@@ -32,11 +33,17 @@ export default function Clients() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const queryClient = useQueryClient();
+  const { user, loading: userLoading, isAdmin } = useCurrentUser();
 
-  const { data: clients = [], isLoading } = useQuery({
+  const { data: allClients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date')
+    queryFn: () => base44.entities.Client.list('-created_date'),
+    enabled: !!user
   });
+
+  // Filter clients based on user role
+  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
+  const isLoading = clientsLoading || userLoading;
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Client.create(data),

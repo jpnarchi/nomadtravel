@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import EmptyState from '@/components/ui/EmptyState';
 import StatsCard from '@/components/ui/StatsCard';
+import useCurrentUser from '@/components/hooks/useCurrentUser';
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
@@ -31,10 +32,17 @@ export default function SoldTrips() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
 
-  const { data: soldTrips = [], isLoading } = useQuery({
+  const { user, loading: userLoading, isAdmin } = useCurrentUser();
+
+  const { data: allSoldTrips = [], isLoading: dataLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list('-created_date')
+    queryFn: () => base44.entities.SoldTrip.list('-created_date'),
+    enabled: !!user
   });
+
+  // Filter based on user role
+  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
+  const isLoading = dataLoading || userLoading;
 
   // Calculate stats
   const totalRevenue = soldTrips.reduce((sum, t) => sum + (t.total_price || 0), 0);

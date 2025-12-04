@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import useCurrentUser from '@/components/hooks/useCurrentUser';
 
 const BOOKED_BY_LABELS = {
   montecito: 'Montecito',
@@ -43,16 +44,24 @@ export default function Commissions() {
   const [filterBookedBy, setFilterBookedBy] = useState('all');
 
   const queryClient = useQueryClient();
+  const { user, loading: userLoading, isAdmin } = useCurrentUser();
 
-  const { data: services = [], isLoading: servicesLoading } = useQuery({
+  const { data: allServices = [], isLoading: servicesLoading } = useQuery({
     queryKey: ['allServices'],
-    queryFn: () => base44.entities.TripService.list()
+    queryFn: () => base44.entities.TripService.list(),
+    enabled: !!user
   });
 
-  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
+  const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+    queryFn: () => base44.entities.SoldTrip.list(),
+    enabled: !!user
   });
+
+  // Filter based on user role
+  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
+  const soldTripIds = new Set(soldTrips.map(t => t.id));
+  const services = isAdmin ? allServices : allServices.filter(s => soldTripIds.has(s.sold_trip_id));
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
@@ -109,7 +118,7 @@ export default function Commissions() {
     }
   };
 
-  const isLoading = servicesLoading || tripsLoading;
+  const isLoading = servicesLoading || tripsLoading || userLoading;
 
   if (isLoading) {
     return (
