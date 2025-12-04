@@ -164,97 +164,101 @@ export default function Suppliers() {
       </div>
 
       {/* Suppliers List */}
-      {filteredSuppliers.length === 0 ? (
-        <EmptyState
-          icon={Building2}
-          title={search || typeFilter !== 'all' ? "Sin resultados" : "Sin proveedores"}
-          description={search || typeFilter !== 'all' ? "No hay proveedores que coincidan" : "Agrega tu primer proveedor"}
-          actionLabel="Nuevo Proveedor"
-          onAction={() => setFormOpen(true)}
-        />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <AnimatePresence>
-            {filteredSuppliers.map((supplier, index) => {
-              const typeConfig = SUPPLIER_TYPES[supplier.type] || SUPPLIER_TYPES.otro;
-              return (
-                <motion.div
-                  key={supplier.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5 hover:shadow-md transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
-                        <Building2 className="w-6 h-6" style={{ color: '#2E442A' }} />
+                  {filteredSuppliers.length === 0 ? (
+                    <EmptyState
+                      icon={Building2}
+                      title={search || typeFilter !== 'all' ? "Sin resultados" : "Sin proveedores"}
+                      description={search || typeFilter !== 'all' ? "No hay proveedores que coincidan" : "Agrega tu primer proveedor"}
+                      actionLabel="Nuevo Proveedor"
+                      onAction={() => setFormOpen(true)}
+                    />
+                  ) : (
+                    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-stone-50 border-b border-stone-100">
+                            <tr>
+                              <th className="text-left p-4 font-medium text-stone-600">Proveedor</th>
+                              <th className="text-left p-4 font-medium text-stone-600">Tipo</th>
+                              <th className="text-left p-4 font-medium text-stone-600">Destinos</th>
+                              <th className="text-left p-4 font-medium text-stone-600">Rating</th>
+                              <th className="text-left p-4 font-medium text-stone-600">Comisión</th>
+                              <th className="text-right p-4 font-medium text-stone-600">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredSuppliers.map((supplier) => {
+                              const typeConfig = SUPPLIER_TYPES[supplier.type] || SUPPLIER_TYPES.otro;
+                              return (
+                                <tr key={supplier.id} className="border-b border-stone-50 hover:bg-stone-50/50">
+                                  <td className="p-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2E442A15' }}>
+                                        <Building2 className="w-4 h-4" style={{ color: '#2E442A' }} />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-stone-800 truncate">{supplier.name}</p>
+                                        {supplier.website && (
+                                          <a 
+                                            href={supplier.website.startsWith('http') ? supplier.website : `https://${supplier.website}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600"
+                                          >
+                                            <ExternalLink className="w-3 h-3" />
+                                            <span className="truncate max-w-[120px]">{supplier.website.replace(/^https?:\/\//, '')}</span>
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-4">
+                                    <Badge className={`${typeConfig.color} text-xs`}>{typeConfig.label}</Badge>
+                                  </td>
+                                  <td className="p-4">
+                                    {supplier.destinations?.length > 0 ? (
+                                      <div className="flex items-center gap-1 text-stone-600 text-xs">
+                                        <MapPin className="w-3 h-3 text-stone-400" />
+                                        <span className="truncate max-w-[150px]">
+                                          {supplier.destinations.slice(0, 2).join(', ')}
+                                          {supplier.destinations.length > 2 && ` +${supplier.destinations.length - 2}`}
+                                        </span>
+                                      </div>
+                                    ) : <span className="text-stone-300">-</span>}
+                                  </td>
+                                  <td className="p-4">
+                                    {supplier.rating ? (
+                                      <div className="flex items-center gap-0.5">
+                                        {renderStars(supplier.rating)}
+                                      </div>
+                                    ) : <span className="text-stone-300">-</span>}
+                                  </td>
+                                  <td className="p-4">
+                                    <span className="text-stone-600 text-xs">{supplier.commission || '-'}</span>
+                                  </td>
+                                  <td className="p-4 text-right">
+                                    <div className="flex justify-end gap-1">
+                                      <Link to={createPageUrl(`SupplierDetail?id=${supplier.id}`)}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                          <ChevronRight className="w-4 h-4 text-stone-400" />
+                                        </Button>
+                                      </Link>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingSupplier(supplier); setFormOpen(true); }}>
+                                        <Edit2 className="w-4 h-4 text-stone-400" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteConfirm(supplier)}>
+                                        <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-stone-800">{supplier.name}</h3>
-                        <Badge className={`${typeConfig.color} text-xs mt-1`}>{typeConfig.label}</Badge>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => { setEditingSupplier(supplier); setFormOpen(true); }}
-                      >
-                        <Edit2 className="w-4 h-4 text-stone-400" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => setDeleteConfirm(supplier)}
-                      >
-                        <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {supplier.rating && (
-                    <div className="flex items-center gap-1 mb-3">
-                      {renderStars(supplier.rating)}
                     </div>
                   )}
-
-                  {supplier.destinations?.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-stone-500 mb-2">
-                      <MapPin className="w-4 h-4" />
-                      <span className="truncate">{supplier.destinations.slice(0, 2).join(', ')}{supplier.destinations.length > 2 ? ` +${supplier.destinations.length - 2}` : ''}</span>
-                    </div>
-                  )}
-
-                  {supplier.commission && (
-                    <p className="text-sm text-stone-500 mb-2">
-                      <span className="font-medium">Comisión:</span> {supplier.commission}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-3 mt-4 pt-3 border-t border-stone-100">
-                    {supplier.website && (
-                      <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-stone-600">
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
-                    <Link 
-                      to={createPageUrl(`SupplierDetail?id=${supplier.id}`)}
-                      className="ml-auto text-sm font-medium flex items-center gap-1"
-                      style={{ color: '#2E442A' }}
-                    >
-                      Ver detalles <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-      )}
 
       {/* Form Dialog */}
       <SupplierForm
