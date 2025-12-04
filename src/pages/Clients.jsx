@@ -118,7 +118,7 @@ export default function Clients() {
         />
       </div>
 
-      {/* Clients Grid */}
+      {/* Clients List */}
       {filteredClients.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -128,91 +128,70 @@ export default function Clients() {
           onAction={!search ? () => setFormOpen(true) : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AnimatePresence>
-            {filteredClients.map((client, index) => (
-              <motion.div
-                key={client.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-semibold text-lg"
-                      style={{ backgroundColor: '#2E442A' }}
-                    >
-                      {client.first_name?.[0]}{client.last_name?.[0]}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-stone-800">
-                        {client.first_name} {client.last_name}
-                      </h3>
-                      {client.nationality && (
-                        <p className="text-xs text-stone-400">{client.nationality}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <Link to={createPageUrl(`ClientDetail?id=${client.id}`)}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-stone-400 hover:text-stone-600"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-stone-400 hover:text-stone-600"
-                      onClick={() => { setEditingClient(client); setFormOpen(true); }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-stone-400 hover:text-red-500"
-                      onClick={() => setDeleteConfirm(client)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-stone-600">
-                    <Mail className="w-4 h-4 text-stone-400" />
-                    <span className="truncate">{client.email}</span>
-                  </div>
-                  {client.phone && (
-                    <div className="flex items-center gap-2 text-stone-600">
-                      <Phone className="w-4 h-4 text-stone-400" />
-                      <span>{client.phone}</span>
-                    </div>
-                  )}
-                  {client.birth_date && (
-                    <div className="flex items-center gap-2 text-stone-600">
-                      <Calendar className="w-4 h-4 text-stone-400" />
-                      <span>{format(new Date(client.birth_date), 'd MMM yyyy', { locale: es })}</span>
-                    </div>
-                  )}
-                  
-                </div>
-
-                {client.notes && (
-                  <div className="mt-4 pt-3 border-t border-stone-100">
-                    <p className="text-xs text-stone-500 line-clamp-2">{client.notes}</p>
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-stone-50 border-b border-stone-100">
+                <tr>
+                  <th className="text-left p-4 font-medium text-stone-600">Cliente</th>
+                  <th className="text-left p-4 font-medium text-stone-600">Email</th>
+                  <th className="text-left p-4 font-medium text-stone-600">Teléfono</th>
+                  <th className="text-left p-4 font-medium text-stone-600">Cumpleaños</th>
+                  <th className="text-right p-4 font-medium text-stone-600">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClients.map((client) => (
+                  <tr key={client.id} className="border-b border-stone-50 hover:bg-stone-50/50">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-semibold text-sm flex-shrink-0"
+                          style={{ backgroundColor: '#2E442A' }}
+                        >
+                          {client.first_name?.[0]}{client.last_name?.[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-stone-800 truncate">
+                            {client.first_name} {client.last_name}
+                          </p>
+                          {client.notes && (
+                            <p className="text-xs text-stone-400 truncate max-w-[200px]">{client.notes}</p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-stone-600 text-xs">{client.email}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-stone-600 text-xs">{client.phone || '-'}</span>
+                    </td>
+                    <td className="p-4">
+                      <span className="text-stone-600 text-xs">
+                        {client.birth_date ? format(new Date(client.birth_date), 'd MMM yyyy', { locale: es }) : '-'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Link to={createPageUrl(`ClientDetail?id=${client.id}`)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Eye className="w-4 h-4 text-stone-400" />
+                          </Button>
+                        </Link>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingClient(client); setFormOpen(true); }}>
+                          <Edit2 className="w-4 h-4 text-stone-400" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDeleteConfirm(client)}>
+                          <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

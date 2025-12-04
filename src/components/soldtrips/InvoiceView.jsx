@@ -36,13 +36,35 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
   const getServiceDetails = (service) => {
     switch (service.service_type) {
       case 'hotel':
-        return `${service.nights || 0} noches - ${service.room_type || 'Habitación'}`;
+        const hotelParts = [];
+        if (service.hotel_city) hotelParts.push(service.hotel_city);
+        if (service.check_in && service.check_out) {
+          hotelParts.push(`${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM', { locale: es })}`);
+        }
+        if (service.nights) hotelParts.push(`${service.nights} noches`);
+        if (service.room_type) hotelParts.push(service.room_type);
+        if (service.num_rooms && service.num_rooms > 1) hotelParts.push(`${service.num_rooms} habs`);
+        return hotelParts.join(' · ');
       case 'vuelo':
-        return `${service.passengers || 1} pasajero(s) - ${service.flight_class || 'Económica'}`;
+        const flightParts = [];
+        if (service.flight_date) flightParts.push(format(new Date(service.flight_date), 'd MMM', { locale: es }));
+        if (service.flight_number) flightParts.push(`#${service.flight_number}`);
+        if (service.flight_class) flightParts.push(service.flight_class);
+        if (service.passengers) flightParts.push(`${service.passengers} pax`);
+        return flightParts.join(' · ');
       case 'traslado':
-        return `${service.transfer_type || 'Privado'} - ${service.transfer_passengers || 1} pasajero(s)`;
+        const transferParts = [];
+        if (service.transfer_type) transferParts.push(service.transfer_type === 'privado' ? 'Privado' : 'Compartido');
+        if (service.transfer_passengers) transferParts.push(`${service.transfer_passengers} pax`);
+        if (service.vehicle) transferParts.push(service.vehicle);
+        return transferParts.join(' · ');
       case 'tour':
-        return `${service.tour_people || 1} persona(s) - ${service.tour_duration || ''}`;
+        const tourParts = [];
+        if (service.tour_city) tourParts.push(service.tour_city);
+        if (service.tour_date) tourParts.push(format(new Date(service.tour_date), 'd MMM', { locale: es }));
+        if (service.tour_duration) tourParts.push(service.tour_duration);
+        if (service.tour_people) tourParts.push(`${service.tour_people} pax`);
+        return tourParts.join(' · ');
       case 'otro':
         return service.other_description || '';
       default:
@@ -147,7 +169,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
               >
                 <span className="font-semibold" style={{ color: '#2E442A' }}>Total</span>
                 <span className="text-xl font-bold" style={{ color: '#2E442A' }}>
-                  ${total.toLocaleString()} MXN
+                  ${total.toLocaleString()} USD
                 </span>
               </div>
             </div>
