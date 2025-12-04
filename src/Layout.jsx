@@ -10,7 +10,8 @@ import {
   X,
   MapPin,
   DollarSign,
-  Loader2
+  Loader2,
+  Building2
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
@@ -49,6 +50,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Clientes', page: 'Clients', icon: Users },
     { name: 'Viajes', page: 'Trips', icon: Plane },
     { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
+    { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
   ];
 
   return (
