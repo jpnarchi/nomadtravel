@@ -13,7 +13,7 @@ const SERVICE_CONFIG = {
   otro: { label: 'Servicio', icon: Package, color: '#8b5cf6' }
 };
 
-export default function InvoiceView({ open, onClose, soldTrip, services }) {
+export default function InvoiceView({ open, onClose, soldTrip, services, clientPayments = [] }) {
   if (!soldTrip) return null;
 
   const MEAL_PLAN_LABELS = {
@@ -22,71 +22,68 @@ export default function InvoiceView({ open, onClose, soldTrip, services }) {
     all_inclusive: 'All Inclusive'
   };
 
-  const getServiceName = (service) => {
+  const getServiceSummary = (service) => {
     switch (service.service_type) {
       case 'hotel':
-        return service.hotel_name || 'Hotel';
-      case 'vuelo':
-        return `${service.airline || 'Vuelo'} ${service.route ? `• ${service.route}` : ''}`;
-      case 'traslado':
-        return `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
-      case 'tour':
-        return service.tour_name || 'Tour';
-      case 'otro':
-        return service.other_name || 'Servicio';
-      default:
-        return 'Servicio';
-    }
-  };
-
-  const getServiceDetails = (service) => {
-    const details = [];
-    
-    switch (service.service_type) {
-      case 'hotel':
-        if (service.hotel_city) details.push({ label: 'Ubicación', value: service.hotel_city });
+        const hotelDetails = [];
+        if (service.hotel_city) hotelDetails.push(service.hotel_city);
         if (service.check_in && service.check_out) {
-          details.push({ label: 'Fechas', value: `${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM yyyy', { locale: es })}` });
+          hotelDetails.push(`${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM', { locale: es })}`);
         }
-        if (service.nights) details.push({ label: 'Noches', value: service.nights });
-        if (service.num_rooms) details.push({ label: 'Habitaciones', value: service.num_rooms });
-        if (service.room_type) details.push({ label: 'Tipo', value: service.room_type });
-        if (service.meal_plan) details.push({ label: 'Plan', value: MEAL_PLAN_LABELS[service.meal_plan] || service.meal_plan, highlight: true });
-        if (service.reservation_number) details.push({ label: 'Confirmación', value: service.reservation_number });
-        break;
+        if (service.nights) hotelDetails.push(`${service.nights} noches`);
+        if (service.room_type) hotelDetails.push(service.room_type);
+        if (service.meal_plan) hotelDetails.push(MEAL_PLAN_LABELS[service.meal_plan] || service.meal_plan);
+        return {
+          name: service.hotel_name || 'Hotel',
+          details: hotelDetails.join(' • ')
+        };
       case 'vuelo':
-        if (service.flight_date) details.push({ label: 'Fecha', value: format(new Date(service.flight_date), 'd MMM yyyy', { locale: es }) });
-        if (service.flight_number) details.push({ label: 'Vuelo', value: service.flight_number });
-        if (service.departure_time && service.arrival_time) details.push({ label: 'Horario', value: `${service.departure_time} - ${service.arrival_time}` });
-        if (service.passengers) details.push({ label: 'Pasajeros', value: service.passengers });
-        if (service.flight_class) details.push({ label: 'Clase', value: service.flight_class, highlight: true });
-        if (service.baggage_included) details.push({ label: 'Equipaje', value: service.baggage_included, highlight: true });
-        if (service.flight_reservation_number) details.push({ label: 'Confirmación', value: service.flight_reservation_number });
-        break;
+        const flightDetails = [];
+        if (service.flight_date) flightDetails.push(format(new Date(service.flight_date), 'd MMM', { locale: es }));
+        if (service.route) flightDetails.push(service.route);
+        if (service.passengers) flightDetails.push(`${service.passengers} pax`);
+        if (service.flight_class) flightDetails.push(service.flight_class);
+        if (service.baggage_included) flightDetails.push(`Equipaje: ${service.baggage_included}`);
+        return {
+          name: `${service.airline || 'Vuelo'} ${service.flight_number || ''}`.trim(),
+          details: flightDetails.join(' • ')
+        };
       case 'traslado':
-        if (service.transfer_datetime) details.push({ label: 'Fecha y hora', value: format(new Date(service.transfer_datetime), "d MMM yyyy 'a las' HH:mm", { locale: es }) });
-        if (service.transfer_type) details.push({ label: 'Tipo', value: service.transfer_type === 'privado' ? 'Privado' : 'Compartido' });
-        if (service.vehicle) details.push({ label: 'Vehículo', value: service.vehicle });
-        if (service.transfer_passengers) details.push({ label: 'Pasajeros', value: service.transfer_passengers });
-        break;
+        const transferDetails = [];
+        if (service.transfer_datetime) transferDetails.push(format(new Date(service.transfer_datetime), 'd MMM HH:mm', { locale: es }));
+        if (service.transfer_type) transferDetails.push(service.transfer_type === 'privado' ? 'Privado' : 'Compartido');
+        if (service.transfer_passengers) transferDetails.push(`${service.transfer_passengers} pax`);
+        return {
+          name: `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`,
+          details: transferDetails.join(' • ')
+        };
       case 'tour':
-        if (service.tour_city) details.push({ label: 'Ubicación', value: service.tour_city });
-        if (service.tour_date) details.push({ label: 'Fecha', value: format(new Date(service.tour_date), 'd MMM yyyy', { locale: es }) });
-        if (service.tour_duration) details.push({ label: 'Duración', value: service.tour_duration });
-        if (service.tour_people) details.push({ label: 'Personas', value: service.tour_people });
-        if (service.tour_includes) details.push({ label: 'Incluye', value: service.tour_includes, highlight: true });
-        if (service.tour_reservation_number) details.push({ label: 'Confirmación', value: service.tour_reservation_number });
-        break;
+        const tourDetails = [];
+        if (service.tour_date) tourDetails.push(format(new Date(service.tour_date), 'd MMM', { locale: es }));
+        if (service.tour_city) tourDetails.push(service.tour_city);
+        if (service.tour_duration) tourDetails.push(service.tour_duration);
+        if (service.tour_people) tourDetails.push(`${service.tour_people} personas`);
+        if (service.tour_includes) tourDetails.push(`Incluye: ${service.tour_includes}`);
+        return {
+          name: service.tour_name || 'Tour',
+          details: tourDetails.join(' • ')
+        };
       case 'otro':
-        if (service.other_date) details.push({ label: 'Fecha', value: format(new Date(service.other_date), 'd MMM yyyy', { locale: es }) });
-        if (service.other_description) details.push({ label: 'Descripción', value: service.other_description });
-        break;
+        const otherDetails = [];
+        if (service.other_date) otherDetails.push(format(new Date(service.other_date), 'd MMM', { locale: es }));
+        if (service.other_description) otherDetails.push(service.other_description);
+        return {
+          name: service.other_name || 'Servicio',
+          details: otherDetails.join(' • ')
+        };
+      default:
+        return { name: 'Servicio', details: '' };
     }
-    
-    return details;
   };
 
   const total = services.reduce((sum, s) => sum + (s.total_price || 0), 0);
+  const totalPaid = clientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const balance = total - totalPaid;
 
   const handlePrint = () => {
     window.print();
