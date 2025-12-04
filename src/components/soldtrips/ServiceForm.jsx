@@ -26,6 +26,104 @@ const BOOKED_BY = [
   { value: 'iata_nomad', label: 'IATA Nomad' }
 ];
 
+const HOTEL_CHAINS = [
+  { value: 'hilton', label: 'Hilton' },
+  { value: 'marriott', label: 'Marriott Bonvoy' },
+  { value: 'hyatt', label: 'Hyatt' },
+  { value: 'ihg', label: 'IHG' },
+  { value: 'accor', label: 'Accor' },
+  { value: 'kerzner', label: 'Kerzner International' },
+  { value: 'four_seasons', label: 'Four Seasons' },
+  { value: 'rosewood', label: 'Rosewood Hotel Group' },
+  { value: 'aman', label: 'Aman' },
+  { value: 'belmond', label: 'Belmond' },
+  { value: 'auberge', label: 'Auberge Resorts Collection' },
+  { value: 'slh', label: 'SLH – Small Luxury Hotels of the World' },
+  { value: 'design_hotels', label: 'Design Hotels' },
+  { value: 'lhw', label: 'The Leading Hotels of the World (LHW)' }
+];
+
+const HOTEL_BRANDS = {
+  hilton: [
+    { value: 'waldorf_astoria', label: 'Waldorf Astoria' },
+    { value: 'conrad', label: 'Conrad' },
+    { value: 'lxr', label: 'LXR' },
+    { value: 'curio', label: 'Curio Collection' },
+    { value: 'tapestry', label: 'Tapestry Collection' },
+    { value: 'hilton_hotels', label: 'Hilton Hotels & Resorts' },
+    { value: 'doubletree', label: 'DoubleTree' }
+  ],
+  marriott: [
+    { value: 'ritz_carlton', label: 'Ritz-Carlton' },
+    { value: 'st_regis', label: 'St. Regis' },
+    { value: 'jw_marriott', label: 'JW Marriott' },
+    { value: 'w_hotels', label: 'W Hotels' },
+    { value: 'edition', label: 'Edition' },
+    { value: 'luxury_collection', label: 'Luxury Collection' },
+    { value: 'autograph', label: 'Autograph Collection' },
+    { value: 'westin', label: 'Westin' },
+    { value: 'sheraton', label: 'Sheraton' },
+    { value: 'delta', label: 'Delta' }
+  ],
+  hyatt: [
+    { value: 'park_hyatt', label: 'Park Hyatt' },
+    { value: 'grand_hyatt', label: 'Grand Hyatt' },
+    { value: 'hyatt_regency', label: 'Hyatt Regency' },
+    { value: 'andaz', label: 'Andaz' },
+    { value: 'thompson', label: 'Thompson Hotels' },
+    { value: 'alila', label: 'Alila' },
+    { value: 'unbound', label: 'Unbound Collection' }
+  ],
+  ihg: [
+    { value: 'intercontinental', label: 'InterContinental' },
+    { value: 'six_senses', label: 'Six Senses' },
+    { value: 'regent', label: 'Regent' },
+    { value: 'kimpton', label: 'Kimpton' },
+    { value: 'vignette', label: 'Vignette Collection' },
+    { value: 'hotel_indigo', label: 'Hotel Indigo' }
+  ],
+  accor: [
+    { value: 'fairmont', label: 'Fairmont' },
+    { value: 'raffles', label: 'Raffles' },
+    { value: 'sofitel', label: 'Sofitel' },
+    { value: 'mgallery', label: 'MGallery' },
+    { value: 'mondrian', label: 'Mondrian' },
+    { value: 'ennismore', label: 'Ennismore Collection' },
+    { value: 'banyan_tree', label: 'Banyan Tree' }
+  ],
+  kerzner: [
+    { value: 'one_and_only', label: 'One&Only' },
+    { value: 'siro', label: 'SIRO' },
+    { value: 'atlantis', label: 'Atlantis' }
+  ],
+  four_seasons: [
+    { value: 'four_seasons', label: 'Four Seasons' }
+  ],
+  rosewood: [
+    { value: 'rosewood_hotels', label: 'Rosewood Hotels' },
+    { value: 'khos', label: 'KHOS' },
+    { value: 'new_world', label: 'New World Hotels' }
+  ],
+  aman: [
+    { value: 'aman_resorts', label: 'Aman Resorts' }
+  ],
+  belmond: [
+    { value: 'belmond_hotels', label: 'Belmond Hotels & Trains' }
+  ],
+  auberge: [
+    { value: 'auberge', label: 'Auberge' }
+  ],
+  slh: [
+    { value: 'slh', label: 'SLH' }
+  ],
+  design_hotels: [
+    { value: 'design_hotels', label: 'Design Hotels' }
+  ],
+  lhw: [
+    { value: 'lhw', label: 'LHW' }
+  ]
+};
+
 export default function ServiceForm({ open, onClose, service, soldTripId, onSave, isLoading }) {
   const [formData, setFormData] = useState({
     service_type: 'hotel',
@@ -58,8 +156,42 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleChainChange = (chain) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      hotel_chain: chain,
+      hotel_brand: '' // Reset brand when chain changes
+    }));
+  };
+
+  const availableBrands = formData.hotel_chain ? HOTEL_BRANDS[formData.hotel_chain] || [] : [];
+
   const renderHotelFields = () => (
     <>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Cadena Hotelera</Label>
+          <Select value={formData.hotel_chain || ''} onValueChange={handleChainChange}>
+            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar cadena" /></SelectTrigger>
+            <SelectContent>
+              {HOTEL_CHAINS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Sub-marca / Colección</Label>
+          <Select 
+            value={formData.hotel_brand || ''} 
+            onValueChange={(v) => updateField('hotel_brand', v)}
+            disabled={!formData.hotel_chain}
+          >
+            <SelectTrigger className="rounded-xl"><SelectValue placeholder={formData.hotel_chain ? "Seleccionar sub-marca" : "Primero selecciona cadena"} /></SelectTrigger>
+            <SelectContent>
+              {availableBrands.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Nombre del Hotel</Label>
