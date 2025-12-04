@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Loader2, X, Star } from 'lucide-react';
+import { Loader2, X, Star, Sparkles } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SUPPLIER_TYPES = [
@@ -50,6 +52,77 @@ const CURRENCIES = [
 ];
 
 export default function SupplierForm({ open, onClose, supplier, onSave, isLoading }) {
+  const [smartImportText, setSmartImportText] = useState('');
+  const [showSmartImport, setShowSmartImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+
+  const handleSmartImport = async () => {
+    if (!smartImportText.trim()) {
+      toast.error('Pega el texto del proveedor');
+      return;
+    }
+    setImporting(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Extrae la información del siguiente texto de un proveedor de viajes y devuélvela en formato JSON.
+        
+Texto:
+${smartImportText}
+
+Extrae estos campos si están disponibles:
+- name: nombre del proveedor/empresa
+- type: tipo (dmc, hotel_directo, cadena_hotelera, aerolinea, plataforma, transporte, tours, otro)
+- destinations: array de regiones donde opera (ej: ["Europa del Sur", "Europa Occidental"])
+- services: array de servicios (ej: ["Hoteles", "Tours"])
+- website: sitio web
+- internal_notes: resumen o descripción del proveedor
+- contact_name: nombre del contacto principal
+- contact_email: email del contacto
+- contact_phone: teléfono del contacto
+- contact_position: puesto del contacto`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            type: { type: "string" },
+            destinations: { type: "array", items: { type: "string" } },
+            services: { type: "array", items: { type: "string" } },
+            website: { type: "string" },
+            internal_notes: { type: "string" },
+            contact_name: { type: "string" },
+            contact_email: { type: "string" },
+            contact_phone: { type: "string" },
+            contact_position: { type: "string" }
+          }
+        }
+      });
+
+      setFormData(prev => ({
+        ...prev,
+        name: result.name || prev.name,
+        type: result.type || prev.type,
+        destinations: result.destinations?.length ? result.destinations : prev.destinations,
+        services: result.services?.length ? result.services : prev.services,
+        website: result.website || prev.website,
+        internal_notes: result.internal_notes || prev.internal_notes
+      }));
+
+      // Store contact info for later use
+      if (result.contact_name || result.contact_email) {
+        toast.success(`Datos importados. Contacto: ${result.contact_name || ''} ${result.contact_email || ''}`);
+      } else {
+        toast.success('Datos importados correctamente');
+      }
+      
+      setShowSmartImport(false);
+      setSmartImportText('');
+    } catch (error) {
+      toast.error('Error al procesar el texto');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -176,10 +249,59 @@ export default function SupplierForm({ open, onClose, supplier, onSave, isLoadin
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold" style={{ color: '#2E442A' }}>
-            {supplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-bold" style={{ color: '#2E442A' }}>
+              {supplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+            </DialogTitle>
+            {!supplier && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSmartImport(!showSmartImport)}
+                className="rounded-xl text-xs"
+              >
+                <Sparkles className="w-4 h-4 mr-1" style={{ color: '#2E442A' }} />
+                Smart Import
+              </Button>
+            )}
+          </div>
         </DialogHeader>
+
+        {showSmartImport && (
+          <div className="p-4 bg-stone-50 rounded-xl space-y-3 border border-stone-200">
+            <p className="text-sm text-stone-600">
+              Pega la información del proveedor (texto, email, etc.) y la IA extraerá los datos automáticamente:
+            </p>
+            <textarea
+              value={smartImportText}
+              onChange={(e) => setSmartImportText(e.target.value)}
+              className="w-full h-32 p-3 text-sm border border-stone-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#2E442A]"
+              placeholder="Starhotels – Italy&#10;Contacto: Diego Rumazza – Global Director of Sales&#10;📧 d.rumazza@starhotels.com&#10;📱 +39 335 628 5026&#10;🌍 starhotels.com&#10;&#10;Resumen: Cadena hotelera italiana..."
+            />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                onClick={handleSmartImport}
+                disabled={importing}
+                className="rounded-xl text-white text-xs"
+                style={{ backgroundColor: '#2E442A' }}
+              >
+                {importing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
+                {importing ? 'Procesando...' : 'Importar'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => { setShowSmartImport(false); setSmartImportText(''); }}
+                className="rounded-xl text-xs"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-4">
           <Tabs defaultValue="general" className="w-full">
