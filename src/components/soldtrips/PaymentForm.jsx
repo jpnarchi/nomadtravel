@@ -112,7 +112,9 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
             <Select value={formData.method} onValueChange={(v) => setFormData({ ...formData, method: v })}>
               <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {PAYMENT_METHODS.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                {(isSupplier ? SUPPLIER_PAYMENT_METHODS : CLIENT_PAYMENT_METHODS).map(m => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
