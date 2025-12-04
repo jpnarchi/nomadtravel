@@ -1,8 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { MapPin, Calendar, Users, DollarSign, Edit2, Trash2, ArrowRight, XCircle } from 'lucide-react';
+import { MapPin, Calendar, Users, DollarSign, Edit2, Trash2, ArrowRight, XCircle, Eye } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -36,6 +38,15 @@ export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
           {stageConfig.label}
         </Badge>
         <div className="flex gap-1">
+          <Link to={createPageUrl(`TripDetail?id=${trip.id}`)}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7 text-stone-400 hover:text-stone-600"
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </Button>
+          </Link>
           <Button 
             variant="ghost" 
             size="icon" 
