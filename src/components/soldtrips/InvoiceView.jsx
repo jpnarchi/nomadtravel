@@ -3,7 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Printer, MapPin } from 'lucide-react';
+import { Printer, MapPin, Hotel, Plane, Car, Compass, Package } from 'lucide-react';
+
+const SERVICE_ICONS = {
+  hotel: Hotel,
+  vuelo: Plane,
+  traslado: Car,
+  tour: Compass,
+  otro: Package
+};
 
 const SERVICE_LABELS = {
   hotel: 'Hotel',
@@ -13,71 +21,156 @@ const SERVICE_LABELS = {
   otro: 'Servicio'
 };
 
+const MEAL_PLAN_LABELS = {
+  solo_habitacion: 'Solo Habitación (EP)',
+  desayuno: 'Desayuno Incluido',
+  all_inclusive: 'All Inclusive'
+};
+
+const PAYMENT_METHOD_LABELS = {
+  efectivo: 'Efectivo',
+  transferencia: 'Transferencia',
+  tarjeta: 'Tarjeta',
+  otro: 'Otro'
+};
+
 export default function InvoiceView({ open, onClose, soldTrip, services, clientPayments = [] }) {
   if (!soldTrip) return null;
 
   const totalPaid = clientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-
-  const getServiceName = (service) => {
-    switch (service.service_type) {
-      case 'hotel':
-        return service.hotel_name || 'Hotel';
-      case 'vuelo':
-        return `${service.airline || 'Vuelo'} - ${service.route || ''}`;
-      case 'traslado':
-        return `Traslado ${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
-      case 'tour':
-        return service.tour_name || 'Tour';
-      case 'otro':
-        return service.other_name || 'Servicio';
-      default:
-        return SERVICE_LABELS[service.service_type] || 'Servicio';
-    }
-  };
-
-  const getServiceDetails = (service) => {
-    switch (service.service_type) {
-      case 'hotel':
-        const hotelParts = [];
-        if (service.hotel_city) hotelParts.push(service.hotel_city);
-        if (service.check_in && service.check_out) {
-          hotelParts.push(`${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM', { locale: es })}`);
-        }
-        if (service.nights) hotelParts.push(`${service.nights} noches`);
-        if (service.room_type) hotelParts.push(service.room_type);
-        if (service.num_rooms && service.num_rooms > 1) hotelParts.push(`${service.num_rooms} habs`);
-        return hotelParts.join(' · ');
-      case 'vuelo':
-        const flightParts = [];
-        if (service.flight_date) flightParts.push(format(new Date(service.flight_date), 'd MMM', { locale: es }));
-        if (service.flight_number) flightParts.push(`#${service.flight_number}`);
-        if (service.flight_class) flightParts.push(service.flight_class);
-        if (service.passengers) flightParts.push(`${service.passengers} pax`);
-        return flightParts.join(' · ');
-      case 'traslado':
-        const transferParts = [];
-        if (service.transfer_type) transferParts.push(service.transfer_type === 'privado' ? 'Privado' : 'Compartido');
-        if (service.transfer_passengers) transferParts.push(`${service.transfer_passengers} pax`);
-        if (service.vehicle) transferParts.push(service.vehicle);
-        return transferParts.join(' · ');
-      case 'tour':
-        const tourParts = [];
-        if (service.tour_city) tourParts.push(service.tour_city);
-        if (service.tour_date) tourParts.push(format(new Date(service.tour_date), 'd MMM', { locale: es }));
-        if (service.tour_duration) tourParts.push(service.tour_duration);
-        if (service.tour_people) tourParts.push(`${service.tour_people} pax`);
-        return tourParts.join(' · ');
-      case 'otro':
-        return service.other_description || '';
-      default:
-        return '';
-    }
-  };
-
   const total = services.reduce((sum, s) => sum + (s.total_price || 0), 0);
+  const balance = total - totalPaid;
+
+  // Group services by type
+  const servicesByType = services.reduce((acc, s) => {
+    if (!acc[s.service_type]) acc[s.service_type] = [];
+    acc[s.service_type].push(s);
+    return acc;
+  }, {});
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const renderHotelService = (service, index) => (
+    <div key={index} className="py-3 border-b border-stone-100 last:border-0">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-1">
+          <p className="font-semibold text-stone-800">{service.hotel_name || 'Hotel'}</p>
+          {(service.hotel_chain || service.hotel_brand) && (
+            <p className="text-xs text-stone-500">{[service.hotel_chain, service.hotel_brand].filter(Boolean).join(' - ')}</p>
+          )}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
+            {service.room_type && <p>Habitación: {service.room_type}</p>}
+            {service.check_in && service.check_out && (
+              <p>Fechas: {format(new Date(service.check_in), 'd MMM', { locale: es })} - {format(new Date(service.check_out), 'd MMM yyyy', { locale: es })}</p>
+            )}
+            {service.meal_plan && <p>Plan: {MEAL_PLAN_LABELS[service.meal_plan] || service.meal_plan}</p>}
+            {service.num_rooms && <p>Habitaciones: {service.num_rooms}</p>}
+            {service.nights && <p>Noches: {service.nights}</p>}
+            {service.reservation_number && <p>Reservación: {service.reservation_number}</p>}
+          </div>
+        </div>
+        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>${(service.total_price || 0).toLocaleString()} USD</p>
+      </div>
+    </div>
+  );
+
+  const renderFlightService = (service, index) => (
+    <div key={index} className="py-3 border-b border-stone-100 last:border-0">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-1">
+          <p className="font-semibold text-stone-800">{service.airline || 'Vuelo'} {service.airline_other && `(${service.airline_other})`}</p>
+          {service.route && <p className="text-xs text-stone-500">{service.route}</p>}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
+            {service.flight_number && <p>Vuelo: #{service.flight_number}</p>}
+            {service.flight_date && <p>Fecha: {format(new Date(service.flight_date), 'd MMM yyyy', { locale: es })}</p>}
+            {(service.departure_time || service.arrival_time) && (
+              <p>Horarios: {service.departure_time || '--'} → {service.arrival_time || '--'}</p>
+            )}
+            {service.flight_class && <p>Clase: {service.flight_class}</p>}
+            {service.baggage_included && <p>Equipaje: {service.baggage_included}</p>}
+            {service.passengers && <p>Pasajeros: {service.passengers}</p>}
+            {service.flight_reservation_number && <p>Reservación: {service.flight_reservation_number}</p>}
+          </div>
+        </div>
+        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>${(service.total_price || 0).toLocaleString()} USD</p>
+      </div>
+    </div>
+  );
+
+  const renderTransferService = (service, index) => (
+    <div key={index} className="py-3 border-b border-stone-100 last:border-0">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-1">
+          <p className="font-semibold text-stone-800">
+            {service.transfer_origin || 'Origen'} → {service.transfer_destination || 'Destino'}
+          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
+            {service.transfer_type && <p>Tipo: {service.transfer_type === 'privado' ? 'Privado' : 'Compartido'}</p>}
+            {service.transfer_datetime && <p>Fecha/Hora: {format(new Date(service.transfer_datetime), 'd MMM yyyy HH:mm', { locale: es })}</p>}
+            {service.vehicle && <p>Vehículo: {service.vehicle}</p>}
+            {service.transfer_passengers && <p>Pasajeros: {service.transfer_passengers}</p>}
+          </div>
+        </div>
+        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>${(service.total_price || 0).toLocaleString()} USD</p>
+      </div>
+    </div>
+  );
+
+  const renderTourService = (service, index) => (
+    <div key={index} className="py-3 border-b border-stone-100 last:border-0">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-1">
+          <p className="font-semibold text-stone-800">{service.tour_name || 'Tour'}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
+            {service.tour_city && <p>Lugar: {service.tour_city}</p>}
+            {service.tour_date && <p>Fecha: {format(new Date(service.tour_date), 'd MMM yyyy', { locale: es })}</p>}
+            {service.tour_duration && <p>Duración: {service.tour_duration}</p>}
+            {service.tour_people && <p>Personas: {service.tour_people}</p>}
+            {service.tour_includes && <p className="col-span-2">Incluye: {service.tour_includes}</p>}
+            {service.tour_reservation_number && <p>Reservación: {service.tour_reservation_number}</p>}
+          </div>
+        </div>
+        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>${(service.total_price || 0).toLocaleString()} USD</p>
+      </div>
+    </div>
+  );
+
+  const renderOtherService = (service, index) => (
+    <div key={index} className="py-3 border-b border-stone-100 last:border-0">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-1">
+          <p className="font-semibold text-stone-800">{service.other_name || 'Servicio'}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
+            {service.other_description && <p className="col-span-2">{service.other_description}</p>}
+            {service.other_date && <p>Fecha: {format(new Date(service.other_date), 'd MMM yyyy', { locale: es })}</p>}
+          </div>
+        </div>
+        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>${(service.total_price || 0).toLocaleString()} USD</p>
+      </div>
+    </div>
+  );
+
+  const renderServiceSection = (type, typeServices) => {
+    const Icon = SERVICE_ICONS[type] || Package;
+    const renderFn = {
+      hotel: renderHotelService,
+      vuelo: renderFlightService,
+      traslado: renderTransferService,
+      tour: renderTourService,
+      otro: renderOtherService
+    }[type] || renderOtherService;
+
+    return (
+      <div key={type} className="mb-4">
+        <div className="flex items-center gap-2 mb-2 pb-1 border-b-2" style={{ borderColor: '#2E442A' }}>
+          <Icon className="w-4 h-4" style={{ color: '#2E442A' }} />
+          <h4 className="font-semibold text-sm" style={{ color: '#2E442A' }}>{SERVICE_LABELS[type]}s</h4>
+        </div>
+        {typeServices.map((service, idx) => renderFn(service, idx))}
+      </div>
+    );
   };
 
   return (
