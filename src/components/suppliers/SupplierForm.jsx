@@ -56,6 +56,17 @@ export default function SupplierForm({ open, onClose, supplier, onSave, isLoadin
   const [smartImportText, setSmartImportText] = useState('');
   const [showSmartImport, setShowSmartImport] = useState(showSmartImportOnOpen);
   const [importing, setImporting] = useState(false);
+  const [representativeAgencies, setRepresentativeAgencies] = useState([]);
+
+  useEffect(() => {
+    const fetchAgencies = async () => {
+      const agencies = await base44.entities.Supplier.filter({ type: 'agencia_representante' });
+      setRepresentativeAgencies(agencies);
+    };
+    if (open) {
+      fetchAgencies();
+    }
+  }, [open]);
 
   const handleSmartImport = async () => {
     if (!smartImportText.trim()) {
@@ -132,6 +143,7 @@ Extrae estos campos si están disponibles:
   const [formData, setFormData] = useState({
     name: '',
     type: '',
+    representative_agency_id: '',
     contact1_name: '',
     contact1_phone: '',
     contact1_email: '',
@@ -162,6 +174,7 @@ Extrae estos campos si están disponibles:
       setFormData({
         name: supplier.name || '',
         type: supplier.type || '',
+        representative_agency_id: supplier.representative_agency_id || '',
         contact1_name: supplier.contact1_name || '',
         contact1_phone: supplier.contact1_phone || '',
         contact1_email: supplier.contact1_email || '',
@@ -190,6 +203,7 @@ Extrae estos campos si están disponibles:
       setFormData({
         name: '',
         type: '',
+        representative_agency_id: '',
         contact1_name: '',
         contact1_phone: '',
         contact1_email: '',
@@ -355,7 +369,7 @@ Extrae estos campos si están disponibles:
                 </div>
                 <div className="space-y-2">
                   <Label>Tipo de Proveedor *</Label>
-                  <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
+                  <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v, representative_agency_id: v === 'agencia_representante' ? '' : formData.representative_agency_id })}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       {SUPPLIER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -363,6 +377,27 @@ Extrae estos campos si están disponibles:
                   </Select>
                 </div>
               </div>
+
+              {/* Agencia Representante - solo si NO es agencia representante */}
+              {formData.type && formData.type !== 'agencia_representante' && (
+                <div className="space-y-2">
+                  <Label>Agencia Representante</Label>
+                  <Select 
+                    value={formData.representative_agency_id} 
+                    onValueChange={(v) => setFormData({ ...formData, representative_agency_id: v })}
+                  >
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Seleccionar agencia representante (opcional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Ninguna</SelectItem>
+                      {representativeAgencies.map(agency => (
+                        <SelectItem key={agency.id} value={agency.id}>{agency.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Contacto 1 */}
               <div className="p-4 bg-stone-50 rounded-xl space-y-3">
