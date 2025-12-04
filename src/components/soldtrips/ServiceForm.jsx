@@ -644,12 +644,12 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           />
         </div>
         <div className="space-y-2">
-          <Label>Precio por Persona</Label>
+          <Label>Número de Reservación</Label>
           <Input
-            type="number"
-            value={formData.price_per_person || ''}
-            onChange={(e) => updateField('price_per_person', parseFloat(e.target.value) || 0)}
+            value={formData.tour_reservation_number || ''}
+            onChange={(e) => updateField('tour_reservation_number', e.target.value)}
             className="rounded-xl"
+            placeholder="Ej: TOUR123"
           />
         </div>
       </div>
