@@ -7,6 +7,7 @@ import StatsCard from '@/components/ui/StatsCard';
 import FunnelChart from '@/components/dashboard/FunnelChart';
 import UpcomingTrips from '@/components/dashboard/UpcomingTrips';
 import TasksList from '@/components/dashboard/TasksList';
+import ExpiringDocuments from '@/components/dashboard/ExpiringDocuments';
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -29,6 +30,11 @@ export default function Dashboard() {
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => base44.entities.Task.list()
+  });
+
+  const { data: documents = [] } = useQuery({
+    queryKey: ['documents'],
+    queryFn: () => base44.entities.TravelDocument.list()
   });
 
   const createTaskMutation = useMutation({
@@ -113,7 +119,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Funnel Chart */}
         <div className="lg:col-span-1">
           <FunnelChart trips={trips} />
@@ -122,6 +128,11 @@ export default function Dashboard() {
         {/* Upcoming Trips */}
         <div className="lg:col-span-1">
           <UpcomingTrips soldTrips={soldTrips} />
+        </div>
+
+        {/* Expiring Documents */}
+        <div className="lg:col-span-1">
+          <ExpiringDocuments documents={documents} clients={clients} />
         </div>
 
         {/* Tasks */}
