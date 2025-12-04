@@ -7,10 +7,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
 
-const PAYMENT_METHODS = [
+const CLIENT_PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },
   { value: 'tarjeta', label: 'Tarjeta' },
+  { value: 'wise', label: 'Wise' },
+  { value: 'otro', label: 'Otro' }
+];
+
+const SUPPLIER_PAYMENT_METHODS = [
+  { value: 'transferencia', label: 'Transferencia' },
+  { value: 'tarjeta_ms_beyond', label: 'Tarjeta MS Beyond' },
+  { value: 'tarjeta_spark_blue', label: 'Tarjeta Spark Blue' },
+  { value: 'tarjeta_spark_green', label: 'Tarjeta Spark Green' },
+  { value: 'tarjeta_amex_business', label: 'Tarjeta Amex Business' },
   { value: 'otro', label: 'Otro' }
 ];
 
