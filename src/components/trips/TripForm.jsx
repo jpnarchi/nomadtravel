@@ -102,6 +102,21 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validar campos requeridos
+    if (!formData.client_id) {
+      alert('Por favor selecciona un cliente');
+      return;
+    }
+    if (!formData.destination) {
+      alert('Por favor selecciona al menos un destino');
+      return;
+    }
+    if (!formData.start_date) {
+      alert('Por favor ingresa una fecha de inicio');
+      return;
+    }
+    
     onSave(formData);
   };
 
@@ -133,11 +148,17 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
                 <SelectValue placeholder="Seleccionar cliente" />
               </SelectTrigger>
               <SelectContent>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.first_name} {client.last_name}
-                  </SelectItem>
-                ))}
+                {clients.length === 0 ? (
+                  <div className="p-2 text-sm text-stone-500">
+                    No tienes clientes. Crea uno primero.
+                  </div>
+                ) : (
+                  clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.first_name} {client.last_name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
