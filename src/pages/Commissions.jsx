@@ -331,18 +331,17 @@ export default function Commissions() {
             <p>No hay comisiones que mostrar</p>
           </div>
         )}
-        </div>
-        </div>
+          </div>
         </TabsContent>
-        </Tabs>
+      </Tabs>
 
-        {/* Invoice Generator Dialog */}
-        <AgentInvoiceGenerator
-          open={invoiceDialogOpen}
-          onClose={() => setInvoiceDialogOpen(false)}
-          services={filteredServices.filter(s => selectedServices.includes(s.id))}
-          soldTrips={soldTrips}
-        />
-        </div>
-        );
-        }
+      {/* Invoice Generator Dialog */}
+      <AgentInvoiceGenerator
+        open={invoiceDialogOpen}
+        onClose={() => setInvoiceDialogOpen(false)}
+        services={filteredServices.filter(s => selectedServices.includes(s.id))}
+        soldTrips={soldTrips}
+      />
+    </div>
+  );
+}
