@@ -4,14 +4,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
-  Loader2, Search, Filter, DollarSign, Plus, 
-  Users, Calendar, Edit2, Trash2, ChevronDown
+  Loader2, Search, DollarSign, Plus, 
+  Users, Edit2, Trash2, CheckCircle, Clock
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,9 +39,8 @@ const IATA_LABELS = {
 
 export default function InternalCommissions() {
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [filterAgent, setFilterAgent] = useState('all');
-  const [activeTab, setActiveTab] = useState('agent');
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' or 'paid'
   const [formOpen, setFormOpen] = useState(false);
   const [editingCommission, setEditingCommission] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -98,10 +98,11 @@ export default function InternalCommissions() {
           estimated_payment_date: s.commission_payment_date || null,
           iata_used: s.booked_by === 'montecito' ? 'montecito' : 'nomad',
           status: s.commission_paid ? 'recibida' : 'pendiente',
+          paid_to_agent: s.paid_to_agent || false,
           received_date: s.commission_paid ? s.commission_payment_date : null,
           received_amount: s.commission_paid ? s.commission : null,
-          agent_commission: s.commission_paid ? calculateAgentCut(s.commission, s.booked_by) : 0,
-          nomad_commission: s.commission_paid ? calculateNomadCut(s.commission, s.booked_by) : 0,
+          agent_commission: calculateAgentCut(s.commission, s.booked_by),
+          nomad_commission: calculateNomadCut(s.commission, s.booked_by),
           source: 'tripService'
         };
       });
@@ -204,6 +205,36 @@ export default function InternalCommissions() {
     }
   };
 
+  // Toggle paid to agent status
+  const handleTogglePaidToAgent = async (commission, isPaid) => {
+    if (commission.source === 'tripService') {
+      await updateTripServiceMutation.mutateAsync({ 
+        id: commission.service_id, 
+        data: { paid_to_agent: isPaid } 
+      });
+    } else {
+      updateMutation.mutate({ 
+        id: commission.id, 
+        data: { status: isPaid ? 'pagada_agente' : 'recibida' } 
+      });
+    }
+  };
+
+  // Update commission status
+  const handleUpdateStatus = async (commission, newStatus) => {
+    if (commission.source === 'tripService') {
+      await updateTripServiceMutation.mutateAsync({ 
+        id: commission.service_id, 
+        data: { commission_paid: newStatus !== 'pendiente' } 
+      });
+    } else {
+      updateMutation.mutate({ 
+        id: commission.id, 
+        data: { status: newStatus } 
+      });
+    }
+  };
+
   const handleSave = (data) => {
     // Calculate commissions based on IATA and received amount
     let agentCommission = 0;
@@ -238,37 +269,37 @@ export default function InternalCommissions() {
     ...users.map(u => u.full_name)
   ])].filter(Boolean);
 
+  // Check if commission is paid to agent
+  const isPaidToAgent = (commission) => {
+    if (commission.source === 'tripService') {
+      return commission.paid_to_agent || false;
+    }
+    return commission.status === 'pagada_agente';
+  };
+
   // Filter commissions
   const filteredCommissions = commissions.filter(c => {
     const matchesSearch = 
       (c.agent_name || '').toLowerCase().includes(search.toLowerCase()) ||
       (c.sold_trip_name || '').toLowerCase().includes(search.toLowerCase()) ||
       (c.service_provider || '').toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || c.status === filterStatus;
     const matchesAgent = filterAgent === 'all' || c.agent_name === filterAgent;
-    return matchesSearch && matchesStatus && matchesAgent;
+    return matchesSearch && matchesAgent;
   });
 
-  // Group by agent
-  const commissionsByAgent = filteredCommissions.reduce((acc, c) => {
-    const agent = c.agent_name || 'Sin asignar';
-    if (!acc[agent]) acc[agent] = [];
-    acc[agent].push(c);
-    return acc;
-  }, {});
+  // Split into pending and paid
+  const pendingCommissions = filteredCommissions.filter(c => !isPaidToAgent(c));
+  const paidCommissions = filteredCommissions.filter(c => isPaidToAgent(c));
 
-  // Group by month (estimated payment date)
-  const commissionsByMonth = filteredCommissions.reduce((acc, c) => {
-    if (!c.estimated_payment_date) {
-      if (!acc['Sin fecha']) acc['Sin fecha'] = [];
-      acc['Sin fecha'].push(c);
+  // Group by agent for current tab
+  const getCommissionsByAgent = (list) => {
+    return list.reduce((acc, c) => {
+      const agent = c.agent_name || 'Sin asignar';
+      if (!acc[agent]) acc[agent] = [];
+      acc[agent].push(c);
       return acc;
-    }
-    const month = format(new Date(c.estimated_payment_date), 'MMMM yyyy', { locale: es });
-    if (!acc[month]) acc[month] = [];
-    acc[month].push(c);
-    return acc;
-  }, {});
+    }, {});
+  };
 
   // Calculate totals for an agent
   const calculateAgentTotals = (agentCommissions) => {
@@ -287,8 +318,10 @@ export default function InternalCommissions() {
 
   // Global stats
   const globalStats = {
-    totalPending: filteredCommissions.filter(c => c.status === 'pendiente').reduce((sum, c) => sum + (c.estimated_amount || 0), 0),
-    totalReceived: filteredCommissions.filter(c => c.status !== 'pendiente').reduce((sum, c) => sum + (c.received_amount || 0), 0),
+    pendingCount: pendingCommissions.length,
+    pendingAmount: pendingCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
+    paidCount: paidCommissions.length,
+    paidAmount: paidCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     totalAgentCommission: filteredCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     totalNomadCommission: filteredCommissions.reduce((sum, c) => sum + (c.nomad_commission || 0), 0)
   };
@@ -321,12 +354,14 @@ export default function InternalCommissions() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pendientes</p>
-          <p className="text-xl font-bold text-yellow-600">${globalStats.totalPending.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">Por Pagar a Agentes</p>
+          <p className="text-xl font-bold text-orange-600">${globalStats.pendingAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.pendingCount} comisiones</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Recibidas</p>
-          <p className="text-xl font-bold text-blue-600">${globalStats.totalReceived.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">Pagadas a Agentes</p>
+          <p className="text-xl font-bold text-green-600">${globalStats.paidAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.paidCount} comisiones</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Total Agentes</p>
@@ -349,17 +384,6 @@ export default function InternalCommissions() {
             className="pl-10 rounded-xl"
           />
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40 rounded-xl">
-            <SelectValue placeholder="Estatus" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="pendiente">Pendiente</SelectItem>
-            <SelectItem value="recibida">Recibida</SelectItem>
-            <SelectItem value="pagada_agente">Pagada al Agente</SelectItem>
-          </SelectContent>
-        </Select>
         <Select value={filterAgent} onValueChange={setFilterAgent}>
           <SelectTrigger className="w-40 rounded-xl">
             <SelectValue placeholder="Agente" />
@@ -376,268 +400,22 @@ export default function InternalCommissions() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-stone-100 rounded-xl p-1">
-          <TabsTrigger value="agent" className="rounded-lg data-[state=active]:bg-white">
-            <Users className="w-4 h-4 mr-2" /> Por Agente
+          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white">
+            <Clock className="w-4 h-4 mr-2" /> Por Pagar ({pendingCommissions.length})
           </TabsTrigger>
-          <TabsTrigger value="date" className="rounded-lg data-[state=active]:bg-white">
-            <Calendar className="w-4 h-4 mr-2" /> Por Fecha
+          <TabsTrigger value="paid" className="rounded-lg data-[state=active]:bg-white">
+            <CheckCircle className="w-4 h-4 mr-2" /> Pagadas ({paidCommissions.length})
           </TabsTrigger>
         </TabsList>
 
-        {/* View by Agent */}
-        <TabsContent value="agent" className="mt-4 space-y-4">
-          {Object.keys(commissionsByAgent).length === 0 ? (
-            <EmptyState
-              icon={DollarSign}
-              title="Sin comisiones"
-              description="Agrega la primera comisión interna"
-              actionLabel="Nueva Comisión"
-              onAction={() => setFormOpen(true)}
-            />
-          ) : (
-            Object.entries(commissionsByAgent).map(([agent, agentCommissions]) => {
-              const totals = calculateAgentTotals(agentCommissions);
-              return (
-                <div key={agent} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-                  {/* Agent Header */}
-                  <div className="p-4 bg-stone-50 border-b border-stone-100">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#2E442A' }}>
-                          <Users className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-stone-800">{agent}</h3>
-                          <p className="text-xs text-stone-500">
-                            {totals.pendingCount} pendientes • {totals.receivedCount} recibidas
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <div className="px-3 py-1 bg-yellow-50 rounded-lg">
-                          <span className="text-yellow-600 font-medium">Pendiente: ${totals.pendingAmount.toLocaleString()}</span>
-                        </div>
-                        <div className="px-3 py-1 bg-green-50 rounded-lg">
-                          <span className="text-green-600 font-medium">Agente: ${totals.totalAgentCommission.toLocaleString()}</span>
-                        </div>
-                        <div className="px-3 py-1 bg-purple-50 rounded-lg">
-                          <span className="text-purple-600 font-medium">Nomad: ${totals.totalNomadCommission.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Commissions Table */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-stone-50/50">
-                        <tr>
-                          <th className="text-left p-3 font-medium text-stone-600">Viaje</th>
-                          <th className="text-left p-3 font-medium text-stone-600">Proveedor</th>
-                          <th className="text-left p-3 font-medium text-stone-600">IATA</th>
-                          <th className="text-left p-3 font-medium text-stone-600">Estatus</th>
-                          <th className="text-right p-3 font-medium text-stone-600">Comisión</th>
-                          <th className="text-right p-3 font-medium text-stone-600">Agente</th>
-                          <th className="text-right p-3 font-medium text-stone-600">Nomad</th>
-                          <th className="text-right p-3 font-medium text-stone-600">Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100">
-                        {agentCommissions.map(commission => (
-                          <tr key={commission.id} className="hover:bg-stone-50">
-                            <td className="p-3">
-                              <span className="font-medium text-stone-800">{commission.sold_trip_name || '-'}</span>
-                              {commission.estimated_payment_date && (
-                                <p className="text-xs text-stone-400">
-                                  Pago est: {format(new Date(commission.estimated_payment_date), 'd MMM yy', { locale: es })}
-                                </p>
-                              )}
-                            </td>
-                            <td className="p-3 text-stone-600">{commission.service_provider || '-'}</td>
-                            <td className="p-3">
-                              <Badge variant="outline" className="text-xs">
-                                {IATA_LABELS[commission.iata_used] || commission.iata_used}
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <Badge className={`text-xs ${STATUS_CONFIG[commission.status]?.color || 'bg-stone-100'}`}>
-                                {STATUS_CONFIG[commission.status]?.label || commission.status}
-                              </Badge>
-                            </td>
-                            <td className="p-3 text-right">
-                              <Input
-                                type="number"
-                                defaultValue={commission.estimated_amount || 0}
-                                onBlur={(e) => {
-                                  const newValue = parseFloat(e.target.value) || 0;
-                                  if (newValue !== commission.estimated_amount) {
-                                    handleUpdateCommissionAmount(commission, newValue);
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') e.target.blur();
-                                }}
-                                className="w-24 text-right font-semibold rounded-lg h-8 text-stone-800"
-                              />
-                            </td>
-                            <td className="p-3 text-right font-medium" style={{ color: '#2E442A' }}>
-                              {commission.agent_commission ? `$${commission.agent_commission.toLocaleString()}` : '-'}
-                            </td>
-                            <td className="p-3 text-right font-medium text-purple-600">
-                              {commission.nomad_commission ? `$${commission.nomad_commission.toLocaleString()}` : '-'}
-                            </td>
-                            <td className="p-3 text-right">
-                              {commission.source === 'internal' ? (
-                                <div className="flex justify-end gap-1">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8"
-                                    onClick={() => { setEditingCommission(commission); setFormOpen(true); }}
-                                  >
-                                    <Edit2 className="w-4 h-4 text-stone-400" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8"
-                                    onClick={() => setDeleteConfirm(commission)}
-                                  >
-                                    <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Badge variant="outline" className="text-xs">Auto</Badge>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })
-          )}
+        {/* Pending Commissions */}
+        <TabsContent value="pending" className="mt-4 space-y-4">
+          {renderCommissionsTable(getCommissionsByAgent(pendingCommissions), 'pending')}
         </TabsContent>
 
-        {/* View by Date */}
-        <TabsContent value="date" className="mt-4 space-y-4">
-          {Object.keys(commissionsByMonth).length === 0 ? (
-            <EmptyState
-              icon={Calendar}
-              title="Sin comisiones"
-              description="Agrega la primera comisión interna"
-              actionLabel="Nueva Comisión"
-              onAction={() => setFormOpen(true)}
-            />
-          ) : (
-            Object.entries(commissionsByMonth)
-              .sort((a, b) => {
-                if (a[0] === 'Sin fecha') return 1;
-                if (b[0] === 'Sin fecha') return -1;
-                return new Date(a[1][0]?.estimated_payment_date || 0) - new Date(b[1][0]?.estimated_payment_date || 0);
-              })
-              .map(([month, monthCommissions]) => {
-                const monthTotal = monthCommissions.reduce((sum, c) => sum + (c.estimated_amount || 0), 0);
-                const monthReceived = monthCommissions.reduce((sum, c) => sum + (c.received_amount || 0), 0);
-                
-                return (
-                  <div key={month} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-                    <div className="p-4 bg-stone-50 border-b border-stone-100 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-100">
-                          <Calendar className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-stone-800 capitalize">{month}</h3>
-                          <p className="text-xs text-stone-500">{monthCommissions.length} comisiones</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <span className="text-sm font-medium text-stone-600">Est: ${monthTotal.toLocaleString()}</span>
-                        <span className="text-sm font-medium text-blue-600">Rec: ${monthReceived.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-stone-50/50">
-                          <tr>
-                            <th className="text-left p-3 font-medium text-stone-600">Agente</th>
-                            <th className="text-left p-3 font-medium text-stone-600">Viaje</th>
-                            <th className="text-left p-3 font-medium text-stone-600">Proveedor</th>
-                            <th className="text-left p-3 font-medium text-stone-600">IATA</th>
-                            <th className="text-left p-3 font-medium text-stone-600">Estatus</th>
-                            <th className="text-right p-3 font-medium text-stone-600">Comisión</th>
-                            <th className="text-right p-3 font-medium text-stone-600">Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-stone-100">
-                          {monthCommissions.map(commission => (
-                            <tr key={commission.id} className="hover:bg-stone-50">
-                              <td className="p-3 font-medium text-stone-800">{commission.agent_name || '-'}</td>
-                              <td className="p-3 text-stone-600">{commission.sold_trip_name || '-'}</td>
-                              <td className="p-3 text-stone-600">{commission.service_provider || '-'}</td>
-                              <td className="p-3">
-                                <Badge variant="outline" className="text-xs">
-                                  {IATA_LABELS[commission.iata_used] || commission.iata_used}
-                                </Badge>
-                              </td>
-                              <td className="p-3">
-                                <Badge className={`text-xs ${STATUS_CONFIG[commission.status]?.color || 'bg-stone-100'}`}>
-                                  {STATUS_CONFIG[commission.status]?.label || commission.status}
-                                </Badge>
-                              </td>
-                              <td className="p-3 text-right">
-                                <Input
-                                  type="number"
-                                  defaultValue={commission.estimated_amount || 0}
-                                  onBlur={(e) => {
-                                    const newValue = parseFloat(e.target.value) || 0;
-                                    if (newValue !== commission.estimated_amount) {
-                                      handleUpdateCommissionAmount(commission, newValue);
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') e.target.blur();
-                                  }}
-                                  className="w-24 text-right font-semibold rounded-lg h-8 text-stone-800"
-                                />
-                              </td>
-                              <td className="p-3 text-right">
-                                {commission.source === 'internal' ? (
-                                  <div className="flex justify-end gap-1">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      className="h-8 w-8"
-                                      onClick={() => { setEditingCommission(commission); setFormOpen(true); }}
-                                    >
-                                      <Edit2 className="w-4 h-4 text-stone-400" />
-                                    </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="icon" 
-                                      className="h-8 w-8"
-                                      onClick={() => setDeleteConfirm(commission)}
-                                    >
-                                      <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <Badge variant="outline" className="text-xs">Auto</Badge>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })
-          )}
+        {/* Paid Commissions */}
+        <TabsContent value="paid" className="mt-4 space-y-4">
+          {renderCommissionsTable(getCommissionsByAgent(paidCommissions), 'paid')}
         </TabsContent>
       </Tabs>
 
