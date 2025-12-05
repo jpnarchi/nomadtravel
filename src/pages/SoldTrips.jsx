@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -30,11 +30,29 @@ export default function SoldTrips() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
+  const [user, setUser] = useState(null);
 
-  const { data: soldTrips = [], isLoading } = useQuery({
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const isAdmin = user?.role === 'admin';
+
+  const { data: allSoldTrips = [], isLoading } = useQuery({
     queryKey: ['soldTrips'],
     queryFn: () => base44.entities.SoldTrip.list('-created_date')
   });
+
+  // Filter trips based on user role
+  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
 
   // Calculate stats
   const totalRevenue = soldTrips.reduce((sum, t) => sum + (t.total_price || 0), 0);

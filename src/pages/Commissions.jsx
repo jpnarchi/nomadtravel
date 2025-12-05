@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -50,18 +50,38 @@ export default function Commissions() {
   const [search, setSearch] = useState('');
   const [filterPaid, setFilterPaid] = useState('all');
   const [filterBookedBy, setFilterBookedBy] = useState('all');
+  const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
 
-  const { data: services = [], isLoading: servicesLoading } = useQuery({
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const isAdmin = user?.role === 'admin';
+
+  const { data: allServices = [], isLoading: servicesLoading } = useQuery({
     queryKey: ['allServices'],
     queryFn: () => base44.entities.TripService.list()
   });
 
-  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
+  const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips'],
     queryFn: () => base44.entities.SoldTrip.list()
   });
+
+  // Filter by user role
+  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
+  const soldTripIds = new Set(soldTrips.map(t => t.id));
+  const services = allServices.filter(s => soldTripIds.has(s.sold_trip_id));
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),

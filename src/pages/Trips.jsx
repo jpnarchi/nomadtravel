@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Loader2, Plane } from 'lucide-react';
@@ -34,13 +33,31 @@ export default function Trips() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
 
-  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const isAdmin = user?.role === 'admin';
+
+  const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],
     queryFn: () => base44.entities.Trip.list('-created_date')
   });
+
+  // Filter trips based on user role
+  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
