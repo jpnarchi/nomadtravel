@@ -326,6 +326,156 @@ export default function InternalCommissions() {
     totalNomadCommission: filteredCommissions.reduce((sum, c) => sum + (c.nomad_commission || 0), 0)
   };
 
+  // Render commissions table
+  const renderCommissionsTable = (commissionsByAgent, tabType) => {
+    if (Object.keys(commissionsByAgent).length === 0) {
+      return (
+        <EmptyState
+          icon={DollarSign}
+          title={tabType === 'pending' ? "Sin comisiones pendientes" : "Sin comisiones pagadas"}
+          description={tabType === 'pending' ? "No hay comisiones por pagar a agentes" : "No hay comisiones pagadas aún"}
+          actionLabel="Nueva Comisión"
+          onAction={() => setFormOpen(true)}
+        />
+      );
+    }
+
+    return Object.entries(commissionsByAgent).map(([agent, agentCommissions]) => {
+      const totals = calculateAgentTotals(agentCommissions);
+      return (
+        <div key={agent} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+          {/* Agent Header */}
+          <div className="p-4 bg-stone-50 border-b border-stone-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#2E442A' }}>
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-stone-800">{agent}</h3>
+                  <p className="text-xs text-stone-500">{agentCommissions.length} comisiones</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="px-3 py-1 bg-green-50 rounded-lg">
+                  <span className="text-green-600 font-medium">Agente: ${totals.totalAgentCommission.toLocaleString()}</span>
+                </div>
+                <div className="px-3 py-1 bg-purple-50 rounded-lg">
+                  <span className="text-purple-600 font-medium">Nomad: ${totals.totalNomadCommission.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Commissions Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-stone-50/50">
+                <tr>
+                  <th className="text-left p-3 font-medium text-stone-600">Viaje</th>
+                  <th className="text-left p-3 font-medium text-stone-600">Proveedor</th>
+                  <th className="text-left p-3 font-medium text-stone-600">IATA</th>
+                  <th className="text-left p-3 font-medium text-stone-600">Estatus</th>
+                  <th className="text-right p-3 font-medium text-stone-600">Comisión</th>
+                  <th className="text-right p-3 font-medium text-stone-600">Agente</th>
+                  <th className="text-right p-3 font-medium text-stone-600">Nomad</th>
+                  <th className="text-center p-3 font-medium text-stone-600">Pagada a Agente</th>
+                  <th className="text-right p-3 font-medium text-stone-600">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {agentCommissions.map(commission => (
+                  <tr key={commission.id} className="hover:bg-stone-50">
+                    <td className="p-3">
+                      <span className="font-medium text-stone-800">{commission.sold_trip_name || '-'}</span>
+                      {commission.estimated_payment_date && (
+                        <p className="text-xs text-stone-400">
+                          Pago est: {format(new Date(commission.estimated_payment_date), 'd MMM yy', { locale: es })}
+                        </p>
+                      )}
+                    </td>
+                    <td className="p-3 text-stone-600">{commission.service_provider || '-'}</td>
+                    <td className="p-3">
+                      <Badge variant="outline" className="text-xs">
+                        {IATA_LABELS[commission.iata_used] || commission.iata_used}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      <Select 
+                        value={commission.status} 
+                        onValueChange={(value) => handleUpdateStatus(commission, value)}
+                      >
+                        <SelectTrigger className="w-32 h-8 text-xs rounded-lg">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="recibida">Recibida</SelectItem>
+                          <SelectItem value="pagada_agente">Pagada al Agente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="p-3 text-right">
+                      <Input
+                        type="number"
+                        defaultValue={commission.estimated_amount || 0}
+                        onBlur={(e) => {
+                          const newValue = parseFloat(e.target.value) || 0;
+                          if (newValue !== commission.estimated_amount) {
+                            handleUpdateCommissionAmount(commission, newValue);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.target.blur();
+                        }}
+                        className="w-24 text-right font-semibold rounded-lg h-8 text-stone-800"
+                      />
+                    </td>
+                    <td className="p-3 text-right font-medium" style={{ color: '#2E442A' }}>
+                      ${(commission.agent_commission || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-right font-medium text-purple-600">
+                      ${(commission.nomad_commission || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3 text-center">
+                      <Checkbox
+                        checked={isPaidToAgent(commission)}
+                        onCheckedChange={(checked) => handleTogglePaidToAgent(commission, checked)}
+                        className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                      />
+                    </td>
+                    <td className="p-3 text-right">
+                      {commission.source === 'internal' && (
+                        <div className="flex justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => { setEditingCommission(commission); setFormOpen(true); }}
+                          >
+                            <Edit2 className="w-4 h-4 text-stone-400" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8"
+                            onClick={() => setDeleteConfirm(commission)}
+                          >
+                            <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
