@@ -74,7 +74,7 @@ export default function Layout({ children, currentPageName }) {
     const isAdmin = user?.role === 'admin';
 
     const navigation = [
-            { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
+            { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
             { name: 'Clientes', page: 'Clients', icon: Users, adminOnly: true },
             { name: 'Viajes', page: 'Trips', icon: Plane },
             { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },

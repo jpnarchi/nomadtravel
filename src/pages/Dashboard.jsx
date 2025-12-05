@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
@@ -10,32 +10,56 @@ import TasksList from '@/components/dashboard/TasksList';
 import UpcomingPayments from '@/components/dashboard/UpcomingPayments';
 
 export default function Dashboard() {
+  const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const isAdmin = user?.role === 'admin';
+
+  const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],
     queryFn: () => base44.entities.Trip.list()
   });
 
-  const { data: soldTrips = [], isLoading: soldLoading } = useQuery({
+  const { data: allSoldTrips = [], isLoading: soldLoading } = useQuery({
     queryKey: ['soldTrips'],
     queryFn: () => base44.entities.SoldTrip.list()
   });
 
-  const { data: clients = [] } = useQuery({
+  const { data: allClients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () => base44.entities.Client.list()
   });
 
-  const { data: tasks = [] } = useQuery({
+  const { data: allTasks = [] } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => base44.entities.Task.list()
   });
 
-  const { data: services = [] } = useQuery({
+  const { data: allServices = [] } = useQuery({
     queryKey: ['services'],
     queryFn: () => base44.entities.TripService.list()
   });
+
+  // Filter data by user
+  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
+  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
+  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
+  const tasks = isAdmin ? allTasks : allTasks.filter(t => t.created_by === user?.email);
+  
+  const soldTripIds = new Set(soldTrips.map(t => t.id));
+  const services = isAdmin ? allServices : allServices.filter(s => soldTripIds.has(s.sold_trip_id));
 
   const createTaskMutation = useMutation({
     mutationFn: (data) => base44.entities.Task.create(data),
