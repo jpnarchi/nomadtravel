@@ -19,16 +19,7 @@ const CONTENT_TYPES = [
   { value: 'hotel', label: 'Hotel' },
   { value: 'destino', label: 'Destino' },
   { value: 'aerolinea', label: 'Aerolínea' },
-  { value: 'experiencia', label: 'Experiencia' },
-  { value: 'otro', label: 'Otro' },
-];
-
-const PROVIDER_TYPES = [
-  { value: 'dmc', label: 'DMC' },
-  { value: 'hotel', label: 'Hotel' },
-  { value: 'aerolinea', label: 'Aerolínea' },
-  { value: 'transporte', label: 'Transporte' },
-  { value: 'cruise', label: 'Cruise' },
+  { value: 'crucero', label: 'Crucero' },
   { value: 'experiencia', label: 'Experiencia' },
   { value: 'otro', label: 'Otro' },
 ];
@@ -61,7 +52,6 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
     content_type: '',
     country: '',
     city: '',
-    provider_type: '',
     hotel_chain: '',
     provider_name: '',
     experience_date: '',
@@ -88,7 +78,6 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
         content_type: review.content_type || '',
         country: review.country || '',
         city: review.city || '',
-        provider_type: review.provider_type || '',
         hotel_chain: review.hotel_chain || '',
         provider_name: review.provider_name || '',
         experience_date: review.experience_date || '',
@@ -112,7 +101,6 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
         content_type: '',
         country: '',
         city: '',
-        provider_type: '',
         hotel_chain: '',
         provider_name: '',
         experience_date: '',

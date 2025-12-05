@@ -12,16 +12,7 @@ const CONTENT_TYPE_LABELS = {
   hotel: 'Hotel',
   destino: 'Destino',
   aerolinea: 'Aerolínea',
-  experiencia: 'Experiencia',
-  otro: 'Otro'
-};
-
-const PROVIDER_TYPE_LABELS = {
-  dmc: 'DMC',
-  hotel: 'Hotel',
-  aerolinea: 'Aerolínea',
-  transporte: 'Transporte',
-  cruise: 'Cruise',
+  crucero: 'Crucero',
   experiencia: 'Experiencia',
   otro: 'Otro'
 };
@@ -95,12 +86,6 @@ export default function ReviewDetail({ review, open, onClose }) {
               <div className="flex items-center gap-2 text-sm">
                 <Building2 className="w-4 h-4 text-stone-400" />
                 <span className="text-stone-700">{review.hotel_chain}</span>
-              </div>
-            )}
-            {review.provider_type && (
-              <div className="flex items-center gap-2 text-sm">
-                <FileText className="w-4 h-4 text-stone-400" />
-                <span className="text-stone-700">{PROVIDER_TYPE_LABELS[review.provider_type]}</span>
               </div>
             )}
           </div>
