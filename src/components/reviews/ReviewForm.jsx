@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Star, Upload, X, FileText, Image as ImageIcon } from 'lucide-react';
 import { toast } from "sonner";
+import FamDetailsInput from './FamDetailsInput';
 
 const CONTENT_TYPES = [
   { value: 'fam_trip', label: 'FAM Trip' },
@@ -67,6 +68,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
     agent_name: '',
     tags: [],
     fam_type: '',
+    fam_details: [],
     summary: '',
     description: '',
     pros: '',
@@ -93,6 +95,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
         agent_name: review.agent_name || '',
         tags: review.tags || [],
         fam_type: review.fam_type || '',
+        fam_details: review.fam_details || [],
         summary: review.summary || '',
         description: review.description || '',
         pros: review.pros || '',
@@ -116,6 +119,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
         agent_name: '',
         tags: [],
         fam_type: '',
+        fam_details: [],
         summary: '',
         description: '',
         pros: '',
@@ -302,19 +306,28 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
               </div>
 
               {formData.content_type === 'fam_trip' && (
-                <div className="space-y-2">
-                  <Label>Tipo de FAM</Label>
-                  <Select value={formData.fam_type} onValueChange={(v) => setFormData({ ...formData, fam_type: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FAM_TYPES.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label>Tipo de FAM</Label>
+                    <Select value={formData.fam_type} onValueChange={(v) => setFormData({ ...formData, fam_type: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FAM_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="pt-4 border-t border-stone-100">
+                    <FamDetailsInput
+                      famDetails={formData.fam_details}
+                      onChange={(details) => setFormData({ ...formData, fam_details: details })}
+                    />
+                  </div>
+                </>
               )}
             </TabsContent>
 

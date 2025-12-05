@@ -3,7 +3,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Star, MapPin, Building2, Calendar, User, FileText, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
+import { Star, MapPin, Building2, Calendar, User, FileText, CheckCircle, XCircle, HelpCircle, Hotel, Plane } from 'lucide-react';
+import { Card } from "@/components/ui/card";
 
 const CONTENT_TYPE_LABELS = {
   fam_trip: 'FAM Trip',
@@ -143,6 +144,74 @@ export default function ReviewDetail({ review, open, onClose }) {
               {review.tags.map((tag, i) => (
                 <Badge key={i} variant="secondary">{tag}</Badge>
               ))}
+            </div>
+          )}
+
+          {/* FAM Details */}
+          {review.fam_details?.length > 0 && (
+            <div>
+              <h4 className="font-semibold text-stone-800 mb-3">Servicios del FAM</h4>
+              <div className="space-y-3">
+                {review.fam_details.map((item, index) => {
+                  const getIcon = () => {
+                    switch (item.type) {
+                      case 'hotel': return <Hotel className="w-4 h-4" />;
+                      case 'aerolinea': return <Plane className="w-4 h-4" />;
+                      default: return <MapPin className="w-4 h-4" />;
+                    }
+                  };
+
+                  return (
+                    <Card key={index} className="p-4 bg-stone-50 border-stone-200">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1" style={{ color: '#2E442A' }}>
+                          {getIcon()}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <h5 className="font-semibold text-stone-800">{item.name}</h5>
+                            <Badge variant="outline" className="text-xs">
+                              {item.type === 'hotel' ? 'Hotel' : 
+                               item.type === 'aerolinea' ? 'Aerolínea' : 
+                               item.type === 'experiencia' ? 'Experiencia' : 'Otro'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-3 text-xs text-stone-600">
+                            {item.city && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {item.city}
+                              </div>
+                            )}
+                            {item.chain && (
+                              <div className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" />
+                                {item.chain}
+                              </div>
+                            )}
+                          </div>
+
+                          {item.rating > 0 && (
+                            <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star 
+                                  key={i} 
+                                  className={`w-4 h-4 ${i < item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-stone-200'}`} 
+                                />
+                              ))}
+                            </div>
+                          )}
+
+                          {item.notes && (
+                            <p className="text-sm text-stone-600 mt-2">{item.notes}</p>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
           )}
 
