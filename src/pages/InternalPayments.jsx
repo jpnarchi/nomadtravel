@@ -216,87 +216,121 @@ export default function InternalPayments() {
         </Button>
       </div>
 
-      {/* Payments Table */}
-      {filteredPayments.length === 0 ? (
-        <EmptyState
-          icon={CreditCard}
-          title="Sin pagos registrados"
-          description="No hay pagos a proveedores que coincidan con los filtros"
-        />
-      ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-stone-50 border-b border-stone-100">
-                <tr>
-                  <th className="text-left p-3 font-semibold text-stone-600">Fecha</th>
-                  <th className="text-left p-3 font-semibold text-stone-600">Agente</th>
-                  <th className="text-left p-3 font-semibold text-stone-600">Viaje</th>
-                  <th className="text-left p-3 font-semibold text-stone-600">Proveedor</th>
-                  <th className="text-left p-3 font-semibold text-stone-600">Método</th>
-                  <th className="text-right p-3 font-semibold text-stone-600">Monto</th>
-                  <th className="text-left p-3 font-semibold text-stone-600">Notas</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {filteredPayments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="p-3">
-                      <span className="font-medium text-stone-800">
-                        {payment.date 
-                          ? format(new Date(payment.date), 'd MMM yyyy', { locale: es })
-                          : '-'}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
-                          <Users className="w-3.5 h-3.5" style={{ color: '#2E442A' }} />
-                        </div>
-                        <span className="text-stone-700">{payment.agent_name}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-stone-700">{payment.trip_name}</span>
-                    </td>
-                    <td className="p-3">
-                      <span className="font-medium text-stone-800">{payment.supplier || '-'}</span>
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="outline" className="text-xs">
-                        {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-right">
-                      <span className="font-semibold" style={{ color: '#2E442A' }}>
-                        ${(payment.amount || 0).toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className="text-stone-500 text-xs truncate max-w-[150px] block">
-                        {payment.notes || '-'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-stone-50 border-t border-stone-200">
-                <tr>
-                  <td colSpan="5" className="p-3 text-right font-semibold text-stone-600">
-                    Total:
-                  </td>
-                  <td className="p-3 text-right">
-                    <span className="text-lg font-bold" style={{ color: '#2E442A' }}>
-                      ${totalAmount.toLocaleString()}
-                    </span>
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-stone-100 rounded-xl p-1">
+          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white">
+            <Clock className="w-4 h-4 mr-2" /> Pagos Hechos ({pendingPayments.length})
+          </TabsTrigger>
+          <TabsTrigger value="confirmed" className="rounded-lg data-[state=active]:bg-white">
+            <CheckCircle className="w-4 h-4 mr-2" /> Pagos Confirmados ({confirmedPayments.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="mt-4">
+          {renderPaymentsTable(pendingPayments, totalPending, false)}
+        </TabsContent>
+
+        <TabsContent value="confirmed" className="mt-4">
+          {renderPaymentsTable(confirmedPayments, totalConfirmed, true)}
+        </TabsContent>
+      </Tabs>
     </div>
   );
+
+  function renderPaymentsTable(payments, total, isConfirmedTab) {
+    if (payments.length === 0) {
+      return (
+        <EmptyState
+          icon={CreditCard}
+          title={isConfirmedTab ? "Sin pagos confirmados" : "Sin pagos hechos"}
+          description={isConfirmedTab ? "No hay pagos confirmados aún" : "No hay pagos pendientes de confirmar"}
+        />
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-stone-50 border-b border-stone-100">
+              <tr>
+                <th className="text-left p-3 font-semibold text-stone-600">Fecha</th>
+                <th className="text-left p-3 font-semibold text-stone-600">Agente</th>
+                <th className="text-left p-3 font-semibold text-stone-600">Viaje</th>
+                <th className="text-left p-3 font-semibold text-stone-600">Proveedor</th>
+                <th className="text-left p-3 font-semibold text-stone-600">Método</th>
+                <th className="text-right p-3 font-semibold text-stone-600">Monto</th>
+                <th className="text-center p-3 font-semibold text-stone-600">Estatus</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {payments.map((payment) => (
+                <tr key={payment.id} className="hover:bg-stone-50 transition-colors">
+                  <td className="p-3">
+                    <span className="font-medium text-stone-800">
+                      {payment.date 
+                        ? format(new Date(payment.date), 'd MMM yyyy', { locale: es })
+                        : '-'}
+                    </span>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
+                        <Users className="w-3.5 h-3.5" style={{ color: '#2E442A' }} />
+                      </div>
+                      <span className="text-stone-700">{payment.agent_name}</span>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <span className="text-stone-700">{payment.trip_name}</span>
+                  </td>
+                  <td className="p-3">
+                    <span className="font-medium text-stone-800">{payment.supplier || '-'}</span>
+                  </td>
+                  <td className="p-3">
+                    <Badge variant="outline" className="text-xs">
+                      {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
+                    </Badge>
+                  </td>
+                  <td className="p-3 text-right">
+                    <span className="font-semibold" style={{ color: '#2E442A' }}>
+                      ${(payment.amount || 0).toLocaleString()}
+                    </span>
+                  </td>
+                  <td className="p-3 text-center">
+                    <Select 
+                      value={payment.confirmed ? 'confirmed' : 'pending'} 
+                      onValueChange={(value) => handleToggleConfirmed(payment, value === 'confirmed')}
+                    >
+                      <SelectTrigger className="w-32 h-8 text-xs rounded-lg">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Hecho</SelectItem>
+                        <SelectItem value="confirmed">Confirmado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-stone-50 border-t border-stone-200">
+              <tr>
+                <td colSpan="5" className="p-3 text-right font-semibold text-stone-600">
+                  Total:
+                </td>
+                <td className="p-3 text-right">
+                  <span className="text-lg font-bold" style={{ color: '#2E442A' }}>
+                    ${total.toLocaleString()}
+                  </span>
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  }
 }
