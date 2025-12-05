@@ -15,8 +15,8 @@ import EmptyState from '@/components/ui/EmptyState';
 const PAYMENT_METHOD_LABELS = {
   transferencia: 'Transferencia',
   ms_beyond: 'MS Beyond',
-  spark_blue: 'Spark Blue',
-  spark_green: 'Spark Green',
+  capital_one_blue: 'Capital One Blue',
+  capital_one_green: 'Capital One Green',
   amex: 'Amex',
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',

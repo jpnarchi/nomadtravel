@@ -18,8 +18,8 @@ const CLIENT_PAYMENT_METHODS = [
 const SUPPLIER_PAYMENT_METHODS = [
   { value: 'transferencia', label: 'Transferencia' },
   { value: 'ms_beyond', label: 'MS Beyond' },
-  { value: 'spark_blue', label: 'Spark Blue' },
-  { value: 'spark_green', label: 'Spark Green' },
+  { value: 'capital_one_blue', label: 'Capital One Blue' },
+  { value: 'capital_one_green', label: 'Capital One Green' },
   { value: 'amex', label: 'Amex' }
 ];
 
