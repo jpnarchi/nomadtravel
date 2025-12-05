@@ -75,7 +75,7 @@ export default function Layout({ children, currentPageName }) {
 
     const navigation = [
             { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
-            { name: 'Clientes', page: 'Clients', icon: Users, adminOnly: true },
+            { name: 'Clientes', page: 'Clients', icon: Users },
             { name: 'Viajes', page: 'Trips', icon: Plane },
             { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
             { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
