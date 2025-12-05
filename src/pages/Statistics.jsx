@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { format, getMonth, getYear, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
@@ -55,13 +55,28 @@ export default function Statistics() {
     hotelChain: 'all',
     tripType: 'all'
   });
+  const [user, setUser] = useState(null);
 
-  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const isAdmin = user?.role === 'admin';
+
+  const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips'],
     queryFn: () => base44.entities.SoldTrip.list()
   });
 
-  const { data: services = [], isLoading: servicesLoading } = useQuery({
+  const { data: allServices = [], isLoading: servicesLoading } = useQuery({
     queryKey: ['services'],
     queryFn: () => base44.entities.TripService.list()
   });
@@ -71,10 +86,16 @@ export default function Statistics() {
     queryFn: () => base44.entities.Client.list()
   });
 
-  const { data: trips = [], isLoading: rawTripsLoading } = useQuery({
+  const { data: allTrips = [], isLoading: rawTripsLoading } = useQuery({
     queryKey: ['trips'],
     queryFn: () => base44.entities.Trip.list()
   });
+
+  // Filter by user role
+  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
+  const soldTripIds = new Set(soldTrips.map(t => t.id));
+  const services = allServices.filter(s => soldTripIds.has(s.sold_trip_id));
+  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
 
   const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading;
 
