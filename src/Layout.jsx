@@ -148,24 +148,31 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             {/* Exchange Rate */}
-            <div className="mt-4 p-3 bg-stone-50 rounded-xl">
-              <div className="flex items-center gap-2 text-xs text-stone-500 mb-1">
-                                <DollarSign className="w-3 h-3" />
-                                <span>USD/MXN BBVA Venta</span>
-                              </div>
-                              {rateLoading ? (
-                                <div className="flex items-center gap-2">
-                                  <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
-                                  <span className="text-xs text-stone-400">Cargando...</span>
-                                </div>
-                              ) : exchangeRate?.sell_rate ? (
-                                <p className="text-lg font-bold" style={{ color: '#2E442A' }}>
-                                  ${exchangeRate.sell_rate.toFixed(2)} MXN
-                                </p>
-                              ) : (
-                                <p className="text-xs text-stone-400">No disponible</p>
-                              )}
-            </div>
+                          <div className="mt-4 p-3 bg-stone-50 rounded-xl">
+                            <div className="flex items-center gap-2 text-xs text-stone-500 mb-1">
+                                            <DollarSign className="w-3 h-3" />
+                                            <span>USD/MXN BBVA Venta</span>
+                                          </div>
+                                          {rateLoading ? (
+                                            <div className="flex items-center gap-2">
+                                              <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
+                                              <span className="text-xs text-stone-400">Cargando...</span>
+                                            </div>
+                                          ) : exchangeRate?.sell_rate ? (
+                                            <p className="text-lg font-bold" style={{ color: '#2E442A' }}>
+                                              ${exchangeRate.sell_rate.toFixed(2)} MXN
+                                            </p>
+                                          ) : (
+                                            <p className="text-xs text-stone-400">No disponible</p>
+                                          )}
+                            <button
+                              onClick={() => setPaymentInfoOpen(true)}
+                              className="mt-2 w-full text-xs font-medium py-1.5 px-3 rounded-lg transition-colors text-white"
+                              style={{ backgroundColor: '#2E442A' }}
+                            >
+                              Info de Pagos
+                            </button>
+                          </div>
           </div>
 
           {/* Navigation */}
