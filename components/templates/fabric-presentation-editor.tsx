@@ -77,6 +77,7 @@ export function FabricPresentationEditor({
     const userInfo = useQuery(api.users.getUserInfo);
     const generateUploadUrl = useMutation(api.files.generateUploadUrl);
     const saveImage = useMutation(api.files.saveImage);
+    const updateProjectDownloaded = useMutation(api.chats.updateProjectDownloaded);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
     const [showCode, setShowCode] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
@@ -372,7 +373,7 @@ export function FabricPresentationEditor({
     }
 
     // Handle PowerPoint export with authorization
-    const handlePPTExport = () => {
+    const handlePPTExport = async () => {
         if (!canExportToPPT()) {
             toast.error('PowerPoint export is only available for Pro, Premium, and Ultra users', {
                 description: 'Upgrade your plan to unlock this feature'
@@ -380,6 +381,31 @@ export function FabricPresentationEditor({
             return
         }
         exportToPPT(slides.map(slide => slide.data))
+
+        // Mark project as downloaded
+        const chatId = params?.id || params?.chatId;
+        if (chatId) {
+            try {
+                await updateProjectDownloaded({ chatId: chatId as any, downloaded: true })
+            } catch (error) {
+                console.error('Error updating project download status:', error)
+            }
+        }
+    }
+
+    // Handle PDF export
+    const handlePDFExport = async () => {
+        exportToPDF(slides.map(slide => slide.data))
+
+        // Mark project as downloaded
+        const chatId = params?.id || params?.chatId;
+        if (chatId) {
+            try {
+                await updateProjectDownloaded({ chatId: chatId as any, downloaded: true })
+            } catch (error) {
+                console.error('Error updating project download status:', error)
+            }
+        }
     }
 
     // Fullscreen toggle
@@ -880,7 +906,7 @@ export function FabricPresentationEditor({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => exportToPDF(slides.map(slide => slide.data))}>
+                            <DropdownMenuItem onClick={handlePDFExport}>
                                 <FileDown className="size-4 mr-2" />
                                 Export as PDF
                             </DropdownMenuItem>

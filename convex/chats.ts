@@ -926,3 +926,29 @@ export const shouldShowOnboarding = query({
         }
     },
 });
+
+export const updateProjectDownloaded = mutation({
+    args: {
+        chatId: v.id("chats"),
+        downloaded: v.boolean(),
+    },
+    handler: async (ctx, args) => {
+        const user = await getCurrentUser(ctx);
+
+        const chat = await ctx.db.get(args.chatId);
+
+        if (!chat) {
+            throw new Error("Chat not found");
+        }
+
+        if (chat.userId !== user._id && user.role !== "admin") {
+            throw new Error("Access denied");
+        }
+
+        await ctx.db.patch(args.chatId, {
+            projectDownloaded: args.downloaded,
+        });
+
+        return args.chatId;
+    },
+});

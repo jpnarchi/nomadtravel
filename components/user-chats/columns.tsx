@@ -53,6 +53,18 @@ export const columns: ColumnDef<Chat>[] = [
         },
     },
     {
+        accessorKey: "projectDownloaded",
+        header: "Descarga",
+        cell: ({ row }) => {
+            const downloaded = row.getValue("projectDownloaded") as boolean | undefined
+            return (
+                <Badge variant={downloaded ? "default" : "secondary"}>
+                    {downloaded ? "Verdadero" : "Falso"}
+                </Badge>
+            )
+        },
+    },
+    {
         accessorKey: "currentVersion",
         header: "Versión",
         cell: ({ row }) => {
