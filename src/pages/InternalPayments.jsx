@@ -31,6 +31,9 @@ export default function InternalPayments() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [activeTab, setActiveTab] = useState('pending');
+
+  const queryClient = useQueryClient();
 
   const { data: supplierPayments = [], isLoading: loadingPayments } = useQuery({
     queryKey: ['allSupplierPayments'],
