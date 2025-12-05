@@ -11,6 +11,7 @@ const SERVICE_TYPES = [
   { value: 'hotel', label: 'Hotel', icon: Hotel },
   { value: 'aerolinea', label: 'Aerolínea', icon: Plane },
   { value: 'experiencia', label: 'Experiencia', icon: MapPin },
+  { value: 'destino', label: 'Destino', icon: MapPin },
   { value: 'otro', label: 'Otro', icon: MapPin }
 ];
 

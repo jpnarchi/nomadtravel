@@ -173,7 +173,8 @@ export default function ReviewDetail({ review, open, onClose }) {
                             <Badge variant="outline" className="text-xs">
                               {item.type === 'hotel' ? 'Hotel' : 
                                item.type === 'aerolinea' ? 'Aerolínea' : 
-                               item.type === 'experiencia' ? 'Experiencia' : 'Otro'}
+                               item.type === 'experiencia' ? 'Experiencia' : 
+                               item.type === 'destino' ? 'Destino' : 'Otro'}
                             </Badge>
                           </div>
                           
