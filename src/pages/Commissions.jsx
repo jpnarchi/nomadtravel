@@ -53,6 +53,7 @@ export default function Commissions() {
   const [filterBookedBy, setFilterBookedBy] = useState('all');
   const [user, setUser] = useState(null);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
+  const [selectedServices, setSelectedServices] = useState([]);
 
   const queryClient = useQueryClient();
 
@@ -168,12 +169,12 @@ export default function Commissions() {
         </div>
         <Button
           onClick={() => setInvoiceDialogOpen(true)}
-          disabled={filteredServices.length === 0}
+          disabled={selectedServices.length === 0}
           className="text-white"
           style={{ backgroundColor: '#2E442A' }}
         >
           <FileText className="w-4 h-4 mr-2" />
-          Generar Factura
+          Generar Factura ({selectedServices.length})
         </Button>
       </div>
 
@@ -232,6 +233,18 @@ export default function Commissions() {
           <table className="w-full text-sm">
             <thead className="bg-stone-50 border-b border-stone-100">
               <tr>
+                <th className="text-left p-3 font-semibold text-stone-600">
+                  <Checkbox
+                    checked={selectedServices.length === filteredServices.length && filteredServices.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedServices(filteredServices.map(s => s.id));
+                      } else {
+                        setSelectedServices([]);
+                      }
+                    }}
+                  />
+                </th>
                 <th className="text-left p-3 font-semibold text-stone-600">Pagada</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Cliente</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Servicio</th>
@@ -244,16 +257,28 @@ export default function Commissions() {
             </thead>
             <tbody className="divide-y divide-stone-100">
               {filteredServices.map((service) => {
-                const trip = tripsMap[service.sold_trip_id];
-                return (
-                  <tr key={service.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="p-3">
-                      <Checkbox
-                        checked={service.commission_paid || false}
-                        onCheckedChange={() => togglePaid(service)}
-                        className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                      />
-                    </td>
+              const trip = tripsMap[service.sold_trip_id];
+              return (
+                <tr key={service.id} className="hover:bg-stone-50 transition-colors">
+                  <td className="p-3">
+                    <Checkbox
+                      checked={selectedServices.includes(service.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedServices([...selectedServices, service.id]);
+                        } else {
+                          setSelectedServices(selectedServices.filter(id => id !== service.id));
+                        }
+                      }}
+                    />
+                  </td>
+                  <td className="p-3">
+                    <Checkbox
+                      checked={service.commission_paid || false}
+                      onCheckedChange={() => togglePaid(service)}
+                      className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                    />
+                  </td>
                     <td className="p-3">
                       <span className="font-medium text-stone-800">{trip?.client_name || '-'}</span>
                     </td>
@@ -304,10 +329,10 @@ export default function Commissions() {
 
         {/* Invoice Generator Dialog */}
         <AgentInvoiceGenerator
-        open={invoiceDialogOpen}
-        onClose={() => setInvoiceDialogOpen(false)}
-        services={filteredServices}
-        soldTrips={soldTrips}
+          open={invoiceDialogOpen}
+          onClose={() => setInvoiceDialogOpen(false)}
+          services={filteredServices.filter(s => selectedServices.includes(s.id))}
+          soldTrips={soldTrips}
         />
         </div>
         );

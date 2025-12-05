@@ -31,6 +31,7 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
     travel_reference: '',
     description: 'Commission payment for trip referenced above per agreed split.'
   });
+  const [autoInvoiceNumber, setAutoInvoiceNumber] = useState('');
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
@@ -73,6 +74,13 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
           account_holder: currentUser.account_holder || currentUser.full_name,
           clabe: currentUser.clabe
         });
+        
+        // Generate auto invoice number
+        const year = new Date().getFullYear();
+        const nextNumber = (currentUser.last_invoice_number || 0) + 1;
+        const autoNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`;
+        setAutoInvoiceNumber(autoNumber);
+        setInvoiceData(prev => ({ ...prev, invoice_number: autoNumber }));
       }
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -264,6 +272,14 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
 
       // Save PDF
       doc.save(`Invoice_${invoiceData.invoice_number}_${profileData.full_name.replace(/\s+/g, '_')}.pdf`);
+      
+      // Update last invoice number
+      const invoiceMatch = invoiceData.invoice_number.match(/\d+$/);
+      if (invoiceMatch) {
+        const lastNumber = parseInt(invoiceMatch[0]);
+        await base44.auth.updateMe({ last_invoice_number: lastNumber });
+      }
+      
       toast.success('Factura generada exitosamente');
       onClose();
     } catch (error) {
@@ -450,6 +466,9 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
                 onChange={(e) => setInvoiceData({ ...invoiceData, invoice_number: e.target.value })}
                 placeholder="Ej: INV-2025-001"
               />
+              {autoInvoiceNumber && (
+                <p className="text-xs text-stone-500">Sugerido: {autoInvoiceNumber}</p>
+              )}
             </div>
 
             <div className="space-y-2">
