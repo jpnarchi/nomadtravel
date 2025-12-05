@@ -102,17 +102,9 @@ export default function AgentCommissionInvoice({ open, onClose, commissions, onM
 
           {/* Totals */}
           <div className="flex justify-end mb-8">
-            <div className="w-72 space-y-2 bg-stone-50 rounded-xl p-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-stone-600">Total Comisiones</span>
-                <span className="font-medium">${totalCommission.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-stone-600">Parte Nomad</span>
-                <span className="font-medium text-purple-600">${totalNomadCommission.toLocaleString()}</span>
-              </div>
+            <div className="w-72 bg-stone-50 rounded-xl p-4">
               <div 
-                className="flex justify-between pt-3 border-t-2"
+                className="flex justify-between"
                 style={{ borderColor: '#2E442A' }}
               >
                 <span className="font-bold" style={{ color: '#2E442A' }}>Total a Pagar</span>
