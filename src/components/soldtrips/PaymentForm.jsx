@@ -17,11 +17,10 @@ const CLIENT_PAYMENT_METHODS = [
 
 const SUPPLIER_PAYMENT_METHODS = [
   { value: 'transferencia', label: 'Transferencia' },
-  { value: 'tarjeta_ms_beyond', label: 'Tarjeta MS Beyond' },
-  { value: 'tarjeta_spark_blue', label: 'Tarjeta Spark Blue' },
-  { value: 'tarjeta_spark_green', label: 'Tarjeta Spark Green' },
-  { value: 'tarjeta_amex_business', label: 'Tarjeta Amex Business' },
-  { value: 'otro', label: 'Otro' }
+  { value: 'ms_beyond', label: 'MS Beyond' },
+  { value: 'spark_blue', label: 'Spark Blue' },
+  { value: 'spark_green', label: 'Spark Green' },
+  { value: 'amex', label: 'Amex' }
 ];
 
 export default function PaymentForm({ open, onClose, payment, soldTripId, type, onSave, isLoading }) {
