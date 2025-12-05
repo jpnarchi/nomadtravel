@@ -32,12 +32,35 @@ const CopyButton = ({ text, label }) => {
 const AccountField = ({ label, value }) => (
   <div className="flex items-center justify-between py-1">
     <span className="text-xs text-stone-500">{label}:</span>
-    <div className="flex items-center gap-1">
-      <span className="text-sm font-mono font-medium text-stone-800">{value}</span>
-      <CopyButton text={value} label={label} />
-    </div>
+    <span className="text-sm font-mono font-medium text-stone-800">{value}</span>
   </div>
 );
+
+const CopyAllButton = ({ text }) => {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success('Información copiada');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button
+      onClick={handleCopy}
+      variant="outline"
+      size="sm"
+      className="mt-3 w-full text-xs"
+    >
+      {copied ? (
+        <><Check className="w-3 h-3 mr-1 text-green-600" /> Copiado</>
+      ) : (
+        <><Copy className="w-3 h-3 mr-1" /> Copiar todo</>
+      )}
+    </Button>
+  );
+};
 
 export default function PaymentInfoModal({ open, onClose }) {
   return (
