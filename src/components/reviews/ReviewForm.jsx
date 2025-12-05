@@ -223,19 +223,21 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Tipo de Proveedor</Label>
-                  <Select value={formData.provider_type} onValueChange={(v) => setFormData({ ...formData, provider_type: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PROVIDER_TYPES.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {formData.content_type !== 'fam_trip' && (
+                  <div className="space-y-2">
+                    <Label>Tipo de Proveedor</Label>
+                    <Select value={formData.provider_type} onValueChange={(v) => setFormData({ ...formData, provider_type: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PROVIDER_TYPES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -259,30 +261,32 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Cadena Hotelera</Label>
-                  <Select value={formData.hotel_chain} onValueChange={(v) => setFormData({ ...formData, hotel_chain: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {HOTEL_CHAINS.map(c => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {formData.content_type !== 'fam_trip' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Cadena Hotelera</Label>
+                    <Select value={formData.hotel_chain} onValueChange={(v) => setFormData({ ...formData, hotel_chain: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {HOTEL_CHAINS.map(c => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nombre del Proveedor / Hotel</Label>
+                    <Input
+                      value={formData.provider_name}
+                      onChange={(e) => setFormData({ ...formData, provider_name: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="Ej: Four Seasons Resort Bali at Sayan"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Nombre del Proveedor / Hotel</Label>
-                  <Input
-                    value={formData.provider_name}
-                    onChange={(e) => setFormData({ ...formData, provider_name: e.target.value })}
-                    className="rounded-xl"
-                    placeholder="Ej: Four Seasons Resort Bali at Sayan"
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
