@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import InternalCommissionForm from '@/components/commissions/InternalCommissionForm';
 import EmptyState from '@/components/ui/EmptyState';
+import AgentCommissionInvoice from '@/components/commissions/AgentCommissionInvoice';
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
@@ -44,6 +45,8 @@ export default function InternalCommissions() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingCommission, setEditingCommission] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [selectedCommissions, setSelectedCommissions] = useState([]);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -220,6 +223,46 @@ export default function InternalCommissions() {
     }
   };
 
+  // Toggle selection for invoice
+  const handleToggleSelection = (commission) => {
+    setSelectedCommissions(prev => {
+      const exists = prev.find(c => c.id === commission.id);
+      if (exists) {
+        return prev.filter(c => c.id !== commission.id);
+      }
+      return [...prev, commission];
+    });
+  };
+
+  // Select all for an agent
+  const handleSelectAllForAgent = (agentCommissions, isSelected) => {
+    if (isSelected) {
+      setSelectedCommissions(prev => {
+        const existingIds = prev.map(c => c.id);
+        const newCommissions = agentCommissions.filter(c => !existingIds.includes(c.id));
+        return [...prev, ...newCommissions];
+      });
+    } else {
+      const agentIds = agentCommissions.map(c => c.id);
+      setSelectedCommissions(prev => prev.filter(c => !agentIds.includes(c.id)));
+    }
+  };
+
+  // Generate invoice and mark as paid
+  const handleGenerateInvoice = () => {
+    if (selectedCommissions.length === 0) return;
+    setInvoiceOpen(true);
+  };
+
+  // Mark selected as paid after invoice
+  const handleMarkSelectedAsPaid = async () => {
+    for (const commission of selectedCommissions) {
+      await handleTogglePaidToAgent(commission, true);
+    }
+    setSelectedCommissions([]);
+    setInvoiceOpen(false);
+  };
+
   // Update commission status
   const handleUpdateStatus = async (commission, newStatus) => {
     if (commission.source === 'tripService') {
@@ -372,6 +415,14 @@ export default function InternalCommissions() {
             <table className="w-full text-sm">
               <thead className="bg-stone-50/50">
                 <tr>
+                  {tabType === 'pending' && (
+                    <th className="text-center p-3 font-medium text-stone-600 w-10">
+                      <Checkbox
+                        checked={agentCommissions.every(c => selectedCommissions.find(s => s.id === c.id))}
+                        onCheckedChange={(checked) => handleSelectAllForAgent(agentCommissions, checked)}
+                      />
+                    </th>
+                  )}
                   <th className="text-left p-3 font-medium text-stone-600">Viaje</th>
                   <th className="text-left p-3 font-medium text-stone-600">Proveedor</th>
                   <th className="text-left p-3 font-medium text-stone-600">IATA</th>
@@ -386,6 +437,14 @@ export default function InternalCommissions() {
               <tbody className="divide-y divide-stone-100">
                 {agentCommissions.map(commission => (
                   <tr key={commission.id} className="hover:bg-stone-50">
+                    {tabType === 'pending' && (
+                      <td className="p-3 text-center">
+                        <Checkbox
+                          checked={!!selectedCommissions.find(c => c.id === commission.id)}
+                          onCheckedChange={() => handleToggleSelection(commission)}
+                        />
+                      </td>
+                    )}
                     <td className="p-3">
                       <span className="font-medium text-stone-800">{commission.sold_trip_name || '-'}</span>
                       {commission.estimated_payment_date && (
@@ -560,6 +619,21 @@ export default function InternalCommissions() {
 
         {/* Pending Commissions */}
         <TabsContent value="pending" className="mt-4 space-y-4">
+          {selectedCommissions.length > 0 && (
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <span className="font-semibold">{selectedCommissions.length}</span> comisiones seleccionadas 
+                (Total: <span className="font-semibold">${selectedCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0).toLocaleString()}</span>)
+              </p>
+              <Button 
+                onClick={handleGenerateInvoice}
+                className="text-white rounded-xl"
+                style={{ backgroundColor: '#2E442A' }}
+              >
+                Generar Invoice
+              </Button>
+            </div>
+          )}
           {renderCommissionsTable(getCommissionsByAgent(pendingCommissions), 'pending')}
         </TabsContent>
 
@@ -600,6 +674,14 @@ export default function InternalCommissions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invoice Modal */}
+      <AgentCommissionInvoice
+        open={invoiceOpen}
+        onClose={() => setInvoiceOpen(false)}
+        commissions={selectedCommissions}
+        onMarkAsPaid={handleMarkSelectedAsPaid}
+      />
     </div>
   );
 }
