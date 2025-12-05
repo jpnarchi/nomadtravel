@@ -525,8 +525,7 @@ export default function InternalCommissions() {
                             <th className="text-left p-3 font-medium text-stone-600">Proveedor</th>
                             <th className="text-left p-3 font-medium text-stone-600">IATA</th>
                             <th className="text-left p-3 font-medium text-stone-600">Estatus</th>
-                            <th className="text-right p-3 font-medium text-stone-600">Estimada</th>
-                            <th className="text-right p-3 font-medium text-stone-600">Recibida</th>
+                            <th className="text-right p-3 font-medium text-stone-600">Comisión</th>
                             <th className="text-right p-3 font-medium text-stone-600">Acciones</th>
                           </tr>
                         </thead>
@@ -546,9 +545,21 @@ export default function InternalCommissions() {
                                   {STATUS_CONFIG[commission.status]?.label || commission.status}
                                 </Badge>
                               </td>
-                              <td className="p-3 text-right text-stone-600">${(commission.estimated_amount || 0).toLocaleString()}</td>
-                              <td className="p-3 text-right font-medium text-blue-600">
-                                {commission.received_amount ? `$${commission.received_amount.toLocaleString()}` : '-'}
+                              <td className="p-3 text-right">
+                                <Input
+                                  type="number"
+                                  defaultValue={commission.estimated_amount || 0}
+                                  onBlur={(e) => {
+                                    const newValue = parseFloat(e.target.value) || 0;
+                                    if (newValue !== commission.estimated_amount) {
+                                      handleUpdateCommissionAmount(commission, newValue);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') e.target.blur();
+                                  }}
+                                  className="w-24 text-right font-semibold rounded-lg h-8 text-stone-800"
+                                />
                               </td>
                               <td className="p-3 text-right">
                                 {commission.source === 'internal' ? (
