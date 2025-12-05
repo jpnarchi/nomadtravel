@@ -220,7 +220,10 @@ export default function Layout({ children, currentPageName }) {
       </main>
 
       {/* Quick Payment FAB */}
-      <QuickPaymentFAB />
-    </div>
-  );
-}
+              <QuickPaymentFAB />
+
+              {/* Payment Info Modal */}
+              <PaymentInfoModal open={paymentInfoOpen} onClose={() => setPaymentInfoOpen(false)} />
+            </div>
+          );
+        }
