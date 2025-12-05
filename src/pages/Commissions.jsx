@@ -68,23 +68,6 @@ export default function Commissions() {
     }
   });
 
-  const updateCommission = async (service, newCommission) => {
-    const commission = parseFloat(newCommission) || 0;
-    await updateServiceMutation.mutateAsync({ id: service.id, data: { commission } });
-    
-    // Recalculate total commission for the sold trip
-    const tripServices = services.filter(s => s.sold_trip_id === service.sold_trip_id);
-    const totalCommission = tripServices.reduce((sum, s) => {
-      if (s.id === service.id) return sum + commission;
-      return sum + (s.commission || 0);
-    }, 0);
-    
-    await updateSoldTripMutation.mutateAsync({ 
-      id: service.sold_trip_id, 
-      data: { total_commission: totalCommission } 
-    });
-  };
-
   const togglePaid = (service) => {
     updateServiceMutation.mutate({
       id: service.id,
@@ -259,22 +242,9 @@ export default function Commissions() {
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <Input
-                        type="number"
-                        defaultValue={service.commission || 0}
-                        onBlur={(e) => {
-                          const newValue = parseFloat(e.target.value) || 0;
-                          if (newValue !== service.commission) {
-                            updateCommission(service, newValue);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.target.blur();
-                          }
-                        }}
-                        className={`w-24 text-right font-semibold rounded-lg h-8 ${service.commission_paid ? 'text-green-600' : 'text-stone-800'}`}
-                      />
+                      <span className={`font-semibold ${service.commission_paid ? 'text-green-600' : 'text-stone-800'}`}>
+                        ${(service.commission || 0).toLocaleString()}
+                      </span>
                     </td>
                   </tr>
                 );
