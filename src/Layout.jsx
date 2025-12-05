@@ -168,13 +168,20 @@ export default function Layout({ children, currentPageName }) {
                                             <p className="text-xs text-stone-400">No disponible</p>
                                           )}
                             <button
-                              onClick={() => setPaymentInfoOpen(true)}
-                              className="mt-2 w-full text-xs font-medium py-1.5 px-3 rounded-lg transition-colors text-white"
-                              style={{ backgroundColor: '#2E442A' }}
-                            >
-                              Info de Pagos
-                            </button>
-                          </div>
+                                              onClick={() => setPaymentInfoOpen(true)}
+                                              className="mt-2 w-full text-xs font-medium py-1.5 px-3 rounded-lg transition-colors text-white"
+                                              style={{ backgroundColor: '#2E442A' }}
+                                            >
+                                              Info de Pagos
+                                            </button>
+                                            <button
+                                              onClick={() => setCommissionInfoOpen(true)}
+                                              className="mt-2 w-full text-xs font-medium py-1.5 px-3 rounded-lg transition-colors text-white"
+                                              style={{ backgroundColor: '#2E442A' }}
+                                            >
+                                              Info Pago de Comisiones
+                                            </button>
+                                          </div>
           </div>
 
           {/* Navigation */}
@@ -225,7 +232,10 @@ export default function Layout({ children, currentPageName }) {
               <QuickPaymentFAB />
 
               {/* Payment Info Modal */}
-              <PaymentInfoModal open={paymentInfoOpen} onClose={() => setPaymentInfoOpen(false)} />
-            </div>
+                      <PaymentInfoModal open={paymentInfoOpen} onClose={() => setPaymentInfoOpen(false)} />
+
+                      {/* Commission Info Modal */}
+                      <CommissionInfoModal open={commissionInfoOpen} onClose={() => setCommissionInfoOpen(false)} />
+                    </div>
           );
         }
