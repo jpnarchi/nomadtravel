@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Printer, MapPin, Hotel, Plane, Car, Compass, Package } from 'lucide-react';
+import { Printer, MapPin, Hotel, Plane, Car, Compass, Package, Ship } from 'lucide-react';
 
 const SERVICE_ICONS = {
   hotel: Hotel,
   vuelo: Plane,
   traslado: Car,
   tour: Compass,
+  crucero: Ship,
   otro: Package
 };
 
@@ -18,6 +19,7 @@ const SERVICE_LABELS = {
   vuelo: 'Vuelo',
   traslado: 'Traslado',
   tour: 'Tour',
+  crucero: 'Crucero',
   otro: 'Servicio'
 };
 
@@ -137,6 +139,31 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
     </div>
   );
 
+  const renderCruiseService = (service, index) => (
+    <div key={index} className="py-3 border-b border-stone-100 last:border-0">
+      <div className="flex justify-between items-start">
+        <div className="flex-1 space-y-1">
+          <p className="font-semibold text-stone-800">{service.cruise_ship || 'Crucero'}</p>
+          {service.cruise_line && <p className="text-xs text-stone-500">{service.cruise_line}</p>}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
+            {service.cruise_itinerary && <p className="col-span-2">Itinerario: {service.cruise_itinerary}</p>}
+            {service.cruise_departure_port && <p>Salida: {service.cruise_departure_port}</p>}
+            {service.cruise_arrival_port && <p>Llegada: {service.cruise_arrival_port}</p>}
+            {service.cruise_departure_date && service.cruise_arrival_date && (
+              <p>Fechas: {format(new Date(service.cruise_departure_date), 'd MMM', { locale: es })} - {format(new Date(service.cruise_arrival_date), 'd MMM yyyy', { locale: es })}</p>
+            )}
+            {service.cruise_nights && <p>Noches: {service.cruise_nights}</p>}
+            {service.cruise_cabin_type && <p>Cabina: {service.cruise_cabin_type}</p>}
+            {service.cruise_cabin_number && <p>Núm. Cabina: {service.cruise_cabin_number}</p>}
+            {service.cruise_passengers && <p>Pasajeros: {service.cruise_passengers}</p>}
+            {service.cruise_reservation_number && <p>Reservación: {service.cruise_reservation_number}</p>}
+          </div>
+        </div>
+        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>${(service.total_price || 0).toLocaleString()} USD</p>
+      </div>
+    </div>
+  );
+
   const renderOtherService = (service, index) => (
     <div key={index} className="py-3 border-b border-stone-100 last:border-0">
       <div className="flex justify-between items-start">
@@ -159,6 +186,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
       vuelo: renderFlightService,
       traslado: renderTransferService,
       tour: renderTourService,
+      crucero: renderCruiseService,
       otro: renderOtherService
     }[type] || renderOtherService;
 

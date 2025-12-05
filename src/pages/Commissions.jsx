@@ -34,7 +34,16 @@ const SERVICE_TYPE_LABELS = {
   vuelo: 'Vuelo',
   traslado: 'Traslado',
   tour: 'Tour',
+  crucero: 'Crucero',
   otro: 'Otro'
+};
+
+const CRUISE_PROVIDER_LABELS = {
+  creative_travel: 'Creative Travel',
+  directo: 'Directo',
+  international_cruises: 'International Cruises',
+  cruceros_57: 'Cruceros 57',
+  pema: 'PeMA'
 };
 
 export default function Commissions() {
@@ -112,6 +121,7 @@ export default function Commissions() {
       case 'vuelo': return `${service.airline || 'Vuelo'} ${service.route || ''}`;
       case 'traslado': return `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
       case 'tour': return service.tour_name || 'Tour';
+      case 'crucero': return `${service.cruise_ship || 'Crucero'} - ${service.cruise_itinerary || ''}`;
       default: return service.other_name || 'Servicio';
     }
   };
@@ -231,7 +241,7 @@ export default function Commissions() {
                     </td>
                     <td className="p-3">
                       <span className="text-stone-600">
-                        {RESERVED_BY_LABELS[service.reserved_by] || service.flight_consolidator || '-'}
+                        {RESERVED_BY_LABELS[service.reserved_by] || service.flight_consolidator || CRUISE_PROVIDER_LABELS[service.cruise_provider] || '-'}
                       </span>
                     </td>
                     <td className="p-3">
