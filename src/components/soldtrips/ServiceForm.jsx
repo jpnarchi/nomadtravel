@@ -16,6 +16,7 @@ const SERVICE_TYPES = [
   { value: 'vuelo', label: 'Vuelo' },
   { value: 'traslado', label: 'Traslado' },
   { value: 'tour', label: 'Tour' },
+  { value: 'crucero', label: 'Crucero' },
   { value: 'otro', label: 'Otro' }
 ];
 
@@ -92,6 +93,48 @@ const HOTEL_CHAINS = [
   { value: 'slh', label: 'SLH – Small Luxury Hotels of the World' },
   { value: 'design_hotels', label: 'Design Hotels' },
   { value: 'lhw', label: 'The Leading Hotels of the World (LHW)' }
+];
+
+const CRUISE_LINES = [
+  { value: 'royal_caribbean', label: 'Royal Caribbean' },
+  { value: 'carnival', label: 'Carnival Cruise Line' },
+  { value: 'norwegian', label: 'Norwegian Cruise Line' },
+  { value: 'msc', label: 'MSC Cruceros' },
+  { value: 'princess', label: 'Princess Cruises' },
+  { value: 'celebrity', label: 'Celebrity Cruises' },
+  { value: 'holland_america', label: 'Holland America Line' },
+  { value: 'disney', label: 'Disney Cruise Line' },
+  { value: 'virgin_voyages', label: 'Virgin Voyages' },
+  { value: 'costa', label: 'Costa Cruceros' },
+  { value: 'cunard', label: 'Cunard' },
+  { value: 'silversea', label: 'Silversea' },
+  { value: 'regent', label: 'Regent Seven Seas' },
+  { value: 'oceania', label: 'Oceania Cruises' },
+  { value: 'seabourn', label: 'Seabourn' },
+  { value: 'viking', label: 'Viking Ocean Cruises' },
+  { value: 'azamara', label: 'Azamara' },
+  { value: 'explora', label: 'Explora Journeys' },
+  { value: 'ritz_carlton_yacht', label: 'Ritz-Carlton Yacht Collection' },
+  { value: 'windstar', label: 'Windstar Cruises' },
+  { value: 'ponant', label: 'Ponant' },
+  { value: 'hurtigruten', label: 'Hurtigruten' },
+  { value: 'otro', label: 'Otro' }
+];
+
+const CRUISE_PROVIDERS = [
+  { value: 'creative_travel', label: 'Creative Travel' },
+  { value: 'directo', label: 'Directo' },
+  { value: 'international_cruises', label: 'International Cruises' },
+  { value: 'cruceros_57', label: 'Cruceros 57' },
+  { value: 'pema', label: 'PeMA' }
+];
+
+const CABIN_TYPES = [
+  { value: 'interior', label: 'Interior' },
+  { value: 'ocean_view', label: 'Vista al Mar' },
+  { value: 'balcony', label: 'Balcón' },
+  { value: 'suite', label: 'Suite' },
+  { value: 'haven', label: 'Haven / Exclusivo' }
 ];
 
 const HOTEL_BRANDS = {
