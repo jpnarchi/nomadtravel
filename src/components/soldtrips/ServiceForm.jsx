@@ -765,6 +765,201 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     </>
   );
 
+  const [cruiseLineOpen, setCruiseLineOpen] = React.useState(false);
+
+  const renderCruceroFields = () => (
+    <>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Línea de Crucero</Label>
+          <Popover open={cruiseLineOpen} onOpenChange={setCruiseLineOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={cruiseLineOpen}
+                className="w-full justify-between rounded-xl font-normal"
+              >
+                {CRUISE_LINES.find(c => c.value === formData.cruise_line)?.label || "Seleccionar línea"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Buscar línea de crucero..." />
+                <CommandList>
+                  <CommandEmpty>No se encontró.</CommandEmpty>
+                  <CommandGroup className="max-h-[200px] overflow-y-auto">
+                    {CRUISE_LINES.map((line) => (
+                      <CommandItem
+                        key={line.value}
+                        value={line.label}
+                        onSelect={() => {
+                          updateField('cruise_line', line.value);
+                          setCruiseLineOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            formData.cruise_line === line.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {line.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-2">
+          <Label>Nombre del Barco</Label>
+          <Input
+            value={formData.cruise_ship || ''}
+            onChange={(e) => updateField('cruise_ship', e.target.value)}
+            className="rounded-xl"
+            placeholder="Ej: Symphony of the Seas"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Itinerario</Label>
+        <Input
+          value={formData.cruise_itinerary || ''}
+          onChange={(e) => updateField('cruise_itinerary', e.target.value)}
+          className="rounded-xl"
+          placeholder="Ej: Caribe Oriental - 7 noches"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Puerto de Salida</Label>
+          <Input
+            value={formData.cruise_departure_port || ''}
+            onChange={(e) => updateField('cruise_departure_port', e.target.value)}
+            className="rounded-xl"
+            placeholder="Ej: Miami, FL"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Puerto de Llegada</Label>
+          <Input
+            value={formData.cruise_arrival_port || ''}
+            onChange={(e) => updateField('cruise_arrival_port', e.target.value)}
+            className="rounded-xl"
+            placeholder="Ej: Miami, FL"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Fecha Salida</Label>
+          <Input
+            type="date"
+            value={formData.cruise_departure_date || ''}
+            onChange={(e) => {
+              const depDate = e.target.value;
+              updateField('cruise_departure_date', depDate);
+              if (depDate && formData.cruise_arrival_date) {
+                const nights = differenceInDays(new Date(formData.cruise_arrival_date), new Date(depDate));
+                if (nights > 0) updateField('cruise_nights', nights);
+              }
+            }}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Llegada</Label>
+          <Input
+            type="date"
+            value={formData.cruise_arrival_date || ''}
+            onChange={(e) => {
+              const arrDate = e.target.value;
+              updateField('cruise_arrival_date', arrDate);
+              if (formData.cruise_departure_date && arrDate) {
+                const nights = differenceInDays(new Date(arrDate), new Date(formData.cruise_departure_date));
+                if (nights > 0) updateField('cruise_nights', nights);
+              }
+            }}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Noches</Label>
+          <Input
+            type="number"
+            value={formData.cruise_nights || ''}
+            readOnly
+            className="rounded-xl bg-stone-50"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Tipo de Cabina</Label>
+          <Select value={formData.cruise_cabin_type || ''} onValueChange={(v) => updateField('cruise_cabin_type', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+            <SelectContent>
+              {CABIN_TYPES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Número de Cabina</Label>
+          <Input
+            value={formData.cruise_cabin_number || ''}
+            onChange={(e) => updateField('cruise_cabin_number', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Pasajeros</Label>
+          <Input
+            type="number"
+            value={formData.cruise_passengers || ''}
+            onChange={(e) => updateField('cruise_passengers', parseInt(e.target.value) || 0)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Número de Reservación</Label>
+          <Input
+            value={formData.cruise_reservation_number || ''}
+            onChange={(e) => updateField('cruise_reservation_number', e.target.value)}
+            className="rounded-xl"
+            placeholder="Ej: CRU123456"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado de Reservación</Label>
+          <Select value={formData.reservation_status || 'reservado'} onValueChange={(v) => updateField('reservation_status', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reservado">Reservado</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Vencimiento de Pago</Label>
+          <Input
+            type="date"
+            value={formData.payment_due_date || ''}
+            onChange={(e) => updateField('payment_due_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+    </>
+  );
+
   const renderOtroFields = () => (
     <>
       <div className="space-y-2">
@@ -844,6 +1039,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           {formData.service_type === 'vuelo' && renderVueloFields()}
           {formData.service_type === 'traslado' && renderTrasladoFields()}
           {formData.service_type === 'tour' && renderTourFields()}
+          {formData.service_type === 'crucero' && renderCruceroFields()}
           {formData.service_type === 'otro' && renderOtroFields()}
 
           {/* Common Fields */}
@@ -878,7 +1074,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 />
               </div>
             </div>
-            <div className={`grid gap-4 ${formData.service_type === 'hotel' || formData.service_type === 'vuelo' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className={`grid gap-4 ${formData.service_type === 'hotel' || formData.service_type === 'vuelo' || formData.service_type === 'crucero' ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="space-y-2">
                 <Label>IATA</Label>
                 <Select 
@@ -925,6 +1121,17 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                       {(FLIGHT_CONSOLIDATORS[formData.booked_by] || []).map(c => (
                         <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {formData.service_type === 'crucero' && (
+                <div className="space-y-2">
+                  <Label>Proveedor de Crucero</Label>
+                  <Select value={formData.cruise_provider || ''} onValueChange={(v) => updateField('cruise_provider', v)}>
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      {CRUISE_PROVIDERS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
