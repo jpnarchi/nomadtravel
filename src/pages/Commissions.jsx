@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AgentInvoiceGenerator from '@/components/commissions/AgentInvoiceGenerator';
 
 const BOOKED_BY_LABELS = {
@@ -49,11 +50,11 @@ const CRUISE_PROVIDER_LABELS = {
 
 export default function Commissions() {
   const [search, setSearch] = useState('');
-  const [filterPaid, setFilterPaid] = useState('all');
   const [filterBookedBy, setFilterBookedBy] = useState('all');
   const [user, setUser] = useState(null);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
+  const [activeTab, setActiveTab] = useState('pendientes');
 
   const queryClient = useQueryClient();
 
@@ -114,7 +115,7 @@ export default function Commissions() {
   }, {});
 
   // Filter and sort services
-  const filteredServices = services
+  const allFilteredServices = services
     .filter(s => s.commission > 0) // Only show services with commission
     .filter(s => {
       const trip = tripsMap[s.sold_trip_id];
@@ -122,11 +123,8 @@ export default function Commissions() {
       const matchesSearch = clientName.toLowerCase().includes(search.toLowerCase()) ||
                            (s.hotel_name || '').toLowerCase().includes(search.toLowerCase()) ||
                            (s.airline || '').toLowerCase().includes(search.toLowerCase());
-      const matchesPaid = filterPaid === 'all' || 
-                         (filterPaid === 'paid' && s.commission_paid) || 
-                         (filterPaid === 'unpaid' && !s.commission_paid);
       const matchesBookedBy = filterBookedBy === 'all' || s.booked_by === filterBookedBy;
-      return matchesSearch && matchesPaid && matchesBookedBy;
+      return matchesSearch && matchesBookedBy;
     })
     .sort((a, b) => {
       const dateA = a.commission_payment_date ? new Date(a.commission_payment_date) : new Date(0);
@@ -134,8 +132,14 @@ export default function Commissions() {
       return dateA - dateB;
     });
 
-  const totalCommissions = filteredServices.reduce((sum, s) => sum + (s.commission || 0), 0);
-  const paidCommissions = filteredServices.filter(s => s.commission_paid).reduce((sum, s) => sum + (s.commission || 0), 0);
+  // Filter by tab (paid/unpaid)
+  const filteredServices = allFilteredServices.filter(s => 
+    activeTab === 'pendientes' ? !s.commission_paid : s.commission_paid
+  );
+
+  // Calculate agent's 50% share
+  const totalCommissions = allFilteredServices.reduce((sum, s) => sum + ((s.commission || 0) * 0.5), 0);
+  const paidCommissions = allFilteredServices.filter(s => s.commission_paid).reduce((sum, s) => sum + ((s.commission || 0) * 0.5), 0);
   const pendingCommissions = totalCommissions - paidCommissions;
 
   const getServiceName = (service) => {
@@ -181,15 +185,15 @@ export default function Commissions() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Total</p>
+          <p className="text-xs text-stone-400">Total Agente</p>
           <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${totalCommissions.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagadas</p>
+          <p className="text-xs text-stone-400">Pagadas Agente</p>
           <p className="text-xl font-bold text-green-600">${paidCommissions.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pendientes</p>
+          <p className="text-xs text-stone-400">Pendientes Agente</p>
           <p className="text-xl font-bold text-orange-500">${pendingCommissions.toLocaleString()}</p>
         </div>
       </div>
@@ -205,16 +209,6 @@ export default function Commissions() {
             className="pl-10 rounded-xl"
           />
         </div>
-        <Select value={filterPaid} onValueChange={setFilterPaid}>
-          <SelectTrigger className="w-40 rounded-xl">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="paid">Pagadas</SelectItem>
-            <SelectItem value="unpaid">Pendientes</SelectItem>
-          </SelectContent>
-        </Select>
         <Select value={filterBookedBy} onValueChange={setFilterBookedBy}>
           <SelectTrigger className="w-40 rounded-xl">
             <SelectValue placeholder="Bookeado por" />
@@ -227,10 +221,22 @@ export default function Commissions() {
         </Select>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="pendientes">
+            Pendientes ({allFilteredServices.filter(s => !s.commission_paid).length})
+          </TabsTrigger>
+          <TabsTrigger value="pagadas">
+            Pagadas ({allFilteredServices.filter(s => s.commission_paid).length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="space-y-4">
+          {/* Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
             <thead className="bg-stone-50 border-b border-stone-100">
               <tr>
                 <th className="text-left p-3 font-semibold text-stone-600">
@@ -309,7 +315,7 @@ export default function Commissions() {
                     </td>
                     <td className="p-3 text-right">
                       <span className={`font-semibold ${service.commission_paid ? 'text-green-600' : 'text-stone-800'}`}>
-                        ${(service.commission || 0).toLocaleString()}
+                        ${((service.commission || 0) * 0.5).toLocaleString()}
                       </span>
                     </td>
                   </tr>
@@ -326,6 +332,9 @@ export default function Commissions() {
           </div>
         )}
         </div>
+        </div>
+        </TabsContent>
+        </Tabs>
 
         {/* Invoice Generator Dialog */}
         <AgentInvoiceGenerator
