@@ -18,6 +18,8 @@ import SeasonalityChart from '@/components/statistics/SeasonalityChart';
 import TripTypesChart from '@/components/statistics/TripTypesChart';
 import HotelChainsChart from '@/components/statistics/HotelChainsChart';
 import ProvidersChart from '@/components/statistics/ProvidersChart';
+import SoldTripsStats from '@/components/statistics/SoldTripsStats';
+import PendingTripsStats from '@/components/statistics/PendingTripsStats';
 
 const MONTHS = [
   { value: '0', label: 'Enero' },
@@ -345,6 +347,12 @@ export default function Statistics() {
           <TabsTrigger value="general" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
             General
           </TabsTrigger>
+          <TabsTrigger value="sold-trips" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            Viajes Vendidos
+          </TabsTrigger>
+          <TabsTrigger value="pending-trips" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            En Proceso / Perdidos
+          </TabsTrigger>
           <TabsTrigger value="destinations" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
             Destinos
           </TabsTrigger>
@@ -369,6 +377,17 @@ export default function Statistics() {
             clients={clients}
             allSoldTrips={soldTrips}
           />
+        </TabsContent>
+
+        <TabsContent value="sold-trips">
+          <SoldTripsStats 
+            soldTrips={filteredData.filteredTrips} 
+            services={filteredData.filteredServices}
+          />
+        </TabsContent>
+
+        <TabsContent value="pending-trips">
+          <PendingTripsStats trips={trips} />
         </TabsContent>
 
         <TabsContent value="destinations">
