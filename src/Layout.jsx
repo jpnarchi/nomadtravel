@@ -19,6 +19,7 @@ import {
       } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
+import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
 
@@ -27,6 +28,7 @@ export default function Layout({ children, currentPageName }) {
   const [exchangeRate, setExchangeRate] = useState(null);
   const [rateLoading, setRateLoading] = useState(true);
   const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
+  const [commissionInfoOpen, setCommissionInfoOpen] = useState(false);
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
