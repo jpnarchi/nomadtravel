@@ -13,6 +13,7 @@ import Statistics from './pages/Statistics';
 import Reviews from './pages/Reviews';
 import Credentials from './pages/Credentials';
 import InternalCommissions from './pages/InternalCommissions';
+import InternalPayments from './pages/InternalPayments';
 import __Layout from './Layout.jsx';
 
 
@@ -32,6 +33,7 @@ export const PAGES = {
     "Reviews": Reviews,
     "Credentials": Credentials,
     "InternalCommissions": InternalCommissions,
+    "InternalPayments": InternalPayments,
 }
 
 export const pagesConfig = {

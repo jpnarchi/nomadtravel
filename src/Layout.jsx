@@ -57,6 +57,7 @@ export default function Layout({ children, currentPageName }) {
             { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
             { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
             { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet },
+            { name: 'Pagos Internos', page: 'InternalPayments', icon: DollarSign },
             { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
             { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
             { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
