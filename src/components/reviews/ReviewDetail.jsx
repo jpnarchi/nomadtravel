@@ -243,6 +243,14 @@ export default function ReviewDetail({ review, open, onClose }) {
             </div>
           )}
 
+          {/* Destination Tips */}
+          {review.destination_tips && (
+            <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
+              <h4 className="font-semibold text-purple-700 mb-2">🗺️ Tips de la Ciudad</h4>
+              <p className="text-sm text-purple-800 whitespace-pre-wrap">{review.destination_tips}</p>
+            </div>
+          )}
+
           {/* PDFs */}
           {review.pdf_files?.length > 0 && (
             <div>

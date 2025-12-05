@@ -64,6 +64,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
     pros: '',
     cons: '',
     tips: '',
+    destination_tips: '',
     rating: 0,
     recommended: '',
     pdf_files: [],
@@ -90,6 +91,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
         pros: review.pros || '',
         cons: review.cons || '',
         tips: review.tips || '',
+        destination_tips: review.destination_tips || '',
         rating: review.rating || 0,
         recommended: review.recommended || '',
         pdf_files: review.pdf_files || [],
@@ -361,6 +363,19 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                   placeholder="Tips para otros agentes..."
                 />
               </div>
+
+              {formData.content_type === 'destino' && (
+                <div className="space-y-2">
+                  <Label className="text-purple-700">Tips de la Ciudad</Label>
+                  <Textarea
+                    value={formData.destination_tips}
+                    onChange={(e) => setFormData({ ...formData, destination_tips: e.target.value })}
+                    className="rounded-xl resize-none border-purple-200"
+                    rows={3}
+                    placeholder="Transporte, metro, navegación, tours recomendados, apps útiles..."
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
