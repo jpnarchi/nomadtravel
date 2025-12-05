@@ -59,10 +59,13 @@ export default function Trips() {
   // Filter trips based on user role
   const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
 
-  const { data: clients = [] } = useQuery({
+  const { data: allClients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () => base44.entities.Client.list()
   });
+
+  // Filter clients based on user role
+  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Trip.create(data),
