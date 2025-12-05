@@ -208,36 +208,18 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tipo de Contenido *</Label>
-                  <Select value={formData.content_type} onValueChange={(v) => setFormData({ ...formData, content_type: v })}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Seleccionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONTENT_TYPES.map(t => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {formData.content_type !== 'fam_trip' && (
-                  <div className="space-y-2">
-                    <Label>Tipo de Proveedor</Label>
-                    <Select value={formData.provider_type} onValueChange={(v) => setFormData({ ...formData, provider_type: v })}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PROVIDER_TYPES.map(t => (
-                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+              <div className="space-y-2">
+                <Label>Tipo de Contenido *</Label>
+                <Select value={formData.content_type} onValueChange={(v) => setFormData({ ...formData, content_type: v })}>
+                  <SelectTrigger className="rounded-xl">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONTENT_TYPES.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
