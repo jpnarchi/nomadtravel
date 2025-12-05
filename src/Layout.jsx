@@ -18,6 +18,7 @@ import {
         Wallet
       } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
+import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
 
