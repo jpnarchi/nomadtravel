@@ -85,6 +85,7 @@ export default function PaymentInfoModal({ open, onClose }) {
               <AccountField label="Cuenta" value="0123468666" />
               <AccountField label="CLABE" value="012580001234686668" />
             </div>
+            <CopyAllButton text={`PESOS MEXICANOS - BBVA\nNomad Trotamundos SA. de CV.\nCuenta: 0123468666\nCLABE: 012580001234686668`} />
           </div>
 
           {/* Dólares - Banco Base */}
@@ -98,6 +99,7 @@ export default function PaymentInfoModal({ open, onClose }) {
               <AccountField label="SPID" value="4558045987360214" />
               <AccountField label="CLABE" value="145580459873602014" />
             </div>
+            <CopyAllButton text={`DÓLARES - BANCO BASE\nNomad Trotamundos SA. de CV.\nSPID: 4558045987360214\nCLABE: 145580459873602014`} />
           </div>
 
           {/* Dólares - USA */}
@@ -117,6 +119,7 @@ export default function PaymentInfoModal({ open, onClose }) {
                 <p>89-16 Jamaica Ave, Woodhaven, NY, 11421, United States</p>
               </div>
             </div>
+            <CopyAllButton text={`DÓLARES - DENTRO DE USA\nNomad Travel LLC\nAccount Number: 822001064274\nAccount Type: Checking\nRouting Number: 026073150\nSWIFT/BIC: CMFGUS33\nBank: Community Federal Savings Bank\n89-16 Jamaica Ave, Woodhaven, NY, 11421, United States`} />
           </div>
 
           {/* Tarjeta de Crédito */}
