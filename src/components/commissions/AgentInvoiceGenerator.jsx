@@ -112,7 +112,7 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
     }
   };
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     if (!invoiceData.invoice_number || !invoiceData.due_date || !invoiceData.travel_reference) {
       toast.error('Por favor completa todos los campos obligatorios');
       return;
