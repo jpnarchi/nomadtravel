@@ -5,13 +5,14 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Loader2, Search, Filter, DollarSign, 
-  Check, X, Download
+  Check, X, Download, FileText
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import AgentInvoiceGenerator from '@/components/commissions/AgentInvoiceGenerator';
 
 const BOOKED_BY_LABELS = {
   montecito: 'Montecito',
@@ -51,6 +52,7 @@ export default function Commissions() {
   const [filterPaid, setFilterPaid] = useState('all');
   const [filterBookedBy, setFilterBookedBy] = useState('all');
   const [user, setUser] = useState(null);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -164,6 +166,15 @@ export default function Commissions() {
           <h1 className="text-2xl font-bold text-stone-800">Comisiones</h1>
           <p className="text-stone-500 text-sm mt-1">Control de comisiones por servicio</p>
         </div>
+        <Button
+          onClick={() => setInvoiceDialogOpen(true)}
+          disabled={filteredServices.length === 0}
+          className="text-white"
+          style={{ backgroundColor: '#2E442A' }}
+        >
+          <FileText className="w-4 h-4 mr-2" />
+          Generar Factura
+        </Button>
       </div>
 
       {/* Stats */}
@@ -289,7 +300,15 @@ export default function Commissions() {
             <p>No hay comisiones que mostrar</p>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
+        </div>
+
+        {/* Invoice Generator Dialog */}
+        <AgentInvoiceGenerator
+        open={invoiceDialogOpen}
+        onClose={() => setInvoiceDialogOpen(false)}
+        services={filteredServices}
+        soldTrips={soldTrips}
+        />
+        </div>
+        );
+        }
