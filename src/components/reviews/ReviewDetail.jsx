@@ -88,6 +88,12 @@ export default function ReviewDetail({ review, open, onClose }) {
                 <span className="text-stone-700">{review.hotel_chain}</span>
               </div>
             )}
+            {review.cruise_line && (
+              <div className="flex items-center gap-2 text-sm">
+                <Building2 className="w-4 h-4 text-stone-400" />
+                <span className="text-stone-700">{review.cruise_line}</span>
+              </div>
+            )}
           </div>
 
           {/* Rating & Recommendation */}

@@ -46,6 +46,14 @@ const HOTEL_CHAINS = [
   'Conrad', 'Waldorf Astoria', 'Six Senses', 'Banyan Tree', 'Otro'
 ];
 
+const CRUISE_LINES = [
+  'Royal Caribbean', 'Carnival', 'Norwegian', 'MSC Cruises', 'Princess Cruises',
+  'Celebrity Cruises', 'Holland America', 'Disney Cruise Line', 'Costa Cruises',
+  'Viking Ocean', 'Cunard', 'Oceania Cruises', 'Regent Seven Seas', 'Seabourn',
+  'Azamara', 'Crystal Cruises', 'Silversea', 'Ponant', 'Explora Journeys',
+  'Virgin Voyages', 'P&O Cruises', 'Hurtigruten', 'Windstar', 'Otro'
+];
+
 export default function ReviewForm({ open, onClose, review, onSave, isLoading }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -53,6 +61,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
     country: '',
     city: '',
     hotel_chain: '',
+    cruise_line: '',
     provider_name: '',
     experience_date: '',
     agent_name: '',
@@ -80,6 +89,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
         country: review.country || '',
         city: review.city || '',
         hotel_chain: review.hotel_chain || '',
+        cruise_line: review.cruise_line || '',
         provider_name: review.provider_name || '',
         experience_date: review.experience_date || '',
         agent_name: review.agent_name || '',
@@ -260,7 +270,34 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                 </div>
               )}
 
-              {formData.content_type !== 'fam_trip' && formData.content_type !== 'hotel' && formData.content_type !== '' && (
+              {formData.content_type === 'crucero' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Línea de Crucero</Label>
+                    <Select value={formData.cruise_line} onValueChange={(v) => setFormData({ ...formData, cruise_line: v })}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CRUISE_LINES.map(c => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nombre del Barco</Label>
+                    <Input
+                      value={formData.provider_name}
+                      onChange={(e) => setFormData({ ...formData, provider_name: e.target.value })}
+                      className="rounded-xl"
+                      placeholder="Ej: Symphony of the Seas"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.content_type !== 'fam_trip' && formData.content_type !== 'hotel' && formData.content_type !== 'crucero' && formData.content_type !== '' && (
                 <div className="space-y-2">
                   <Label>Nombre del Proveedor</Label>
                   <Input
