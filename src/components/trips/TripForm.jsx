@@ -142,7 +142,7 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
           </div>
 
           <div className="space-y-2">
-            <Label>Cliente *</Label>
+            <Label>Cliente <span className="text-red-500">*</span></Label>
             <Select value={formData.client_id} onValueChange={handleClientChange}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Seleccionar cliente" />
@@ -164,7 +164,7 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
           </div>
 
           <div className="space-y-2">
-            <Label>Destino *</Label>
+            <Label>Destino <span className="text-red-500">*</span></Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -222,7 +222,7 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="start_date">Fecha inicio *</Label>
+              <Label htmlFor="start_date">Fecha inicio <span className="text-red-500">*</span></Label>
               <Input
                 id="start_date"
                 type="date"
@@ -249,11 +249,11 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
               <Label htmlFor="travelers">Número de personas</Label>
               <Input
                 id="travelers"
-                type="number"
-                min="1"
+                type="text"
                 value={formData.travelers}
-                onChange={(e) => setFormData({ ...formData, travelers: parseInt(e.target.value) || 1 })}
+                onChange={(e) => setFormData({ ...formData, travelers: e.target.value })}
                 className="rounded-xl"
+                placeholder="Ej: 2 o 2 adultos + 1 niño"
               />
             </div>
             <div className="space-y-2">
