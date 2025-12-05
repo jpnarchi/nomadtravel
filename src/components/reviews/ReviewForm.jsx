@@ -233,7 +233,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                 </div>
               </div>
 
-              {formData.content_type !== 'fam_trip' && (
+              {formData.content_type === 'hotel' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Cadena Hotelera</Label>
@@ -249,7 +249,7 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Nombre del Proveedor / Hotel</Label>
+                    <Label>Nombre del Hotel</Label>
                     <Input
                       value={formData.provider_name}
                       onChange={(e) => setFormData({ ...formData, provider_name: e.target.value })}
@@ -257,6 +257,18 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
                       placeholder="Ej: Four Seasons Resort Bali at Sayan"
                     />
                   </div>
+                </div>
+              )}
+
+              {formData.content_type !== 'fam_trip' && formData.content_type !== 'hotel' && formData.content_type !== '' && (
+                <div className="space-y-2">
+                  <Label>Nombre del Proveedor</Label>
+                  <Input
+                    value={formData.provider_name}
+                    onChange={(e) => setFormData({ ...formData, provider_name: e.target.value })}
+                    className="rounded-xl"
+                    placeholder="Nombre del proveedor o servicio"
+                  />
                 </div>
               )}
 
