@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Loader2, Search, DollarSign, Plus, 
-  Users, Edit2, Trash2, CheckCircle, Clock
+  Users, Edit2, Trash2, CheckCircle, Clock, Calendar, ArrowUpDown
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,9 @@ export default function InternalCommissions() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [selectedCommissions, setSelectedCommissions] = useState([]);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
 
   const queryClient = useQueryClient();
 
@@ -266,9 +269,13 @@ export default function InternalCommissions() {
   // Update commission status
   const handleUpdateStatus = async (commission, newStatus) => {
     if (commission.source === 'tripService') {
+      const updateData = { 
+        commission_paid: newStatus !== 'pendiente',
+        paid_to_agent: newStatus === 'pagada_agente'
+      };
       await updateTripServiceMutation.mutateAsync({ 
         id: commission.service_id, 
-        data: { commission_paid: newStatus !== 'pendiente' } 
+        data: updateData
       });
     } else {
       updateMutation.mutate({ 
@@ -321,14 +328,26 @@ export default function InternalCommissions() {
   };
 
   // Filter commissions
-  const filteredCommissions = commissions.filter(c => {
-    const matchesSearch = 
-      (c.agent_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (c.sold_trip_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (c.service_provider || '').toLowerCase().includes(search.toLowerCase());
-    const matchesAgent = filterAgent === 'all' || c.agent_name === filterAgent;
-    return matchesSearch && matchesAgent;
-  });
+  const filteredCommissions = commissions
+    .filter(c => {
+      const matchesSearch = 
+        (c.agent_name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.sold_trip_name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.service_provider || '').toLowerCase().includes(search.toLowerCase());
+      const matchesAgent = filterAgent === 'all' || c.agent_name === filterAgent;
+      
+      // Date filter
+      const commissionDate = c.estimated_payment_date ? new Date(c.estimated_payment_date) : null;
+      const matchesDateFrom = !dateFrom || (commissionDate && commissionDate >= new Date(dateFrom));
+      const matchesDateTo = !dateTo || (commissionDate && commissionDate <= new Date(dateTo));
+      
+      return matchesSearch && matchesAgent && matchesDateFrom && matchesDateTo;
+    })
+    .sort((a, b) => {
+      const dateA = a.estimated_payment_date ? new Date(a.estimated_payment_date) : new Date(0);
+      const dateB = b.estimated_payment_date ? new Date(b.estimated_payment_date) : new Date(0);
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
 
   // Split into pending and paid
   const pendingCommissions = filteredCommissions.filter(c => !isPaidToAgent(c));
@@ -430,8 +449,6 @@ export default function InternalCommissions() {
                   <th className="text-right p-3 font-medium text-stone-600">Comisión</th>
                   <th className="text-right p-3 font-medium text-stone-600">Agente</th>
                   <th className="text-right p-3 font-medium text-stone-600">Nomad</th>
-                  <th className="text-center p-3 font-medium text-stone-600">Pagada a Agente</th>
-                  <th className="text-right p-3 font-medium text-stone-600">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -496,35 +513,6 @@ export default function InternalCommissions() {
                     <td className="p-3 text-right font-medium text-purple-600">
                       ${(commission.nomad_commission || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 text-center">
-                      <Checkbox
-                        checked={isPaidToAgent(commission)}
-                        onCheckedChange={(checked) => handleTogglePaidToAgent(commission, checked)}
-                        className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                      />
-                    </td>
-                    <td className="p-3 text-right">
-                      {commission.source === 'internal' && (
-                        <div className="flex justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => { setEditingCommission(commission); setFormOpen(true); }}
-                          >
-                            <Edit2 className="w-4 h-4 text-stone-400" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8"
-                            onClick={() => setDeleteConfirm(commission)}
-                          >
-                            <Trash2 className="w-4 h-4 text-stone-400 hover:text-red-500" />
-                          </Button>
-                        </div>
-                      )}
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -583,8 +571,8 @@ export default function InternalCommissions() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <Input
             placeholder="Buscar por agente, viaje o proveedor..."
@@ -604,6 +592,32 @@ export default function InternalCommissions() {
             ))}
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-stone-400" />
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-36 rounded-xl"
+            placeholder="Desde"
+          />
+          <span className="text-stone-400">-</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-36 rounded-xl"
+            placeholder="Hasta"
+          />
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+          className="rounded-xl"
+        >
+          <ArrowUpDown className="w-4 h-4 mr-2" />
+          {sortOrder === 'asc' ? 'Más antiguas' : 'Más recientes'}
+        </Button>
       </div>
 
       {/* Tabs */}
