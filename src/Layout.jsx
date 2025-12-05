@@ -26,6 +26,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(null);
   const [rateLoading, setRateLoading] = useState(true);
+  const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
