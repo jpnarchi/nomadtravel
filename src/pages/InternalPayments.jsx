@@ -107,16 +107,17 @@ export default function InternalPayments() {
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
-  // Calculate totals
-  const totalAmount = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  // Split by confirmed status
+  const pendingPayments = filteredPayments.filter(p => !p.confirmed);
+  const confirmedPayments = filteredPayments.filter(p => p.confirmed);
 
-  // Group by date
-  const paymentsByDate = filteredPayments.reduce((acc, p) => {
-    const dateKey = p.date || 'Sin fecha';
-    if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(p);
-    return acc;
-  }, {});
+  // Calculate totals
+  const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalConfirmed = confirmedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  const handleToggleConfirmed = (payment, isConfirmed) => {
+    updatePaymentMutation.mutate({ id: payment.id, data: { confirmed: isConfirmed } });
+  };
 
   if (isLoading) {
     return (
