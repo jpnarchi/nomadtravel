@@ -52,6 +52,13 @@ export default function InternalPayments() {
 
   const isLoading = loadingPayments || loadingTrips;
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.SupplierPayment.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allSupplierPayments'] });
+    }
+  });
+
   // Create trips map for quick lookup
   const tripsMap = soldTrips.reduce((acc, trip) => {
     acc[trip.id] = trip;
