@@ -73,19 +73,32 @@ export default function Layout({ children, currentPageName }) {
 
     const isAdmin = user?.role === 'admin';
 
-    const navigation = [
-            { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
-            { name: 'Clientes', page: 'Clients', icon: Users },
-            { name: 'Viajes', page: 'Trips', icon: Plane },
-            { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
-            { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
-            { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
-            { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
-            { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
-            { name: 'Contraseñas', page: 'Credentials', icon: Key },
-            { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet, adminOnly: true },
-            { name: 'Pagos Internos', page: 'InternalPayments', icon: DollarSign, adminOnly: true },
-          ].filter(item => !item.adminOnly || isAdmin);
+    const adminNavigation = [
+      { name: 'Dashboard Global', page: 'AdminDashboard', icon: LayoutDashboard },
+      { name: 'Todos los Clientes', page: 'AdminClients', icon: Users },
+      { name: 'Todos los Viajes', page: 'AdminTrips', icon: Plane },
+      { name: 'Viajes Vendidos', page: 'AdminSoldTrips', icon: CheckCircle },
+      { name: 'Progreso de Agentes', page: 'Statistics', icon: BarChart3 },
+      { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet },
+      { name: 'Pagos Internos', page: 'InternalPayments', icon: DollarSign },
+      { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
+      { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
+      { name: 'Contraseñas', page: 'Credentials', icon: Key },
+    ];
+
+    const userNavigation = [
+      { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+      { name: 'Clientes', page: 'Clients', icon: Users },
+      { name: 'Viajes', page: 'Trips', icon: Plane },
+      { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
+      { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
+      { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
+      { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
+      { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
+      { name: 'Contraseñas', page: 'Credentials', icon: Key },
+    ];
+
+    const navigation = isAdmin ? adminNavigation : userNavigation;
 
   return (
     <div className="min-h-screen bg-stone-50" style={{ fontFamily: "'Montserrat', sans-serif" }}>

@@ -14,6 +14,10 @@ import Reviews from './pages/Reviews';
 import Credentials from './pages/Credentials';
 import InternalCommissions from './pages/InternalCommissions';
 import InternalPayments from './pages/InternalPayments';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminClients from './pages/AdminClients';
+import AdminTrips from './pages/AdminTrips';
+import AdminSoldTrips from './pages/AdminSoldTrips';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +38,10 @@ export const PAGES = {
     "Credentials": Credentials,
     "InternalCommissions": InternalCommissions,
     "InternalPayments": InternalPayments,
+    "AdminDashboard": AdminDashboard,
+    "AdminClients": AdminClients,
+    "AdminTrips": AdminTrips,
+    "AdminSoldTrips": AdminSoldTrips,
 }
 
 export const pagesConfig = {
