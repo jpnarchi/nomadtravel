@@ -136,14 +136,20 @@ export default function InternalPayments() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Total Pagos</p>
-          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${totalAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">Pagos Hechos</p>
+          <p className="text-xl font-bold text-orange-600">${totalPending.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{pendingPayments.length} pagos</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Cantidad de Pagos</p>
-          <p className="text-xl font-bold text-stone-800">{filteredPayments.length}</p>
+          <p className="text-xs text-stone-400">Pagos Confirmados</p>
+          <p className="text-xl font-bold text-green-600">${totalConfirmed.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{confirmedPayments.length} pagos</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Total Pagos</p>
+          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${(totalPending + totalConfirmed).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Agentes Activos</p>
