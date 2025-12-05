@@ -160,6 +160,50 @@ export default function InternalCommissions() {
     }
   });
 
+  const updateTripServiceMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripServices'] });
+      queryClient.invalidateQueries({ queryKey: ['allServices'] });
+    }
+  });
+
+  const updateSoldTripMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+    }
+  });
+
+  // Update commission amount - works for both internal and trip service commissions
+  const handleUpdateCommissionAmount = async (commission, newAmount) => {
+    if (commission.source === 'tripService') {
+      // Update the TripService commission
+      await updateTripServiceMutation.mutateAsync({ 
+        id: commission.service_id, 
+        data: { commission: newAmount } 
+      });
+      
+      // Recalculate total commission for the sold trip
+      const tripServices = await base44.entities.TripService.filter({ sold_trip_id: commission.sold_trip_id });
+      const totalCommission = tripServices.reduce((sum, s) => {
+        if (s.id === commission.service_id) return sum + newAmount;
+        return sum + (s.commission || 0);
+      }, 0);
+      
+      await updateSoldTripMutation.mutateAsync({ 
+        id: commission.sold_trip_id, 
+        data: { total_commission: totalCommission } 
+      });
+    } else {
+      // Update internal commission
+      updateMutation.mutate({ 
+        id: commission.id, 
+        data: { estimated_amount: newAmount } 
+      });
+    }
+  };
+
   const handleSave = (data) => {
     // Calculate commissions based on IATA and received amount
     let agentCommission = 0;
