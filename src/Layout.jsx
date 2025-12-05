@@ -54,19 +54,38 @@ export default function Layout({ children, currentPageName }) {
     fetchExchangeRate();
   }, []);
 
-  const navigation = [
-            { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
-            { name: 'Clientes', page: 'Clients', icon: Users },
+  const [user, setUser] = useState(null);
+    const [userLoading, setUserLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchUser = async () => {
+        try {
+          const currentUser = await base44.auth.me();
+          setUser(currentUser);
+        } catch (error) {
+          console.error('Error fetching user:', error);
+        } finally {
+          setUserLoading(false);
+        }
+      };
+      fetchUser();
+    }, []);
+
+    const isAdmin = user?.role === 'admin';
+
+    const navigation = [
+            { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
+            { name: 'Clientes', page: 'Clients', icon: Users, adminOnly: true },
             { name: 'Viajes', page: 'Trips', icon: Plane },
             { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
             { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
-            { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet },
-            { name: 'Pagos Internos', page: 'InternalPayments', icon: DollarSign },
             { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
             { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
             { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
             { name: 'Contraseñas', page: 'Credentials', icon: Key },
-          ];
+            { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet, adminOnly: true },
+            { name: 'Pagos Internos', page: 'InternalPayments', icon: DollarSign, adminOnly: true },
+          ].filter(item => !item.adminOnly || isAdmin);
 
   return (
     <div className="min-h-screen bg-stone-50" style={{ fontFamily: "'Montserrat', sans-serif" }}>
