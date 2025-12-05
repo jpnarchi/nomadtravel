@@ -20,6 +20,7 @@ import HotelChainsChart from '@/components/statistics/HotelChainsChart';
 import ProvidersChart from '@/components/statistics/ProvidersChart';
 import SoldTripsStats from '@/components/statistics/SoldTripsStats';
 import PendingTripsStats from '@/components/statistics/PendingTripsStats';
+import AgentComparisonStats from '@/components/statistics/AgentComparisonStats';
 
 const MONTHS = [
   { value: '0', label: 'Enero' },
@@ -53,7 +54,8 @@ export default function Statistics() {
     client: 'all',
     provider: 'all',
     hotelChain: 'all',
-    tripType: 'all'
+    tripType: 'all',
+    agent: 'all'
   });
   const [user, setUser] = useState(null);
 
@@ -91,13 +93,19 @@ export default function Statistics() {
     queryFn: () => base44.entities.Trip.list()
   });
 
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list()
+  });
+
   // Filter by user role
   const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
   const soldTripIds = new Set(soldTrips.map(t => t.id));
   const services = allServices.filter(s => soldTripIds.has(s.sold_trip_id));
   const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
+  const agents = allUsers.filter(u => u.role === 'user');
 
-  const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading;
+  const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading || usersLoading;
 
   // Get available years
   const availableYears = useMemo(() => {
@@ -144,6 +152,11 @@ export default function Statistics() {
   const filteredData = useMemo(() => {
     let filteredTrips = [...soldTrips];
     let filteredServices = [...services];
+
+    // Filter by agent (only for admin)
+    if (isAdmin && filters.agent !== 'all') {
+      filteredTrips = filteredTrips.filter(t => t.created_by === filters.agent);
+    }
 
     // Filter by year
     if (filters.year !== 'all') {
@@ -212,7 +225,7 @@ export default function Statistics() {
     }
 
     return { filteredTrips, filteredServices };
-  }, [soldTrips, services, filters]);
+  }, [soldTrips, services, filters, isAdmin]);
 
   const clearFilters = () => {
     setFilters({
@@ -224,7 +237,8 @@ export default function Statistics() {
       client: 'all',
       provider: 'all',
       hotelChain: 'all',
-      tripType: 'all'
+      tripType: 'all',
+      agent: 'all'
     });
   };
 
@@ -246,8 +260,12 @@ export default function Statistics() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">Mi Progreso</h1>
-          <p className="text-stone-500 mt-1">Análisis de ventas, tendencias y desempeño</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">
+            {isAdmin ? 'Progreso de Agentes' : 'Mi Progreso'}
+          </h1>
+          <p className="text-stone-500 mt-1">
+            {isAdmin ? 'Análisis de desempeño y estadísticas por agente' : 'Análisis de ventas, tendencias y desempeño'}
+          </p>
         </div>
       </div>
 
@@ -264,6 +282,20 @@ export default function Statistics() {
           )}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {isAdmin && (
+            <Select value={filters.agent} onValueChange={(v) => setFilters({...filters, agent: v})}>
+              <SelectTrigger className="rounded-xl text-xs">
+                <SelectValue placeholder="Agente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los agentes</SelectItem>
+                {agents.map(a => (
+                  <SelectItem key={a.email} value={a.email}>{a.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          
           <Select value={filters.year} onValueChange={(v) => setFilters({...filters, year: v})}>
             <SelectTrigger className="rounded-xl text-xs">
               <SelectValue placeholder="Año" />
@@ -363,8 +395,13 @@ export default function Statistics() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs defaultValue={isAdmin ? "agent-comparison" : "general"} className="space-y-6">
         <TabsList className="bg-white border border-stone-200 p-1 rounded-xl flex-wrap h-auto">
+          {isAdmin && (
+            <TabsTrigger value="agent-comparison" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+              Comparación de Agentes
+            </TabsTrigger>
+          )}
           <TabsTrigger value="general" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
             General
           </TabsTrigger>
@@ -390,6 +427,15 @@ export default function Statistics() {
             Proveedores
           </TabsTrigger>
         </TabsList>
+
+        {isAdmin && (
+          <TabsContent value="agent-comparison">
+            <AgentComparisonStats 
+              soldTrips={soldTrips}
+              allUsers={allUsers}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="general">
           <GeneralStats 
