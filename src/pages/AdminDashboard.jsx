@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DollarSign, Plane, Users, TrendingUp, Loader2, Award } from 'lucide-react';
+import { DollarSign, Plane, Users, TrendingUp, Loader2, Award, AlertCircle } from 'lucide-react';
 import StatsCard from '@/components/ui/StatsCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
@@ -56,6 +56,18 @@ export default function AdminDashboard() {
       return isWithinInterval(created, { start: monthStart, end: monthEnd });
     })
     .reduce((sum, trip) => sum + (trip.total_commission || 0), 0);
+
+  // High-value trips in quotation
+  const highValueTrips = allTrips.filter(trip => 
+    trip.stage === 'cotizando' && 
+    (trip.budget || 0) > 20000
+  ).map(trip => {
+    const agent = allUsers.find(u => u.email === trip.created_by);
+    return {
+      ...trip,
+      agentName: agent?.full_name || 'Sin asignar'
+    };
+  });
 
   // Top performers
   const agentStats = agents.map(agent => {
@@ -121,6 +133,42 @@ export default function AdminDashboard() {
           </Select>
         </div>
       </div>
+
+      {/* High Value Trips Alert */}
+      {highValueTrips.length > 0 && (
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-bold text-amber-900 mb-2">
+                ⚡ Oportunidades de Alto Valor en Cotización
+              </h3>
+              <p className="text-sm text-amber-800 mb-3">
+                {highValueTrips.length} {highValueTrips.length === 1 ? 'viaje' : 'viajes'} con presupuesto mayor a $20,000 USD en etapa de cotización:
+              </p>
+              <div className="space-y-2">
+                {highValueTrips.map(trip => (
+                  <div key={trip.id} className="bg-white rounded-lg p-3 border border-amber-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-stone-800">{trip.client_name || 'Sin cliente'}</p>
+                        <p className="text-sm text-stone-600">{trip.destination}</p>
+                        <p className="text-xs text-stone-500 mt-1">Agente: {trip.agentName}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-amber-600">
+                          ${(trip.budget || 0).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-stone-500">presupuesto</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
