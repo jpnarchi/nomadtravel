@@ -49,7 +49,7 @@ export default function InternalCommissions() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc' - asc = nearest to farthest
 
   const queryClient = useQueryClient();
 
@@ -616,7 +616,7 @@ export default function InternalCommissions() {
           className="rounded-xl"
         >
           <ArrowUpDown className="w-4 h-4 mr-2" />
-          {sortOrder === 'asc' ? 'Más antiguas' : 'Más recientes'}
+          {sortOrder === 'asc' ? 'Más cercanas primero' : 'Más lejanas primero'}
         </Button>
       </div>
 
