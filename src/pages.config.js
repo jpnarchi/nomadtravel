@@ -18,6 +18,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminClients from './pages/AdminClients';
 import AdminTrips from './pages/AdminTrips';
 import AdminSoldTrips from './pages/AdminSoldTrips';
+import PersonalCredentials from './pages/PersonalCredentials';
 import __Layout from './Layout.jsx';
 
 
@@ -42,6 +43,7 @@ export const PAGES = {
     "AdminClients": AdminClients,
     "AdminTrips": AdminTrips,
     "AdminSoldTrips": AdminSoldTrips,
+    "PersonalCredentials": PersonalCredentials,
 }
 
 export const pagesConfig = {

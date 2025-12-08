@@ -2,21 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { 
-        LayoutDashboard, 
-        Users, 
-        Plane, 
-        CheckCircle, 
-        Menu, 
-        X,
-        MapPin,
-        DollarSign,
-        Loader2,
-        Building2,
-        BarChart3,
-        BookOpen,
-        Key,
-        Wallet
-      } from 'lucide-react';
+              LayoutDashboard, 
+              Users, 
+              Plane, 
+              CheckCircle, 
+              Menu, 
+              X,
+              MapPin,
+              DollarSign,
+              Loader2,
+              Building2,
+              BarChart3,
+              BookOpen,
+              Key,
+              Wallet,
+              Lock
+            } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
@@ -96,6 +97,7 @@ export default function Layout({ children, currentPageName }) {
       { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
       { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
       { name: 'Contraseñas', page: 'Credentials', icon: Key },
+      { name: 'Mis Contraseñas', page: 'PersonalCredentials', icon: Lock },
     ];
 
     const navigation = isAdmin ? adminNavigation : userNavigation;
