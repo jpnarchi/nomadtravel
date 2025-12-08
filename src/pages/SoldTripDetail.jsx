@@ -127,18 +127,18 @@ export default function SoldTripDetail() {
   // Mutations
   const createServiceMutation = useMutation({
     mutationFn: (data) => base44.entities.TripService.create(data),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
-      updateTripTotals();
+      await updateTripTotals();
       setServiceFormOpen(false);
     }
   });
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
-      updateTripTotals();
+      await updateTripTotals();
       setServiceFormOpen(false);
       setEditingService(null);
     }
@@ -146,9 +146,9 @@ export default function SoldTripDetail() {
 
   const deleteServiceMutation = useMutation({
     mutationFn: (id) => base44.entities.TripService.delete(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
-      updateTripTotals();
+      await updateTripTotals();
       setDeleteConfirm(null);
     }
   });
@@ -187,10 +187,10 @@ export default function SoldTripDetail() {
       
       return payment;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
-      updateTripTotals();
+      await updateTripTotals();
       setClientPaymentOpen(false);
     }
   });
@@ -213,10 +213,10 @@ export default function SoldTripDetail() {
       
       return payment;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
-      updateTripTotals();
+      await updateTripTotals();
       setSupplierPaymentOpen(false);
     }
   });
@@ -244,10 +244,10 @@ export default function SoldTripDetail() {
       if (type === 'client') return base44.entities.ClientPayment.delete(id);
       return base44.entities.SupplierPayment.delete(id);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
-      updateTripTotals();
+      await updateTripTotals();
       setDeleteConfirm(null);
     }
   });
@@ -262,32 +262,41 @@ export default function SoldTripDetail() {
   });
 
   const updateTripTotals = async () => {
-    const [newServices, newClientPayments, newSupplierPayments] = await Promise.all([
-      base44.entities.TripService.filter({ sold_trip_id: tripId }),
-      base44.entities.ClientPayment.filter({ sold_trip_id: tripId }),
-      base44.entities.SupplierPayment.filter({ sold_trip_id: tripId })
-    ]);
+    if (!tripId) return;
 
-    const totalPrice = newServices.reduce((sum, s) => sum + (s.total_price || 0), 0);
-    const totalCommission = newServices.reduce((sum, s) => sum + (s.commission || 0), 0);
-    const totalPaidByClient = newClientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const totalPaidToSuppliers = newSupplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    try {
+      const [newServices, newClientPayments, newSupplierPayments] = await Promise.all([
+        base44.entities.TripService.filter({ sold_trip_id: tripId }),
+        base44.entities.ClientPayment.filter({ sold_trip_id: tripId }),
+        base44.entities.SupplierPayment.filter({ sold_trip_id: tripId })
+      ]);
 
-    // Auto-update status
-    let newStatus = 'pendiente';
-    if (totalPaidByClient >= totalPrice && totalPrice > 0) {
-      newStatus = 'pagado';
-    } else if (totalPaidByClient > 0) {
-      newStatus = 'parcial';
+      const totalPrice = newServices.reduce((sum, s) => sum + (s.total_price || 0), 0);
+      const totalCommission = newServices.reduce((sum, s) => sum + (s.commission || 0), 0);
+      const totalPaidByClient = newClientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const totalPaidToSuppliers = newSupplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      // Auto-update status
+      let newStatus = 'pendiente';
+      if (totalPaidByClient >= totalPrice && totalPrice > 0) {
+        newStatus = 'pagado';
+      } else if (totalPaidByClient > 0) {
+        newStatus = 'parcial';
+      }
+
+      await base44.entities.SoldTrip.update(tripId, {
+        total_price: totalPrice,
+        total_commission: totalCommission,
+        total_paid_by_client: totalPaidByClient,
+        total_paid_to_suppliers: totalPaidToSuppliers,
+        status: newStatus
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+    } catch (error) {
+      console.error('Error updating trip totals:', error);
     }
-
-    updateTripMutation.mutate({
-      total_price: totalPrice,
-      total_commission: totalCommission,
-      total_paid_by_client: totalPaidByClient,
-      total_paid_to_suppliers: totalPaidToSuppliers,
-      status: newStatus
-    });
   };
 
   const handleSaveService = (data) => {
