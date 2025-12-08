@@ -40,6 +40,7 @@ import SupplierPaymentForm from '@/components/soldtrips/SupplierPaymentForm';
 import PaymentPlanForm from '@/components/soldtrips/PaymentPlanForm';
 import EditPaymentPlanItem from '@/components/soldtrips/EditPaymentPlanItem';
 import InvoiceView from '@/components/soldtrips/InvoiceView';
+import SoldTripForm from '@/components/soldtrips/SoldTripForm';
 import EmptyState from '@/components/ui/EmptyState';
 
 const SERVICE_ICONS = {
@@ -86,6 +87,7 @@ export default function SoldTripDetail() {
   const [activeTab, setActiveTab] = useState('services');
   const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
   const [editingPlanItem, setEditingPlanItem] = useState(null);
+  const [editTripOpen, setEditTripOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -255,6 +257,7 @@ export default function SoldTripDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setEditTripOpen(false);
     }
   });
 
@@ -434,6 +437,15 @@ export default function SoldTripDetail() {
 
           {/* Action Buttons */}
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditTripOpen(true)}
+              className="rounded-xl"
+              style={{ borderColor: '#2E442A', color: '#2E442A' }}
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
             {paymentPlan.length === 0 && (
               <Button
                 variant="outline"
@@ -1088,6 +1100,14 @@ export default function SoldTripDetail() {
         soldTrip={soldTrip}
         services={services}
         clientPayments={clientPayments}
+      />
+
+      <SoldTripForm
+        open={editTripOpen}
+        onClose={() => setEditTripOpen(false)}
+        soldTrip={soldTrip}
+        onSave={(data) => updateTripMutation.mutate(data)}
+        isLoading={updateTripMutation.isPending}
       />
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
