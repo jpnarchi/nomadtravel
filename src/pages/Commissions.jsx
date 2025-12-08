@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ViewModeContext } from '@/Layout';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -59,9 +60,11 @@ const CRUISE_PROVIDER_LABELS = {
 };
 
 export default function Commissions() {
+  const { viewMode } = useContext(ViewModeContext);
   const [search, setSearch] = useState('');
   const [filterBookedBy, setFilterBookedBy] = useState('all');
   const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
   const [activeTab, setActiveTab] = useState('pendientes');
@@ -76,27 +79,41 @@ export default function Commissions() {
         setUser(currentUser);
       } catch (error) {
         console.error('Error fetching user:', error);
+      } finally {
+        setUserLoading(false);
       }
     };
     fetchUser();
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
   const { data: allServices = [], isLoading: servicesLoading } = useQuery({
-    queryKey: ['allServices'],
-    queryFn: () => base44.entities.TripService.list()
+    queryKey: ['allServices', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      const allTrips = isAdmin 
+        ? await base44.entities.SoldTrip.list()
+        : await base44.entities.SoldTrip.filter({ created_by: user.email });
+      const tripIds = allTrips.map(t => t.id);
+      const allSvcs = await base44.entities.TripService.list();
+      return allSvcs.filter(s => tripIds.includes(s.sold_trip_id));
+    },
+    enabled: !!user && !userLoading
   });
 
   const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
-    queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+    queryKey: ['soldTrips', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.SoldTrip.list();
+      return base44.entities.SoldTrip.filter({ created_by: user.email });
+    },
+    enabled: !!user && !userLoading
   });
 
-  // Filter by user role
-  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
-  const soldTripIds = new Set(soldTrips.map(t => t.id));
-  const services = allServices.filter(s => soldTripIds.has(s.sold_trip_id));
+  const soldTrips = allSoldTrips;
+  const services = allServices;
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
@@ -172,7 +189,7 @@ export default function Commissions() {
     }
   };
 
-  const isLoading = servicesLoading || tripsLoading;
+  const isLoading = servicesLoading || tripsLoading || userLoading;
 
   if (isLoading) {
     return (
