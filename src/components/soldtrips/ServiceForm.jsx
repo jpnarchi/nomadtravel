@@ -243,6 +243,13 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.total_price || formData.total_price <= 0) {
+      alert('Por favor ingresa un precio total válido');
+      return;
+    }
+    
     onSave({ ...formData, sold_trip_id: soldTripId });
   };
 
@@ -1046,22 +1053,28 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           <div className="border-t border-stone-200 pt-5 space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Precio Total *</Label>
+                <Label>Precio Total (USD) *</Label>
                 <Input
                   type="number"
+                  step="0.01"
+                  min="0"
                   value={formData.total_price || ''}
                   onChange={(e) => updateField('total_price', parseFloat(e.target.value) || 0)}
                   className="rounded-xl"
                   required
+                  placeholder="0.00"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Comisión</Label>
+                <Label>Comisión (USD)</Label>
                 <Input
                   type="number"
+                  step="0.01"
+                  min="0"
                   value={formData.commission || ''}
                   onChange={(e) => updateField('commission', parseFloat(e.target.value) || 0)}
                   className="rounded-xl"
+                  placeholder="0.00"
                 />
               </div>
               <div className="space-y-2">
