@@ -150,9 +150,11 @@ export default function SoldTripDetail() {
   const deleteServiceMutation = useMutation({
     mutationFn: (id) => base44.entities.TripService.delete(id),
     onSuccess: async () => {
+      await updateTripTotals();
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
-      await updateTripTotals();
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
       setDeleteConfirm(null);
     }
   });
