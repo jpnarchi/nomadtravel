@@ -130,10 +130,10 @@ export default function SoldTripDetail() {
     mutationFn: (data) => base44.entities.TripService.create(data),
     onSuccess: async () => {
       await updateTripTotals();
-      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['allServices'] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['allServices'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
       setServiceFormOpen(false);
     }
   });
@@ -142,10 +142,10 @@ export default function SoldTripDetail() {
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
     onSuccess: async () => {
       await updateTripTotals();
-      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['allServices'] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['allServices'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
       setServiceFormOpen(false);
       setEditingService(null);
     }
@@ -155,10 +155,10 @@ export default function SoldTripDetail() {
     mutationFn: (id) => base44.entities.TripService.delete(id),
     onSuccess: async () => {
       await updateTripTotals();
-      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['allServices'] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['allServices'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
       setDeleteConfirm(null);
     }
   });
@@ -256,10 +256,10 @@ export default function SoldTripDetail() {
     },
     onSuccess: async () => {
       await updateTripTotals();
-      queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['clientPayments', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
       setDeleteConfirm(null);
     }
   });
