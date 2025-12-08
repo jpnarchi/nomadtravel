@@ -26,6 +26,7 @@ import ClientForm from '@/components/clients/ClientForm';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function Clients() {
+  const { viewMode } = useContext(ViewModeContext);
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);

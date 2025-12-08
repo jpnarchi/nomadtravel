@@ -1,28 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { 
-              LayoutDashboard, 
-              Users, 
-              Plane, 
-              CheckCircle, 
-              Menu, 
-              X,
-              MapPin,
-              DollarSign,
-              Loader2,
-              Building2,
-              BarChart3,
-              BookOpen,
-              Key,
-              Wallet,
-              Lock
-            } from 'lucide-react';
+                  LayoutDashboard, 
+                  Users, 
+                  Plane, 
+                  CheckCircle, 
+                  Menu, 
+                  X,
+                  MapPin,
+                  DollarSign,
+                  Loader2,
+                  Building2,
+                  BarChart3,
+                  BookOpen,
+                  Key,
+                  Wallet,
+                  Lock,
+                  Eye,
+                  ShieldCheck
+                } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
+
+export const ViewModeContext = createContext({ viewMode: 'admin', isActualAdmin: false });
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,6 +35,7 @@ export default function Layout({ children, currentPageName }) {
   const [rateLoading, setRateLoading] = useState(true);
   const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
   const [commissionInfoOpen, setCommissionInfoOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('admin');
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
@@ -72,7 +78,8 @@ export default function Layout({ children, currentPageName }) {
       fetchUser();
     }, []);
 
-    const isAdmin = user?.role === 'admin';
+    const isActualAdmin = user?.role === 'admin';
+    const isAdmin = isActualAdmin && viewMode === 'admin';
 
     const adminNavigation = [
       { name: 'Dashboard Global', page: 'AdminDashboard', icon: LayoutDashboard },
@@ -183,7 +190,34 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </div>
 
-            {/* Exchange Rate */}
+            {/* Admin View Mode Switch */}
+                          {isActualAdmin && (
+                            <div className="mt-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  {viewMode === 'admin' ? (
+                                    <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                                  ) : (
+                                    <Eye className="w-4 h-4 text-purple-600" />
+                                  )}
+                                  <span className="text-xs font-semibold text-stone-700">
+                                    {viewMode === 'admin' ? 'Vista Admin' : 'Vista Usuario'}
+                                  </span>
+                                </div>
+                                <Switch
+                                  checked={viewMode === 'admin'}
+                                  onCheckedChange={(checked) => setViewMode(checked ? 'admin' : 'user')}
+                                />
+                              </div>
+                              <p className="text-xs text-stone-500">
+                                {viewMode === 'admin' 
+                                  ? 'Viendo todos los datos' 
+                                  : 'Viendo solo tus datos'}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Exchange Rate */}
                           <div className="mt-4 p-3 bg-stone-50 rounded-xl">
                             <div className="flex items-center gap-2 text-xs text-stone-500 mb-1">
                                             <DollarSign className="w-3 h-3" />
@@ -258,7 +292,9 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <main className="lg:pl-72 pt-16 lg:pt-0 min-h-screen">
         <div className="p-4 lg:p-8">
-          {children}
+          <ViewModeContext.Provider value={{ viewMode: isActualAdmin ? viewMode : 'user', isActualAdmin }}>
+            {children}
+          </ViewModeContext.Provider>
         </div>
       </main>
 

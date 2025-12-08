@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ViewModeContext } from '@/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -46,6 +47,7 @@ const STATUS_CONFIG = {
 };
 
 export default function SoldTrips() {
+  const { viewMode } = useContext(ViewModeContext);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
@@ -68,7 +70,7 @@ export default function SoldTrips() {
     fetchUser();
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
   const { data: allSoldTrips = [], isLoading } = useQuery({
     queryKey: ['soldTrips'],

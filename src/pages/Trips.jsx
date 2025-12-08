@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ViewModeContext } from '@/Layout';
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Loader2, Plane } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const STAGES = [
 const STAGE_ORDER = ['nuevo', 'cotizando', 'propuesta_enviada', 'aceptado', 'vendido'];
 
 export default function Trips() {
+  const { viewMode } = useContext(ViewModeContext);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
