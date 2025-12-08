@@ -81,6 +81,7 @@ export default function SoldTripDetail() {
   const [serviceFormOpen, setServiceFormOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [clientPaymentOpen, setClientPaymentOpen] = useState(false);
+  const [editingClientPayment, setEditingClientPayment] = useState(null);
   const [supplierPaymentOpen, setSupplierPaymentOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
@@ -166,6 +167,19 @@ export default function SoldTripDetail() {
     }
   });
 
+  const updateClientPaymentMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.ClientPayment.update(id, data),
+    onSuccess: async () => {
+      await updateTripTotals();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await queryClient.refetchQueries({ queryKey: ['clientPayments', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
+      setClientPaymentOpen(false);
+      setEditingClientPayment(null);
+    }
+  });
+
   const createClientPaymentMutation = useMutation({
     mutationFn: async (data) => {
       const payment = await base44.entities.ClientPayment.create(data);
@@ -201,10 +215,14 @@ export default function SoldTripDetail() {
       return payment;
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
       await updateTripTotals();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await queryClient.refetchQueries({ queryKey: ['clientPayments', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['paymentPlan', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
+      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
       setClientPaymentOpen(false);
+      setEditingClientPayment(null);
     }
   });
 
@@ -866,14 +884,27 @@ export default function SoldTripDetail() {
                       </div>
                       {payment.notes && <p className="text-xs text-stone-400 mt-1">{payment.notes}</p>}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-stone-400 hover:text-red-500"
-                      onClick={() => setDeleteConfirm({ type: 'client', item: payment })}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-stone-400 hover:text-blue-600"
+                        onClick={() => {
+                          setEditingClientPayment(payment);
+                          setClientPaymentOpen(true);
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-stone-400 hover:text-red-500"
+                        onClick={() => setDeleteConfirm({ type: 'client', item: payment })}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -1085,11 +1116,21 @@ export default function SoldTripDetail() {
 
       <PaymentForm
         open={clientPaymentOpen}
-        onClose={() => setClientPaymentOpen(false)}
+        onClose={() => {
+          setClientPaymentOpen(false);
+          setEditingClientPayment(null);
+        }}
         soldTripId={tripId}
+        payment={editingClientPayment}
         type="client"
-        onSave={(data) => createClientPaymentMutation.mutate(data)}
-        isLoading={createClientPaymentMutation.isPending}
+        onSave={(data) => {
+          if (editingClientPayment) {
+            updateClientPaymentMutation.mutate({ id: editingClientPayment.id, data });
+          } else {
+            createClientPaymentMutation.mutate(data);
+          }
+        }}
+        isLoading={createClientPaymentMutation.isPending || updateClientPaymentMutation.isPending}
       />
 
       <SupplierPaymentForm
