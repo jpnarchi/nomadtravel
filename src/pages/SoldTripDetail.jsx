@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ServiceForm from '@/components/soldtrips/ServiceForm';
 import PaymentForm from '@/components/soldtrips/PaymentForm';
+import SupplierPaymentForm from '@/components/soldtrips/SupplierPaymentForm';
+import PaymentPlanForm from '@/components/soldtrips/PaymentPlanForm';
 import InvoiceView from '@/components/soldtrips/InvoiceView';
 import EmptyState from '@/components/ui/EmptyState';
 
@@ -81,6 +83,7 @@ export default function SoldTripDetail() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('services');
+  const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -108,6 +111,12 @@ export default function SoldTripDetail() {
   const { data: supplierPayments = [] } = useQuery({
     queryKey: ['supplierPayments', tripId],
     queryFn: () => base44.entities.SupplierPayment.filter({ sold_trip_id: tripId }),
+    enabled: !!tripId
+  });
+
+  const { data: paymentPlan = [] } = useQuery({
+    queryKey: ['paymentPlan', tripId],
+    queryFn: () => base44.entities.ClientPaymentPlan.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
@@ -150,11 +159,38 @@ export default function SoldTripDetail() {
   });
 
   const createSupplierPaymentMutation = useMutation({
-    mutationFn: (data) => base44.entities.SupplierPayment.create(data),
+    mutationFn: async (data) => {
+      const payment = await base44.entities.SupplierPayment.create(data);
+      
+      // If associated with a service, update service's amount_paid_to_supplier
+      if (data.trip_service_id) {
+        const servicePayments = await base44.entities.SupplierPayment.filter({ 
+          trip_service_id: data.trip_service_id 
+        });
+        const totalPaid = servicePayments.reduce((sum, p) => sum + (p.amount || 0), 0) + data.amount;
+        
+        await base44.entities.TripService.update(data.trip_service_id, {
+          amount_paid_to_supplier: totalPaid
+        });
+      }
+      
+      return payment;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
       updateTripTotals();
       setSupplierPaymentOpen(false);
+    }
+  });
+
+  const createPaymentPlanMutation = useMutation({
+    mutationFn: async (payments) => {
+      return await base44.entities.ClientPaymentPlan.bulkCreate(payments);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
+      setPaymentPlanOpen(false);
     }
   });
 
@@ -355,6 +391,17 @@ export default function SoldTripDetail() {
 
           {/* Action Buttons */}
           <div className="flex gap-2">
+            {paymentPlan.length === 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setPaymentPlanOpen(true)}
+                className="rounded-xl"
+                style={{ borderColor: '#2E442A', color: '#2E442A' }}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Plan de Pagos
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => setInvoiceOpen(true)}
@@ -530,6 +577,11 @@ export default function SoldTripDetail() {
           <TabsTrigger value="supplier-payments" className="rounded-lg">
             Pagos Proveedores <Badge variant="secondary" className="ml-2 text-xs">{supplierPayments.length}</Badge>
           </TabsTrigger>
+          {paymentPlan.length > 0 && (
+            <TabsTrigger value="payment-plan" className="rounded-lg">
+              Plan de Pagos <Badge variant="secondary" className="ml-2 text-xs">{paymentPlan.length}</Badge>
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Services Tab */}
@@ -617,12 +669,22 @@ export default function SoldTripDetail() {
                                     )}
                                   </div>
                                   <div className="text-right">
-                                    <p className="font-bold text-lg" style={{ color: '#2E442A' }}>
-                                      ${(service.total_price || 0).toLocaleString()}
-                                    </p>
-                                    <p className="text-xs text-stone-400">
-                                      Comisión: ${(service.commission || 0).toLocaleString()}
-                                    </p>
+                                  <p className="font-bold text-lg" style={{ color: '#2E442A' }}>
+                                   ${(service.total_price || 0).toLocaleString()}
+                                  </p>
+                                  <p className="text-xs text-stone-400">
+                                   Comisión: ${(service.commission || 0).toLocaleString()}
+                                  </p>
+                                  {service.amount_paid_to_supplier > 0 && (
+                                   <p className="text-xs text-amber-600 mt-1">
+                                     Pagado: ${service.amount_paid_to_supplier.toLocaleString()}
+                                   </p>
+                                  )}
+                                  {service.total_price - (service.amount_paid_to_supplier || 0) > 0 && (
+                                   <p className="text-xs text-orange-500">
+                                     Falta: ${(service.total_price - (service.amount_paid_to_supplier || 0)).toLocaleString()}
+                                   </p>
+                                  )}
                                   </div>
                                   <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -776,20 +838,25 @@ export default function SoldTripDetail() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.05 }}
                     className="p-4 hover:bg-stone-50 transition-colors flex items-center gap-4"
-                  >
+                    >
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50">
-                      <Building2 className="w-6 h-6 text-amber-600" />
+                     <Building2 className="w-6 h-6 text-amber-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-stone-800">{payment.supplier}</p>
-                      <div className="flex items-center gap-2 text-sm text-stone-500">
-                        <span className="font-bold text-amber-600">${(payment.amount || 0).toLocaleString()}</span>
-                        <span>•</span>
-                        <span>{format(new Date(payment.date), 'd MMM yyyy', { locale: es })}</span>
-                        <span>•</span>
-                        <Badge variant="outline" className="text-xs capitalize">{payment.method}</Badge>
-                      </div>
-                      {payment.notes && <p className="text-xs text-stone-400 mt-1">{payment.notes}</p>}
+                     <p className="font-semibold text-stone-800">{payment.supplier}</p>
+                     {payment.trip_service_id && (
+                       <p className="text-xs text-blue-600 mt-0.5">
+                         Asociado a servicio
+                       </p>
+                     )}
+                     <div className="flex items-center gap-2 text-sm text-stone-500">
+                       <span className="font-bold text-amber-600">${(payment.amount || 0).toLocaleString()}</span>
+                       <span>•</span>
+                       <span>{format(new Date(payment.date), 'd MMM yyyy', { locale: es })}</span>
+                       <span>•</span>
+                       <Badge variant="outline" className="text-xs capitalize">{payment.method}</Badge>
+                     </div>
+                     {payment.notes && <p className="text-xs text-stone-400 mt-1">{payment.notes}</p>}
                     </div>
                     <Button
                       variant="ghost"
@@ -805,6 +872,111 @@ export default function SoldTripDetail() {
             )}
           </div>
         </TabsContent>
+
+        {/* Payment Plan Tab */}
+        {paymentPlan.length > 0 && (
+          <TabsContent value="payment-plan">
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
+              <div className="p-5 border-b border-stone-100">
+                <h3 className="font-semibold text-stone-800">Plan de Pagos del Cliente</h3>
+                <p className="text-sm text-stone-500 mt-1">
+                  {paymentPlan.filter(p => p.status === 'pagado').length} de {paymentPlan.length} pagos completados
+                </p>
+              </div>
+
+              <div className="divide-y divide-stone-100">
+                {paymentPlan.sort((a, b) => new Date(a.due_date) - new Date(b.due_date)).map((plan) => {
+                  const dueDate = new Date(plan.due_date);
+                  const today = new Date();
+                  const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                  const isOverdue = daysUntilDue < 0 && plan.status !== 'pagado';
+                  
+                  return (
+                    <div 
+                      key={plan.id}
+                      className={`p-4 hover:bg-stone-50 transition-colors ${
+                        isOverdue ? 'bg-red-50' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          plan.status === 'pagado' ? 'bg-green-50' :
+                          isOverdue ? 'bg-red-50' :
+                          'bg-blue-50'
+                        }`}>
+                          <span className={`font-bold ${
+                            plan.status === 'pagado' ? 'text-green-600' :
+                            isOverdue ? 'text-red-600' :
+                            'text-blue-600'
+                          }`}>
+                            #{plan.payment_number}
+                          </span>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-bold text-lg" style={{ color: '#2E442A' }}>
+                              ${plan.amount_due.toLocaleString()}
+                            </p>
+                            <Badge className={
+                              plan.status === 'pagado' ? 'bg-green-100 text-green-700' :
+                              plan.status === 'atrasado' ? 'bg-red-100 text-red-700' :
+                              plan.status === 'parcial' ? 'bg-blue-100 text-blue-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }>
+                              {plan.status === 'pagado' ? 'Pagado' :
+                               plan.status === 'atrasado' ? 'Atrasado' :
+                               plan.status === 'parcial' ? 'Parcial' :
+                               'Pendiente'}
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm text-stone-500">
+                            <Calendar className="w-3 h-3" />
+                            <span>Vence: {format(dueDate, 'd MMMM yyyy', { locale: es })}</span>
+                            {!isOverdue && daysUntilDue >= 0 && plan.status !== 'pagado' && (
+                              <>
+                                <span>•</span>
+                                <span className={daysUntilDue <= 7 ? 'text-orange-600 font-medium' : ''}>
+                                  {daysUntilDue === 0 ? '¡Hoy!' : `${daysUntilDue} días`}
+                                </span>
+                              </>
+                            )}
+                            {isOverdue && (
+                              <>
+                                <span>•</span>
+                                <span className="text-red-600 font-medium">
+                                  Vencido hace {Math.abs(daysUntilDue)} días
+                                </span>
+                              </>
+                            )}
+                          </div>
+                          
+                          {plan.amount_paid > 0 && plan.status !== 'pagado' && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              Pagado parcialmente: ${plan.amount_paid.toLocaleString()} 
+                              (Falta: ${(plan.amount_due - plan.amount_paid).toLocaleString()})
+                            </p>
+                          )}
+                          
+                          {plan.reminder_sent && (
+                            <p className="text-xs text-stone-400 mt-1">
+                              Último recordatorio: {format(new Date(plan.last_reminder_date), 'd MMM', { locale: es })}
+                            </p>
+                          )}
+                          
+                          {plan.notes && (
+                            <p className="text-xs text-stone-500 mt-1 italic">"{plan.notes}"</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Dialogs */}
@@ -826,13 +998,22 @@ export default function SoldTripDetail() {
         isLoading={createClientPaymentMutation.isPending}
       />
 
-      <PaymentForm
+      <SupplierPaymentForm
         open={supplierPaymentOpen}
         onClose={() => setSupplierPaymentOpen(false)}
         soldTripId={tripId}
-        type="supplier"
+        services={services}
         onSave={(data) => createSupplierPaymentMutation.mutate(data)}
         isLoading={createSupplierPaymentMutation.isPending}
+      />
+
+      <PaymentPlanForm
+        open={paymentPlanOpen}
+        onClose={() => setPaymentPlanOpen(false)}
+        soldTripId={tripId}
+        totalAmount={totalServices}
+        onSave={(payments) => createPaymentPlanMutation.mutate(payments)}
+        isLoading={createPaymentPlanMutation.isPending}
       />
 
       <InvoiceView
