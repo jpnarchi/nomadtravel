@@ -199,22 +199,22 @@ export default function TripRequestForm({ open, onClose, onSave, isLoading, init
           <Label htmlFor="travelers">Número de adultos</Label>
           <Input
             id="travelers"
-            type="number"
-            min="1"
+            type="text"
             value={formData.travelers}
-            onChange={(e) => setFormData({ ...formData, travelers: parseInt(e.target.value) || 1 })}
+            onChange={(e) => setFormData({ ...formData, travelers: e.target.value })}
             className="rounded-xl"
+            placeholder="Ej: 2"
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="children">Número de niños</Label>
           <Input
             id="children"
-            type="number"
-            min="0"
+            type="text"
             value={formData.children}
-            onChange={(e) => setFormData({ ...formData, children: parseInt(e.target.value) || 0 })}
+            onChange={(e) => setFormData({ ...formData, children: e.target.value })}
             className="rounded-xl"
+            placeholder="Ej: 1"
           />
         </div>
       </div>
