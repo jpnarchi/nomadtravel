@@ -32,7 +32,9 @@ export default function AdminSoldTrips() {
 
   const { data: allSoldTrips = [], isLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+    queryFn: () => base44.entities.SoldTrip.list(),
+    refetchOnWindowFocus: true,
+    refetchInterval: 5000
   });
 
   const agents = allUsers.filter(u => u.role === 'user');
