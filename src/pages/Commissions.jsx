@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Loader2, Search, Filter, DollarSign, 
-  Check, X, Download, FileText
+  Check, X, Download, FileText, Trash2
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import AgentInvoiceGenerator from '@/components/commissions/AgentInvoiceGenerator';
 
 const BOOKED_BY_LABELS = {
@@ -55,6 +65,7 @@ export default function Commissions() {
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
   const [activeTab, setActiveTab] = useState('pendientes');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -98,6 +109,14 @@ export default function Commissions() {
     mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+    }
+  });
+
+  const deleteServiceMutation = useMutation({
+    mutationFn: (id) => base44.entities.TripService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allServices'] });
+      setDeleteConfirm(null);
     }
   });
 
@@ -259,6 +278,7 @@ export default function Commissions() {
                 <th className="text-left p-3 font-semibold text-stone-600">Reservado por</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Fecha Pago</th>
                 <th className="text-right p-3 font-semibold text-stone-600">Comisión</th>
+                <th className="text-center p-3 font-semibold text-stone-600">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -318,6 +338,16 @@ export default function Commissions() {
                         ${((service.commission || 0) * 0.5).toLocaleString()}
                       </span>
                     </td>
+                    <td className="p-3 text-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteConfirm(service)}
+                        className="h-8 w-8 text-stone-400 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
@@ -342,6 +372,27 @@ export default function Commissions() {
         services={filteredServices.filter(s => selectedServices.includes(s.id))}
         soldTrips={soldTrips}
       />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar comisión?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará el servicio y su comisión asociada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteServiceMutation.mutate(deleteConfirm.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
