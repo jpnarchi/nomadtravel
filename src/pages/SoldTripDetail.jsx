@@ -130,6 +130,7 @@ export default function SoldTripDetail() {
     mutationFn: (data) => base44.entities.TripService.create(data),
     onSuccess: async () => {
       await updateTripTotals();
+      await new Promise(resolve => setTimeout(resolve, 500));
       await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
       await queryClient.refetchQueries({ queryKey: ['allServices'] });
       await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
@@ -142,6 +143,7 @@ export default function SoldTripDetail() {
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
     onSuccess: async () => {
       await updateTripTotals();
+      await new Promise(resolve => setTimeout(resolve, 500));
       await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
       await queryClient.refetchQueries({ queryKey: ['allServices'] });
       await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
@@ -155,6 +157,7 @@ export default function SoldTripDetail() {
     mutationFn: (id) => base44.entities.TripService.delete(id),
     onSuccess: async () => {
       await updateTripTotals();
+      await new Promise(resolve => setTimeout(resolve, 500));
       await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
       await queryClient.refetchQueries({ queryKey: ['allServices'] });
       await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
@@ -256,6 +259,7 @@ export default function SoldTripDetail() {
     },
     onSuccess: async () => {
       await updateTripTotals();
+      await new Promise(resolve => setTimeout(resolve, 500));
       await queryClient.refetchQueries({ queryKey: ['clientPayments', tripId] });
       await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
       await queryClient.refetchQueries({ queryKey: ['soldTrips'] });

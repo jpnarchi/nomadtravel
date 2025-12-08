@@ -80,8 +80,7 @@ export default function SoldTrips() {
       return base44.entities.SoldTrip.filter({ created_by: user.email }, '-created_date');
     },
     enabled: !!user,
-    refetchOnWindowFocus: true,
-    refetchInterval: 5000
+    refetchOnWindowFocus: true
   });
 
   const updateMutation = useMutation({
