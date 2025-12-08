@@ -53,21 +53,25 @@ export default function Trips() {
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
-  const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
-    queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list('-created_date')
+  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+    queryKey: ['trips', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.Trip.list('-created_date');
+      return base44.entities.Trip.filter({ created_by: user.email }, '-created_date');
+    },
+    enabled: !!user
   });
 
-  // Filter trips based on user role
-  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
-
-  const { data: allClients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
+  const { data: clients = [] } = useQuery({
+    queryKey: ['clients', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.Client.list();
+      return base44.entities.Client.filter({ created_by: user.email });
+    },
+    enabled: !!user
   });
-
-  // Filter clients based on user role
-  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Trip.create(data),

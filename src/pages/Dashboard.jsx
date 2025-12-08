@@ -29,39 +29,55 @@ export default function Dashboard() {
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
-  const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
-    queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list()
+  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+    queryKey: ['trips', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.Trip.list();
+      return base44.entities.Trip.filter({ created_by: user.email });
+    },
+    enabled: !!user
   });
 
-  const { data: allSoldTrips = [], isLoading: soldLoading } = useQuery({
-    queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+  const { data: soldTrips = [], isLoading: soldLoading } = useQuery({
+    queryKey: ['soldTrips', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.SoldTrip.list();
+      return base44.entities.SoldTrip.filter({ created_by: user.email });
+    },
+    enabled: !!user
   });
 
-  const { data: allClients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
+  const { data: clients = [] } = useQuery({
+    queryKey: ['clients', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.Client.list();
+      return base44.entities.Client.filter({ created_by: user.email });
+    },
+    enabled: !!user
   });
 
-  const { data: allTasks = [] } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list()
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.Task.list();
+      return base44.entities.Task.filter({ created_by: user.email });
+    },
+    enabled: !!user
   });
 
-  const { data: allServices = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => base44.entities.TripService.list()
+  const soldTripIds = soldTrips.map(t => t.id);
+  const { data: services = [] } = useQuery({
+    queryKey: ['services', soldTripIds],
+    queryFn: async () => {
+      if (soldTripIds.length === 0) return [];
+      return base44.entities.TripService.list();
+    },
+    enabled: soldTripIds.length > 0
   });
-
-  // Filter data by user
-  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
-  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
-  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
-  const tasks = isAdmin ? allTasks : allTasks.filter(t => t.created_by === user?.email);
-  
-  const soldTripIds = new Set(soldTrips.map(t => t.id));
-  const services = isAdmin ? allServices : allServices.filter(s => soldTripIds.has(s.sold_trip_id));
 
   const createTaskMutation = useMutation({
     mutationFn: (data) => base44.entities.Task.create(data),

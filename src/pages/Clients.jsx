@@ -50,13 +50,18 @@ export default function Clients() {
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
-  const { data: allClients = [], isLoading } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list('-created_date')
+  const { data: clients = [], isLoading } = useQuery({
+    queryKey: ['clients', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) {
+        return base44.entities.Client.list('-created_date');
+      } else {
+        return base44.entities.Client.filter({ created_by: user.email }, '-created_date');
+      }
+    },
+    enabled: !!user
   });
-
-  // Filter clients based on user role
-  const clients = isAdmin ? allClients : allClients.filter(c => c.created_by === user?.email);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Client.create(data),

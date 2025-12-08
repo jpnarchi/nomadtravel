@@ -72,13 +72,15 @@ export default function SoldTrips() {
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
-  const { data: allSoldTrips = [], isLoading } = useQuery({
-    queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list('-created_date')
+  const { data: soldTrips = [], isLoading } = useQuery({
+    queryKey: ['soldTrips', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.SoldTrip.list('-created_date');
+      return base44.entities.SoldTrip.filter({ created_by: user.email }, '-created_date');
+    },
+    enabled: !!user
   });
-
-  // Filter trips based on user role
-  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
