@@ -60,7 +60,9 @@ export default function Trips() {
       if (isAdmin) return base44.entities.Trip.list('-created_date');
       return base44.entities.Trip.filter({ created_by: user.email }, '-created_date');
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: 1,
+    staleTime: 30000
   });
 
   const { data: clients = [] } = useQuery({
@@ -70,7 +72,9 @@ export default function Trips() {
       if (isAdmin) return base44.entities.Client.list();
       return base44.entities.Client.filter({ created_by: user.email });
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: 1,
+    staleTime: 30000
   });
 
   const createMutation = useMutation({
