@@ -11,25 +11,25 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const DESTINATIONS = [
-  'Sudeste Asiático',
-  'Asia Oriental',
-  'Asia del Sur',
-  'Medio Oriente',
-  'Europa Occidental',
-  'Europa del Este',
-  'Europa del Norte',
-  'Europa del Sur',
-  'África del Norte',
-  'África del Este',
-  'África del Sur',
-  'África Occidental',
-  'Oceanía / Pacífico',
-  'Norteamérica',
-  'Caribe',
-  'Centroamérica',
-  'Sudamérica',
-  'Islas del Índico',
-  'Islas del Mediterráneo'
+  { region: 'Sudeste Asiático', countries: 'Tailandia, Vietnam, Indonesia' },
+  { region: 'Asia Oriental', countries: 'Japón, Corea del Sur, China' },
+  { region: 'Asia del Sur', countries: 'India, Sri Lanka, Maldivas' },
+  { region: 'Medio Oriente', countries: 'Emiratos Árabes, Jordania, Israel' },
+  { region: 'Europa Occidental', countries: 'Francia, España, Italia' },
+  { region: 'Europa del Este', countries: 'República Checa, Polonia, Hungría' },
+  { region: 'Europa del Norte', countries: 'Noruega, Islandia, Finlandia' },
+  { region: 'Europa del Sur', countries: 'Grecia, Portugal, Croacia' },
+  { region: 'África del Norte', countries: 'Marruecos, Egipto, Túnez' },
+  { region: 'África del Este', countries: 'Kenia, Tanzania, Ruanda' },
+  { region: 'África del Sur', countries: 'Sudáfrica, Namibia, Botsuana' },
+  { region: 'África Occidental', countries: 'Ghana, Senegal, Costa de Marfil' },
+  { region: 'Oceanía / Pacífico', countries: 'Australia, Nueva Zelanda, Fiji' },
+  { region: 'Norteamérica', countries: 'Estados Unidos, Canadá, Alaska' },
+  { region: 'Caribe', countries: 'Jamaica, República Dominicana, Bahamas' },
+  { region: 'Centroamérica', countries: 'Costa Rica, Panamá, Guatemala' },
+  { region: 'Sudamérica', countries: 'Perú, Argentina, Brasil' },
+  { region: 'Islas del Índico', countries: 'Maldivas, Seychelles, Mauricio' },
+  { region: 'Islas del Mediterráneo', countries: 'Malta, Chipre, Cerdeña' }
 ];
 
 const STAGES = [
@@ -173,14 +173,14 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
                 >
                   {formData.destination ? (
                     <div className="flex flex-wrap gap-1">
-                      {formData.destination.split(', ').map((dest) => (
-                        <Badge key={dest} variant="secondary" className="text-xs">
-                          {dest}
+                      {formData.destination.split(', ').map((destName) => (
+                        <Badge key={destName} variant="secondary" className="text-xs">
+                          {destName}
                           <X
                             className="w-3 h-3 ml-1 cursor-pointer"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const newDests = formData.destination.split(', ').filter(d => d !== dest);
+                              const newDests = formData.destination.split(', ').filter(d => d !== destName);
                               setFormData({ ...formData, destination: newDests.join(', ') });
                             }}
                           />
@@ -192,26 +192,30 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-72 p-3 max-h-64 overflow-y-auto">
-                <div className="space-y-2">
+              <PopoverContent className="w-80 p-0">
+                <div className="max-h-[400px] overflow-y-auto p-3 space-y-2">
                   {DESTINATIONS.map((dest) => {
-                    const isSelected = formData.destination?.split(', ').includes(dest);
+                    const isSelected = formData.destination?.split(', ').includes(dest.region);
                     return (
-                      <div key={dest} className="flex items-center gap-2">
+                      <div key={dest.region} className="flex items-start gap-2 py-1">
                         <Checkbox
-                          id={dest}
+                          id={dest.region}
                           checked={isSelected}
                           onCheckedChange={(checked) => {
                             let currentDests = formData.destination ? formData.destination.split(', ').filter(d => d) : [];
                             if (checked) {
-                              currentDests.push(dest);
+                              currentDests.push(dest.region);
                             } else {
-                              currentDests = currentDests.filter(d => d !== dest);
+                              currentDests = currentDests.filter(d => d !== dest.region);
                             }
                             setFormData({ ...formData, destination: currentDests.join(', ') });
                           }}
+                          className="mt-1"
                         />
-                        <label htmlFor={dest} className="text-sm cursor-pointer">{dest}</label>
+                        <label htmlFor={dest.region} className="text-sm cursor-pointer flex-1">
+                          <div className="font-medium">{dest.region}</div>
+                          <div className="text-xs text-stone-500">{dest.countries}</div>
+                        </label>
                       </div>
                     );
                   })}
