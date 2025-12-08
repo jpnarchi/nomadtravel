@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { DollarSign, Plane, Users, TrendingUp, Loader2 } from 'lucide-react';
+import { ViewModeContext } from '@/Layout';
 import StatsCard from '@/components/ui/StatsCard';
 import FunnelChart from '@/components/dashboard/FunnelChart';
 import UpcomingTrips from '@/components/dashboard/UpcomingTrips';
@@ -10,6 +11,7 @@ import TasksList from '@/components/dashboard/TasksList';
 import UpcomingPayments from '@/components/dashboard/UpcomingPayments';
 
 export default function Dashboard() {
+  const { viewMode } = useContext(ViewModeContext);
   const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
 
@@ -25,7 +27,7 @@ export default function Dashboard() {
     fetchUser();
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
   const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],

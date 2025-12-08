@@ -47,7 +47,7 @@ export default function Clients() {
     fetchUser();
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
   const { data: allClients = [], isLoading } = useQuery({
     queryKey: ['clients'],

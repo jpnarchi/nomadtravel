@@ -51,7 +51,7 @@ export default function Trips() {
     fetchUser();
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
   const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],
