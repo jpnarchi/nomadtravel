@@ -122,7 +122,27 @@ export default function Trips() {
       }
       updateMutation.mutate({ id: editingTrip.id, data });
     } else {
-      createMutation.mutate(data);
+      // Check if creating with "vendido" stage
+      if (data.stage === 'vendido') {
+        const trip = await createMutation.mutateAsync(data);
+        // Create sold trip record immediately
+        await createSoldTripMutation.mutateAsync({
+          trip_id: trip.id,
+          client_id: data.client_id,
+          client_name: data.client_name,
+          destination: data.destination,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          travelers: data.travelers,
+          total_price: data.budget || 0,
+          total_commission: 0,
+          total_paid_by_client: 0,
+          total_paid_to_suppliers: 0,
+          status: 'pendiente'
+        });
+      } else {
+        createMutation.mutate(data);
+      }
     }
   };
 
