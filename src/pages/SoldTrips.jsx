@@ -2,22 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   Search, MapPin, Calendar, Users, DollarSign, 
   Eye, Loader2, CheckCircle, Filter, TrendingUp,
-  AlertCircle, Clock, ArrowUpRight, Plane
+  AlertCircle, Clock, ArrowUpRight, Plane, Edit2, Trash2, MoreVertical
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import EmptyState from '@/components/ui/EmptyState';
 import StatsCard from '@/components/ui/StatsCard';
+import { toast } from "sonner";
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
@@ -31,6 +50,11 @@ export default function SoldTrips() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
   const [user, setUser] = useState(null);
+  const [editingTrip, setEditingTrip] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editTotal, setEditTotal] = useState('');
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -53,6 +77,37 @@ export default function SoldTrips() {
 
   // Filter trips based on user role
   const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setEditingTrip(null);
+      toast.success('Viaje actualizado');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.SoldTrip.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setDeleteConfirm(null);
+      toast.success('Viaje eliminado');
+    }
+  });
+
+  const handleEditTrip = (trip) => {
+    setEditingTrip(trip);
+    setEditTotal(trip.total_price || 0);
+  };
+
+  const handleSaveTotal = () => {
+    if (!editingTrip) return;
+    updateMutation.mutate({
+      id: editingTrip.id,
+      data: { total_price: parseFloat(editTotal) || 0 }
+    });
+  };
 
   // Calculate stats
   const totalRevenue = soldTrips.reduce((sum, t) => sum + (t.total_price || 0), 0);
@@ -312,6 +367,26 @@ export default function SoldTrips() {
                             Ver Detalle
                           </Button>
                         </Link>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon" className="rounded-xl">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditTrip(trip)}>
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              Editar Total
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => setDeleteConfirm(trip)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </div>
@@ -339,6 +414,75 @@ export default function SoldTrips() {
           </AnimatePresence>
         </div>
       )}
+
+      {/* Edit Total Dialog */}
+      <Dialog open={!!editingTrip} onOpenChange={() => setEditingTrip(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Total del Viaje</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <p className="text-sm font-medium text-stone-700">{editingTrip?.client_name}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Destino</Label>
+              <p className="text-sm text-stone-600">{editingTrip?.destination}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="total">Total del Viaje (USD) *</Label>
+              <Input
+                id="total"
+                type="number"
+                step="0.01"
+                min="0"
+                value={editTotal}
+                onChange={(e) => setEditTotal(e.target.value)}
+                className="rounded-xl"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setEditingTrip(null)} className="rounded-xl">
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveTotal}
+              disabled={updateMutation.isPending}
+              className="rounded-xl text-white"
+              style={{ backgroundColor: '#2E442A' }}
+            >
+              {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar viaje vendido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará el viaje de{' '}
+              <strong>{deleteConfirm?.client_name}</strong> a <strong>{deleteConfirm?.destination}</strong>,
+              incluyendo todos sus servicios y pagos asociados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate(deleteConfirm.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
