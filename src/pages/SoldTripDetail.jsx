@@ -97,7 +97,8 @@ export default function SoldTripDetail() {
       const trips = await base44.entities.SoldTrip.filter({ id: tripId });
       return trips[0];
     },
-    enabled: !!tripId
+    enabled: !!tripId,
+    refetchOnWindowFocus: false
   });
 
   const { data: services = [] } = useQuery({

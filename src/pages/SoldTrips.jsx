@@ -79,7 +79,8 @@ export default function SoldTrips() {
       if (isAdmin) return base44.entities.SoldTrip.list('-created_date');
       return base44.entities.SoldTrip.filter({ created_by: user.email }, '-created_date');
     },
-    enabled: !!user
+    enabled: !!user,
+    refetchOnWindowFocus: true
   });
 
   const updateMutation = useMutation({
