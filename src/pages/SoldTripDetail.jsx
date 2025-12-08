@@ -129,9 +129,11 @@ export default function SoldTripDetail() {
   const createServiceMutation = useMutation({
     mutationFn: (data) => base44.entities.TripService.create(data),
     onSuccess: async () => {
+      await updateTripTotals();
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
-      await updateTripTotals();
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
       setServiceFormOpen(false);
     }
   });
