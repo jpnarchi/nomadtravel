@@ -99,7 +99,8 @@ export default function Commissions() {
       const allSvcs = await base44.entities.TripService.list();
       return allSvcs.filter(s => tripIds.includes(s.sold_trip_id));
     },
-    enabled: !!user && !userLoading
+    enabled: !!user && !userLoading,
+    refetchOnWindowFocus: true
   });
 
   const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
@@ -109,7 +110,8 @@ export default function Commissions() {
       if (isAdmin) return base44.entities.SoldTrip.list();
       return base44.entities.SoldTrip.filter({ created_by: user.email });
     },
-    enabled: !!user && !userLoading
+    enabled: !!user && !userLoading,
+    refetchOnWindowFocus: true
   });
 
   const soldTrips = allSoldTrips;
@@ -133,6 +135,7 @@ export default function Commissions() {
     mutationFn: (id) => base44.entities.TripService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       setDeleteConfirm(null);
     }
   });

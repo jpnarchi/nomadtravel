@@ -130,6 +130,7 @@ export default function SoldTripDetail() {
     mutationFn: (data) => base44.entities.TripService.create(data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['allServices'] });
       await updateTripTotals();
       setServiceFormOpen(false);
     }
@@ -139,6 +140,7 @@ export default function SoldTripDetail() {
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['allServices'] });
       await updateTripTotals();
       setServiceFormOpen(false);
       setEditingService(null);
@@ -149,6 +151,7 @@ export default function SoldTripDetail() {
     mutationFn: (id) => base44.entities.TripService.delete(id),
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['allServices'] });
       await updateTripTotals();
       setDeleteConfirm(null);
     }
