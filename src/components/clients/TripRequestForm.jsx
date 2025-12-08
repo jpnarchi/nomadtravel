@@ -41,8 +41,8 @@ export default function TripRequestForm({ open, onClose, onSave, isLoading, init
     end_date: '',
     budget: '',
     mood: '',
-    travelers: 1,
-    children: 0,
+    travelers: '',
+    children: '',
     activities: [],
     notes: ''
   });
