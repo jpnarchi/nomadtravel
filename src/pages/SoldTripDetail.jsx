@@ -754,10 +754,24 @@ export default function SoldTripDetail() {
                                 <div className="flex items-start justify-between gap-4">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                      <Badge className={`${colors.text} ${colors.bg} text-xs font-medium`}>
+                                        {SERVICE_LABELS[service.service_type]}
+                                      </Badge>
                                       <p className="font-semibold text-stone-800">{details.title}</p>
+                                    </div>
+                                    <p className="text-sm text-stone-600">{details.subtitle}</p>
+                                    {details.extra && (
+                                      <p className="text-xs text-stone-400 mt-1">{details.extra}</p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                                       <Badge variant="outline" className="text-xs">
                                         {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
                                       </Badge>
+                                      {(service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number) && (
+                                        <Badge variant="outline" className="text-xs font-mono">
+                                          {service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number}
+                                        </Badge>
+                                      )}
                                       <Select
                                         value={service.reservation_status || 'reservado'}
                                         onValueChange={(value) => updateServiceMutation.mutate({ id: service.id, data: { reservation_status: value } })}
@@ -776,10 +790,6 @@ export default function SoldTripDetail() {
                                         </SelectContent>
                                       </Select>
                                     </div>
-                                    <p className="text-sm text-stone-600">{details.subtitle}</p>
-                                    {details.extra && (
-                                      <p className="text-xs text-stone-400 mt-1">{details.extra}</p>
-                                    )}
                                     {service.notes && (
                                       <p className="text-xs text-stone-500 mt-2 italic">"{service.notes}"</p>
                                     )}
