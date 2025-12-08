@@ -17,6 +17,7 @@ const SERVICE_TYPES = [
   { value: 'traslado', label: 'Traslado' },
   { value: 'tour', label: 'Tour' },
   { value: 'crucero', label: 'Crucero' },
+  { value: 'dmc', label: 'DMC' },
   { value: 'otro', label: 'Otro' }
 ];
 
@@ -967,6 +968,91 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     </>
   );
 
+  const renderDmcFields = () => (
+    <>
+      <div className="space-y-2">
+        <Label>Nombre del DMC</Label>
+        <Input
+          value={formData.dmc_name || ''}
+          onChange={(e) => updateField('dmc_name', e.target.value)}
+          className="rounded-xl"
+          placeholder="Ej: Amstar DMC"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Servicios Incluidos</Label>
+        <Textarea
+          value={formData.dmc_services || ''}
+          onChange={(e) => updateField('dmc_services', e.target.value)}
+          className="rounded-xl resize-none"
+          rows={3}
+          placeholder="Describe los servicios incluidos..."
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Ciudad/Destino</Label>
+          <Input
+            value={formData.dmc_destination || ''}
+            onChange={(e) => updateField('dmc_destination', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha</Label>
+          <Input
+            type="date"
+            value={formData.dmc_date || ''}
+            onChange={(e) => updateField('dmc_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Número de Reservación</Label>
+          <Input
+            value={formData.dmc_reservation_number || ''}
+            onChange={(e) => updateField('dmc_reservation_number', e.target.value)}
+            className="rounded-xl"
+            placeholder="Ej: DMC123456"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Pasajeros</Label>
+          <Input
+            type="number"
+            value={formData.dmc_passengers || ''}
+            onChange={(e) => updateField('dmc_passengers', parseInt(e.target.value) || 0)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado de Reservación</Label>
+          <Select value={formData.reservation_status || 'reservado'} onValueChange={(v) => updateField('reservation_status', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reservado">Reservado</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Vencimiento de Pago</Label>
+          <Input
+            type="date"
+            value={formData.payment_due_date || ''}
+            onChange={(e) => updateField('payment_due_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+    </>
+  );
+
   const renderOtroFields = () => (
     <>
       <div className="space-y-2">
@@ -1047,6 +1133,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           {formData.service_type === 'traslado' && renderTrasladoFields()}
           {formData.service_type === 'tour' && renderTourFields()}
           {formData.service_type === 'crucero' && renderCruceroFields()}
+          {formData.service_type === 'dmc' && renderDmcFields()}
           {formData.service_type === 'otro' && renderOtroFields()}
 
           {/* Common Fields */}
