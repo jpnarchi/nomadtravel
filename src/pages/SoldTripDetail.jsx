@@ -48,6 +48,8 @@ const SERVICE_ICONS = {
   vuelo: Plane,
   traslado: Car,
   tour: Compass,
+  crucero: Package,
+  dmc: Building2,
   otro: Package
 };
 
@@ -56,6 +58,8 @@ const SERVICE_LABELS = {
   vuelo: 'Vuelo',
   traslado: 'Traslado',
   tour: 'Tour',
+  crucero: 'Crucero',
+  dmc: 'DMC',
   otro: 'Otro'
 };
 
@@ -64,6 +68,8 @@ const SERVICE_COLORS = {
   vuelo: { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200' },
   traslado: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' },
   tour: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
+  crucero: { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200' },
+  dmc: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200' },
   otro: { bg: 'bg-stone-50', text: 'text-stone-600', border: 'border-stone-200' }
 };
 
@@ -367,10 +373,22 @@ export default function SoldTripDetail() {
           subtitle: `${service.tour_city || ''} • ${service.tour_people || 1} personas`,
           extra: service.tour_date ? format(new Date(service.tour_date), 'd MMM yyyy', { locale: es }) : ''
         };
+      case 'crucero':
+        return {
+          title: service.cruise_ship || service.cruise_line || 'Crucero',
+          subtitle: `${service.cruise_itinerary || ''} • ${service.cruise_nights || 0} noches`,
+          extra: service.cruise_departure_date ? `Salida: ${format(new Date(service.cruise_departure_date), 'd MMM', { locale: es })}` : ''
+        };
+      case 'dmc':
+        return {
+          title: service.dmc_name || service.dmc_destination || 'DMC',
+          subtitle: service.dmc_services || service.dmc_destination || '',
+          extra: service.dmc_date ? format(new Date(service.dmc_date), 'd MMM yyyy', { locale: es }) : ''
+        };
       case 'otro':
         return {
-          title: service.other_name || 'Servicio',
-          subtitle: service.other_description || '',
+          title: service.other_name || service.other_description?.substring(0, 50) || 'Servicio',
+          subtitle: service.other_name && service.other_description ? service.other_description : '',
           extra: service.other_date ? format(new Date(service.other_date), 'd MMM yyyy', { locale: es }) : ''
         };
       default:
