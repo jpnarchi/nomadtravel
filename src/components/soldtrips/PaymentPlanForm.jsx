@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Plus, Trash2, Calendar } from 'lucide-react';
+import { Loader2, Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
 import { toast } from "sonner";
+import { base44 } from '@/api/base44Client';
 
-export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount, onSave, isLoading }) {
+export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount, soldTrip, onSave, isLoading }) {
+  const [clientEmail, setClientEmail] = useState(null);
+  const [checkingEmail, setCheckingEmail] = useState(true);
   const [payments, setPayments] = useState([
     { payment_number: 1, due_date: '', amount_due: 0, notes: '' }
   ]);
@@ -20,6 +23,25 @@ export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount
       ]);
     }
   }, [open, totalAmount]);
+
+  useEffect(() => {
+    const checkClientEmail = async () => {
+      if (open && soldTrip?.client_id) {
+        setCheckingEmail(true);
+        try {
+          const clients = await base44.entities.Client.filter({ id: soldTrip.client_id });
+          const client = clients[0];
+          setClientEmail(client?.email || null);
+        } catch (error) {
+          console.error('Error checking client email:', error);
+          setClientEmail(null);
+        } finally {
+          setCheckingEmail(false);
+        }
+      }
+    };
+    checkClientEmail();
+  }, [open, soldTrip]);
 
   const addPayment = () => {
     setPayments([
@@ -47,6 +69,12 @@ export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate email first
+    if (!clientEmail) {
+      toast.error('El cliente no tiene un correo electrónico registrado. Por favor, agrega un email al cliente antes de crear el plan de pagos.');
+      return;
+    }
     
     // Validate
     const totalPlanned = payments.reduce((sum, p) => sum + parseFloat(p.amount_due || 0), 0);
@@ -92,7 +120,39 @@ export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount
           </p>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {checkingEmail ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
+          </div>
+        ) : !clientEmail ? (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-red-900 mb-1">Email Requerido</p>
+                <p className="text-sm text-red-800">
+                  El cliente asociado a este viaje no tiene un correo electrónico registrado. 
+                  Los recordatorios de pago se envían automáticamente por email.
+                </p>
+                <p className="text-sm text-red-800 mt-2">
+                  Por favor, agrega un email al cliente antes de crear el plan de pagos.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-600"></div>
+              <p className="text-sm text-green-800">
+                Recordatorios se enviarán a: <span className="font-semibold">{clientEmail}</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!checkingEmail && (
+          <form onSubmit={handleSubmit} className="space-y-6">
           {/* Payments List */}
           <div className="space-y-4">
             {payments.map((payment, index) => (
@@ -183,7 +243,7 @@ export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || Math.abs(difference) > 0.01}
+              disabled={isLoading || Math.abs(difference) > 0.01 || !clientEmail}
               className="text-white"
               style={{ backgroundColor: '#2E442A' }}
             >
@@ -192,6 +252,7 @@ export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

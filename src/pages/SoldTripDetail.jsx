@@ -38,6 +38,7 @@ import ServiceForm from '@/components/soldtrips/ServiceForm';
 import PaymentForm from '@/components/soldtrips/PaymentForm';
 import SupplierPaymentForm from '@/components/soldtrips/SupplierPaymentForm';
 import PaymentPlanForm from '@/components/soldtrips/PaymentPlanForm';
+import EditPaymentPlanItem from '@/components/soldtrips/EditPaymentPlanItem';
 import InvoiceView from '@/components/soldtrips/InvoiceView';
 import EmptyState from '@/components/ui/EmptyState';
 
@@ -84,6 +85,7 @@ export default function SoldTripDetail() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('services');
   const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
+  const [editingPlanItem, setEditingPlanItem] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -150,9 +152,42 @@ export default function SoldTripDetail() {
   });
 
   const createClientPaymentMutation = useMutation({
-    mutationFn: (data) => base44.entities.ClientPayment.create(data),
+    mutationFn: async (data) => {
+      const payment = await base44.entities.ClientPayment.create(data);
+      
+      // Update payment plan if exists
+      const plan = await base44.entities.ClientPaymentPlan.filter({ sold_trip_id: tripId });
+      if (plan.length > 0) {
+        // Sort by due date, prioritize overdue and pending
+        const sortedPlan = plan
+          .filter(p => p.status !== 'pagado')
+          .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+        
+        let remainingAmount = data.amount;
+        
+        for (const planItem of sortedPlan) {
+          if (remainingAmount <= 0) break;
+          
+          const amountDue = planItem.amount_due - (planItem.amount_paid || 0);
+          const amountToApply = Math.min(remainingAmount, amountDue);
+          
+          const newAmountPaid = (planItem.amount_paid || 0) + amountToApply;
+          const newStatus = newAmountPaid >= planItem.amount_due ? 'pagado' : 'parcial';
+          
+          await base44.entities.ClientPaymentPlan.update(planItem.id, {
+            amount_paid: newAmountPaid,
+            status: newStatus
+          });
+          
+          remainingAmount -= amountToApply;
+        }
+      }
+      
+      return payment;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
       updateTripTotals();
       setClientPaymentOpen(false);
     }
@@ -191,6 +226,14 @@ export default function SoldTripDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
       setPaymentPlanOpen(false);
+    }
+  });
+
+  const updatePaymentPlanItemMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.ClientPaymentPlan.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
+      setEditingPlanItem(null);
     }
   });
 
@@ -914,7 +957,7 @@ export default function SoldTripDetail() {
                         </div>
                         
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p className="font-bold text-lg" style={{ color: '#2E442A' }}>
                               ${plan.amount_due.toLocaleString()}
                             </p>
@@ -929,6 +972,11 @@ export default function SoldTripDetail() {
                                plan.status === 'parcial' ? 'Parcial' :
                                'Pendiente'}
                             </Badge>
+                            {plan.reminder_sent && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                ✓ Recordatorio Enviado
+                              </Badge>
+                            )}
                           </div>
                           
                           <div className="flex items-center gap-2 text-sm text-stone-500">
@@ -969,6 +1017,15 @@ export default function SoldTripDetail() {
                             <p className="text-xs text-stone-500 mt-1 italic">"{plan.notes}"</p>
                           )}
                         </div>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingPlanItem(plan)}
+                          className="text-stone-400 hover:text-stone-600"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   );
@@ -1011,9 +1068,18 @@ export default function SoldTripDetail() {
         open={paymentPlanOpen}
         onClose={() => setPaymentPlanOpen(false)}
         soldTripId={tripId}
+        soldTrip={soldTrip}
         totalAmount={totalServices}
         onSave={(payments) => createPaymentPlanMutation.mutate(payments)}
         isLoading={createPaymentPlanMutation.isPending}
+      />
+
+      <EditPaymentPlanItem
+        open={!!editingPlanItem}
+        onClose={() => setEditingPlanItem(null)}
+        planItem={editingPlanItem}
+        onSave={(data) => updatePaymentPlanItemMutation.mutate({ id: editingPlanItem.id, data })}
+        isLoading={updatePaymentPlanItemMutation.isPending}
       />
 
       <InvoiceView
