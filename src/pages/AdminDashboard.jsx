@@ -32,6 +32,16 @@ export default function AdminDashboard() {
     queryFn: () => base44.entities.Client.list()
   });
 
+  const { data: allClientPayments = [] } = useQuery({
+    queryKey: ['clientPayments'],
+    queryFn: () => base44.entities.ClientPayment.list()
+  });
+
+  const { data: allSupplierPayments = [] } = useQuery({
+    queryKey: ['supplierPayments'],
+    queryFn: () => base44.entities.SupplierPayment.list()
+  });
+
   // Filter by agent
   const agents = allUsers.filter(u => u.role === 'user');
   const trips = selectedAgent === 'all' ? allTrips : allTrips.filter(t => t.created_by === selectedAgent);
@@ -68,6 +78,31 @@ export default function AdminDashboard() {
       agentName: agent?.full_name || 'Sin asignar'
     };
   });
+
+  // Clients with negative balance
+  const clientsWithNegativeBalance = allSoldTrips.map(trip => {
+    const clientPayments = allClientPayments
+      .filter(p => p.sold_trip_id === trip.id)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    const supplierPayments = allSupplierPayments
+      .filter(p => p.sold_trip_id === trip.id)
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+    
+    const balance = clientPayments - supplierPayments;
+    
+    if (balance < 0) {
+      const agent = allUsers.find(u => u.email === trip.created_by);
+      return {
+        ...trip,
+        balance,
+        clientPayments,
+        supplierPayments,
+        agentName: agent?.full_name || 'Sin asignar'
+      };
+    }
+    return null;
+  }).filter(Boolean);
 
   // Top performers
   const agentStats = agents.map(agent => {
@@ -133,6 +168,46 @@ export default function AdminDashboard() {
           </Select>
         </div>
       </div>
+
+      {/* Negative Balance Alert */}
+      {clientsWithNegativeBalance.length > 0 && (
+        <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-bold text-red-900 mb-2">
+                🚨 Clientes con Saldo Negativo
+              </h3>
+              <p className="text-sm text-red-800 mb-3">
+                {clientsWithNegativeBalance.length} {clientsWithNegativeBalance.length === 1 ? 'viaje vendido tiene' : 'viajes vendidos tienen'} gastos mayores a los pagos recibidos:
+              </p>
+              <div className="space-y-2">
+                {clientsWithNegativeBalance.map(trip => (
+                  <div key={trip.id} className="bg-white rounded-lg p-3 border border-red-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-stone-800">{trip.client_name || 'Sin cliente'}</p>
+                        <p className="text-sm text-stone-600">{trip.destination}</p>
+                        <p className="text-xs text-stone-500 mt-1">Agente: {trip.agentName}</p>
+                        <div className="flex gap-3 mt-2 text-xs">
+                          <span className="text-green-600">Recibido: ${trip.clientPayments.toLocaleString()}</span>
+                          <span className="text-red-600">Pagado: ${trip.supplierPayments.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-red-600">
+                          ${Math.abs(trip.balance).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-stone-500">saldo negativo</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* High Value Trips Alert */}
       {highValueTrips.length > 0 && (
