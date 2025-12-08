@@ -255,9 +255,11 @@ export default function SoldTripDetail() {
       return base44.entities.SupplierPayment.delete(id);
     },
     onSuccess: async () => {
+      await updateTripTotals();
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
-      await updateTripTotals();
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
       setDeleteConfirm(null);
     }
   });
