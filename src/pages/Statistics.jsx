@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { ViewModeContext } from '@/Layout';
 import { format, getMonth, getYear, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -45,6 +46,7 @@ const SEASONS = [
 ];
 
 export default function Statistics() {
+  const { viewMode } = useContext(ViewModeContext);
   const [filters, setFilters] = useState({
     year: new Date().getFullYear().toString(),
     saleMonth: 'all',
@@ -58,6 +60,7 @@ export default function Statistics() {
     agent: 'all'
   });
   const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -66,49 +69,72 @@ export default function Statistics() {
         setUser(currentUser);
       } catch (error) {
         console.error('Error fetching user:', error);
+      } finally {
+        setUserLoading(false);
       }
     };
     fetchUser();
   }, []);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
-  const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
-    queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
+    queryKey: ['soldTrips', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.SoldTrip.list();
+      return base44.entities.SoldTrip.filter({ created_by: user.email });
+    },
+    enabled: !!user && !userLoading
   });
 
-  const { data: allServices = [], isLoading: servicesLoading } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => base44.entities.TripService.list()
+  const { data: services = [], isLoading: servicesLoading } = useQuery({
+    queryKey: ['services', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      const trips = isAdmin 
+        ? await base44.entities.SoldTrip.list()
+        : await base44.entities.SoldTrip.filter({ created_by: user.email });
+      const tripIds = trips.map(t => t.id);
+      const allSvcs = await base44.entities.TripService.list();
+      return allSvcs.filter(s => tripIds.includes(s.sold_trip_id));
+    },
+    enabled: !!user && !userLoading
   });
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
+    queryKey: ['clients', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.Client.list();
+      return base44.entities.Client.filter({ created_by: user.email });
+    },
+    enabled: !!user && !userLoading
   });
 
-  const { data: allTrips = [], isLoading: rawTripsLoading } = useQuery({
-    queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list()
+  const { data: trips = [], isLoading: rawTripsLoading } = useQuery({
+    queryKey: ['trips', user?.email, isAdmin],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return base44.entities.Trip.list();
+      return base44.entities.Trip.filter({ created_by: user.email });
+    },
+    enabled: !!user && !userLoading
   });
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => base44.entities.User.list(),
+    enabled: !!user && isAdmin && !userLoading
   });
 
-  // Filter by user role
-  const soldTrips = isAdmin ? allSoldTrips : allSoldTrips.filter(t => t.created_by === user?.email);
-  const soldTripIds = new Set(soldTrips.map(t => t.id));
-  const services = allServices.filter(s => soldTripIds.has(s.sold_trip_id));
-  const trips = isAdmin ? allTrips : allTrips.filter(t => t.created_by === user?.email);
   const agents = allUsers.filter(u => u.role === 'user');
 
-  const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading || usersLoading;
+  const isLoading = tripsLoading || servicesLoading || clientsLoading || rawTripsLoading || usersLoading || userLoading;
 
   // Get available years
   const availableYears = useMemo(() => {
+    if (!soldTrips.length) return [new Date().getFullYear()];
     const years = new Set();
     soldTrips.forEach(t => {
       if (t.created_date) years.add(getYear(parseISO(t.created_date)));
@@ -431,7 +457,7 @@ export default function Statistics() {
         {isAdmin && (
           <TabsContent value="agent-comparison">
             <AgentComparisonStats 
-              soldTrips={soldTrips}
+              soldTrips={filteredData.filteredTrips}
               allUsers={allUsers}
             />
           </TabsContent>
