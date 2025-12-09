@@ -225,7 +225,8 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     total_price: 0,
     commission: 0,
     booked_by: 'montecito',
-    notes: ''
+    notes: '',
+    reservation_status: 'reservado'
   });
 
   useEffect(() => {
@@ -237,7 +238,8 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
         total_price: 0,
         commission: 0,
         booked_by: 'montecito',
-        notes: ''
+        notes: '',
+        reservation_status: 'reservado'
       });
     }
   }, [service, open]);
