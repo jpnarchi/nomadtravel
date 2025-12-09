@@ -253,7 +253,14 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
       return;
     }
     
-    onSave({ ...formData, sold_trip_id: soldTripId });
+    // Ensure all current form values are included
+    const dataToSave = {
+      ...formData,
+      sold_trip_id: soldTripId
+    };
+    
+    console.log('Guardando servicio:', dataToSave);
+    onSave(dataToSave);
   };
 
   const updateField = (field, value) => {
