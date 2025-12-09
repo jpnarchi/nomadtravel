@@ -381,9 +381,9 @@ export default function SoldTripDetail() {
         };
       case 'dmc':
         return {
-          title: service.dmc_name || service.dmc_destination || 'DMC',
-          subtitle: service.dmc_services || service.dmc_destination || '',
-          extra: service.dmc_date ? format(new Date(service.dmc_date), 'd MMM yyyy', { locale: es }) : ''
+          title: service.dmc_name || 'DMC',
+          subtitle: service.dmc_services || '',
+          extra: service.dmc_destination ? `${service.dmc_destination}${service.dmc_date ? ' • ' + format(new Date(service.dmc_date), 'd MMM yyyy', { locale: es }) : ''}` : (service.dmc_date ? format(new Date(service.dmc_date), 'd MMM yyyy', { locale: es }) : '')
         };
       case 'otro':
         return {
