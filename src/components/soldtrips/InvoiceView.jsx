@@ -55,17 +55,17 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
     window.print();
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
+    const margin = 25;
     const contentWidth = pageWidth - 2 * margin;
     let yPosition = margin;
 
     // Helper function to add new page if needed
-    const checkAddPage = (requiredSpace = 10) => {
-      if (yPosition + requiredSpace > pageHeight - margin) {
+    const checkAddPage = (requiredSpace = 15) => {
+      if (yPosition + requiredSpace > pageHeight - margin - 20) {
         doc.addPage();
         yPosition = margin;
         return true;
@@ -73,256 +73,286 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
       return false;
     };
 
-    // Header with logo and company info
-    doc.setFillColor(46, 68, 42);
-    doc.rect(margin, yPosition, 30, 30, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.text('NT', margin + 9, yPosition + 19);
-    
-    doc.setTextColor(46, 68, 42);
-    doc.setFontSize(16);
+    // Add Logo
+    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6930fcb7e80b1a2000e4e198/fcb856ad6_NOMAD-LOGOTIPOPRINCIPAL_transparente2-051.png';
+    try {
+      doc.addImage(logoUrl, 'PNG', margin, yPosition, 50, 15);
+    } catch (e) {
+      // Fallback if image fails
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(46, 68, 42);
+      doc.text('Nomad Travel Society', margin, yPosition + 10);
+    }
+
+    // Header - Date and Invoice Title
+    doc.setFontSize(22);
     doc.setFont(undefined, 'bold');
-    doc.text('Nomad Travel Society', margin + 35, yPosition + 12);
-    doc.setFontSize(9);
+    doc.setTextColor(46, 68, 42);
+    doc.text('INVOICE', pageWidth - margin, yPosition + 8, { align: 'right' });
+    
+    doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(100, 100, 100);
-    doc.text('San Pedro Garza García, N.L.', margin + 35, yPosition + 18);
+    doc.text(`Fecha: ${format(new Date(), 'd MMMM yyyy', { locale: es })}`, pageWidth - margin, yPosition + 15, { align: 'right' });
 
-    // Date
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(9);
-    doc.text(`Fecha: ${format(new Date(), 'd MMMM yyyy', { locale: es })}`, pageWidth - margin - 40, yPosition + 15, { align: 'right' });
+    yPosition += 30;
 
-    yPosition += 45;
+    // Horizontal divider
+    doc.setDrawColor(46, 68, 42);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 15;
 
-    // Client Info
-    doc.setFontSize(10);
+    // SECTION A: Client Information
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, yPosition, contentWidth, 8, 'F');
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(100, 100, 100);
-    doc.text('CLIENTE', margin, yPosition);
-    yPosition += 7;
+    doc.setTextColor(46, 68, 42);
+    doc.text('INFORMACIÓN DEL CLIENTE', margin + 3, yPosition + 5.5);
+    yPosition += 12;
     
-    doc.setFontSize(12);
+    doc.setFontSize(13);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text(soldTrip.client_name, margin, yPosition);
-    yPosition += 6;
+    doc.text(soldTrip.client_name, margin + 3, yPosition);
+    yPosition += 8;
     
-    doc.setFontSize(9);
+    doc.setFontSize(11);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(80, 80, 80);
-    doc.text(`Viaje: ${soldTrip.destination}`, margin, yPosition);
-    yPosition += 5;
-    doc.text(`${format(new Date(soldTrip.start_date), 'd MMM yyyy', { locale: es })}${soldTrip.end_date ? ` - ${format(new Date(soldTrip.end_date), 'd MMM yyyy', { locale: es })}` : ''}`, margin, yPosition);
-    yPosition += 5;
-    doc.text(`${soldTrip.travelers} viajero(s)`, margin, yPosition);
-    yPosition += 12;
+    doc.text(`Destino: ${soldTrip.destination}`, margin + 3, yPosition);
+    yPosition += 6;
+    doc.text(`Fechas: ${format(new Date(soldTrip.start_date), 'd MMM yyyy', { locale: es })}${soldTrip.end_date ? ` - ${format(new Date(soldTrip.end_date), 'd MMM yyyy', { locale: es })}` : ''}`, margin + 3, yPosition);
+    yPosition += 6;
+    doc.text(`Viajeros: ${soldTrip.travelers}`, margin + 3, yPosition);
+    yPosition += 15;
 
-    // Services Section
-    doc.setFontSize(11);
+    // SECTION B: Services Table
+    checkAddPage(40);
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, yPosition, contentWidth, 8, 'F');
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(46, 68, 42);
-    doc.text('SERVICIOS INCLUIDOS', margin, yPosition);
-    yPosition += 8;
+    doc.text('SERVICIOS DEL VIAJE', margin + 3, yPosition + 5.5);
+    yPosition += 12;
 
-    // Render services by type
+    // Table Headers
+    doc.setFillColor(46, 68, 42);
+    doc.rect(margin, yPosition, contentWidth, 7, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    doc.text('FECHA', margin + 2, yPosition + 4.5);
+    doc.text('TIPO', margin + 27, yPosition + 4.5);
+    doc.text('PROVEEDOR', margin + 52, yPosition + 4.5);
+    doc.text('DESCRIPCIÓN', margin + 92, yPosition + 4.5);
+    doc.text('PRECIO', pageWidth - margin - 2, yPosition + 4.5, { align: 'right' });
+    yPosition += 9;
+
+    // Service rows
+    let rowIndex = 0;
     Object.entries(servicesByType).forEach(([type, typeServices]) => {
-      checkAddPage(20);
-      
-      // Service type header
-      doc.setFillColor(46, 68, 42);
-      doc.rect(margin, yPosition, contentWidth, 6, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text(SERVICE_LABELS[type] + 's', margin + 2, yPosition + 4);
-      yPosition += 8;
-
       typeServices.forEach((service) => {
-        checkAddPage(25);
+        checkAddPage(12);
+        
+        // Alternate row colors
+        if (rowIndex % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+          doc.rect(margin, yPosition - 3, contentWidth, 10, 'F');
+        }
         
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
-        doc.setFont(undefined, 'bold');
-        
-        // Service name
-        let serviceName = '';
-        if (type === 'hotel') serviceName = service.hotel_name || 'Hotel';
-        else if (type === 'vuelo') serviceName = `${service.airline || 'Vuelo'} ${service.airline_other ? `(${service.airline_other})` : ''}`;
-        else if (type === 'traslado') serviceName = `${service.transfer_origin || 'Origen'} → ${service.transfer_destination || 'Destino'}`;
-        else if (type === 'tour') serviceName = service.tour_name || 'Tour';
-        else if (type === 'crucero') serviceName = service.cruise_ship || 'Crucero';
-        else serviceName = service.other_name || 'Servicio';
-        
-        doc.text(serviceName, margin + 2, yPosition);
-        doc.text(`$${(service.total_price || 0).toLocaleString()} USD`, pageWidth - margin - 2, yPosition, { align: 'right' });
-        yPosition += 5;
-
-        // Service details
         doc.setFont(undefined, 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(80, 80, 80);
         
-        if (type === 'hotel') {
-          if (service.hotel_chain || service.hotel_brand) {
-            doc.text([service.hotel_chain, service.hotel_brand].filter(Boolean).join(' - '), margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.check_in && service.check_out) {
-            doc.text(`Fechas: ${format(new Date(service.check_in), 'd MMM', { locale: es })} - ${format(new Date(service.check_out), 'd MMM yyyy', { locale: es })}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.room_type) {
-            doc.text(`Habitación: ${service.room_type}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.nights) {
-            doc.text(`Noches: ${service.nights} | Habitaciones: ${service.num_rooms || 1}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.reservation_number) {
-            doc.text(`Reservación: ${service.reservation_number}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-        } else if (type === 'vuelo') {
-          if (service.route) {
-            doc.text(service.route, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.flight_date) {
-            doc.text(`Fecha: ${format(new Date(service.flight_date), 'd MMM yyyy', { locale: es })}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.flight_number) {
-            doc.text(`Vuelo: #${service.flight_number}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.flight_reservation_number) {
-            doc.text(`Reservación: ${service.flight_reservation_number}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-        } else if (type === 'tour') {
-          if (service.tour_date) {
-            doc.text(`Fecha: ${format(new Date(service.tour_date), 'd MMM yyyy', { locale: es })}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.tour_city) {
-            doc.text(`Lugar: ${service.tour_city}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.tour_reservation_number) {
-            doc.text(`Reservación: ${service.tour_reservation_number}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-        } else if (type === 'crucero') {
-          if (service.cruise_line) {
-            doc.text(service.cruise_line, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.cruise_departure_date && service.cruise_arrival_date) {
-            doc.text(`${format(new Date(service.cruise_departure_date), 'd MMM', { locale: es })} - ${format(new Date(service.cruise_arrival_date), 'd MMM yyyy', { locale: es })}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-          if (service.cruise_reservation_number) {
-            doc.text(`Reservación: ${service.cruise_reservation_number}`, margin + 4, yPosition);
-            yPosition += 4;
-          }
-        }
+        // Date
+        let serviceDate = '';
+        if (type === 'hotel' && service.check_in) serviceDate = format(new Date(service.check_in), 'd MMM', { locale: es });
+        else if (type === 'vuelo' && service.flight_date) serviceDate = format(new Date(service.flight_date), 'd MMM', { locale: es });
+        else if (type === 'tour' && service.tour_date) serviceDate = format(new Date(service.tour_date), 'd MMM', { locale: es });
+        else if (type === 'crucero' && service.cruise_departure_date) serviceDate = format(new Date(service.cruise_departure_date), 'd MMM', { locale: es });
+        else if (type === 'traslado' && service.transfer_datetime) serviceDate = format(new Date(service.transfer_datetime), 'd MMM', { locale: es });
+        else if (type === 'otro' && service.other_date) serviceDate = format(new Date(service.other_date), 'd MMM', { locale: es });
         
-        yPosition += 3;
-        doc.setDrawColor(230, 230, 230);
-        doc.line(margin + 2, yPosition, pageWidth - margin - 2, yPosition);
-        yPosition += 5;
+        doc.text(serviceDate || '-', margin + 2, yPosition + 3);
+        
+        // Type
+        doc.text(SERVICE_LABELS[type] || 'Servicio', margin + 27, yPosition + 3);
+        
+        // Provider
+        let provider = '';
+        if (type === 'hotel') provider = service.hotel_chain || service.hotel_brand || '-';
+        else if (type === 'vuelo') provider = service.airline || '-';
+        else if (type === 'crucero') provider = service.cruise_line || '-';
+        else provider = '-';
+        
+        const providerText = doc.splitTextToSize(provider, 35);
+        doc.text(providerText[0], margin + 52, yPosition + 3);
+        
+        // Description
+        let description = '';
+        if (type === 'hotel') description = service.hotel_name || 'Hotel';
+        else if (type === 'vuelo') description = service.route || `Vuelo ${service.flight_number || ''}`.trim();
+        else if (type === 'traslado') description = `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
+        else if (type === 'tour') description = service.tour_name || 'Tour';
+        else if (type === 'crucero') description = service.cruise_ship || 'Crucero';
+        else description = service.other_name || 'Servicio';
+        
+        const descText = doc.splitTextToSize(description, 50);
+        doc.text(descText[0], margin + 92, yPosition + 3);
+        
+        // Price
+        doc.setFont(undefined, 'bold');
+        doc.text(`$${(service.total_price || 0).toLocaleString()}`, pageWidth - margin - 2, yPosition + 3, { align: 'right' });
+        
+        yPosition += 10;
+        rowIndex++;
       });
-      
-      yPosition += 3;
     });
 
     // Services Total
-    checkAddPage(20);
-    yPosition += 5;
-    doc.setFontSize(10);
+    checkAddPage(15);
+    yPosition += 3;
+    doc.setDrawColor(46, 68, 42);
+    doc.setLineWidth(0.3);
+    doc.line(pageWidth - margin - 70, yPosition, pageWidth - margin, yPosition);
+    yPosition += 7;
+    
+    doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(46, 68, 42);
-    doc.text('Total Servicios', pageWidth - margin - 60, yPosition);
+    doc.text('TOTAL SERVICIOS:', pageWidth - margin - 70, yPosition);
+    doc.setFontSize(13);
     doc.text(`$${total.toLocaleString()} USD`, pageWidth - margin - 2, yPosition, { align: 'right' });
-    yPosition += 10;
+    yPosition += 18;
 
-    // Client Payments
-    checkAddPage(30);
-    doc.setFontSize(10);
+    // SECTION C: Client Payments
+    checkAddPage(35);
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, yPosition, contentWidth, 8, 'F');
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
-    doc.setTextColor(100, 100, 100);
-    doc.text('PAGOS REALIZADOS POR EL CLIENTE', margin, yPosition);
-    yPosition += 8;
+    doc.setTextColor(46, 68, 42);
+    doc.text('PAGOS REALIZADOS POR EL CLIENTE', margin + 3, yPosition + 5.5);
+    yPosition += 12;
 
     if (clientPayments.length > 0) {
-      // Table header
-      doc.setFillColor(245, 245, 245);
-      doc.rect(margin, yPosition - 5, contentWidth, 6, 'F');
-      doc.setFontSize(8);
+      // Table Headers
+      doc.setFillColor(46, 68, 42);
+      doc.rect(margin, yPosition, contentWidth, 7, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
       doc.setFont(undefined, 'bold');
-      doc.setTextColor(80, 80, 80);
-      doc.text('Fecha', margin + 2, yPosition);
-      doc.text('Método', margin + 35, yPosition);
-      doc.text('Monto', pageWidth - margin - 2, yPosition, { align: 'right' });
-      yPosition += 5;
+      doc.text('FECHA', margin + 2, yPosition + 4.5);
+      doc.text('MÉTODO DE PAGO', margin + 40, yPosition + 4.5);
+      doc.text('MONTO', pageWidth - margin - 2, yPosition + 4.5, { align: 'right' });
+      yPosition += 9;
 
       // Payment rows
-      doc.setFont(undefined, 'normal');
+      let paymentIndex = 0;
       clientPayments.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((payment) => {
         checkAddPage(8);
         
+        if (paymentIndex % 2 === 0) {
+          doc.setFillColor(250, 250, 250);
+          doc.rect(margin, yPosition - 3, contentWidth, 8, 'F');
+        }
+        
         doc.setTextColor(0, 0, 0);
-        doc.text(format(new Date(payment.date), 'd MMM yyyy', { locale: es }), margin + 2, yPosition);
-        doc.text(PAYMENT_METHOD_LABELS[payment.method] || payment.method, margin + 35, yPosition);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.text(format(new Date(payment.date), 'd MMM yyyy', { locale: es }), margin + 2, yPosition + 2);
+        doc.text(PAYMENT_METHOD_LABELS[payment.method] || payment.method, margin + 40, yPosition + 2);
         doc.setTextColor(34, 197, 94);
         doc.setFont(undefined, 'bold');
-        doc.text(`$${(payment.amount || 0).toLocaleString()} USD`, pageWidth - margin - 2, yPosition, { align: 'right' });
-        doc.setFont(undefined, 'normal');
-        yPosition += 6;
+        doc.text(`$${(payment.amount || 0).toLocaleString()}`, pageWidth - margin - 2, yPosition + 2, { align: 'right' });
+        
+        yPosition += 8;
+        paymentIndex++;
       });
     } else {
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setTextColor(150, 150, 150);
-      doc.text('No se han registrado pagos', margin + 2, yPosition);
-      yPosition += 6;
+      doc.setFont(undefined, 'italic');
+      doc.text('No se han registrado pagos', margin + 3, yPosition + 5);
+      yPosition += 8;
     }
 
-    yPosition += 10;
+    yPosition += 18;
 
-    // Final Summary Box
-    checkAddPage(35);
+    // SECTION D: Final Summary
+    checkAddPage(40);
     doc.setFillColor(245, 245, 245);
-    doc.rect(pageWidth - margin - 80, yPosition, 80, 30, 'F');
-    
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(80, 80, 80);
-    doc.text('Total del Viaje', pageWidth - margin - 78, yPosition + 7);
-    doc.text(`$${total.toLocaleString()} USD`, pageWidth - margin - 2, yPosition + 7, { align: 'right' });
-    
-    doc.text('Total Pagado', pageWidth - margin - 78, yPosition + 14);
-    doc.setTextColor(34, 197, 94);
-    doc.text(`$${totalPaid.toLocaleString()} USD`, pageWidth - margin - 2, yPosition + 14, { align: 'right' });
-    
+    doc.rect(margin, yPosition, contentWidth, 8, 'F');
+    doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(46, 68, 42);
-    doc.text('Saldo Pendiente', pageWidth - margin - 78, yPosition + 24);
-    doc.setFontSize(11);
-    doc.setTextColor(balance > 0 ? 220 : 22, balance > 0 ? 38 : 163, balance > 0 ? 38 : 74);
-    doc.text(`$${balance.toLocaleString()} USD`, pageWidth - margin - 2, yPosition + 24, { align: 'right' });
+    doc.text('RESUMEN FINAL', margin + 3, yPosition + 5.5);
+    yPosition += 15;
+
+    // Summary box
+    const boxWidth = 85;
+    const boxX = pageWidth - margin - boxWidth;
     
-    yPosition += 40;
+    doc.setFillColor(250, 250, 250);
+    doc.rect(boxX, yPosition, boxWidth, 35, 'F');
+    doc.setDrawColor(46, 68, 42);
+    doc.setLineWidth(0.5);
+    doc.rect(boxX, yPosition, boxWidth, 35, 'S');
+    
+    yPosition += 8;
+    
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text('Total del Viaje:', boxX + 3, yPosition);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text(`$${total.toLocaleString()} USD`, pageWidth - margin - 3, yPosition, { align: 'right' });
+    
+    yPosition += 8;
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text('Total Pagado:', boxX + 3, yPosition);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(34, 197, 94);
+    doc.text(`$${totalPaid.toLocaleString()} USD`, pageWidth - margin - 3, yPosition, { align: 'right' });
+    
+    yPosition += 10;
+    doc.setDrawColor(46, 68, 42);
+    doc.setLineWidth(0.5);
+    doc.line(boxX + 3, yPosition, pageWidth - margin - 3, yPosition);
+    yPosition += 8;
+    
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(46, 68, 42);
+    doc.text('Saldo Pendiente:', boxX + 3, yPosition);
+    doc.setFontSize(14);
+    doc.setTextColor(balance > 0 ? 220 : 22, balance > 0 ? 38 : 163, balance > 0 ? 38 : 74);
+    doc.text(`$${balance.toLocaleString()} USD`, pageWidth - margin - 3, yPosition, { align: 'right' });
+    
+    yPosition += 25;
 
     // Footer
-    checkAddPage(15);
+    if (yPosition > pageHeight - 30) {
+      doc.addPage();
+      yPosition = pageHeight - 25;
+    } else {
+      yPosition = pageHeight - 25;
+    }
+    
     doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
     doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 5;
-    doc.setFontSize(9);
+    yPosition += 7;
+    
+    doc.setFontSize(10);
     doc.setTextColor(120, 120, 120);
+    doc.setFont(undefined, 'normal');
     doc.text('Gracias por confiar en Nomad Travel Society', pageWidth / 2, yPosition, { align: 'center' });
     yPosition += 5;
     doc.setFontSize(8);
