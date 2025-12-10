@@ -152,6 +152,8 @@ const createRectObject = (obj: any): fabric.Rect => {
         angle: obj.angle || 0,
         scaleX: obj.scaleX || 1,
         scaleY: obj.scaleY || 1,
+        originX: obj.originX || 'left',
+        originY: obj.originY || 'top',
     })
 }
 
@@ -159,9 +161,14 @@ const createRectObject = (obj: any): fabric.Rect => {
  * Crea un círculo desde JSON
  */
 const createCircleObject = (obj: any): fabric.Circle => {
-    console.log(`⭕ Creando círculo`)
+    console.log(`⭕ Creando círculo`, {
+        isRing: obj.isRing,
+        originX: obj.originX,
+        originY: obj.originY,
+        position: { left: obj.left, top: obj.top }
+    })
 
-    return new fabric.Circle({
+    const circle = new fabric.Circle({
         left: obj.left,
         top: obj.top,
         radius: obj.radius || 50,
@@ -171,7 +178,27 @@ const createCircleObject = (obj: any): fabric.Circle => {
         angle: obj.angle || 0,
         scaleX: obj.scaleX || 1,
         scaleY: obj.scaleY || 1,
+        originX: obj.originX || 'left',
+        originY: obj.originY || 'top',
     })
+
+    // Restore custom ring properties
+    if (obj.isRing) {
+        ;(circle as any).isRing = true
+        ;(circle as any).ringRadius = obj.ringRadius || obj.radius
+        ;(circle as any).ringThickness = obj.ringThickness || obj.strokeWidth
+        ;(circle as any).ringColor = obj.ringColor || obj.stroke
+        ;(circle as any).outerRadius = obj.outerRadius
+        ;(circle as any).innerRadius = obj.innerRadius
+        console.log(`🔷 Ring properties restored:`, {
+            ringRadius: (circle as any).ringRadius,
+            ringThickness: (circle as any).ringThickness,
+            originX: circle.originX,
+            originY: circle.originY
+        })
+    }
+
+    return circle
 }
 
 /**
@@ -191,6 +218,8 @@ const createTriangleObject = (obj: any): fabric.Triangle => {
         angle: obj.angle || 0,
         scaleX: obj.scaleX || 1,
         scaleY: obj.scaleY || 1,
+        originX: obj.originX || 'left',
+        originY: obj.originY || 'top',
     })
 }
 

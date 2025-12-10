@@ -57,6 +57,13 @@ export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) 
             'placeholderWidth',
             'placeholderHeight',
             'borderRadius',
+            // Ring-specific properties
+            'isRing',
+            'ringRadius',
+            'ringThickness',
+            'ringColor',
+            'outerRadius',
+            'innerRadius',
         ])
 
         // Add z-index to preserve layer order
@@ -162,7 +169,9 @@ export const copyObjectToJSON = (obj: fabric.FabricObject) => {
         'charSpacing', 'styles', 'editable', 'listStyle', 'width', 'height',
         'src', // Include src for Image objects
         // Position and transform properties
-        'left', 'top', 'scaleX', 'scaleY', 'angle', 'originX', 'originY'
+        'left', 'top', 'scaleX', 'scaleY', 'angle', 'originX', 'originY',
+        // Ring properties
+        'isRing', 'ringRadius', 'ringThickness', 'ringColor', 'outerRadius', 'innerRadius'
     ])
 
     // Special handling for images - Fabric.js doesn't always serialize src
@@ -277,6 +286,8 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
                     angle: objData.angle,
                     scaleX: objData.scaleX,
                     scaleY: objData.scaleY,
+                    originX: objData.originX || 'left',
+                    originY: objData.originY || 'top',
                 })
                 break
             case 'circle':
@@ -290,7 +301,18 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
                     angle: objData.angle,
                     scaleX: objData.scaleX,
                     scaleY: objData.scaleY,
+                    originX: objData.originX || 'left',
+                    originY: objData.originY || 'top',
                 })
+                // Restore ring properties if it's a ring
+                if (objData.isRing) {
+                    ;(newObj as any).isRing = true
+                    ;(newObj as any).ringRadius = objData.ringRadius
+                    ;(newObj as any).ringThickness = objData.ringThickness
+                    ;(newObj as any).ringColor = objData.ringColor
+                    ;(newObj as any).outerRadius = objData.outerRadius
+                    ;(newObj as any).innerRadius = objData.innerRadius
+                }
                 break
             case 'triangle':
                 newObj = new fabric.Triangle({
@@ -304,6 +326,8 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
                     angle: objData.angle,
                     scaleX: objData.scaleX,
                     scaleY: objData.scaleY,
+                    originX: objData.originX || 'left',
+                    originY: objData.originY || 'top',
                 })
                 break
             case 'line':

@@ -18,6 +18,7 @@ import {
     PanelLeftClose,
     PanelLeftOpen,
     ImagePlus,
+    Donut,
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -32,6 +33,7 @@ interface ToolsSidebarProps {
     onAddRectangle: () => void
     onAddCircle: () => void
     onAddTriangle: () => void
+    onAddRing?: () => void
     onAddLine?: () => void
     onFileSelect: (file: File) => void
     onShowUploadDialog?: () => void
@@ -45,6 +47,7 @@ export function ToolsSidebar({
     onAddRectangle,
     onAddCircle,
     onAddTriangle,
+    onAddRing,
     onAddLine,
     onFileSelect,
     onShowUploadDialog,
@@ -114,6 +117,15 @@ export function ToolsSidebar({
                         <Circle className="size-4 mr-2" />
                         Circle
                     </DropdownMenuItem>
+                    {onAddRing && (
+                        <DropdownMenuItem
+                            onClick={onAddRing}
+                            className="text-gray-900 hover:text-gray-900 hover:bg-gray-100 cursor-pointer"
+                        >
+                            <Donut className="size-4 mr-2" />
+                            Ring
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                         onClick={onAddTriangle}
                         className="text-gray-900 hover:text-gray-900 hover:bg-gray-100 cursor-pointer"

@@ -29,6 +29,7 @@ interface PropertiesSidebarProps {
     onUpdateBorderRadius?: (radius: number) => void
     onUpdateStrokeColor?: (color: string) => void
     onUpdateStrokeWidth?: (width: number) => void
+    onUpdateRingThickness?: (thickness: number) => void
 }
 
 export function PropertiesSidebar({
@@ -40,12 +41,14 @@ export function PropertiesSidebar({
     onUpdateBorderRadius,
     onUpdateStrokeColor,
     onUpdateStrokeWidth,
+    onUpdateRingThickness,
 }: PropertiesSidebarProps) {
     const isTextType = selectedObject &&
         (selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox')
 
     const isImagePlaceholder = selectedObject && (selectedObject as any).isImagePlaceholder
     const isImageContainer = selectedObject && (selectedObject as any).isImageContainer
+    const isRing = selectedObject && (selectedObject as any).isRing
 
     return (
         <div className="w-64 bg-gray-50 border-l border-gray-300 overflow-y-auto">
@@ -69,6 +72,7 @@ export function PropertiesSidebar({
                     <div className="bg-white rounded-lg p-3 border border-gray-300">
                         <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3 tracking-wide">
                             {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Text' :
+                             isRing ? 'Ring' :
                              selectedObject.type === 'rect' ? 'Rectangle' :
                              selectedObject.type === 'circle' ? 'Circle' :
                              selectedObject.type === 'triangle' ? 'Triangle' :
@@ -263,8 +267,48 @@ export function PropertiesSidebar({
                             </div>
                         )}
 
-                        {/* Shape Fill Color */}
+                        {/* Ring Properties */}
+                        {isRing && (
+                            <div className="space-y-3">
+                                {/* Ring Color (uses stroke, not fill) */}
+                                {onUpdateStrokeColor && (
+                                    <div>
+                                        <Label className="text-xs text-gray-700 mb-2 block font-medium">Ring Color</Label>
+                                        <Input
+                                            type="color"
+                                            value={(selectedObject as any).stroke as string || '#fbbf24'}
+                                            onChange={(e) => onUpdateStrokeColor(e.target.value)}
+                                            className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Ring Thickness Control */}
+                                {onUpdateRingThickness && (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs text-gray-700 font-medium">Ring Thickness</Label>
+                                            <span className="text-xs text-gray-600 font-medium">
+                                                {Math.round((selectedObject as any).ringThickness ?? 50)}px
+                                            </span>
+                                        </div>
+                                        <Input
+                                            type="range"
+                                            min="5"
+                                            max="200"
+                                            step="1"
+                                            value={(selectedObject as any).ringThickness ?? 50}
+                                            onChange={(e) => onUpdateRingThickness(parseFloat(e.target.value))}
+                                            className="w-full h-2 cursor-pointer accent-blue-500"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Shape Fill Color (not for rings) */}
                         {selectedObject &&
+                            !isRing &&
                             selectedObject.type !== 'text' &&
                             selectedObject.type !== 'i-text' &&
                             selectedObject.type !== 'textbox' &&

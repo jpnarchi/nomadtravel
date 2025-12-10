@@ -14,7 +14,7 @@ import { useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 
 // Import utilities and components
-import { createText, createRectangle, createCircle, createTriangle, createLine, addImageToCanvas, createImagePlaceholder, replaceImagePlaceholderWithImage } from './fabric-editor/shape-factory'
+import { createText, createRectangle, createCircle, createTriangle, createRing, updateRingThickness, createLine, addImageToCanvas, createImagePlaceholder, replaceImagePlaceholderWithImage } from './fabric-editor/shape-factory'
 import { loadObjectsToCanvas } from './fabric-editor/object-loader'
 import {
     serializeCanvas,
@@ -530,7 +530,13 @@ export function FabricSlideEditor({
     const handleAddTriangle = () => {
         if (!fabricCanvasRef.current) return
         createTriangle(fabricCanvasRef.current)
-        
+
+    }
+
+    const handleAddRing = () => {
+        if (!fabricCanvasRef.current) return
+        createRing(fabricCanvasRef.current)
+
     }
 
     const handleAddLine = () => {
@@ -924,6 +930,17 @@ export function FabricSlideEditor({
         saveCanvas()
     }
 
+    const handleUpdateRingThickness = (thickness: number) => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+
+        // Only apply to ring objects
+        if ((selectedObject as any).isRing) {
+            updateRingThickness(selectedObject, thickness)
+            fabricCanvasRef.current.renderAll()
+            saveCanvas()
+        }
+    }
+
     // ============================================================================
     // LAYER CONTROLS
     // ============================================================================
@@ -1115,6 +1132,7 @@ export function FabricSlideEditor({
                 onAddRectangle={handleAddRectangle}
                 onAddCircle={handleAddCircle}
                 onAddTriangle={handleAddTriangle}
+                onAddRing={handleAddRing}
                 onAddLine={handleAddLine}
                 onFileSelect={handleFileSelect}
                 onShowUploadDialog={() => setShowUploadDialog(true)}
@@ -1180,6 +1198,7 @@ export function FabricSlideEditor({
                 onUpdateBorderRadius={handleUpdateBorderRadius}
                 onUpdateStrokeColor={handleUpdateStrokeColor}
                 onUpdateStrokeWidth={handleUpdateStrokeWidth}
+                onUpdateRingThickness={handleUpdateRingThickness}
             />
 
             {/* Image Upload Dialog */}

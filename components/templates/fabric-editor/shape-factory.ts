@@ -116,6 +116,71 @@ export const createLine = (canvas: fabric.Canvas) => {
     return line
 }
 
+export const createRing = (canvas: fabric.Canvas, options?: {
+    radius?: number
+    ringThickness?: number
+    ringColor?: string
+    strokeWidth?: number
+    strokeColor?: string
+}) => {
+    // Default values
+    const thickness = options?.ringThickness || 50
+    const radius = options?.radius || 100
+    const ringColor = options?.ringColor || '#fbbf24'
+    const strokeWidth = options?.strokeWidth || 0
+    const strokeColor = options?.strokeColor || '#ffffff'
+
+    // Create a circle with thick stroke and transparent fill
+    // The radius is the center of the ring (middle of the thickness)
+    const ring = new fabric.Circle({
+        left: 100,
+        top: 100,
+        radius: radius,
+        fill: 'transparent', // ALWAYS transparent - this is the key
+        stroke: ringColor, // The ring color
+        strokeWidth: thickness, // The thickness of the ring
+        selectable: true,
+        evented: true,
+        hasControls: true,
+        hasBorders: true,
+        originX: 'center',
+        originY: 'center',
+    })
+
+    // Store custom properties for later editing
+    ;(ring as any).isRing = true
+    ;(ring as any).ringRadius = radius
+    ;(ring as any).ringThickness = thickness
+    ;(ring as any).ringColor = ringColor
+    ;(ring as any).outerRadius = radius + (thickness / 2)
+    ;(ring as any).innerRadius = radius - (thickness / 2)
+
+    canvas.add(ring)
+    canvas.setActiveObject(ring)
+    canvas.renderAll()
+
+    return ring
+}
+
+export const updateRingThickness = (ring: fabric.FabricObject, newThickness: number) => {
+    if (!(ring as any).isRing) return
+
+    const minThickness = 5
+    const maxThickness = 200
+    const validThickness = Math.max(minThickness, Math.min(maxThickness, newThickness))
+
+    // Update the strokeWidth (which is the ring thickness)
+    ring.set({ strokeWidth: validThickness })
+
+    // Update stored properties
+    ;(ring as any).ringThickness = validThickness
+    const radius = (ring as any).ringRadius
+    ;(ring as any).outerRadius = radius + (validThickness / 2)
+    ;(ring as any).innerRadius = radius - (validThickness / 2)
+
+    ring.setCoords()
+}
+
 export const addImageToCanvas = async (canvas: fabric.Canvas, imgSrc: string) => {
     try {
         const img = await fabric.FabricImage.fromURL(imgSrc, {
