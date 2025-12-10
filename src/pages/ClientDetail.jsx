@@ -105,7 +105,7 @@ export default function ClientDetail() {
 
   const handleCopyLink = () => {
     const baseUrl = window.location.origin;
-    const formUrl = `${baseUrl}${createPageUrl(`TripRequestPublic?clientId=${clientId}`)}`;
+    const formUrl = `${baseUrl}/#/TripRequestPublic?clientId=${clientId}`;
     navigator.clipboard.writeText(formUrl);
     setLinkCopied(true);
     toast.success('Link copiado al portapapeles');
@@ -216,7 +216,7 @@ export default function ClientDetail() {
               <Button 
                 onClick={() => {
                   const baseUrl = window.location.origin;
-                  const formUrl = `${baseUrl}${createPageUrl(`TripRequestPublic?clientId=${clientId}`)}`;
+                  const formUrl = `${baseUrl}/#/TripRequestPublic?clientId=${clientId}`;
                   window.open(formUrl, '_blank');
                 }}
                 variant="outline"

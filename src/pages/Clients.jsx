@@ -11,7 +11,6 @@ import {
   Plus, Search, Edit2, Trash2, Mail, Phone, 
   Calendar, Loader2, Users, Eye
 } from 'lucide-react';
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,13 +27,26 @@ import ClientForm from '@/components/clients/ClientForm';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default function Clients() {
-  const { viewMode, user } = useContext(ViewModeContext);
+  const { viewMode } = useContext(ViewModeContext);
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
@@ -56,11 +68,6 @@ export default function Clients() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setFormOpen(false);
-      toast.success('Cliente creado exitosamente!');
-    },
-    onError: (error) => {
-      console.error('Error creating client:', error);
-      toast.error('Error al crear cliente.');
     }
   });
 
@@ -70,11 +77,6 @@ export default function Clients() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setFormOpen(false);
       setEditingClient(null);
-      toast.success('Cliente actualizado exitosamente!');
-    },
-    onError: (error) => {
-      console.error('Error updating client:', error);
-      toast.error('Error al actualizar cliente.');
     }
   });
 
@@ -83,11 +85,6 @@ export default function Clients() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setDeleteConfirm(null);
-      toast.success('Cliente eliminado exitosamente!');
-    },
-    onError: (error) => {
-      console.error('Error deleting client:', error);
-      toast.error('Error al eliminar cliente.');
     }
   });
 
@@ -247,9 +244,7 @@ export default function Clients() {
             <AlertDialogAction
               onClick={() => deleteMutation.mutate(deleteConfirm.id)}
               className="bg-red-600 hover:bg-red-700"
-              disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
