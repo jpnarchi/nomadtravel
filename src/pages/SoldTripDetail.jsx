@@ -11,7 +11,7 @@ import {
   Edit2, Trash2, Loader2, Hotel, Plane, Car, 
   Compass, Package, DollarSign, Receipt, FileText,
   CheckCircle, Clock, AlertCircle, TrendingUp,
-  CreditCard, Building2, MoreVertical, AlertTriangle
+  CreditCard, Building2, MoreVertical, AlertTriangle, Train
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,7 @@ const SERVICE_ICONS = {
   traslado: Car,
   tour: Compass,
   crucero: Package,
+  tren: Train,
   dmc: Building2,
   otro: Package
 };
@@ -59,6 +60,7 @@ const SERVICE_LABELS = {
   traslado: 'Traslado',
   tour: 'Tour',
   crucero: 'Crucero',
+  tren: 'Tren',
   dmc: 'DMC',
   otro: 'Otro'
 };
@@ -69,6 +71,7 @@ const SERVICE_COLORS = {
   traslado: { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' },
   tour: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
   crucero: { bg: 'bg-cyan-50', text: 'text-cyan-600', border: 'border-cyan-200' },
+  tren: { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200' },
   dmc: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200' },
   otro: { bg: 'bg-stone-50', text: 'text-stone-600', border: 'border-stone-200' }
 };
@@ -378,6 +381,12 @@ export default function SoldTripDetail() {
           title: service.cruise_ship || service.cruise_line || 'Crucero',
           subtitle: `${service.cruise_itinerary || ''} • ${service.cruise_nights || 0} noches`,
           extra: service.cruise_departure_date ? `Salida: ${format(new Date(service.cruise_departure_date), 'd MMM', { locale: es })}` : ''
+        };
+      case 'tren':
+        return {
+          title: `${service.train_operator || 'Tren'} ${service.train_number || ''}`,
+          subtitle: service.train_route || '',
+          extra: service.train_date ? `${format(new Date(service.train_date), 'd MMM yyyy', { locale: es })}${service.train_departure_time ? ' • ' + service.train_departure_time : ''}` : ''
         };
       case 'dmc':
         return {

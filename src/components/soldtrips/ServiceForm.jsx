@@ -17,6 +17,7 @@ const SERVICE_TYPES = [
   { value: 'traslado', label: 'Traslado' },
   { value: 'tour', label: 'Tour' },
   { value: 'crucero', label: 'Crucero' },
+  { value: 'tren', label: 'Tren' },
   { value: 'dmc', label: 'DMC' },
   { value: 'otro', label: 'Otro' }
 ];
@@ -128,6 +129,12 @@ const CRUISE_PROVIDERS = [
   { value: 'international_cruises', label: 'International Cruises' },
   { value: 'cruceros_57', label: 'Cruceros 57' },
   { value: 'pema', label: 'PeMA' }
+];
+
+const TRAIN_PROVIDERS = [
+  { value: 'rail_europe', label: 'Rail Europe' },
+  { value: 'omio', label: 'Omio' },
+  { value: 'klook', label: 'Klook' }
 ];
 
 const CABIN_TYPES = [
@@ -1062,6 +1069,122 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     </>
   );
 
+  const renderTrenFields = () => (
+    <>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Ruta (Origen → Destino)</Label>
+          <Input
+            value={formData.train_route || ''}
+            onChange={(e) => updateField('train_route', e.target.value)}
+            placeholder="París → Amsterdam"
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Operador del Tren</Label>
+          <Input
+            value={formData.train_operator || ''}
+            onChange={(e) => updateField('train_operator', e.target.value)}
+            placeholder="Ej: Eurostar, TGV, Renfe"
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Número de Tren</Label>
+          <Input
+            value={formData.train_number || ''}
+            onChange={(e) => updateField('train_number', e.target.value)}
+            className="rounded-xl"
+            placeholder="Ej: 9012"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha</Label>
+          <Input
+            type="date"
+            value={formData.train_date || ''}
+            onChange={(e) => updateField('train_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Clase</Label>
+          <Input
+            value={formData.train_class || ''}
+            onChange={(e) => updateField('train_class', e.target.value)}
+            placeholder="Primera, Segunda"
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label>Hora Salida</Label>
+          <Input
+            type="time"
+            value={formData.train_departure_time || ''}
+            onChange={(e) => updateField('train_departure_time', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Hora Llegada</Label>
+          <Input
+            type="time"
+            value={formData.train_arrival_time || ''}
+            onChange={(e) => updateField('train_arrival_time', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Pasajeros</Label>
+          <Input
+            type="number"
+            value={formData.train_passengers || ''}
+            onChange={(e) => updateField('train_passengers', parseInt(e.target.value) || 0)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Número de Reservación</Label>
+          <Input
+            value={formData.train_reservation_number || ''}
+            onChange={(e) => updateField('train_reservation_number', e.target.value)}
+            className="rounded-xl"
+            placeholder="Ej: TRAIN123456"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Estado de Reservación</Label>
+          <Select value={formData.reservation_status || 'reservado'} onValueChange={(v) => updateField('reservation_status', v)}>
+            <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="reservado">Reservado</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Fecha Vencimiento de Pago</Label>
+          <Input
+            type="date"
+            value={formData.payment_due_date || ''}
+            onChange={(e) => updateField('payment_due_date', e.target.value)}
+            className="rounded-xl"
+          />
+        </div>
+      </div>
+    </>
+  );
+
   const renderOtroFields = () => (
     <>
       <div className="space-y-2">
@@ -1142,6 +1265,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
           {formData.service_type === 'traslado' && renderTrasladoFields()}
           {formData.service_type === 'tour' && renderTourFields()}
           {formData.service_type === 'crucero' && renderCruceroFields()}
+          {formData.service_type === 'tren' && renderTrenFields()}
           {formData.service_type === 'dmc' && renderDmcFields()}
           {formData.service_type === 'otro' && renderOtroFields()}
 
@@ -1183,7 +1307,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 />
               </div>
             </div>
-            <div className={`grid gap-4 ${formData.service_type === 'hotel' || formData.service_type === 'vuelo' || formData.service_type === 'crucero' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className={`grid gap-4 ${formData.service_type === 'hotel' || formData.service_type === 'vuelo' || formData.service_type === 'crucero' || formData.service_type === 'tren' ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="space-y-2">
                 <Label>IATA</Label>
                 <Select 
@@ -1241,6 +1365,17 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       {CRUISE_PROVIDERS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {formData.service_type === 'tren' && (
+                <div className="space-y-2">
+                  <Label>Proveedor de Tren</Label>
+                  <Select value={formData.train_provider || ''} onValueChange={(v) => updateField('train_provider', v)}>
+                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      {TRAIN_PROVIDERS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
