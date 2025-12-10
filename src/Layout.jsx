@@ -63,14 +63,21 @@ export default function Layout({ children, currentPageName }) {
 
   const [user, setUser] = useState(null);
     const [userLoading, setUserLoading] = useState(true);
+    const [authError, setAuthError] = useState(false);
 
     useEffect(() => {
       const fetchUser = async () => {
         try {
           const currentUser = await base44.auth.me();
           setUser(currentUser);
+          setAuthError(false);
         } catch (error) {
           console.error('Error fetching user:', error);
+          setAuthError(true);
+          // Redirect to login if authentication fails
+          setTimeout(() => {
+            base44.auth.redirectToLogin(window.location.pathname);
+          }, 2000);
         } finally {
           setUserLoading(false);
         }
@@ -80,6 +87,36 @@ export default function Layout({ children, currentPageName }) {
 
     const isActualAdmin = user?.role === 'admin';
     const isAdmin = isActualAdmin && viewMode === 'admin';
+
+    // Show loading state
+    if (userLoading) {
+      return (
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: '#2E442A' }} />
+            <p className="text-stone-600 font-medium">Cargando...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Show error state
+    if (authError || !user) {
+      return (
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto p-6">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-bold text-stone-800 mb-2">Error de Autenticación</h2>
+            <p className="text-stone-600 mb-4">
+              No se pudo verificar tu sesión. Redirigiendo al inicio de sesión...
+            </p>
+            <Loader2 className="w-6 h-6 animate-spin mx-auto text-stone-400" />
+          </div>
+        </div>
+      );
+    }
 
     const adminNavigation = [
       { name: 'Dashboard Global', page: 'AdminDashboard', icon: LayoutDashboard },
