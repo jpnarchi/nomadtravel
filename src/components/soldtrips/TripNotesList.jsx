@@ -87,13 +87,18 @@ export default function TripNotesList({ notes = [], onCreate, onUpdate, onDelete
                   className="mt-1"
                 />
                 <div className="flex-1">
+                  <div className="flex items-start gap-2 mb-1">
+                    <span className="text-xs font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                      {format(new Date(note.created_date), 'd MMM yyyy', { locale: es })}
+                    </span>
+                    <span className="text-xs text-stone-400">
+                      {format(new Date(note.created_date), 'HH:mm', { locale: es })}
+                    </span>
+                  </div>
                   <p className={`text-sm ${note.completed ? 'line-through text-stone-500' : 'text-stone-700'}`}>
                     {note.content}
                   </p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <span className="text-xs text-stone-400">
-                      {format(new Date(note.created_date), 'd MMM yyyy HH:mm', { locale: es })}
-                    </span>
                     {note.is_urgent && !note.completed && (
                       <Badge className="bg-red-500 text-white text-xs">
                         <AlertCircle className="w-3 h-3 mr-1" />
