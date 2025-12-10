@@ -46,6 +46,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import TripNotesList from '@/components/soldtrips/TripNotesList';
 import TripDocumentsList from '@/components/soldtrips/TripDocumentsList';
 import TripRemindersList from '@/components/soldtrips/TripRemindersList';
+import ActiveTripReminders from '@/components/soldtrips/ActiveTripReminders';
 
 const SERVICE_ICONS = {
   hotel: Hotel,
@@ -709,63 +710,73 @@ export default function SoldTripDetail() {
         </div>
       </div>
 
-      {/* Payment Alerts */}
-      {pendingPaymentAlerts.length > 0 && (
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4 shadow-sm border border-red-200">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 text-red-600" />
-            <h3 className="font-semibold text-sm text-red-800">Pagos Pendientes ({pendingPaymentAlerts.length})</h3>
-          </div>
-          
-          <div className="space-y-2">
-            {pendingPaymentAlerts.map((service) => {
-              const Icon = SERVICE_ICONS[service.service_type] || Package;
-              const details = getServiceDetails(service);
-              
-              return (
-                <div
-                  key={service.id}
-                  className={`p-3 rounded-lg border text-sm ${
-                    service.isOverdue 
-                      ? 'bg-red-100 border-red-300' 
-                      : service.daysUntilDue <= 7 
-                        ? 'bg-orange-100 border-orange-300' 
-                        : 'bg-yellow-50 border-yellow-300'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Icon className={`w-4 h-4 flex-shrink-0 ${
-                        service.isOverdue ? 'text-red-700' : service.daysUntilDue <= 7 ? 'text-orange-700' : 'text-yellow-700'
-                      }`} />
-                      <span className="font-medium text-stone-800 truncate">{details.title}</span>
-                      <span className="text-xs text-stone-500 hidden sm:inline">• {SERVICE_LABELS[service.service_type]}</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="font-semibold" style={{ color: '#2E442A' }}>
-                        ${(service.total_price || 0).toLocaleString()}
-                      </span>
-                      <Badge className={`text-xs ${
-                        service.isOverdue 
-                          ? 'bg-red-600 text-white' 
-                          : service.daysUntilDue <= 7 
-                            ? 'bg-orange-500 text-white' 
-                            : 'bg-yellow-500 text-white'
-                      }`}>
-                        {service.isOverdue 
-                          ? `Vencido ${Math.abs(service.daysUntilDue)}d` 
-                          : service.daysUntilDue === 0 
-                            ? '¡Hoy!' 
-                            : `${service.daysUntilDue}d`}
-                      </Badge>
+      {/* Grid: Payment Alerts & Active Reminders */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Payment Alerts */}
+        {pendingPaymentAlerts.length > 0 && (
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4 shadow-sm border border-red-200">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+              <h3 className="font-semibold text-sm text-red-800">Pagos Pendientes ({pendingPaymentAlerts.length})</h3>
+            </div>
+            
+            <div className="space-y-2">
+              {pendingPaymentAlerts.map((service) => {
+                const Icon = SERVICE_ICONS[service.service_type] || Package;
+                const details = getServiceDetails(service);
+                
+                return (
+                  <div
+                    key={service.id}
+                    className={`p-3 rounded-lg border text-sm ${
+                      service.isOverdue 
+                        ? 'bg-red-100 border-red-300' 
+                        : service.daysUntilDue <= 7 
+                          ? 'bg-orange-100 border-orange-300' 
+                          : 'bg-yellow-50 border-yellow-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Icon className={`w-4 h-4 flex-shrink-0 ${
+                          service.isOverdue ? 'text-red-700' : service.daysUntilDue <= 7 ? 'text-orange-700' : 'text-yellow-700'
+                        }`} />
+                        <span className="font-medium text-stone-800 truncate">{details.title}</span>
+                        <span className="text-xs text-stone-500 hidden sm:inline">• {SERVICE_LABELS[service.service_type]}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="font-semibold" style={{ color: '#2E442A' }}>
+                          ${(service.total_price || 0).toLocaleString()}
+                        </span>
+                        <Badge className={`text-xs ${
+                          service.isOverdue 
+                            ? 'bg-red-600 text-white' 
+                            : service.daysUntilDue <= 7 
+                              ? 'bg-orange-500 text-white' 
+                              : 'bg-yellow-500 text-white'
+                        }`}>
+                          {service.isOverdue 
+                            ? `Vencido ${Math.abs(service.daysUntilDue)}d` 
+                            : service.daysUntilDue === 0 
+                              ? '¡Hoy!' 
+                              : `${service.daysUntilDue}d`}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Active Reminders */}
+        <ActiveTripReminders
+          startDate={soldTrip.start_date}
+          reminders={tripReminders}
+          onUpdate={(id, data) => updateReminderMutation.mutate({ id, data })}
+        />
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
