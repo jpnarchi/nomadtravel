@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import TripForm from '@/components/trips/TripForm';
 import TravelDocumentsList from '@/components/documents/TravelDocumentsList';
 import ClientPreferencesForm from '@/components/clients/ClientPreferencesForm';
+import CompanionsList from '@/components/clients/CompanionsList';
 
 const SOURCE_LABELS = {
   referido: 'Referido',
@@ -99,6 +100,14 @@ export default function ClientDetail() {
       queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       setPreferencesOpen(false);
       toast.success('Preferencias guardadas');
+    }
+  });
+
+  const updateCompanionsMutation = useMutation({
+    mutationFn: (companions) => base44.entities.Client.update(clientId, { companions }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', clientId] });
+      toast.success('Acompañantes actualizados');
     }
   });
 
@@ -196,6 +205,13 @@ export default function ClientDetail() {
               </div>
             )}
           </div>
+
+          {/* Companions List */}
+          <CompanionsList
+            companions={client.companions || []}
+            onUpdate={(companions) => updateCompanionsMutation.mutate(companions)}
+            isLoading={updateCompanionsMutation.isPending}
+          />
 
           {/* Client Preferences */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
