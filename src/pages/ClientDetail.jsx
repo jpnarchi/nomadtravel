@@ -7,13 +7,14 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
   ArrowLeft, Mail, Phone, Calendar, Loader2, 
-  Plane, Plus, Send, Copy, Check, ExternalLink
+  Plane, Plus, Send, Copy, Check, ExternalLink, Settings
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import TripForm from '@/components/trips/TripForm';
 import TravelDocumentsList from '@/components/documents/TravelDocumentsList';
+import ClientPreferencesForm from '@/components/clients/ClientPreferencesForm';
 
 const SOURCE_LABELS = {
   referido: 'Referido',
@@ -28,6 +29,7 @@ export default function ClientDetail() {
   
   const [formOpen, setFormOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -88,6 +90,15 @@ export default function ClientDetail() {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       setFormOpen(false);
       toast.success('Viaje creado exitosamente');
+    }
+  });
+
+  const updatePreferencesMutation = useMutation({
+    mutationFn: (preferences) => base44.entities.Client.update(clientId, { preferences }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', clientId] });
+      setPreferencesOpen(false);
+      toast.success('Preferencias guardadas');
     }
   });
 
@@ -184,6 +195,31 @@ export default function ClientDetail() {
                 <p className="text-sm text-stone-600">{client.notes}</p>
               </div>
             )}
+          </div>
+
+          {/* Client Preferences */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-stone-800">Preferencias del Cliente</h3>
+              <Button
+                onClick={() => setPreferencesOpen(true)}
+                variant="ghost"
+                size="icon"
+                className="rounded-xl"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-stone-500">
+              {client.preferences ? 'Preferencias configuradas' : 'Sin preferencias configuradas'}
+            </p>
+            <Button
+              onClick={() => setPreferencesOpen(true)}
+              variant="outline"
+              className="w-full mt-3 rounded-xl"
+            >
+              {client.preferences ? 'Editar Preferencias' : 'Agregar Preferencias'}
+            </Button>
           </div>
 
           {/* Send Form Link */}
@@ -327,6 +363,15 @@ export default function ClientDetail() {
           id: clientId,
           name: `${client.first_name} ${client.last_name}`
         }}
+      />
+
+      {/* Client Preferences Form */}
+      <ClientPreferencesForm
+        open={preferencesOpen}
+        onClose={() => setPreferencesOpen(false)}
+        preferences={client.preferences || {}}
+        onSave={(preferences) => updatePreferencesMutation.mutate(preferences)}
+        isLoading={updatePreferencesMutation.isPending}
       />
     </div>
   );
