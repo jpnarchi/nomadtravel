@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import TripRequestForm from '@/components/clients/TripRequestForm';
+import TripForm from '@/components/trips/TripForm';
 import TravelDocumentsList from '@/components/documents/TravelDocumentsList';
 
 const SOURCE_LABELS = {
@@ -75,29 +75,17 @@ export default function ClientDetail() {
 
   const createTripMutation = useMutation({
     mutationFn: async (tripData) => {
-      // Create the trip
       const trip = await base44.entities.Trip.create({
         ...tripData,
         client_id: clientId,
-        client_name: `${client.first_name} ${client.last_name}`,
-        stage: 'nuevo'
+        client_name: `${client.first_name} ${client.last_name}`
       });
-      
-      // Update client with trip request history
-      const tripRequests = client.trip_requests || [];
-      await base44.entities.Client.update(clientId, {
-        trip_requests: [...tripRequests, {
-          ...tripData,
-          created_date: new Date().toISOString(),
-          trip_id: trip.id
-        }]
-      });
-      
       return trip;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       queryClient.invalidateQueries({ queryKey: ['clientTrips', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
       setFormOpen(false);
       toast.success('Viaje creado exitosamente');
     }
@@ -329,12 +317,16 @@ export default function ClientDetail() {
         </div>
       </div>
 
-      {/* Trip Request Form */}
-      <TripRequestForm
+      {/* Trip Form */}
+      <TripForm
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSave={(data) => createTripMutation.mutate(data)}
         isLoading={createTripMutation.isPending}
+        prefilledClient={{
+          id: clientId,
+          name: `${client.first_name} ${client.last_name}`
+        }}
       />
     </div>
   );
