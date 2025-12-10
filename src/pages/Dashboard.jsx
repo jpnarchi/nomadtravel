@@ -9,6 +9,7 @@ import FunnelChart from '@/components/dashboard/FunnelChart';
 import UpcomingTrips from '@/components/dashboard/UpcomingTrips';
 import TasksList from '@/components/dashboard/TasksList';
 import UpcomingPayments from '@/components/dashboard/UpcomingPayments';
+import ActiveReminders from '@/components/dashboard/ActiveReminders';
 
 export default function Dashboard() {
   const { viewMode } = useContext(ViewModeContext);
@@ -172,9 +173,9 @@ export default function Dashboard() {
           <UpcomingTrips soldTrips={soldTrips} />
         </div>
 
-        {/* Upcoming Payments */}
+        {/* Active Reminders */}
         <div className="lg:col-span-1">
-          <UpcomingPayments services={services} soldTrips={soldTrips} />
+          <ActiveReminders userEmail={user?.email} isAdmin={isAdmin} />
         </div>
 
         {/* Tasks */}
@@ -189,6 +190,12 @@ export default function Dashboard() {
             onCreate={(data) => createTaskMutation.mutate(data)}
           />
         </div>
+      </div>
+
+      {/* Secondary Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upcoming Payments */}
+        <UpcomingPayments services={services} soldTrips={soldTrips} />
       </div>
     </div>
   );

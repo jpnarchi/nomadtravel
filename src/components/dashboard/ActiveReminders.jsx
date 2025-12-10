@@ -1,0 +1,182 @@
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { differenceInMonths, differenceInWeeks, differenceInDays, differenceInHours, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Bell, CheckCircle, Loader2, MapPin } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+
+const getActiveTimeline = (startDate) => {
+  const tripDate = new Date(startDate);
+  const now = new Date();
+  const monthsUntil = differenceInMonths(tripDate, now);
+  const weeksUntil = differenceInWeeks(tripDate, now);
+  const daysUntil = differenceInDays(tripDate, now);
+  const hoursUntil = differenceInHours(tripDate, now);
+
+  if (monthsUntil >= 6) return '6_months';
+  if (monthsUntil >= 3) return '3_months';
+  if (monthsUntil >= 1.5) return '1.5_months';
+  if (monthsUntil >= 1) return '1_month';
+  if (weeksUntil >= 3) return '3_weeks';
+  if (weeksUntil >= 1) return '1-2_weeks';
+  if (hoursUntil >= 48) return '72-48_hours';
+  if (hoursUntil > 0) return '24_hours';
+  return null;
+};
+
+const TIMELINE_LABELS = {
+  '6_months': '6 meses antes',
+  '3_months': '3 meses antes',
+  '1.5_months': '1.5 meses antes',
+  '1_month': '1 mes antes',
+  '3_weeks': '3 semanas antes',
+  '1-2_weeks': '1-2 semanas antes',
+  '72-48_hours': '72-48 horas antes',
+  '24_hours': '24 horas antes'
+};
+
+export default function ActiveReminders({ userEmail, isAdmin }) {
+  const queryClient = useQueryClient();
+
+  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
+    queryKey: ['soldTrips', userEmail, isAdmin],
+    queryFn: async () => {
+      if (!userEmail) return [];
+      if (isAdmin) return base44.entities.SoldTrip.list();
+      return base44.entities.SoldTrip.filter({ created_by: userEmail });
+    },
+    enabled: !!userEmail
+  });
+
+  const { data: allReminders = [], isLoading: remindersLoading } = useQuery({
+    queryKey: ['allReminders'],
+    queryFn: () => base44.entities.TripReminder.list(),
+    enabled: true
+  });
+
+  const updateReminderMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.TripReminder.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allReminders'] });
+    }
+  });
+
+  if (tripsLoading || remindersLoading) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Bell className="w-5 h-5" style={{ color: '#2E442A' }} />
+          <h2 className="font-semibold text-stone-800">Recordatorios Activos</h2>
+        </div>
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#2E442A' }} />
+        </div>
+      </div>
+    );
+  }
+
+  // Filter upcoming trips
+  const upcomingTrips = soldTrips.filter(trip => {
+    const tripDate = new Date(trip.start_date);
+    return tripDate > new Date();
+  });
+
+  // Get active reminders for each trip
+  const activeRemindersData = upcomingTrips.map(trip => {
+    const activeTimeline = getActiveTimeline(trip.start_date);
+    if (!activeTimeline) return null;
+
+    const tripReminders = allReminders.filter(
+      r => r.sold_trip_id === trip.id && 
+           r.timeline_period === activeTimeline &&
+           !r.completed
+    );
+
+    if (tripReminders.length === 0) return null;
+
+    return {
+      trip,
+      timeline: activeTimeline,
+      reminders: tripReminders
+    };
+  }).filter(Boolean);
+
+  if (activeRemindersData.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Bell className="w-5 h-5" style={{ color: '#2E442A' }} />
+          <h2 className="font-semibold text-stone-800">Recordatorios Activos</h2>
+        </div>
+        <div className="text-center py-8">
+          <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500 opacity-50" />
+          <p className="text-sm text-stone-500">No hay recordatorios pendientes</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <Bell className="w-5 h-5" style={{ color: '#2E442A' }} />
+        <h2 className="font-semibold text-stone-800">Recordatorios Activos</h2>
+        <Badge variant="secondary">{activeRemindersData.reduce((sum, d) => sum + d.reminders.length, 0)}</Badge>
+      </div>
+
+      <div className="space-y-4 max-h-96 overflow-y-auto">
+        {activeRemindersData.map(({ trip, timeline, reminders }) => (
+          <div key={trip.id} className="border border-stone-200 rounded-xl p-4 space-y-3">
+            <Link to={createPageUrl(`SoldTripDetail?id=${trip.id}`)} className="block">
+              <div className="flex items-start gap-3 mb-3 hover:opacity-80 transition-opacity">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
+                  <MapPin className="w-4 h-4" style={{ color: '#2E442A' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-stone-800 truncate">{trip.client_name}</p>
+                  <p className="text-xs text-stone-500">{trip.destination}</p>
+                  <p className="text-xs text-stone-400">
+                    {format(new Date(trip.start_date), 'd MMM yyyy', { locale: es })}
+                  </p>
+                </div>
+                <Badge className="bg-blue-500 text-white text-xs">
+                  {TIMELINE_LABELS[timeline]}
+                </Badge>
+              </div>
+            </Link>
+
+            <div className="space-y-2 pl-2">
+              {reminders.map((reminder) => (
+                <div
+                  key={reminder.id}
+                  className="flex items-start gap-2 p-2 rounded-lg hover:bg-stone-50 transition-colors"
+                >
+                  <Checkbox
+                    checked={false}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        updateReminderMutation.mutate({
+                          id: reminder.id,
+                          data: {
+                            completed: true,
+                            completed_date: new Date().toISOString()
+                          }
+                        });
+                      }
+                    }}
+                    className="mt-0.5"
+                  />
+                  <p className="text-sm text-stone-700 flex-1">{reminder.task}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
