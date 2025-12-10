@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import TripForm from '@/components/trips/TripForm';
+import TripRequestForm from '@/components/clients/TripRequestForm';
 import TravelDocumentsList from '@/components/documents/TravelDocumentsList';
 
 const SOURCE_LABELS = {
@@ -49,12 +49,6 @@ export default function ClientDetail() {
     enabled: !!clientId
   });
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list(),
-    enabled: !!clientId
-  });
-
   const createDocMutation = useMutation({
     mutationFn: (data) => base44.entities.TravelDocument.create(data),
     onSuccess: () => {
@@ -81,8 +75,13 @@ export default function ClientDetail() {
 
   const createTripMutation = useMutation({
     mutationFn: async (tripData) => {
-      // Create the trip with provided data
-      const trip = await base44.entities.Trip.create(tripData);
+      // Create the trip
+      const trip = await base44.entities.Trip.create({
+        ...tripData,
+        client_id: clientId,
+        client_name: `${client.first_name} ${client.last_name}`,
+        stage: 'nuevo'
+      });
       
       // Update client with trip request history
       const tripRequests = client.trip_requests || [];
@@ -330,12 +329,10 @@ export default function ClientDetail() {
         </div>
       </div>
 
-      {/* Trip Form */}
-      <TripForm
+      {/* Trip Request Form */}
+      <TripRequestForm
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        trip={null}
-        clients={clients}
         onSave={(data) => createTripMutation.mutate(data)}
         isLoading={createTripMutation.isPending}
       />
