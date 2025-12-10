@@ -10,10 +10,7 @@ import { base44 } from '@/api/base44Client';
 
 const DOC_TYPES = [
   { value: 'pasaporte', label: 'Pasaporte' },
-  { value: 'visa', label: 'Visa' },
-  { value: 'boleto_avion', label: 'Boleto de Avión' },
-  { value: 'seguro_viaje', label: 'Seguro de Viaje' },
-  { value: 'otro', label: 'Otro' }
+  { value: 'visa', label: 'Visa' }
 ];
 
 export default function TravelDocumentForm({ open, onClose, document, clientId, tripId, onSave, isLoading }) {
@@ -135,17 +132,15 @@ export default function TravelDocumentForm({ open, onClose, document, clientId, 
             )}
           </div>
 
-          {(formData.document_type === 'pasaporte' || formData.document_type === 'visa') && (
-            <div className="space-y-2">
-              <Label htmlFor="document_number">Número de Documento</Label>
-              <Input
-                id="document_number"
-                value={formData.document_number}
-                onChange={(e) => setFormData({ ...formData, document_number: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="document_number">Número de Documento</Label>
+            <Input
+              id="document_number"
+              value={formData.document_number}
+              onChange={(e) => setFormData({ ...formData, document_number: e.target.value })}
+              className="rounded-xl"
+            />
+          </div>
 
           {formData.document_type === 'visa' && (
             <div className="space-y-2">
@@ -160,18 +155,16 @@ export default function TravelDocumentForm({ open, onClose, document, clientId, 
             </div>
           )}
 
-          {(formData.document_type === 'pasaporte' || formData.document_type === 'visa' || formData.document_type === 'seguro_viaje') && (
-            <div className="space-y-2">
-              <Label htmlFor="expiry_date">Fecha de Vencimiento</Label>
-              <Input
-                id="expiry_date"
-                type="date"
-                value={formData.expiry_date}
-                onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                className="rounded-xl"
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="expiry_date">Fecha de Vencimiento</Label>
+            <Input
+              id="expiry_date"
+              type="date"
+              value={formData.expiry_date}
+              onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+              className="rounded-xl"
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notas</Label>
