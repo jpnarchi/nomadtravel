@@ -11,7 +11,8 @@ import {
   Edit2, Trash2, Loader2, Hotel, Plane, Car, 
   Compass, Package, DollarSign, Receipt, FileText,
   CheckCircle, Clock, AlertCircle, TrendingUp,
-  CreditCard, Building2, MoreVertical, AlertTriangle, Train
+  CreditCard, Building2, MoreVertical, AlertTriangle, Train,
+  StickyNote, FolderOpen, Bell
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,9 @@ import EditPaymentPlanItem from '@/components/soldtrips/EditPaymentPlanItem';
 import InvoiceView from '@/components/soldtrips/InvoiceView';
 import SoldTripForm from '@/components/soldtrips/SoldTripForm';
 import EmptyState from '@/components/ui/EmptyState';
+import TripNotesList from '@/components/soldtrips/TripNotesList';
+import TripDocumentsList from '@/components/soldtrips/TripDocumentsList';
+import TripRemindersList from '@/components/soldtrips/TripRemindersList';
 
 const SERVICE_ICONS = {
   hotel: Hotel,
@@ -132,6 +136,24 @@ export default function SoldTripDetail() {
   const { data: paymentPlan = [] } = useQuery({
     queryKey: ['paymentPlan', tripId],
     queryFn: () => base44.entities.ClientPaymentPlan.filter({ sold_trip_id: tripId }),
+    enabled: !!tripId
+  });
+
+  const { data: tripNotes = [] } = useQuery({
+    queryKey: ['tripNotes', tripId],
+    queryFn: () => base44.entities.TripNote.filter({ sold_trip_id: tripId }),
+    enabled: !!tripId
+  });
+
+  const { data: tripDocuments = [] } = useQuery({
+    queryKey: ['tripDocuments', tripId],
+    queryFn: () => base44.entities.TripDocumentFile.filter({ sold_trip_id: tripId }),
+    enabled: !!tripId
+  });
+
+  const { data: tripReminders = [] } = useQuery({
+    queryKey: ['tripReminders', tripId],
+    queryFn: () => base44.entities.TripReminder.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
@@ -301,6 +323,61 @@ export default function SoldTripDetail() {
       queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       setEditTripOpen(false);
+    }
+  });
+
+  // Trip Notes Mutations
+  const createNoteMutation = useMutation({
+    mutationFn: (data) => base44.entities.TripNote.create({ ...data, sold_trip_id: tripId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripNotes', tripId] });
+    }
+  });
+
+  const updateNoteMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.TripNote.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripNotes', tripId] });
+    }
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: (id) => base44.entities.TripNote.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripNotes', tripId] });
+    }
+  });
+
+  // Trip Documents Mutations
+  const createDocumentMutation = useMutation({
+    mutationFn: (data) => base44.entities.TripDocumentFile.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
+    }
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: (id) => base44.entities.TripDocumentFile.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
+    }
+  });
+
+  // Trip Reminders Mutations
+  const createRemindersMutation = useMutation({
+    mutationFn: (reminders) => {
+      const remindersWithTripId = reminders.map(r => ({ ...r, sold_trip_id: tripId }));
+      return base44.entities.TripReminder.bulkCreate(remindersWithTripId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripReminders', tripId] });
+    }
+  });
+
+  const updateReminderMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.TripReminder.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripReminders', tripId] });
     }
   });
 
@@ -692,7 +769,7 @@ export default function SoldTripDetail() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-stone-100 p-1 rounded-xl">
+        <TabsList className="bg-stone-100 p-1 rounded-xl flex-wrap">
           <TabsTrigger value="services" className="rounded-lg">
             Servicios <Badge variant="secondary" className="ml-2 text-xs">{services.length}</Badge>
           </TabsTrigger>
@@ -707,6 +784,18 @@ export default function SoldTripDetail() {
               Plan de Pagos <Badge variant="secondary" className="ml-2 text-xs">{paymentPlan.length}</Badge>
             </TabsTrigger>
           )}
+          <TabsTrigger value="notes" className="rounded-lg">
+            <StickyNote className="w-4 h-4 mr-1" />
+            Notas <Badge variant="secondary" className="ml-2 text-xs">{tripNotes.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="rounded-lg">
+            <FolderOpen className="w-4 h-4 mr-1" />
+            Documentos <Badge variant="secondary" className="ml-2 text-xs">{tripDocuments.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="reminders" className="rounded-lg">
+            <Bell className="w-4 h-4 mr-1" />
+            Recordatorios
+          </TabsTrigger>
         </TabsList>
 
         {/* Services Tab */}
@@ -1024,121 +1113,59 @@ export default function SoldTripDetail() {
         {/* Payment Plan Tab */}
         {paymentPlan.length > 0 && (
           <TabsContent value="payment-plan">
-            <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
-              <div className="p-5 border-b border-stone-100">
-                <h3 className="font-semibold text-stone-800">Plan de Pagos del Cliente</h3>
-                <p className="text-sm text-stone-500 mt-1">
-                  {paymentPlan.filter(p => p.status === 'pagado').length} de {paymentPlan.length} pagos completados
-                </p>
-              </div>
-
-              <div className="divide-y divide-stone-100">
-                {paymentPlan.sort((a, b) => new Date(a.due_date) - new Date(b.due_date)).map((plan) => {
-                  const dueDate = new Date(plan.due_date);
-                  const today = new Date();
-                  const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-                  const isOverdue = daysUntilDue < 0 && plan.status !== 'pagado';
-                  
-                  return (
-                    <div 
-                      key={plan.id}
-                      className={`p-4 hover:bg-stone-50 transition-colors ${
-                        isOverdue ? 'bg-red-50' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                          plan.status === 'pagado' ? 'bg-green-50' :
-                          isOverdue ? 'bg-red-50' :
-                          'bg-blue-50'
-                        }`}>
-                          <span className={`font-bold ${
-                            plan.status === 'pagado' ? 'text-green-600' :
-                            isOverdue ? 'text-red-600' :
-                            'text-blue-600'
-                          }`}>
-                            #{plan.payment_number}
-                          </span>
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <p className="font-bold text-lg" style={{ color: '#2E442A' }}>
-                              ${plan.amount_due.toLocaleString()}
-                            </p>
-                            <Badge className={
-                              plan.status === 'pagado' ? 'bg-green-100 text-green-700' :
-                              plan.status === 'atrasado' ? 'bg-red-100 text-red-700' :
-                              plan.status === 'parcial' ? 'bg-blue-100 text-blue-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }>
-                              {plan.status === 'pagado' ? 'Pagado' :
-                               plan.status === 'atrasado' ? 'Atrasado' :
-                               plan.status === 'parcial' ? 'Parcial' :
-                               'Pendiente'}
-                            </Badge>
-                            {plan.reminder_sent && (
-                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                ✓ Recordatorio Enviado
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-2 text-sm text-stone-500">
-                            <Calendar className="w-3 h-3" />
-                            <span>Vence: {format(dueDate, 'd MMMM yyyy', { locale: es })}</span>
-                            {!isOverdue && daysUntilDue >= 0 && plan.status !== 'pagado' && (
-                              <>
-                                <span>•</span>
-                                <span className={daysUntilDue <= 7 ? 'text-orange-600 font-medium' : ''}>
-                                  {daysUntilDue === 0 ? '¡Hoy!' : `${daysUntilDue} días`}
-                                </span>
-                              </>
-                            )}
-                            {isOverdue && (
-                              <>
-                                <span>•</span>
-                                <span className="text-red-600 font-medium">
-                                  Vencido hace {Math.abs(daysUntilDue)} días
-                                </span>
-                              </>
-                            )}
-                          </div>
-                          
-                          {plan.amount_paid > 0 && plan.status !== 'pagado' && (
-                            <p className="text-xs text-blue-600 mt-1">
-                              Pagado parcialmente: ${plan.amount_paid.toLocaleString()} 
-                              (Falta: ${(plan.amount_due - plan.amount_paid).toLocaleString()})
-                            </p>
-                          )}
-                          
-                          {plan.reminder_sent && (
-                            <p className="text-xs text-stone-400 mt-1">
-                              Último recordatorio: {format(new Date(plan.last_reminder_date), 'd MMM', { locale: es })}
-                            </p>
-                          )}
-                          
-                          {plan.notes && (
-                            <p className="text-xs text-stone-500 mt-1 italic">"{plan.notes}"</p>
-                          )}
-                        </div>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingPlanItem(plan)}
-                          className="text-stone-400 hover:text-stone-600"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+...
           </TabsContent>
         )}
+
+        {/* Notes Tab */}
+        <TabsContent value="notes">
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+            <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
+              <StickyNote className="w-5 h-5" style={{ color: '#2E442A' }} />
+              Notas y Pendientes del Viaje
+            </h3>
+            <TripNotesList
+              notes={tripNotes}
+              onCreate={(data) => createNoteMutation.mutate(data)}
+              onUpdate={(id, data) => updateNoteMutation.mutate({ id, data })}
+              onDelete={(id) => deleteNoteMutation.mutate(id)}
+              isLoading={createNoteMutation.isPending}
+            />
+          </div>
+        </TabsContent>
+
+        {/* Documents Tab */}
+        <TabsContent value="documents">
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+            <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
+              <FolderOpen className="w-5 h-5" style={{ color: '#2E442A' }} />
+              Documentos del Viaje
+            </h3>
+            <TripDocumentsList
+              documents={tripDocuments}
+              soldTripId={tripId}
+              onCreate={(data) => createDocumentMutation.mutate(data)}
+              onDelete={(id) => deleteDocumentMutation.mutate(id)}
+              isLoading={createDocumentMutation.isPending}
+            />
+          </div>
+        </TabsContent>
+
+        {/* Reminders Tab */}
+        <TabsContent value="reminders">
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+            <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
+              <Bell className="w-5 h-5" style={{ color: '#2E442A' }} />
+              Timeline de Recordatorios para el Cliente
+            </h3>
+            <TripRemindersList
+              startDate={soldTrip.start_date}
+              reminders={tripReminders}
+              onCreate={(reminders) => createRemindersMutation.mutate(reminders)}
+              onUpdate={(id, data) => updateReminderMutation.mutate({ id, data })}
+            />
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
