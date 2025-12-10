@@ -41,7 +41,7 @@ const STAGES = [
   { value: 'perdido', label: 'Perdido' }
 ];
 
-export default function TripForm({ open, onClose, trip, clients, onSave, isLoading }) {
+export default function TripForm({ open, onClose, trip, clients = [], onSave, isLoading, prefilledClient }) {
   const [formData, setFormData] = useState({
     trip_name: '',
     client_id: '',
@@ -73,6 +73,21 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
         notes: trip.notes || '',
         lost_reason: trip.lost_reason || ''
       });
+    } else if (prefilledClient) {
+      setFormData({
+        trip_name: '',
+        client_id: prefilledClient.id || '',
+        client_name: prefilledClient.name || '',
+        destination: '',
+        start_date: '',
+        end_date: '',
+        travelers: 1,
+        budget: '',
+        mood: '',
+        stage: 'nuevo',
+        notes: '',
+        lost_reason: ''
+      });
     } else {
       setFormData({
         trip_name: '',
@@ -89,7 +104,7 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
         lost_reason: ''
       });
     }
-  }, [trip, open]);
+  }, [trip, open, prefilledClient]);
 
   const handleClientChange = (clientId) => {
     const selectedClient = clients.find(c => c.id === clientId);
@@ -143,24 +158,32 @@ export default function TripForm({ open, onClose, trip, clients, onSave, isLoadi
 
           <div className="space-y-2">
             <Label>Cliente <span className="text-red-500">*</span></Label>
-            <Select value={formData.client_id} onValueChange={handleClientChange}>
-              <SelectTrigger className="rounded-xl">
-                <SelectValue placeholder="Seleccionar cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.length === 0 ? (
-                  <div className="p-2 text-sm text-stone-500">
-                    No tienes clientes. Crea uno primero.
-                  </div>
-                ) : (
-                  clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.first_name} {client.last_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            {prefilledClient ? (
+              <Input
+                value={formData.client_name}
+                disabled
+                className="rounded-xl bg-stone-50"
+              />
+            ) : (
+              <Select value={formData.client_id} onValueChange={handleClientChange}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder="Seleccionar cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.length === 0 ? (
+                    <div className="p-2 text-sm text-stone-500">
+                      No tienes clientes. Crea uno primero.
+                    </div>
+                  ) : (
+                    clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.first_name} {client.last_name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
