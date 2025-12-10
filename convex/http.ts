@@ -311,8 +311,9 @@ ${templates.length === 0 ? '⚠️ No templates available - inform user to creat
 - fillImageContainer: Generate AI images for placeholders
 
 **Structure:**
+- duplicateSlide: **PREFERRED** for adding slides - auto-finds similar slide and duplicates it
+- insertSlideAtPosition: Insert blank slide (rarely needed, prefer duplicateSlide)
 - manageFile: Add/remove objects (use sparingly)
-- insertSlideAtPosition: Insert slide at specific position
 - deleteSlide: Remove slides
 - showPreview: Display final presentation
 
@@ -325,7 +326,7 @@ ${templates.length === 0 ? '⚠️ No templates available - inform user to creat
 1. **Start**: generateInitialCodebase → wait
 2. **Adjust Slide Count**:${requestedSlidesCount ? `\n   - Target: ${requestedSlidesCount} slides` : ''}
    - If template has excess: deleteSlide for each extra → wait per deletion
-   - If template has fewer: read existing + add new slides → wait per addition
+   - If template has fewer: duplicateSlide with contentDescription → wait per addition
 3. **Read All**: readFile each slide → wait per read
 4. **Fill Images** (ONLY if placeholders exist):
    - Scan ALL slides for isImagePlaceholder: true
@@ -335,6 +336,12 @@ ${templates.length === 0 ? '⚠️ No templates available - inform user to creat
 6. **Preview**: showPreview (only after all steps complete)
 
 ## Tool Selection Rules
+**Use duplicateSlide when:**
+- "Add a slide about..."
+- "Create a new slide for..."
+- User needs more slides than template provides
+- Adding content slides during initial creation
+
 **Use updateSlideTexts when:**
 - "Change the title to..."
 - "Update text on slide 2"
@@ -707,6 +714,223 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                             return {
                                 success: false,
                                 error: `Error updating design in ${path}: ${error instanceof Error ? error.message : 'Unknown error'}`
+                            };
+                        }
+                    },
+                },
+
+                duplicateSlide: {
+                    description: 'PREFERRED tool for adding new slides. Automatically finds and duplicates the most similar existing slide, then modifies content. Use this instead of insertSlideAtPosition or manageFile create.',
+                    inputSchema: z.object({
+                        position: z.number().min(1).describe('Position where to insert the new slide (1 = first slide, 2 = second slide, etc.)'),
+                        contentDescription: z.string().describe('Detailed description of what content the new slide should have. Be specific about the topic, purpose, and any key elements needed.'),
+                        textUpdates: z.array(z.object({
+                            objectIndex: z.number().describe('Index of text object to modify (0-based)'),
+                            newText: z.string().describe('New text content')
+                        })).optional().describe('Text modifications to apply after duplication'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words for users'),
+                    }),
+                    execute: async function ({ position, contentDescription, textUpdates, explanation }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+
+                            // Get all existing slide paths
+                            const slidePaths = Object.keys(allFiles)
+                                .filter(path => path.startsWith('/slides/') && path.endsWith('.json'))
+                                .sort((a, b) => {
+                                    const numA = parseInt(a.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                    const numB = parseInt(b.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                    return numA - numB;
+                                });
+
+                            if (slidePaths.length === 0) {
+                                return {
+                                    success: false,
+                                    error: 'No existing slides to duplicate. Use generateInitialCodebase first.'
+                                };
+                            }
+
+                            // Validate slide limit
+                            const slideCount = slidePaths.length;
+                            const userInfo = await ctx.runQuery(api.users.getUserInfo, {});
+                            const userPlan = userInfo?.plan || "free";
+                            const slideLimit = getSlideLimit(userPlan);
+
+                            if (slideCount >= slideLimit) {
+                                return {
+                                    success: false,
+                                    error: `Slide limit reached. Maximum ${slideLimit} slides for ${userPlan} plan.`,
+                                    limitReached: true,
+                                    currentPlan: userPlan,
+                                    slideLimit: slideLimit,
+                                    currentSlides: slideCount
+                                };
+                            }
+
+                            // Analyze all slides to find the most similar one
+                            const slideAnalysis = [];
+                            for (const path of slidePaths) {
+                                const slideContent = allFiles[path];
+                                const slideData = JSON.parse(slideContent);
+
+                                // Extract text content from slide
+                                const texts = slideData.objects
+                                    ?.filter((obj: any) => ['text', 'i-text', 'textbox', 'itext'].includes(obj.type?.toLowerCase()))
+                                    .map((obj: any) => obj.text || '')
+                                    .join(' ') || '';
+
+                                // Count element types
+                                const elementCounts = {
+                                    texts: slideData.objects?.filter((obj: any) => ['text', 'i-text', 'textbox', 'itext'].includes(obj.type?.toLowerCase())).length || 0,
+                                    images: slideData.objects?.filter((obj: any) => obj.type?.toLowerCase() === 'image' || obj.isImagePlaceholder).length || 0,
+                                    shapes: slideData.objects?.filter((obj: any) => ['rect', 'circle', 'triangle', 'polygon'].includes(obj.type?.toLowerCase())).length || 0,
+                                };
+
+                                slideAnalysis.push({
+                                    path,
+                                    texts,
+                                    elementCounts,
+                                    background: slideData.background || '#ffffff'
+                                });
+                            }
+
+                            // Use AI to determine the most similar slide
+                            const { object: selection } = await generateObject({
+                                model: openrouter('google/gemini-2.5-flash'),
+                                prompt: `You are analyzing presentation slides to find the most similar one to duplicate.
+
+USER WANTS TO CREATE A SLIDE WITH THIS CONTENT:
+"${contentDescription}"
+
+EXISTING SLIDES ANALYSIS:
+${slideAnalysis.map((s, i) => `
+Slide ${i + 1} (${s.path}):
+- Text content: ${s.texts.substring(0, 200)}${s.texts.length > 200 ? '...' : ''}
+- Elements: ${s.elementCounts.texts} texts, ${s.elementCounts.images} images, ${s.elementCounts.shapes} shapes
+- Background: ${s.background}
+`).join('\n')}
+
+TASK:
+Analyze which existing slide has the most similar:
+1. Structure (number and type of elements)
+2. Purpose (title slide, content slide, image slide, etc.)
+3. Design style (layout, complexity)
+
+Select the slide that would require the LEAST modifications to match the user's content description.
+
+Return the slide number (1-based) that is most similar.`,
+                                schema: z.object({
+                                    selectedSlideNumber: z.number().min(1).describe('The slide number (1-based) that is most similar'),
+                                    reasoning: z.string().describe('Brief explanation of why this slide was selected (1-2 sentences)')
+                                }),
+                                temperature: 0.3,
+                            });
+
+                            const selectedPath = slidePaths[selection.selectedSlideNumber - 1];
+                            const selectedContent = allFiles[selectedPath];
+                            let duplicatedSlide = JSON.parse(selectedContent);
+
+                            console.log(`[DUPLICATE SLIDE] Selected ${selectedPath} for duplication. Reason: ${selection.reasoning}`);
+
+                            // Apply text updates if provided
+                            if (textUpdates && textUpdates.length > 0) {
+                                for (const update of textUpdates) {
+                                    const { objectIndex, newText } = update;
+
+                                    if (objectIndex >= 0 && objectIndex < duplicatedSlide.objects.length) {
+                                        const obj = duplicatedSlide.objects[objectIndex];
+                                        const objType = (obj.type || '').toLowerCase();
+
+                                        if (['text', 'i-text', 'textbox', 'itext'].includes(objType)) {
+                                            duplicatedSlide.objects[objectIndex].text = newText;
+                                        }
+                                    }
+                                }
+                            }
+
+                            const newSlideContent = JSON.stringify(duplicatedSlide, null, 2);
+
+                            // Validate position
+                            if (position < 1) {
+                                return {
+                                    success: false,
+                                    error: 'Position must be greater than or equal to 1'
+                                };
+                            }
+
+                            if (position > slidePaths.length + 1) {
+                                return {
+                                    success: false,
+                                    error: `Position ${position} is too high. Use position ${slidePaths.length + 1} to add at the end.`
+                                };
+                            }
+
+                            // If inserting at the end, just create the new slide
+                            if (position > slidePaths.length) {
+                                const newPath = `/slides/slide-${position}.json`;
+                                await ctx.runMutation(api.files.create, {
+                                    chatId: id,
+                                    path: newPath,
+                                    content: newSlideContent,
+                                    version: currentVersion ?? 0
+                                });
+
+                                return {
+                                    success: true,
+                                    message: explanation,
+                                    slideNumber: position,
+                                    duplicatedFrom: selectedPath,
+                                    reasoning: selection.reasoning
+                                };
+                            }
+
+                            // Renumber slides from position onwards (in reverse order)
+                            const slidesToRenumber = slidePaths.slice(position - 1);
+
+                            for (let i = slidesToRenumber.length - 1; i >= 0; i--) {
+                                const oldPath = slidesToRenumber[i];
+                                const oldNumber = parseInt(oldPath.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                const newNumber = oldNumber + 1;
+                                const newPath = `/slides/slide-${newNumber}.json`;
+
+                                await ctx.runMutation(api.files.deleteByPath, {
+                                    chatId: id,
+                                    path: oldPath,
+                                    version: currentVersion ?? 0
+                                });
+
+                                await ctx.runMutation(api.files.create, {
+                                    chatId: id,
+                                    path: newPath,
+                                    content: allFiles[oldPath],
+                                    version: currentVersion ?? 0
+                                });
+                            }
+
+                            // Create the new slide at the desired position
+                            const newPath = `/slides/slide-${position}.json`;
+                            await ctx.runMutation(api.files.create, {
+                                chatId: id,
+                                path: newPath,
+                                content: newSlideContent,
+                                version: currentVersion ?? 0
+                            });
+
+                            return {
+                                success: true,
+                                message: explanation,
+                                slideNumber: position,
+                                duplicatedFrom: selectedPath,
+                                reasoning: selection.reasoning,
+                                slidesRenumbered: slidesToRenumber.length
+                            };
+
+                        } catch (error) {
+                            console.error(`Error duplicating slide:`, error);
+                            return {
+                                success: false,
+                                error: `Error duplicating slide: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },
