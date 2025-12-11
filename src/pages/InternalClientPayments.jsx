@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
-  Loader2, Search, CreditCard, Calendar, ArrowUpDown, Users, Clock, CheckCircle
+  Loader2, Search, CreditCard, Calendar, ArrowUpDown, Users, Clock, CheckCircle, Edit2, Trash2
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -66,8 +66,21 @@ export default function InternalClientPayments() {
 
   const updatePaymentMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.ClientPayment.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allClientPayments'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['allClientPayments'] });
+      await queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setEditingPayment(null);
+      toast.success('Pago actualizado');
+    }
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (id) => base44.entities.ClientPayment.delete(id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['allClientPayments'] });
+      await queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setDeleteConfirm(null);
+      toast.success('Pago eliminado');
     }
   });
 
@@ -250,6 +263,96 @@ export default function InternalClientPayments() {
           {renderPaymentsTable(confirmedPayments, totalConfirmed, true)}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Payment Dialog */}
+      <Dialog open={!!editingPayment} onOpenChange={() => setEditingPayment(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Pago de Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Fecha *</Label>
+              <Input
+                type="date"
+                value={editFormData.date || ''}
+                onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Monto *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={editFormData.amount || ''}
+                onChange={(e) => setEditFormData({ ...editFormData, amount: parseFloat(e.target.value) })}
+                className="rounded-xl"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Método de Pago *</Label>
+              <Select
+                value={editFormData.method || ''}
+                onValueChange={(value) => setEditFormData({ ...editFormData, method: value })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                  <SelectItem value="otro">Otro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Notas</Label>
+              <Input
+                value={editFormData.notes || ''}
+                onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                className="rounded-xl"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setEditingPayment(null)} className="rounded-xl">
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => updatePaymentMutation.mutate({ id: editingPayment.id, data: editFormData })}
+              disabled={updatePaymentMutation.isPending}
+              className="rounded-xl text-white"
+              style={{ backgroundColor: '#2E442A' }}
+            >
+              {updatePaymentMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar pago?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará el pago de <strong>${deleteConfirm?.amount?.toLocaleString()}</strong> del cliente <strong>{deleteConfirm?.client_name}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletePaymentMutation.mutate(deleteConfirm.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 
@@ -277,6 +380,7 @@ export default function InternalClientPayments() {
                 <th className="text-left p-3 font-semibold text-stone-600">Método</th>
                 <th className="text-right p-3 font-semibold text-stone-600">Monto</th>
                 <th className="text-center p-3 font-semibold text-stone-600">Estatus</th>
+                <th className="text-center p-3 font-semibold text-stone-600">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -327,6 +431,34 @@ export default function InternalClientPayments() {
                       </SelectContent>
                     </Select>
                   </td>
+                  <td className="p-3">
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setEditingPayment(payment);
+                          setEditFormData({
+                            date: payment.date,
+                            amount: payment.amount,
+                            method: payment.method,
+                            notes: payment.notes || ''
+                          });
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700"
+                        onClick={() => setDeleteConfirm(payment)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -340,7 +472,7 @@ export default function InternalClientPayments() {
                     ${total.toLocaleString()}
                   </span>
                 </td>
-                <td></td>
+                <td colSpan="2"></td>
               </tr>
             </tfoot>
           </table>
