@@ -14,6 +14,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
     supplier: '',
     date: new Date().toISOString().split('T')[0],
     amount: 0,
+    payment_type: 'neto',
     method: 'transferencia',
     trip_service_id: '',
     receipt_url: '',
@@ -28,6 +29,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
         supplier: '',
         date: new Date().toISOString().split('T')[0],
         amount: 0,
+        payment_type: 'neto',
         method: 'transferencia',
         trip_service_id: '',
         receipt_url: '',
@@ -167,20 +169,34 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
             </div>
           </div>
 
-          <div>
-            <Label>Método de Pago *</Label>
-            <Select value={formData.method} onValueChange={(value) => setFormData({ ...formData, method: value })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="transferencia">Transferencia</SelectItem>
-                <SelectItem value="ms_beyond">MS Beyond</SelectItem>
-                <SelectItem value="capital_one_blue">Capital One Blue</SelectItem>
-                <SelectItem value="capital_one_green">Capital One Green</SelectItem>
-                <SelectItem value="amex">American Express</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Tipo de Pago *</Label>
+              <Select value={formData.payment_type} onValueChange={(value) => setFormData({ ...formData, payment_type: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="neto">Neto</SelectItem>
+                  <SelectItem value="bruto">Bruto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Método de Pago *</Label>
+              <Select value={formData.method} onValueChange={(value) => setFormData({ ...formData, method: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="ms_beyond">MS Beyond</SelectItem>
+                  <SelectItem value="capital_one_blue">Capital One Blue</SelectItem>
+                  <SelectItem value="capital_one_green">Capital One Green</SelectItem>
+                  <SelectItem value="amex">American Express</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>

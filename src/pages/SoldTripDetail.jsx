@@ -1097,12 +1097,18 @@ export default function SoldTripDetail() {
                          Asociado a servicio
                        </p>
                      )}
-                     <div className="flex items-center gap-2 text-sm text-stone-500">
+                     <div className="flex items-center gap-2 text-sm text-stone-500 flex-wrap">
                        <span className="font-bold text-amber-600">${(payment.amount || 0).toLocaleString()}</span>
                        <span>•</span>
                        <span>{format(new Date(payment.date), 'd MMM yyyy', { locale: es })}</span>
                        <span>•</span>
                        <Badge variant="outline" className="text-xs capitalize">{payment.method}</Badge>
+                       {payment.payment_type && (
+                         <>
+                           <span>•</span>
+                           <Badge variant="outline" className="text-xs capitalize">{payment.payment_type}</Badge>
+                         </>
+                       )}
                      </div>
                      {payment.notes && <p className="text-xs text-stone-400 mt-1">{payment.notes}</p>}
                     </div>
