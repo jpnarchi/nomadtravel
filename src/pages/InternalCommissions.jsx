@@ -449,6 +449,7 @@ export default function InternalCommissions() {
                   <th className="text-right p-3 font-medium text-stone-600">Comisión</th>
                   <th className="text-right p-3 font-medium text-stone-600">Agente</th>
                   <th className="text-right p-3 font-medium text-stone-600">Nomad</th>
+                  <th className="text-center p-3 font-medium text-stone-600">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -512,6 +513,31 @@ export default function InternalCommissions() {
                     </td>
                     <td className="p-3 text-right font-medium text-purple-600">
                       ${(commission.nomad_commission || 0).toLocaleString()}
+                    </td>
+                    <td className="p-3">
+                      {commission.source === 'internal' && (
+                        <div className="flex gap-2 justify-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setEditingCommission(commission);
+                              setFormOpen(true);
+                            }}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                            onClick={() => setDeleteConfirm(commission)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
