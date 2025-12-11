@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 export default function AdminDashboard() {
   const [selectedAgent, setSelectedAgent] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
-  const [selectedClient, setSelectedClient] = useState('all');
+  const [selectedTrip, setSelectedTrip] = useState('all');
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
@@ -47,25 +47,31 @@ export default function AdminDashboard() {
   const confirmedClientPayments = allClientPayments.filter(p => p.confirmed === true);
   const confirmedSupplierPayments = allSupplierPayments.filter(p => p.confirmed === true);
 
-  // Filter by client if selected
+  // Filter by trip if selected
   let filteredClientPayments = confirmedClientPayments;
   let filteredSupplierPayments = confirmedSupplierPayments;
+  let selectedTripData = null;
 
-  if (selectedClient !== 'all') {
-    // Get all sold trips for this client
-    const clientTrips = allSoldTrips.filter(t => t.client_name === selectedClient);
-    const clientTripIds = clientTrips.map(t => t.id);
-    
-    filteredClientPayments = confirmedClientPayments.filter(p => clientTripIds.includes(p.sold_trip_id));
-    filteredSupplierPayments = confirmedSupplierPayments.filter(p => clientTripIds.includes(p.sold_trip_id));
+  if (selectedTrip !== 'all') {
+    filteredClientPayments = confirmedClientPayments.filter(p => p.sold_trip_id === selectedTrip);
+    filteredSupplierPayments = confirmedSupplierPayments.filter(p => p.sold_trip_id === selectedTrip);
+    selectedTripData = allSoldTrips.find(t => t.id === selectedTrip);
   }
 
   const totalIncome = filteredClientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalExpenses = filteredSupplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const accountBalance = totalIncome - totalExpenses;
 
-  // Get unique clients from sold trips
-  const uniqueClients = [...new Set(allSoldTrips.map(t => t.client_name).filter(Boolean))].sort();
+  // Get all sold trips with client names for selector
+  const tripsForSelector = allSoldTrips
+    .filter(t => t.client_name)
+    .map(t => ({
+      id: t.id,
+      label: `${t.client_name} - ${t.destination}`,
+      client: t.client_name,
+      destination: t.destination
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 
   // Filter by agent
   const agents = allUsers.filter(u => u.role === 'user');
@@ -207,7 +213,12 @@ export default function AdminDashboard() {
                 ${accountBalance.toLocaleString()}
               </p>
               <p className="text-emerald-100 text-sm">
-                {selectedClient === 'all' ? 'Balance total de la agencia' : `Balance de ${selectedClient}`}
+                {selectedTrip === 'all' 
+                  ? 'Balance total de la agencia' 
+                  : selectedTripData 
+                    ? `Balance de ${selectedTripData.client_name} - ${selectedTripData.destination}`
+                    : 'Balance del viaje seleccionado'
+                }
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -225,24 +236,24 @@ export default function AdminDashboard() {
           </div>
           <div className="lg:w-80">
             <label className="block text-sm font-medium text-emerald-100 mb-2">
-              Filtrar por Cliente
+              Filtrar por Viaje
             </label>
-            <Select value={selectedClient} onValueChange={setSelectedClient}>
+            <Select value={selectedTrip} onValueChange={setSelectedTrip}>
               <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-white h-12 rounded-xl">
-                <SelectValue placeholder="Todos los clientes" />
+                <SelectValue placeholder="Todos los viajes" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los clientes</SelectItem>
-                {uniqueClients.map(client => (
-                  <SelectItem key={client} value={client}>
-                    {client}
+              <SelectContent className="max-h-[400px]">
+                <SelectItem value="all">Todos los viajes</SelectItem>
+                {tripsForSelector.map(trip => (
+                  <SelectItem key={trip.id} value={trip.id}>
+                    {trip.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {selectedClient !== 'all' && (
+            {selectedTrip !== 'all' && (
               <p className="text-xs text-emerald-100 mt-2">
-                Solo mostrando pagos confirmados asociados a este cliente
+                Solo mostrando pagos confirmados de este viaje
               </p>
             )}
           </div>
