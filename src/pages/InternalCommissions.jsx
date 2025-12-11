@@ -182,6 +182,35 @@ export default function InternalCommissions() {
     }
   });
 
+  const deleteTripServiceMutation = useMutation({
+    mutationFn: async (serviceId) => {
+      // Delete the service
+      await base44.entities.TripService.delete(serviceId);
+      
+      // Get the service to find its sold_trip_id before deletion
+      const services = await base44.entities.TripService.list();
+      const deletedService = tripServices.find(s => s.id === serviceId);
+      
+      if (deletedService?.sold_trip_id) {
+        // Recalculate total commission for the sold trip
+        const tripServices = await base44.entities.TripService.filter({ sold_trip_id: deletedService.sold_trip_id });
+        const totalCommission = tripServices.reduce((sum, s) => sum + (s.commission || 0), 0);
+        const totalPrice = tripServices.reduce((sum, s) => sum + (s.total_price || 0), 0);
+        
+        await base44.entities.SoldTrip.update(deletedService.sold_trip_id, {
+          total_commission: totalCommission,
+          total_price: totalPrice
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tripServices'] });
+      queryClient.invalidateQueries({ queryKey: ['allServices'] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setDeleteConfirm(null);
+    }
+  });
+
   // Update commission amount - works for both internal and trip service commissions
   const handleUpdateCommissionAmount = async (commission, newAmount) => {
     if (commission.source === 'tripService') {
@@ -515,8 +544,8 @@ export default function InternalCommissions() {
                       ${(commission.nomad_commission || 0).toLocaleString()}
                     </td>
                     <td className="p-3">
-                      {commission.source === 'internal' && (
-                        <div className="flex gap-2 justify-center">
+                      <div className="flex gap-2 justify-center">
+                        {commission.source === 'internal' && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -528,16 +557,16 @@ export default function InternalCommissions() {
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-700"
-                            onClick={() => setDeleteConfirm(commission)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-700"
+                          onClick={() => setDeleteConfirm(commission)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -700,13 +729,21 @@ export default function InternalCommissions() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar comisión?</AlertDialogTitle>
             <AlertDialogDescription>
-              Se eliminará esta comisión de forma permanente.
+              {deleteConfirm?.source === 'tripService' 
+                ? 'Se eliminará el servicio asociado a esta comisión y se recalcularán los totales del viaje.'
+                : 'Se eliminará esta comisión de forma permanente.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteMutation.mutate(deleteConfirm.id)}
+              onClick={() => {
+                if (deleteConfirm?.source === 'tripService') {
+                  deleteTripServiceMutation.mutate(deleteConfirm.service_id);
+                } else {
+                  deleteMutation.mutate(deleteConfirm.id);
+                }
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
               Eliminar
