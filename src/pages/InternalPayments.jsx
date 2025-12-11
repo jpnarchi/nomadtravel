@@ -32,6 +32,7 @@ const PAYMENT_METHOD_LABELS = {
   capital_one_blue: 'Capital One Blue',
   capital_one_green: 'Capital One Green',
   amex: 'Amex',
+  tarjeta_cliente: 'Tarjeta de Cliente',
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',
   otro: 'Otro'
@@ -95,7 +96,10 @@ export default function InternalPayments() {
   }, {});
 
   // Enrich payments with trip and agent info
-  const enrichedPayments = supplierPayments.map(payment => {
+  // Exclude payments made with 'tarjeta_cliente' from internal payments view
+  const enrichedPayments = supplierPayments
+    .filter(payment => payment.method !== 'tarjeta_cliente')
+    .map(payment => {
     const trip = tripsMap[payment.sold_trip_id];
     const agentEmail = trip?.created_by || '';
     const agent = users.find(u => u.email === agentEmail);
@@ -329,6 +333,7 @@ export default function InternalPayments() {
                   <SelectItem value="capital_one_blue">Capital One Blue</SelectItem>
                   <SelectItem value="capital_one_green">Capital One Green</SelectItem>
                   <SelectItem value="amex">AMEX</SelectItem>
+                  <SelectItem value="tarjeta_cliente">Tarjeta de Cliente</SelectItem>
                 </SelectContent>
               </Select>
             </div>
