@@ -129,6 +129,10 @@ export default function Layout({ children, currentPageName }) {
       { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
       { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
       { name: 'Contraseñas', page: 'Credentials', icon: Key },
+      { name: '--- Control Interno ---', divider: true },
+      { name: 'Asistencia', page: 'Attendance', icon: Users },
+      { name: 'FAM Trips', page: 'FamTrips', icon: Plane },
+      { name: 'Ferias', page: 'IndustryFairs', icon: LayoutDashboard },
     ];
 
     const userNavigation = [
@@ -291,29 +295,36 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-thin">
-            {navigation.map((item) => {
-              const isActive = currentPageName === item.page;
-              return (
-                <Link
-                  key={item.page}
-                  to={createPageUrl(item.page)}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-                    isActive 
-                      ? "text-white shadow-lg" 
-                      : "text-stone-600 hover:bg-stone-100"
-                  )}
-                  style={isActive ? { backgroundColor: '#2E442A' } : {}}
-                >
-                  <item.icon className={cn(
-                    "w-5 h-5 transition-transform group-hover:scale-110",
-                    isActive ? "text-white" : "text-stone-400"
-                  )} />
-                  <span className="font-medium text-sm">{item.name}</span>
-                </Link>
-              );
-            })}
+            {navigation.map((item, idx) => {
+                if (item.divider) {
+                  return (
+                    <div key={idx} className="px-4 py-2">
+                      <p className="text-xs font-semibold text-stone-400">{item.name}</p>
+                    </div>
+                  );
+                }
+                const isActive = currentPageName === item.page;
+                return (
+                  <Link
+                    key={item.page}
+                    to={createPageUrl(item.page)}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                      isActive 
+                        ? "text-white shadow-lg" 
+                        : "text-stone-600 hover:bg-stone-100"
+                    )}
+                    style={isActive ? { backgroundColor: '#2E442A' } : {}}
+                  >
+                    <item.icon className={cn(
+                      "w-5 h-5 transition-transform group-hover:scale-110",
+                      isActive ? "text-white" : "text-stone-400"
+                    )} />
+                    <span className="font-medium text-sm">{item.name}</span>
+                  </Link>
+                );
+              })}
           </nav>
 
           {/* Footer */}
