@@ -28,6 +28,18 @@ export default function AttendanceForm({ open, onClose, event, onSave, isLoading
   });
 
   useEffect(() => {
+    // Always populate all users
+    const allAttendees = users.map(user => {
+      // If editing, check if user already has attendance data
+      const existingAttendee = event?.attendees?.find(a => a.agent_email === user.email);
+      return {
+        agent_name: user.full_name,
+        agent_email: user.email,
+        attended: existingAttendee?.attended || false,
+        connected: existingAttendee?.connected || false
+      };
+    });
+
     if (event) {
       setFormData({
         event_name: event.event_name || '',
@@ -35,17 +47,10 @@ export default function AttendanceForm({ open, onClose, event, onSave, isLoading
         event_date: event.event_date || '',
         event_time: event.event_time || '',
         location: event.location || '',
-        attendees: event.attendees || [],
+        attendees: allAttendees,
         notes: event.notes || ''
       });
     } else {
-      // Auto-populate all users
-      const allAttendees = users.map(user => ({
-        agent_name: user.full_name,
-        agent_email: user.email,
-        attended: false,
-        connected: false
-      }));
       setFormData({
         event_name: '',
         event_type: 'junta',
