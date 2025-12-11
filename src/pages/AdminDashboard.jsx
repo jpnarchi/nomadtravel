@@ -45,7 +45,8 @@ export default function AdminDashboard() {
 
   // Calculate account balance (confirmed payments only)
   const confirmedClientPayments = allClientPayments.filter(p => p.confirmed === true);
-  const confirmedSupplierPayments = allSupplierPayments.filter(p => p.confirmed === true);
+  // Exclude payments made with 'tarjeta_cliente' from agency balance (pero sí se cuentan en el viaje vendido)
+  const confirmedSupplierPayments = allSupplierPayments.filter(p => p.confirmed === true && p.method !== 'tarjeta_cliente');
 
   // Filter by trip if selected
   let filteredClientPayments = confirmedClientPayments;
