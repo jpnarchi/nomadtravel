@@ -86,6 +86,7 @@ export default function Layout({ children, currentPageName }) {
     }, []);
 
     const isActualAdmin = user?.role === 'admin';
+    const isSupervisor = user?.custom_role === 'supervisor';
     const isAdmin = isActualAdmin && viewMode === 'admin';
 
     // Show loading state
@@ -146,6 +147,12 @@ export default function Layout({ children, currentPageName }) {
       { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
       { name: 'Contraseñas', page: 'Credentials', icon: Key },
       { name: 'Mis Contraseñas', page: 'PersonalCredentials', icon: Lock },
+      ...(isSupervisor ? [
+        { name: '--- Control Interno ---', divider: true },
+        { name: 'Asistencia', page: 'Attendance', icon: Users },
+        { name: 'FAM Trips', page: 'FamTrips', icon: Plane },
+        { name: 'Ferias', page: 'IndustryFairs', icon: LayoutDashboard },
+      ] : [])
     ];
 
     const navigation = isAdmin ? adminNavigation : userNavigation;

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -39,37 +39,24 @@ export default function AttendanceForm({ open, onClose, event, onSave, isLoading
         notes: event.notes || ''
       });
     } else {
+      // Auto-populate all users
+      const allAttendees = users.map(user => ({
+        agent_name: user.full_name,
+        agent_email: user.email,
+        attended: false,
+        connected: false
+      }));
       setFormData({
         event_name: '',
         event_type: 'junta',
         event_date: '',
         event_time: '',
         location: '',
-        attendees: [],
+        attendees: allAttendees,
         notes: ''
       });
     }
-  }, [event, open]);
-
-  const addAttendee = (user) => {
-    if (!formData.attendees.find(a => a.agent_email === user.email)) {
-      setFormData({
-        ...formData,
-        attendees: [...formData.attendees, {
-          agent_name: user.full_name,
-          agent_email: user.email,
-          attended: false,
-          connected: false
-        }]
-      });
-    }
-  };
-
-  const removeAttendee = (index) => {
-    const newAttendees = [...formData.attendees];
-    newAttendees.splice(index, 1);
-    setFormData({ ...formData, attendees: newAttendees });
-  };
+  }, [event, open, users]);
 
   const updateAttendee = (index, field, value) => {
     const newAttendees = [...formData.attendees];
@@ -149,24 +136,6 @@ export default function AttendanceForm({ open, onClose, event, onSave, isLoading
           {/* Attendees */}
           <div>
             <Label className="mb-2 block">Asistentes</Label>
-            <div className="mb-3">
-              <Select onValueChange={(value) => {
-                const user = users.find(u => u.email === value);
-                if (user) addAttendee(user);
-              }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Agregar agente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map(user => (
-                    <SelectItem key={user.id} value={user.email}>
-                      {user.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {formData.attendees.map((attendee, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg">
@@ -182,29 +151,25 @@ export default function AttendanceForm({ open, onClose, event, onSave, isLoading
                         id={`attended-${index}`}
                       />
                       <label htmlFor={`attended-${index}`} className="text-xs text-stone-600 cursor-pointer">
-                        Presencial
+                        Asistió
                       </label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Checkbox
-                        checked={attendee.connected}
-                        onCheckedChange={(checked) => updateAttendee(index, 'connected', checked)}
-                        id={`connected-${index}`}
+                        checked={!attendee.attended && !attendee.connected}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            updateAttendee(index, 'attended', false);
+                            updateAttendee(index, 'connected', false);
+                          }
+                        }}
+                        id={`absent-${index}`}
                       />
-                      <label htmlFor={`connected-${index}`} className="text-xs text-stone-600 cursor-pointer">
-                        Virtual
+                      <label htmlFor={`absent-${index}`} className="text-xs text-stone-600 cursor-pointer">
+                        Ausente
                       </label>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeAttendee(index)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
             </div>

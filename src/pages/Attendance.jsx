@@ -46,6 +46,34 @@ export default function Attendance() {
     queryFn: () => base44.entities.Attendance.list('-event_date')
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list()
+  });
+
+  // Calculate stats
+  const totalEvents = events.length;
+  const recentEvents = events.slice(0, 5);
+  
+  const attendanceStats = users.map(user => {
+    const userAttendance = events.reduce((acc, event) => {
+      const attendee = event.attendees?.find(a => a.agent_email === user.email);
+      if (attendee) {
+        if (attendee.attended || attendee.connected) acc.attended++;
+        acc.total++;
+      }
+      return acc;
+    }, { attended: 0, total: totalEvents });
+    
+    return {
+      name: user.full_name,
+      email: user.email,
+      attended: userAttendance.attended,
+      total: totalEvents,
+      percentage: totalEvents > 0 ? Math.round((userAttendance.attended / totalEvents) * 100) : 0
+    };
+  }).sort((a, b) => b.percentage - a.percentage);
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Attendance.create(data),
     onSuccess: () => {
@@ -99,6 +127,26 @@ export default function Attendance() {
           Nuevo Evento
         </Button>
       </div>
+
+      {/* Quick Stats */}
+      {totalEvents > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+            <p className="text-xs text-stone-500 mb-1">Total Eventos</p>
+            <p className="text-2xl font-bold" style={{ color: '#2E442A' }}>{totalEvents}</p>
+          </div>
+          
+          {attendanceStats.slice(0, 3).map((stat, idx) => (
+            <div key={idx} className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+              <p className="text-xs text-stone-500 mb-1 truncate">{stat.name}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold" style={{ color: '#2E442A' }}>{stat.percentage}%</p>
+                <p className="text-xs text-stone-400">({stat.attended}/{stat.total})</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Events List */}
       <div className="grid grid-cols-1 gap-4">
