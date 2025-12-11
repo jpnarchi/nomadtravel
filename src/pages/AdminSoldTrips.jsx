@@ -175,7 +175,7 @@ export default function AdminSoldTrips() {
                         value={trip.created_by || ''}
                         onValueChange={(value) => updateSoldTripAgent.mutate({ 
                           tripId: trip.id, 
-                          newAgentEmail: value || null 
+                          newAgentEmail: value === '' ? null : value 
                         })}
                       >
                         <SelectTrigger className="w-[180px]">
