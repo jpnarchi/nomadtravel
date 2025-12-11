@@ -11,7 +11,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import EmptyState from '@/components/ui/EmptyState';
+import { toast } from "sonner";
 
 const PAYMENT_METHOD_LABELS = {
   transferencia: 'Transferencia',
@@ -28,6 +41,9 @@ export default function InternalClientPayments() {
   const [dateTo, setDateTo] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
   const [activeTab, setActiveTab] = useState('pending');
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
 
   const queryClient = useQueryClient();
 
