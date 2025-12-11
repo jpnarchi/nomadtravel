@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 export default function AdminDashboard() {
   const [selectedAgent, setSelectedAgent] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [selectedClient, setSelectedClient] = useState('all');
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
@@ -41,6 +42,30 @@ export default function AdminDashboard() {
     queryKey: ['supplierPayments'],
     queryFn: () => base44.entities.SupplierPayment.list()
   });
+
+  // Calculate account balance (confirmed payments only)
+  const confirmedClientPayments = allClientPayments.filter(p => p.confirmed === true);
+  const confirmedSupplierPayments = allSupplierPayments.filter(p => p.confirmed === true);
+
+  // Filter by client if selected
+  let filteredClientPayments = confirmedClientPayments;
+  let filteredSupplierPayments = confirmedSupplierPayments;
+
+  if (selectedClient !== 'all') {
+    // Get all sold trips for this client
+    const clientTrips = allSoldTrips.filter(t => t.client_name === selectedClient);
+    const clientTripIds = clientTrips.map(t => t.id);
+    
+    filteredClientPayments = confirmedClientPayments.filter(p => clientTripIds.includes(p.sold_trip_id));
+    filteredSupplierPayments = confirmedSupplierPayments.filter(p => clientTripIds.includes(p.sold_trip_id));
+  }
+
+  const totalIncome = filteredClientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalExpenses = filteredSupplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const accountBalance = totalIncome - totalExpenses;
+
+  // Get unique clients from sold trips
+  const uniqueClients = [...new Set(allSoldTrips.map(t => t.client_name).filter(Boolean))].sort();
 
   // Filter by agent
   const agents = allUsers.filter(u => u.role === 'user');
@@ -166,6 +191,61 @@ export default function AdminDashboard() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      {/* Account Balance - Big Card */}
+      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-2xl p-8 text-white">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-4">
+              <DollarSign className="w-8 h-8" />
+              <h2 className="text-xl font-semibold opacity-90">Saldo en Cuenta</h2>
+            </div>
+            <div className="mb-6">
+              <p className="text-5xl lg:text-6xl font-bold mb-2">
+                ${accountBalance.toLocaleString()}
+              </p>
+              <p className="text-emerald-100 text-sm">
+                {selectedClient === 'all' ? 'Balance total de la agencia' : `Balance de ${selectedClient}`}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                <p className="text-emerald-100 text-sm mb-1">Total Cobrado</p>
+                <p className="text-2xl font-bold">${totalIncome.toLocaleString()}</p>
+                <p className="text-xs text-emerald-100 mt-1">{filteredClientPayments.length} pagos confirmados</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                <p className="text-emerald-100 text-sm mb-1">Total Pagado</p>
+                <p className="text-2xl font-bold">${totalExpenses.toLocaleString()}</p>
+                <p className="text-xs text-emerald-100 mt-1">{filteredSupplierPayments.length} pagos confirmados</p>
+              </div>
+            </div>
+          </div>
+          <div className="lg:w-80">
+            <label className="block text-sm font-medium text-emerald-100 mb-2">
+              Filtrar por Cliente
+            </label>
+            <Select value={selectedClient} onValueChange={setSelectedClient}>
+              <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-white h-12 rounded-xl">
+                <SelectValue placeholder="Todos los clientes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los clientes</SelectItem>
+                {uniqueClients.map(client => (
+                  <SelectItem key={client} value={client}>
+                    {client}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedClient !== 'all' && (
+              <p className="text-xs text-emerald-100 mt-2">
+                Solo mostrando pagos confirmados asociados a este cliente
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
