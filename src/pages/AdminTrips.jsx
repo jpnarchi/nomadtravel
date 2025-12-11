@@ -39,7 +39,7 @@ export default function AdminTrips() {
     queryFn: () => base44.entities.Trip.list()
   });
 
-  const agents = allUsers.filter(u => u.role === 'user');
+  const agents = allUsers.filter(u => u.role === 'user' || u.role === 'admin' || u.custom_role === 'supervisor');
 
   const updateTripAgent = useMutation({
     mutationFn: ({ tripId, newAgentEmail }) => 

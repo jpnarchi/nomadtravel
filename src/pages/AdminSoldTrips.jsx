@@ -38,7 +38,7 @@ export default function AdminSoldTrips() {
     refetchOnWindowFocus: true
   });
 
-  const agents = allUsers.filter(u => u.role === 'user');
+  const agents = allUsers.filter(u => u.role === 'user' || u.role === 'admin' || u.custom_role === 'supervisor');
 
   const updateSoldTripAgent = useMutation({
     mutationFn: ({ tripId, newAgentEmail }) => 
