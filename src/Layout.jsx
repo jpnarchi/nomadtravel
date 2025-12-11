@@ -2,24 +2,25 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { 
-                  LayoutDashboard, 
-                  Users, 
-                  Plane, 
-                  CheckCircle, 
-                  Menu, 
-                  X,
-                  MapPin,
-                  DollarSign,
-                  Loader2,
-                  Building2,
-                  BarChart3,
-                  BookOpen,
-                  Key,
-                  Wallet,
-                  Lock,
-                  Eye,
-                  ShieldCheck
-                } from 'lucide-react';
+                        LayoutDashboard, 
+                        Users, 
+                        Plane, 
+                        CheckCircle, 
+                        Menu, 
+                        X,
+                        MapPin,
+                        DollarSign,
+                        Loader2,
+                        Building2,
+                        BarChart3,
+                        BookOpen,
+                        Key,
+                        Wallet,
+                        Lock,
+                        Eye,
+                        ShieldCheck,
+                        Upload
+                      } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
@@ -124,6 +125,7 @@ export default function Layout({ children, currentPageName }) {
       { name: 'Todos los Clientes', page: 'AdminClients', icon: Users },
       { name: 'Todos los Viajes', page: 'AdminTrips', icon: Plane },
       { name: 'Viajes Vendidos', page: 'AdminSoldTrips', icon: CheckCircle },
+      { name: 'Smart Import', page: 'AdminImportTrips', icon: Upload },
       { name: 'Progreso de Agentes', page: 'Statistics', icon: BarChart3 },
       { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet },
       { name: 'Pagos Internos', page: 'InternalPayments', icon: DollarSign },

@@ -22,6 +22,7 @@ import PersonalCredentials from './pages/PersonalCredentials';
 import Attendance from './pages/Attendance';
 import FamTrips from './pages/FamTrips';
 import IndustryFairs from './pages/IndustryFairs';
+import AdminImportTrips from './pages/AdminImportTrips';
 import __Layout from './Layout.jsx';
 
 
@@ -50,6 +51,7 @@ export const PAGES = {
     "Attendance": Attendance,
     "FamTrips": FamTrips,
     "IndustryFairs": IndustryFairs,
+    "AdminImportTrips": AdminImportTrips,
 }
 
 export const pagesConfig = {
