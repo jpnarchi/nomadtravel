@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { toast } from "sonner";
 import { CheckCircle, Search, Eye, Loader2 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ export default function AdminSoldTrips() {
   const [selectedAgent, setSelectedAgent] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['users'],
@@ -37,6 +39,15 @@ export default function AdminSoldTrips() {
   });
 
   const agents = allUsers.filter(u => u.role === 'user');
+
+  const updateSoldTripAgent = useMutation({
+    mutationFn: ({ tripId, newAgentEmail }) => 
+      base44.entities.SoldTrip.update(tripId, { created_by: newAgentEmail }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      toast.success('Viaje reasignado');
+    }
+  });
   
   const filteredSoldTrips = allSoldTrips
     .filter(t => selectedAgent === 'all' || t.created_by === selectedAgent)
@@ -160,7 +171,25 @@ export default function AdminSoldTrips() {
                       <Badge className={statusConfig?.color}>{statusConfig?.label}</Badge>
                     </td>
                     <td className="p-3">
-                      <Badge variant="outline">{agent?.full_name || 'Sin asignar'}</Badge>
+                      <Select
+                        value={trip.created_by || ''}
+                        onValueChange={(value) => updateSoldTripAgent.mutate({ 
+                          tripId: trip.id, 
+                          newAgentEmail: value || null 
+                        })}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Sin asignar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={null}>Sin asignar</SelectItem>
+                          {agents.map(agentOption => (
+                            <SelectItem key={agentOption.email} value={agentOption.email}>
+                              {agentOption.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="p-3">
                       <Button

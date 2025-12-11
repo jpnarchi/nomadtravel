@@ -143,6 +143,7 @@ export default function Layout({ children, currentPageName }) {
       { name: 'Clientes', page: 'Clients', icon: Users },
       { name: 'Viajes', page: 'Trips', icon: Plane },
       { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
+      { name: 'Smart Import', page: 'AdminImportTrips', icon: Upload },
       { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
       { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
       { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
