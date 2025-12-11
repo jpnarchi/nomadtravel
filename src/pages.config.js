@@ -19,6 +19,9 @@ import AdminClients from './pages/AdminClients';
 import AdminTrips from './pages/AdminTrips';
 import AdminSoldTrips from './pages/AdminSoldTrips';
 import PersonalCredentials from './pages/PersonalCredentials';
+import Attendance from './pages/Attendance';
+import FamTrips from './pages/FamTrips';
+import IndustryFairs from './pages/IndustryFairs';
 import __Layout from './Layout.jsx';
 
 
@@ -44,6 +47,9 @@ export const PAGES = {
     "AdminTrips": AdminTrips,
     "AdminSoldTrips": AdminSoldTrips,
     "PersonalCredentials": PersonalCredentials,
+    "Attendance": Attendance,
+    "FamTrips": FamTrips,
+    "IndustryFairs": IndustryFairs,
 }
 
 export const pagesConfig = {
