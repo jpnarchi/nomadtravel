@@ -90,8 +90,7 @@ Deno.serve(async (req) => {
     let client = null;
     if (data.client_name) {
       const existingClients = await base44.asServiceRole.entities.Client.filter({ 
-        first_name: data.client_name.split(' ')[0],
-        created_by: assignedAgent
+        first_name: data.client_name.split(' ')[0]
       });
       
       if (existingClients.length > 0) {
