@@ -2,7 +2,7 @@ import { RotateCcw } from "lucide-react";
 import { Card } from "../../ui/card";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Loader } from "@/components/ai-elements/loader";
 import { Button } from "@/components/ui/button";
 import { formatCreationTime } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { InspectorIcon } from "@/components/global/icons";
 import * as fabric from 'fabric';
+import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios';
 
 // Slide Thumbnail Component
 function SlideThumbnail({ chatId, version }: { chatId: Id<"chats">, version: number }) {
@@ -18,6 +19,31 @@ function SlideThumbnail({ chatId, version }: { chatId: Id<"chats">, version: num
     const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
     const [isRendered, setIsRendered] = useState(false);
+
+    // Extract aspect ratio from presentation config - MEMOIZED
+    const aspectRatio = useMemo(() => {
+        if (!files) return DEFAULT_ASPECT_RATIO;
+
+        const configPath = '/presentation-config.json';
+        const configFile = files[configPath];
+
+        if (configFile) {
+            try {
+                const config = JSON.parse(configFile);
+                return config.aspectRatio || DEFAULT_ASPECT_RATIO;
+            } catch (error) {
+                console.error('Error parsing presentation config:', error);
+                return DEFAULT_ASPECT_RATIO;
+            }
+        }
+
+        return DEFAULT_ASPECT_RATIO;
+    }, [files]);
+
+    // Get aspect ratio dimensions - MEMOIZED
+    const aspectRatioDimensions = useMemo(() => {
+        return getAspectRatioDimensions(aspectRatio);
+    }, [aspectRatio]);
 
     // Extract first slide from files
     const firstSlide = files && Object.entries(files)
@@ -40,14 +66,20 @@ function SlideThumbnail({ chatId, version }: { chatId: Id<"chats">, version: num
     useEffect(() => {
         if (!canvasElement || !firstSlide || fabricCanvasRef.current) return;
 
+        // Calculate thumbnail size based on aspect ratio
+        // Use fixed width of 370px and calculate height based on aspect ratio
+        const thumbnailWidth = 370;
+        const thumbnailHeight = Math.round(thumbnailWidth / aspectRatioDimensions.ratio);
+
         const canvas = new fabric.Canvas(canvasElement, {
-            width: 370,  // 16:9 aspect ratio thumbnail
-            height: 200,
+            width: thumbnailWidth,
+            height: thumbnailHeight,
             backgroundColor: firstSlide.background || '#1a1a1a',
             selection: false,
         });
 
-        const scale = 364 / 1920; // Scale from full size to thumbnail
+        // Scale from original dimensions to thumbnail
+        const scale = thumbnailWidth / aspectRatioDimensions.width;
         canvas.setZoom(scale);
         canvas.viewportTransform = [scale, 0, 0, scale, 0, 0];
 
@@ -60,7 +92,7 @@ function SlideThumbnail({ chatId, version }: { chatId: Id<"chats">, version: num
                 fabricCanvasRef.current = null;
             }
         };
-    }, [canvasElement, firstSlide]);
+    }, [canvasElement, firstSlide, aspectRatioDimensions]);
 
     // Render slide objects
     useEffect(() => {
@@ -176,10 +208,18 @@ function SlideThumbnail({ chatId, version }: { chatId: Id<"chats">, version: num
                             });
                             break;
                         case 'line':
-                            fabricObj = new fabric.Line([obj.x1 || 0, obj.y1 || 0, obj.x2 || 100, obj.y2 || 100], {
-                                stroke: obj.stroke || '#000000',
-                                strokeWidth: obj.strokeWidth || 1,
-                            });
+                            // Use fromObject to properly restore all line properties
+                            // This ensures strokeLineCap, transformations, etc. are preserved
+                            fabricObj = await fabric.Line.fromObject(obj);
+                            break;
+                        case 'group':
+                            // Handle groups (like image placeholders)
+                            try {
+                                fabricObj = await fabric.Group.fromObject(obj);
+                            } catch (err) {
+                                console.error('Error loading group:', err);
+                                return null;
+                            }
                             break;
                         case 'image':
                             if (obj.src) {
@@ -190,6 +230,31 @@ function SlideThumbnail({ chatId, version }: { chatId: Id<"chats">, version: num
                                     if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX);
                                     if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY);
                                     if (obj.angle !== undefined) img.set('angle', obj.angle);
+                                    if (obj.originX !== undefined) img.set('originX', obj.originX);
+                                    if (obj.originY !== undefined) img.set('originY', obj.originY);
+
+                                    // Restore crop properties for image containers
+                                    if (obj.cropX !== undefined) (img as any).cropX = obj.cropX;
+                                    if (obj.cropY !== undefined) (img as any).cropY = obj.cropY;
+                                    if (obj.width !== undefined) img.set('width', obj.width);
+                                    if (obj.height !== undefined) img.set('height', obj.height);
+
+                                    // Restore clipPath for rounded corners
+                                    if (obj.clipPath && obj.borderRadius) {
+                                        const clipBorderRadius = obj.borderRadius / (obj.scaleX || 1);
+                                        const clipPath = new fabric.Rect({
+                                            width: obj.width,
+                                            height: obj.height,
+                                            rx: clipBorderRadius,
+                                            ry: clipBorderRadius,
+                                            left: -(obj.width) / 2,
+                                            top: -(obj.height) / 2,
+                                            originX: 'left',
+                                            originY: 'top',
+                                        });
+                                        img.set('clipPath', clipPath);
+                                    }
+
                                     img.set({ selectable: false, evented: false });
                                     fabricObj = img;
                                 } catch (err) {
