@@ -5,11 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Upload, Sparkles, FileText, CheckCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from "sonner";
 
 export default function SupplierPaymentForm({ open, onClose, soldTripId, services, onSave, isLoading }) {
+  const [activeTab, setActiveTab] = useState('manual');
+  const [smartFileUrls, setSmartFileUrls] = useState([]);
+  const [smartUploading, setSmartUploading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  
   const [formData, setFormData] = useState({
     supplier: '',
     date: new Date().toISOString().split('T')[0],
@@ -36,8 +42,57 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
         notes: '',
         confirmed: false
       });
+      setSmartFileUrls([]);
+      setActiveTab('manual');
     }
   }, [open]);
+
+  const handleSmartFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setSmartUploading(true);
+    try {
+      const uploadedUrls = [];
+      for (const file of files) {
+        const result = await base44.integrations.Core.UploadFile({ file });
+        uploadedUrls.push(result.file_url);
+      }
+      setSmartFileUrls(prev => [...prev, ...uploadedUrls]);
+      toast.success(`${files.length} archivo(s) subido(s)`);
+    } catch (error) {
+      toast.error('Error al subir archivos');
+    } finally {
+      setSmartUploading(false);
+    }
+  };
+
+  const handleSmartImport = async () => {
+    if (smartFileUrls.length === 0) {
+      toast.error('Sube al menos un archivo');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const response = await base44.functions.invoke('importSupplierPaymentFromFiles', {
+        file_urls: smartFileUrls,
+        sold_trip_id: soldTripId
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.message);
+        onClose();
+        window.location.reload();
+      } else {
+        toast.error(response.data.error || 'Error al importar');
+      }
+    } catch (error) {
+      toast.error('Error al importar pagos');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -112,7 +167,17 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
           <DialogTitle>Registrar Pago a Proveedor</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="manual">Manual</TabsTrigger>
+            <TabsTrigger value="smart">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Smart Import
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="manual">
+            <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label>Asociar a Servicio (Opcional)</Label>
             <Select 
@@ -234,21 +299,89 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="text-white"
-              style={{ backgroundColor: '#2E442A' }}
-            >
-              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Registrar Pago
-            </Button>
-          </div>
-        </form>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="text-white"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Registrar Pago
+                </Button>
+              </div>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="smart">
+            <div className="space-y-4 mt-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-blue-900 text-sm">Smart Import con IA</h4>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Sube comprobantes de pago a proveedores (PDFs o fotos) y la IA extraerá automáticamente los pagos
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label>Subir Comprobantes (PDFs o Imágenes)</Label>
+                <div className="flex items-center gap-3 mt-2">
+                  <input
+                    type="file"
+                    accept="application/pdf,image/*"
+                    multiple
+                    onChange={handleSmartFileUpload}
+                    disabled={smartUploading || importing}
+                    className="flex-1 text-sm"
+                  />
+                  {smartUploading && <Loader2 className="w-5 h-5 animate-spin text-stone-400" />}
+                  {smartFileUrls.length > 0 && !smartUploading && <CheckCircle className="w-5 h-5 text-green-600" />}
+                </div>
+                {smartFileUrls.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs font-medium text-stone-600">{smartFileUrls.length} archivo(s) subido(s):</p>
+                    {smartFileUrls.map((url, index) => (
+                      <a
+                        key={index}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                      >
+                        <FileText className="w-3 h-3" />
+                        Archivo {index + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSmartImport}
+                  disabled={smartFileUrls.length === 0 || importing}
+                  className="text-white"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Importar Pagos
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
