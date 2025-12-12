@@ -331,12 +331,10 @@ export const pasteObjectFromJSON = async (canvas: fabric.Canvas, objData: any): 
                 })
                 break
             case 'line':
-                newObj = new fabric.Line([objData.x1, objData.y1, objData.x2, objData.y2], {
-                    left: objData.left,
-                    top: objData.top,
-                    stroke: objData.stroke,
-                    strokeWidth: objData.strokeWidth,
-                })
+                // Use fromObject to avoid double-transformation issues
+                console.log('📏 Pegando línea con fromObject:', objData)
+                newObj = await fabric.Line.fromObject(objData)
+                console.log('✅ Línea pegada con posición:', { left: newObj.left, top: newObj.top, angle: newObj.angle })
                 break
             case 'image':
                 console.log('🖼️ Intentando pegar imagen con src:', objData.src)

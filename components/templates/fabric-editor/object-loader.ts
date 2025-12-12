@@ -32,7 +32,7 @@ export const createFabricObjectFromJSON = async (obj: any, index: number): Promi
                 fabricObj = createTriangleObject(obj)
                 break
             case 'line':
-                fabricObj = createLineObject(obj)
+                fabricObj = await createLineObject(obj)
                 break
             case 'image':
                 fabricObj = await createImageObject(obj, index)
@@ -226,13 +226,24 @@ const createTriangleObject = (obj: any): fabric.Triangle => {
 /**
  * Crea una línea desde JSON
  */
-const createLineObject = (obj: any): fabric.Line => {
-    console.log(`📏 Creando línea`)
-
-    return new fabric.Line([obj.x1 || 0, obj.y1 || 0, obj.x2 || 100, obj.y2 || 100], {
-        stroke: obj.stroke || '#000000',
-        strokeWidth: obj.strokeWidth || 1,
+const createLineObject = async (obj: any): Promise<fabric.Line> => {
+    console.log(`📏 Creando línea desde JSON:`, {
+        points: { x1: obj.x1, y1: obj.y1, x2: obj.x2, y2: obj.y2 },
+        position: { left: obj.left, top: obj.top },
+        transform: { scaleX: obj.scaleX, scaleY: obj.scaleY, angle: obj.angle }
     })
+
+    // Use Fabric's fromObject to properly restore all properties
+    // This avoids double-transformation issues
+    const line = await fabric.Line.fromObject(obj)
+
+    console.log(`✅ Línea creada con valores finales:`, {
+        points: { x1: line.x1, y1: line.y1, x2: line.x2, y2: line.y2 },
+        position: { left: line.left, top: line.top },
+        transform: { scaleX: line.scaleX, scaleY: line.scaleY, angle: line.angle }
+    })
+
+    return line
 }
 
 /**
