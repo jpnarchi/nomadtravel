@@ -5,15 +5,18 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (!user || user.role !== 'admin') {
+    if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { file_url } = await req.json();
+    const { file_url, agent_email } = await req.json();
 
     if (!file_url) {
       return Response.json({ error: 'file_url is required' }, { status: 400 });
     }
+
+    // Use provided agent_email or default to current user
+    const assignedAgent = agent_email || user.email;
 
     // Define schema for data extraction
     const schema = {
@@ -110,7 +113,8 @@ Deno.serve(async (req) => {
       total_commission: 0,
       total_paid_by_client: 0,
       total_paid_to_suppliers: 0,
-      status: 'pendiente'
+      status: 'pendiente',
+      created_by: assignedAgent
     });
 
     // Create services

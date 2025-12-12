@@ -25,8 +25,11 @@ export default function AdminImportTrips() {
   const agents = users.filter(u => u.role === 'user' || u.custom_role === 'agente' || u.custom_role === 'supervisor');
 
   const importMutation = useMutation({
-    mutationFn: async (file_url) => {
-      const response = await base44.functions.invoke('importTripFromInvoice', { file_url });
+    mutationFn: async ({ file_url, agent_email }) => {
+      const response = await base44.functions.invoke('importTripFromInvoice', { 
+        file_url, 
+        agent_email 
+      });
       return response.data;
     },
     onSuccess: (data) => {
@@ -36,22 +39,6 @@ export default function AdminImportTrips() {
     },
     onError: (error) => {
       toast.error('Error al importar viaje: ' + (error.message || 'Error desconocido'));
-    }
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: async () => {
-      if (!importedTripId || !selectedAgent) return;
-      await base44.entities.SoldTrip.update(importedTripId, {
-        created_by: selectedAgent
-      });
-    },
-    onSuccess: () => {
-      toast.success('Viaje asignado al agente');
-      setImportedTripId(null);
-      setFileUrl('');
-      setSelectedAgent('');
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
     }
   });
 
@@ -81,15 +68,11 @@ export default function AdminImportTrips() {
       toast.error('Primero sube un archivo');
       return;
     }
-    importMutation.mutate(fileUrl);
-  };
-
-  const handleAssign = () => {
     if (!selectedAgent) {
       toast.error('Selecciona un agente');
       return;
     }
-    assignMutation.mutate();
+    importMutation.mutate({ file_url: fileUrl, agent_email: selectedAgent });
   };
 
   return (
@@ -130,9 +113,26 @@ export default function AdminImportTrips() {
           </div>
 
           {fileUrl && !importedTripId && (
-            <div>
-              <h3 className="font-semibold text-stone-800 mb-2">2. Extraer Datos del Invoice</h3>
-              <Button
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-stone-800 mb-2">2. Asignar a Agente</h3>
+                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Selecciona un agente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map(agent => (
+                      <SelectItem key={agent.id} value={agent.email}>
+                        {agent.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-stone-800 mb-2">3. Extraer Datos del Invoice</h3>
+                <Button
                 onClick={handleImport}
                 disabled={importMutation.isPending}
                 className="text-white"
@@ -163,53 +163,28 @@ export default function AdminImportTrips() {
                 <div className="flex-1">
                   <h3 className="font-semibold text-green-800 mb-1">¡Viaje Importado!</h3>
                   <p className="text-sm text-green-700 mb-3">
-                    El viaje ha sido creado exitosamente. Ahora asígnalo a un agente.
+                    El viaje ha sido creado exitosamente y asignado al agente seleccionado.
                   </p>
 
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-medium text-stone-700 mb-1 block">
-                        3. Asignar a Agente
-                      </label>
-                      <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Selecciona un agente..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {agents.map(agent => (
-                            <SelectItem key={agent.id} value={agent.email}>
-                              {agent.full_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex gap-2">
+                  <div className="flex gap-2">
+                    <Link to={createPageUrl('SoldTripDetail') + '?id=' + importedTripId}>
                       <Button
-                        onClick={handleAssign}
-                        disabled={assignMutation.isPending || !selectedAgent}
                         className="text-white"
                         style={{ backgroundColor: '#2E442A' }}
                       >
-                        {assignMutation.isPending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Asignando...
-                          </>
-                        ) : (
-                          <>
-                            <User className="w-4 h-4 mr-2" />
-                            Asignar Viaje
-                          </>
-                        )}
+                        Ver Viaje
                       </Button>
-                      <Link to={createPageUrl('SoldTripDetail') + '?id=' + importedTripId}>
-                        <Button variant="outline">
-                          Ver Viaje
-                        </Button>
-                      </Link>
-                    </div>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setImportedTripId(null);
+                        setFileUrl('');
+                        setSelectedAgent('');
+                      }}
+                    >
+                      Importar Otro
+                    </Button>
                   </div>
                 </div>
               </div>
