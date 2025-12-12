@@ -12,6 +12,16 @@ const PPT_LAYOUTS: Record<AspectRatioType, string> = {
     'A4': 'LAYOUT_WIDE', // Custom A4 layout (210x297mm)
 }
 
+// Helper function to ensure values are within valid PowerPoint ranges
+function clampValue(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value))
+}
+
+// Helper function to ensure coordinates are non-negative
+function ensureNonNegative(value: number): number {
+    return Math.max(0, value)
+}
+
 export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = DEFAULT_ASPECT_RATIO) {
     if (slides.length === 0) {
         toast.error('No slides to export')
@@ -36,7 +46,7 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
         } else {
             // For custom layouts, define width and height in inches
             // PowerPoint uses inches as the unit
-            // Determine if the aspect ratio is portrait (vertical) or landscape (horizontal)
+            // PowerPoint limits: width 1-56 inches, height 1-56 inches
             const isPortrait = aspectRatioDimensions.height > aspectRatioDimensions.width
 
             let slideWidthInches: number
@@ -53,6 +63,10 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                 slideWidthInches = referenceWidth
                 slideHeightInches = referenceWidth / aspectRatioDimensions.ratio
             }
+
+            // Ensure dimensions are within PowerPoint limits (1-56 inches)
+            slideWidthInches = Math.max(1, Math.min(56, slideWidthInches))
+            slideHeightInches = Math.max(1, Math.min(56, slideHeightInches))
 
             console.log('📐 [PPT-EXPORT] Custom layout:', {
                 aspectRatio,
@@ -110,26 +124,26 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                         // Add text as editable text box
                         // Convert fontSize from pixels to points considering scale
                         // 1 inch = 72 points, so: pixels * (inches per pixel) * 72 = points
-                        const fontSizePt = (obj.fontSize || 40) * scaleYObj * scaleY * 72
+                        const fontSizePt = clampValue((obj.fontSize || 40) * scaleYObj * scaleY * 72, 1, 400)
 
                         // Calculate height: use object height if available, otherwise calculate based on font size and text content
                         let textHeight: number | string = 'auto'
                         if (obj.height) {
                             // Use the actual height from the object
-                            textHeight = obj.height * scaleYObj * scaleY
+                            textHeight = clampValue(obj.height * scaleYObj * scaleY, 0.1, slideHeight)
                         } else if (obj.text) {
                             // Calculate approximate height based on font size and line breaks
                             const textContent = obj.text || ''
                             const lineCount = textContent.split('\n').length
                             const fontSizeInches = (obj.fontSize || 40) * scaleYObj * scaleY
                             // Use line height of approximately 1.4 times font size
-                            textHeight = fontSizeInches * lineCount * 1.4
+                            textHeight = clampValue(fontSizeInches * lineCount * 1.4, 0.1, slideHeight)
                         }
 
                         const textOptions: any = {
-                            x: (obj.left || 0) * scaleX,
-                            y: (obj.top || 0) * scaleY,
-                            w: obj.width ? obj.width * scaleXObj * scaleX : slideWidth * 0.8,
+                            x: ensureNonNegative((obj.left || 0) * scaleX),
+                            y: ensureNonNegative((obj.top || 0) * scaleY),
+                            w: clampValue(obj.width ? obj.width * scaleXObj * scaleX : slideWidth * 0.8, 0.1, slideWidth),
                             h: textHeight,
                             fontSize: fontSizePt,
                             color: (obj.fill || '#000000').replace('#', ''),
@@ -140,8 +154,8 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                             valign: 'top',
                         }
 
-                        if (angle !== 0) {
-                            textOptions.rotate = angle
+                        if (angle !== 0 && angle !== undefined) {
+                            textOptions.rotate = clampValue(angle, -360, 360)
                         }
 
                         slide.addText(obj.text || '', textOptions)
@@ -150,10 +164,10 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                     case 'rect':
                     case 'rectangle':
                         const rectOptions: any = {
-                            x: (obj.left || 0) * scaleX,
-                            y: (obj.top || 0) * scaleY,
-                            w: (obj.width || 100) * scaleXObj * scaleX,
-                            h: (obj.height || 100) * scaleYObj * scaleY,
+                            x: ensureNonNegative((obj.left || 0) * scaleX),
+                            y: ensureNonNegative((obj.top || 0) * scaleY),
+                            w: clampValue((obj.width || 100) * scaleXObj * scaleX, 0.01, slideWidth),
+                            h: clampValue((obj.height || 100) * scaleYObj * scaleY, 0.01, slideHeight),
                         }
 
                         if (obj.fill) {
@@ -161,14 +175,17 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                         }
 
                         if (obj.stroke && obj.strokeWidth) {
-                            rectOptions.line = {
-                                color: obj.stroke.replace('#', ''),
-                                width: (obj.strokeWidth || 1) * scaleX * 72 // Convert to points (1 inch = 72 points)
+                            const strokeWidthPt = clampValue((obj.strokeWidth || 1) * scaleX * 72, 0, 50)
+                            if (strokeWidthPt > 0) {
+                                rectOptions.line = {
+                                    color: obj.stroke.replace('#', ''),
+                                    width: strokeWidthPt
+                                }
                             }
                         }
 
-                        if (angle !== 0) {
-                            rectOptions.rotate = angle
+                        if (angle !== 0 && angle !== undefined) {
+                            rectOptions.rotate = clampValue(angle, -360, 360)
                         }
 
                         slide.addShape(pptx.ShapeType.rect, rectOptions)
@@ -177,10 +194,10 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                     case 'circle':
                         const diameter = (obj.radius || 50) * 2
                         const circleOptions: any = {
-                            x: (obj.left || 0) * scaleX,
-                            y: (obj.top || 0) * scaleY,
-                            w: diameter * scaleXObj * scaleX,
-                            h: diameter * scaleYObj * scaleY,
+                            x: ensureNonNegative((obj.left || 0) * scaleX),
+                            y: ensureNonNegative((obj.top || 0) * scaleY),
+                            w: clampValue(diameter * scaleXObj * scaleX, 0.01, slideWidth),
+                            h: clampValue(diameter * scaleYObj * scaleY, 0.01, slideHeight),
                         }
 
                         if (obj.fill) {
@@ -188,14 +205,17 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                         }
 
                         if (obj.stroke && obj.strokeWidth) {
-                            circleOptions.line = {
-                                color: obj.stroke.replace('#', ''),
-                                width: (obj.strokeWidth || 1) * scaleX * 72
+                            const strokeWidthPt = clampValue((obj.strokeWidth || 1) * scaleX * 72, 0, 50)
+                            if (strokeWidthPt > 0) {
+                                circleOptions.line = {
+                                    color: obj.stroke.replace('#', ''),
+                                    width: strokeWidthPt
+                                }
                             }
                         }
 
-                        if (angle !== 0) {
-                            circleOptions.rotate = angle
+                        if (angle !== 0 && angle !== undefined) {
+                            circleOptions.rotate = clampValue(angle, -360, 360)
                         }
 
                         slide.addShape(pptx.ShapeType.ellipse, circleOptions)
@@ -203,10 +223,10 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
 
                     case 'triangle':
                         const triOptions: any = {
-                            x: (obj.left || 0) * scaleX,
-                            y: (obj.top || 0) * scaleY,
-                            w: (obj.width || 100) * scaleXObj * scaleX,
-                            h: (obj.height || 100) * scaleYObj * scaleY,
+                            x: ensureNonNegative((obj.left || 0) * scaleX),
+                            y: ensureNonNegative((obj.top || 0) * scaleY),
+                            w: clampValue((obj.width || 100) * scaleXObj * scaleX, 0.01, slideWidth),
+                            h: clampValue((obj.height || 100) * scaleYObj * scaleY, 0.01, slideHeight),
                         }
 
                         if (obj.fill) {
@@ -214,14 +234,17 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                         }
 
                         if (obj.stroke && obj.strokeWidth) {
-                            triOptions.line = {
-                                color: obj.stroke.replace('#', ''),
-                                width: (obj.strokeWidth || 1) * scaleX * 72
+                            const strokeWidthPt = clampValue((obj.strokeWidth || 1) * scaleX * 72, 0, 50)
+                            if (strokeWidthPt > 0) {
+                                triOptions.line = {
+                                    color: obj.stroke.replace('#', ''),
+                                    width: strokeWidthPt
+                                }
                             }
                         }
 
-                        if (angle !== 0) {
-                            triOptions.rotate = angle
+                        if (angle !== 0 && angle !== undefined) {
+                            triOptions.rotate = clampValue(angle, -360, 360)
                         }
 
                         slide.addShape(pptx.ShapeType.triangle, triOptions)
@@ -229,13 +252,13 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
 
                     case 'line':
                         const lineOptions: any = {
-                            x: (obj.x1 || 0) * scaleX,
-                            y: (obj.y1 || 0) * scaleY,
-                            w: ((obj.x2 || 100) - (obj.x1 || 0)) * scaleX,
-                            h: ((obj.y2 || 100) - (obj.y1 || 0)) * scaleY,
+                            x: ensureNonNegative((obj.x1 || 0) * scaleX),
+                            y: ensureNonNegative((obj.y1 || 0) * scaleY),
+                            w: clampValue(((obj.x2 || 100) - (obj.x1 || 0)) * scaleX, -slideWidth, slideWidth),
+                            h: clampValue(((obj.y2 || 100) - (obj.y1 || 0)) * scaleY, -slideHeight, slideHeight),
                             line: {
                                 color: (obj.stroke || '#000000').replace('#', ''),
-                                width: (obj.strokeWidth || 1) * scaleX * 72
+                                width: clampValue((obj.strokeWidth || 1) * scaleX * 72, 0.1, 50)
                             }
                         }
 
@@ -246,8 +269,8 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                         if (obj.src) {
                             try {
                                 // Calculate actual image dimensions from object properties
-                                const imgW = (obj.width || 200) * scaleXObj * scaleX
-                                const imgH = (obj.height || 200) * scaleYObj * scaleY
+                                const imgW = clampValue((obj.width || 200) * scaleXObj * scaleX, 0.01, slideWidth)
+                                const imgH = clampValue((obj.height || 200) * scaleYObj * scaleY, 0.01, slideHeight)
 
                                 // CRITICAL: Convert from Fabric.js coordinates to PowerPoint coordinates
                                 // Fabric.js images can have origin at 'center', but PowerPoint always uses top-left
@@ -261,6 +284,10 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                                 if (obj.originY === 'center') {
                                     imgY = imgY - (imgH / 2)
                                 }
+
+                                // Ensure coordinates are within slide bounds
+                                imgX = clampValue(imgX, 0, slideWidth - 0.1)
+                                imgY = clampValue(imgY, 0, slideHeight - 0.1)
 
                                 const imgOptions: any = {
                                     x: imgX,
@@ -281,8 +308,8 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                                     imgOptions.data = `data:image/png;base64,${obj.src}`
                                 }
 
-                                if (angle !== 0) {
-                                    imgOptions.rotate = angle
+                                if (angle !== 0 && angle !== undefined) {
+                                    imgOptions.rotate = clampValue(angle, -360, 360)
                                 }
 
                                 slide.addImage(imgOptions)
