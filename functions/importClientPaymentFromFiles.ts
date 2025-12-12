@@ -68,12 +68,17 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
+    // Get the sold trip to inherit the agent
+    const soldTrip = await base44.asServiceRole.entities.SoldTrip.filter({ id: sold_trip_id });
+    const agentEmail = soldTrip[0]?.created_by || user.email;
+
     // Create all payments
     const createdPayments = [];
     for (const payment of data.payments) {
       const paymentData = {
         sold_trip_id,
-        ...payment
+        ...payment,
+        created_by: agentEmail
       };
 
       const createdPayment = await base44.asServiceRole.entities.ClientPayment.create(paymentData);
