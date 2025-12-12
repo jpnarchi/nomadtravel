@@ -101,12 +101,22 @@ export default function InternalClientPayments() {
       const agentEmail = payment.created_by || trip?.created_by || '';
       const agent = users.find(u => u.email === agentEmail);
       
+      // Determine agent display name
+      let displayAgentName = 'Sin asignar';
+      if (agent?.full_name) {
+        displayAgentName = agent.full_name;
+      } else if (agentEmail && (agentEmail.includes('no-reply.base44.com') || agentEmail.includes('service+'))) {
+        displayAgentName = 'Sistema Automático';
+      } else if (agentEmail) {
+        displayAgentName = agentEmail;
+      }
+      
       return {
         ...payment,
-        client_name: trip?.client_name || 'Cliente',
+        client_name: trip?.client_name || 'Cliente Desconocido',
         trip_destination: trip?.destination || '',
-        trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje',
-        agent_name: agent?.full_name || agentEmail || 'Sin asignar',
+        trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje Desconocido',
+        agent_name: displayAgentName,
         agent_email: agentEmail,
         confirmed: payment.confirmed || false
       };
