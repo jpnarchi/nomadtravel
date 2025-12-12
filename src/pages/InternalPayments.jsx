@@ -112,8 +112,8 @@ export default function InternalPayments() {
     };
   });
 
-  // Get unique agents
-  const uniqueAgents = [...new Set(enrichedPayments.map(p => p.agent_name))].filter(Boolean);
+  // Get unique agents - sorted alphabetically
+  const uniqueAgents = [...new Set(enrichedPayments.map(p => p.agent_name))].filter(Boolean).sort();
 
   // Get unique payment methods
   const uniqueMethods = [...new Set(supplierPayments.map(p => p.method))].filter(Boolean);
