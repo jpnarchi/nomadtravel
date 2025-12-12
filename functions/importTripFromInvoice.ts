@@ -9,10 +9,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { file_url, agent_email } = await req.json();
+    const { file_urls, agent_email } = await req.json();
 
-    if (!file_url) {
-      return Response.json({ error: 'file_url is required' }, { status: 400 });
+    if (!file_urls || !Array.isArray(file_urls) || file_urls.length === 0) {
+      return Response.json({ error: 'file_urls array is required' }, { status: 400 });
     }
 
     // Use provided agent_email or default to current user
@@ -66,20 +66,18 @@ Deno.serve(async (req) => {
       }
     };
 
-    // Extract data from invoice
-    const extractResult = await base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: schema
+    // Extract data from all files (combine them for better context)
+    const extractResult = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: `Analiza estos archivos (invoices, facturas, o imágenes de servicios) y extrae toda la información del viaje vendido. 
+      
+      Extrae: nombre del cliente, destino, fechas, número de viajeros, precio total, todos los servicios incluidos (hoteles, vuelos, traslados, tours, etc.) con sus detalles y precios, y los pagos realizados.
+      
+      Si hay múltiples archivos, combina toda la información en un solo viaje.`,
+      file_urls: file_urls,
+      response_json_schema: schema
     });
 
-    if (extractResult.status === 'error') {
-      return Response.json({ 
-        error: 'Failed to extract data', 
-        details: extractResult.details 
-      }, { status: 400 });
-    }
-
-    const data = extractResult.output;
+    const data = extractResult;
 
     // Create client if doesn't exist
     let client = null;

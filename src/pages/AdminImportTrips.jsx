@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 
 export default function AdminImportTrips() {
   const [uploading, setUploading] = useState(false);
-  const [fileUrl, setFileUrl] = useState('');
+  const [fileUrls, setFileUrls] = useState([]);
   const [importedTripId, setImportedTripId] = useState(null);
   const [selectedAgent, setSelectedAgent] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,9 +39,9 @@ export default function AdminImportTrips() {
   const isAdmin = currentUser?.role === 'admin';
 
   const importMutation = useMutation({
-    mutationFn: async ({ file_url, agent_email }) => {
+    mutationFn: async ({ file_urls, agent_email }) => {
       const response = await base44.functions.invoke('importTripFromInvoice', { 
-        file_url, 
+        file_urls, 
         agent_email 
       });
       return response.data;
@@ -57,36 +57,35 @@ export default function AdminImportTrips() {
   });
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.includes('pdf')) {
-      toast.error('Solo se permiten archivos PDF');
-      return;
-    }
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
 
     setUploading(true);
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
-      setFileUrl(result.file_url);
-      toast.success('Archivo subido');
+      const uploadedUrls = [];
+      for (const file of files) {
+        const result = await base44.integrations.Core.UploadFile({ file });
+        uploadedUrls.push(result.file_url);
+      }
+      setFileUrls(prev => [...prev, ...uploadedUrls]);
+      toast.success(`${files.length} archivo(s) subido(s)`);
     } catch (error) {
-      toast.error('Error al subir archivo');
+      toast.error('Error al subir archivos');
     } finally {
       setUploading(false);
     }
   };
 
   const handleImport = () => {
-    if (!fileUrl) {
-      toast.error('Primero sube un archivo');
+    if (fileUrls.length === 0) {
+      toast.error('Primero sube al menos un archivo');
       return;
     }
     if (!selectedAgent) {
       toast.error('Selecciona un agente');
       return;
     }
-    importMutation.mutate({ file_url: fileUrl, agent_email: selectedAgent });
+    importMutation.mutate({ file_urls: fileUrls, agent_email: selectedAgent });
   };
 
   return (
@@ -108,32 +107,39 @@ export default function AdminImportTrips() {
       <Card className="p-6">
         <div className="space-y-4">
           <div>
-            <h3 className="font-semibold text-stone-800 mb-2">1. Sube el Invoice (PDF)</h3>
+            <h3 className="font-semibold text-stone-800 mb-2">1. Sube Archivos (PDF, Imágenes)</h3>
             <div className="flex items-center gap-3">
               <input
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,image/*"
+                multiple
                 onChange={handleFileUpload}
                 disabled={uploading || importMutation.isPending}
                 className="flex-1 text-sm"
               />
               {uploading && <Loader2 className="w-5 h-5 animate-spin text-stone-400" />}
-              {fileUrl && !uploading && <CheckCircle className="w-5 h-5 text-green-600" />}
+              {fileUrls.length > 0 && !uploading && <CheckCircle className="w-5 h-5 text-green-600" />}
             </div>
-            {fileUrl && (
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline mt-2 inline-flex items-center gap-1"
-              >
-                <FileText className="w-3 h-3" />
-                Ver archivo subido
-              </a>
+            {fileUrls.length > 0 && (
+              <div className="mt-3 space-y-1">
+                <p className="text-xs font-medium text-stone-600">{fileUrls.length} archivo(s) subido(s):</p>
+                {fileUrls.map((url, index) => (
+                  <a
+                    key={index}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <FileText className="w-3 h-3" />
+                    Archivo {index + 1}
+                  </a>
+                ))}
+              </div>
             )}
           </div>
 
-          {fileUrl && !importedTripId && (
+          {fileUrls.length > 0 && !importedTripId && (
             <div className="space-y-4">
               {isAdmin && (
                 <div>
@@ -203,8 +209,8 @@ export default function AdminImportTrips() {
                       variant="outline"
                       onClick={() => {
                         setImportedTripId(null);
-                        setFileUrl('');
-                        setSelectedAgent('');
+                        setFileUrls([]);
+                        if (isAdmin) setSelectedAgent('');
                       }}
                     >
                       Importar Otro
@@ -224,7 +230,7 @@ export default function AdminImportTrips() {
           Cómo Funciona
         </h3>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Sube el invoice en formato PDF</li>
+          <li>Sube uno o más archivos: invoices (PDF) o imágenes de servicios</li>
           <li>La IA extraerá automáticamente: cliente, destino, fechas, servicios, precios y pagos</li>
           <li>Se creará el viaje vendido con todos los servicios y pagos</li>
           {isAdmin ? (
