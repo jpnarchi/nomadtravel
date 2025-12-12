@@ -191,8 +191,9 @@ export default function InternalClientPayments() {
           <p className="text-xs text-stone-400">{confirmedPayments.length} pagos</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Total Pagos</p>
+          <p className="text-xs text-stone-400">Total Pagos (sin tarjeta cliente)</p>
           <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${(totalPending + totalConfirmed).toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{enrichedPayments.length} de {clientPayments.length} pagos</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Agentes Activos</p>
