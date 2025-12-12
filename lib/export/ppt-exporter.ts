@@ -36,10 +36,32 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
         } else {
             // For custom layouts, define width and height in inches
             // PowerPoint uses inches as the unit
-            // We'll use a reference width of 10 inches and scale height accordingly
-            const referenceWidth = 10
-            const calculatedHeight = referenceWidth / aspectRatioDimensions.ratio
-            pptx.defineLayout({ name: 'CUSTOM', width: referenceWidth, height: calculatedHeight })
+            // Determine if the aspect ratio is portrait (vertical) or landscape (horizontal)
+            const isPortrait = aspectRatioDimensions.height > aspectRatioDimensions.width
+
+            let slideWidthInches: number
+            let slideHeightInches: number
+
+            if (isPortrait) {
+                // For portrait orientations, fix height and calculate width
+                const referenceHeight = 10
+                slideHeightInches = referenceHeight
+                slideWidthInches = referenceHeight * aspectRatioDimensions.ratio
+            } else {
+                // For landscape orientations, fix width and calculate height
+                const referenceWidth = 10
+                slideWidthInches = referenceWidth
+                slideHeightInches = referenceWidth / aspectRatioDimensions.ratio
+            }
+
+            console.log('📐 [PPT-EXPORT] Custom layout:', {
+                aspectRatio,
+                isPortrait,
+                widthInches: slideWidthInches,
+                heightInches: slideHeightInches
+            })
+
+            pptx.defineLayout({ name: 'CUSTOM', width: slideWidthInches, height: slideHeightInches })
             pptx.layout = 'CUSTOM'
         }
 

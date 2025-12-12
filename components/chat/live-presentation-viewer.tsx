@@ -1,15 +1,23 @@
 'use client'
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useState, useEffect, useRef, useMemo } from "react";
 import * as fabric from 'fabric';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Maximize, PencilRuler } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, PencilRuler, Download } from "lucide-react";
 import { Loader } from "@/components/ai-elements/loader";
 import { useRouter } from "next/navigation";
 import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios';
+import { exportToPDF } from '@/lib/export/pdf-exporter';
+import { exportToPPT } from '@/lib/export/ppt-exporter';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LivePresentationViewerProps {
     chatId: Id<"chats">;
@@ -19,6 +27,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
     const router = useRouter();
     const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId });
     const files = useQuery(api.files.getAll, { chatId, version: currentVersion || 0 });
+    const updateProjectDownloaded = useMutation(api.chats.updateProjectDownloaded);
 
     const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
@@ -503,6 +512,29 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
         }
     };
 
+    // Export handlers with download tracking
+    const handleExportToPDF = async () => {
+        await exportToPDF(slides, aspectRatio);
+
+        // Mark project as downloaded
+        try {
+            await updateProjectDownloaded({ chatId, downloaded: true });
+        } catch (error) {
+            console.error('Error updating project download status:', error);
+        }
+    };
+
+    const handleExportToPPT = async () => {
+        await exportToPPT(slides, aspectRatio);
+
+        // Mark project as downloaded
+        try {
+            await updateProjectDownloaded({ chatId, downloaded: true });
+        } catch (error) {
+            console.error('Error updating project download status:', error);
+        }
+    };
+
     // Handle keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -559,15 +591,44 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                         </div>
                     )}
                 </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/chat/${chatId}/preview/${currentVersion}`)}
-                    className="gap-2"
-                >
-                    <PencilRuler className="size-4" />
-                    <span className="hidden md:inline">Edit presentation</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                    {/* Download Button with Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <Download className="size-4" />
+                                <span className="hidden md:inline">Download</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                                onClick={handleExportToPDF}
+                            >
+                                Download as PDF
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={handleExportToPPT}
+                            >
+                                Download as PowerPoint
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Edit Presentation Button */}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/chat/${chatId}/preview/${currentVersion}`)}
+                        className="gap-2"
+                    >
+                        <PencilRuler className="size-4" />
+                        <span className="hidden md:inline">Edit presentation</span>
+                    </Button>
+                </div>
             </div>
 
             {/* Canvas Container - Adapts to aspect ratio */}

@@ -297,16 +297,38 @@ export async function exportToPDF(slides: any[], aspectRatio: AspectRatioType = 
 
         // Create PDF with current aspect ratio (matching slide dimensions)
         const slideAspectRatio = aspectRatioDimensions.ratio
-        const pageWidth = 297 // mm (A4 width in landscape)
-        const pageHeight = pageWidth / slideAspectRatio // Calculate height to maintain aspect ratio
 
         // Determine orientation based on aspect ratio
-        const orientation = aspectRatioDimensions.width >= aspectRatioDimensions.height ? 'landscape' : 'portrait'
+        const isPortrait = aspectRatioDimensions.height > aspectRatioDimensions.width
+        const orientation = isPortrait ? 'portrait' : 'landscape'
+
+        let pageWidth: number
+        let pageHeight: number
+
+        if (isPortrait) {
+            // For portrait orientations, use standard A4 portrait width and calculate height
+            const referenceWidth = 210 // mm (A4 width in portrait)
+            pageWidth = referenceWidth
+            pageHeight = referenceWidth / slideAspectRatio
+        } else {
+            // For landscape orientations, use standard A4 landscape width and calculate height
+            const referenceWidth = 297 // mm (A4 width in landscape)
+            pageWidth = referenceWidth
+            pageHeight = referenceWidth / slideAspectRatio
+        }
+
+        console.log('📐 [PDF-EXPORT-V4-FABRIC] PDF layout:', {
+            aspectRatio,
+            isPortrait,
+            orientation,
+            widthMm: pageWidth,
+            heightMm: pageHeight
+        })
 
         const pdf = new jsPDF({
             orientation,
             unit: 'mm',
-            format: orientation === 'landscape' ? [pageHeight, pageWidth] : [pageWidth, pageHeight]
+            format: [pageWidth, pageHeight]
         })
 
         console.log('✅ [PDF-EXPORT-V4-FABRIC] PDF created with', orientation, 'orientation:', pageWidth, 'x', pageHeight, 'mm')
