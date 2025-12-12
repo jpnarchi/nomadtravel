@@ -30,6 +30,8 @@ const PAYMENT_METHOD_LABELS = {
   transferencia: 'Transferencia',
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',
+  tarjeta_cliente: 'Tarjeta de Cliente',
+  wise: 'Wise',
   otro: 'Otro'
 };
 
@@ -90,22 +92,24 @@ export default function InternalClientPayments() {
     return acc;
   }, {});
 
-  // Enrich payments with trip and agent info
-  const enrichedPayments = clientPayments.map(payment => {
-    const trip = tripsMap[payment.sold_trip_id];
-    const agentEmail = trip?.created_by || '';
-    const agent = users.find(u => u.email === agentEmail);
-    
-    return {
-      ...payment,
-      client_name: trip?.client_name || 'Cliente',
-      trip_destination: trip?.destination || '',
-      trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje',
-      agent_name: agent?.full_name || agentEmail || 'Sin asignar',
-      agent_email: agentEmail,
-      confirmed: payment.confirmed || false
-    };
-  });
+  // Enrich payments with trip and agent info and filter out "tarjeta_cliente"
+  const enrichedPayments = clientPayments
+    .filter(payment => payment.method !== 'tarjeta_cliente')
+    .map(payment => {
+      const trip = tripsMap[payment.sold_trip_id];
+      const agentEmail = trip?.created_by || '';
+      const agent = users.find(u => u.email === agentEmail);
+      
+      return {
+        ...payment,
+        client_name: trip?.client_name || 'Cliente',
+        trip_destination: trip?.destination || '',
+        trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje',
+        agent_name: agent?.full_name || agentEmail || 'Sin asignar',
+        agent_email: agentEmail,
+        confirmed: payment.confirmed || false
+      };
+    });
 
   // Get unique agents
   const uniqueAgents = [...new Set(enrichedPayments.map(p => p.agent_name))].filter(Boolean);
