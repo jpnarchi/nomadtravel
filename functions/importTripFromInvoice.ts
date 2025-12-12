@@ -15,8 +15,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'file_urls array is required' }, { status: 400 });
     }
 
-    // Use provided agent_email or default to current user
-    const assignedAgent = agent_email || user.email;
+    // Validate and assign agent
+    let assignedAgent = user.email; // Default to current user
+    
+    if (agent_email) {
+      const agentUser = await base44.asServiceRole.entities.User.filter({ email: agent_email });
+      if (agentUser.length > 0) {
+        assignedAgent = agentUser[0].email;
+      }
+    }
 
     // Define schema for data extraction
     const schema = {
