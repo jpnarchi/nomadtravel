@@ -47,7 +47,7 @@ import TripNotesList from '@/components/soldtrips/TripNotesList';
 import TripDocumentsList from '@/components/soldtrips/TripDocumentsList';
 import TripRemindersList from '@/components/soldtrips/TripRemindersList';
 import ActiveTripReminders from '@/components/soldtrips/ActiveTripReminders';
-import SmartServiceImport from '@/components/soldtrips/SmartServiceImport';
+
 
 const SERVICE_ICONS = {
   hotel: Hotel,
@@ -105,7 +105,7 @@ export default function SoldTripDetail() {
   const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
   const [editingPlanItem, setEditingPlanItem] = useState(null);
   const [editTripOpen, setEditTripOpen] = useState(false);
-  const [smartServiceImportOpen, setSmartServiceImportOpen] = useState(false);
+
 
   const queryClient = useQueryClient();
 
@@ -829,25 +829,14 @@ export default function SoldTripDetail() {
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
             <div className="p-5 border-b border-stone-100 flex items-center justify-between">
               <h3 className="font-semibold text-stone-800">Servicios del Viaje</h3>
-              <div className="flex gap-2">
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSmartServiceImportOpen(true)}
-                  className="rounded-xl"
-                  style={{ borderColor: '#2E442A', color: '#2E442A' }}
-                >
-                  <Sparkles className="w-4 h-4 mr-1" /> Smart Import
-                </Button>
-                <Button 
-                  size="sm"
-                  onClick={() => { setEditingService(null); setServiceFormOpen(true); }}
-                  className="rounded-xl text-white"
-                  style={{ backgroundColor: '#2E442A' }}
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Agregar Manual
-                </Button>
-              </div>
+              <Button 
+                size="sm"
+                onClick={() => { setEditingService(null); setServiceFormOpen(true); }}
+                className="rounded-xl text-white"
+                style={{ backgroundColor: '#2E442A' }}
+              >
+                <Plus className="w-4 h-4 mr-1" /> Agregar Servicio
+              </Button>
             </div>
 
             {services.length === 0 ? (
@@ -1304,12 +1293,6 @@ export default function SoldTripDetail() {
         soldTrip={soldTrip}
         onSave={(data) => updateTripMutation.mutate(data)}
         isLoading={updateTripMutation.isPending}
-      />
-
-      <SmartServiceImport
-        open={smartServiceImportOpen}
-        onClose={() => setSmartServiceImportOpen(false)}
-        soldTripId={tripId}
       />
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
