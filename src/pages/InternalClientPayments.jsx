@@ -97,7 +97,8 @@ export default function InternalClientPayments() {
     .filter(payment => payment.method !== 'tarjeta_cliente')
     .map(payment => {
       const trip = tripsMap[payment.sold_trip_id];
-      const agentEmail = trip?.created_by || '';
+      // Try payment's created_by first, then fallback to trip's created_by
+      const agentEmail = payment.created_by || trip?.created_by || '';
       const agent = users.find(u => u.email === agentEmail);
       
       return {
