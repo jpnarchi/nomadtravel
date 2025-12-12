@@ -189,6 +189,40 @@ async function renderSlideToImage(slideData: any, canvasWidth: number, canvasHei
                         })
                         break
 
+                    case 'triangle':
+                        fabricObj = new fabric.Triangle({
+                            left: obj.left,
+                            top: obj.top,
+                            width: obj.width || 100,
+                            height: obj.height || 100,
+                            fill: obj.fill || '#000000',
+                            stroke: obj.stroke,
+                            strokeWidth: obj.strokeWidth || 0,
+                            angle: obj.angle || 0,
+                            scaleX: obj.scaleX || 1,
+                            scaleY: obj.scaleY || 1,
+                            opacity: obj.opacity ?? 1,
+                        })
+                        break
+
+                    case 'line':
+                        // Use fromObject to properly restore all line properties
+                        // This ensures strokeLineCap, transformations, etc. are preserved
+                        fabricObj = await fabric.Line.fromObject(obj)
+                        if (obj.opacity !== undefined) fabricObj.set('opacity', obj.opacity)
+                        break
+
+                    case 'group':
+                        // Handle groups (like image placeholders)
+                        try {
+                            fabricObj = await fabric.Group.fromObject(obj)
+                            if (obj.opacity !== undefined) fabricObj.set('opacity', obj.opacity)
+                        } catch (err) {
+                            console.error(`      ❌ Error cargando grupo:`, err)
+                            return null
+                        }
+                        break
+
                     case 'image':
                         if (obj.src) {
                             const img = await fabric.FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' })

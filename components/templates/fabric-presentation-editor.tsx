@@ -90,6 +90,8 @@ export function FabricPresentationEditor({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false)
     const [aspectRatio, setAspectRatio] = useState<AspectRatioType>(DEFAULT_ASPECT_RATIO)
+    const [editableCode, setEditableCode] = useState('')
+    const [codeError, setCodeError] = useState<string | null>(null)
     const editorContainerRef = useRef<HTMLDivElement>(null)
     const fullscreenRef = useRef<HTMLDivElement>(null)
     const slideEditorRef = useRef<any>(null)
@@ -102,6 +104,15 @@ export function FabricPresentationEditor({
 
     // Get current aspect ratio dimensions
     const aspectRatioDimensions = useMemo(() => getAspectRatioDimensions(aspectRatio), [aspectRatio])
+
+    // Update editable code when slide changes
+    useEffect(() => {
+        const slide = slides[currentSlideIndex]
+        if (slide && showCode) {
+            setEditableCode(JSON.stringify(slide.data, null, 2))
+            setCodeError(null)
+        }
+    }, [currentSlideIndex, showCode, slides])
 
     // Load slides from initial files
     useEffect(() => {
@@ -753,6 +764,27 @@ export function FabricPresentationEditor({
         return copiedObjectRef.current
     }, [])
 
+    // Apply code changes
+    const handleApplyCodeChanges = useCallback(() => {
+        try {
+            const parsedData = JSON.parse(editableCode)
+
+            // Validate that it has the required structure
+            if (!parsedData.objects || !Array.isArray(parsedData.objects)) {
+                throw new Error('Invalid JSON structure: missing or invalid "objects" array')
+            }
+
+            // Update the slide with the new data
+            updateSlide(currentSlideIndex, parsedData)
+            setCodeError(null)
+            toast.success('Code changes applied successfully')
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Invalid JSON'
+            setCodeError(errorMessage)
+            toast.error('Failed to apply changes: ' + errorMessage)
+        }
+    }, [editableCode, currentSlideIndex, updateSlide])
+
     if (isLoading) {
         return (
             <div className="h-full flex items-center justify-center bg-white">
@@ -1103,11 +1135,47 @@ export function FabricPresentationEditor({
                     {/* Main editor area */}
                     <div className="flex-1 flex flex-col overflow-hidden">
                         {showCode ? (
-                            // JSON view
-                            <div className="flex-1 overflow-auto p-6 bg-gray-50">
-                                <pre className="bg-white p-4 rounded text-sm text-green-700 font-mono border border-gray-300">
-                                    {JSON.stringify(currentSlide.data, null, 2)}
-                                </pre>
+                            // JSON editor view
+                            <div className="flex-1 flex flex-col overflow-hidden p-6 bg-gray-50 gap-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold text-gray-900">
+                                        Edit Slide {currentSlideIndex + 1} JSON
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setEditableCode(JSON.stringify(currentSlide.data, null, 2))
+                                                setCodeError(null)
+                                                toast.success('Changes reset')
+                                            }}
+                                        >
+                                            Reset
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            onClick={handleApplyCodeChanges}
+                                            className="bg-blue-600 hover:bg-blue-700"
+                                        >
+                                            <Save className="size-4 mr-2" />
+                                            Apply Changes
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {codeError && (
+                                    <div className="bg-red-50 border border-red-300 rounded-lg p-3 text-red-700 text-sm">
+                                        <strong>Error:</strong> {codeError}
+                                    </div>
+                                )}
+
+                                <textarea
+                                    value={editableCode}
+                                    onChange={(e) => setEditableCode(e.target.value)}
+                                    className="flex-1 bg-white p-4 rounded-lg text-sm text-gray-900 font-mono border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    spellCheck={false}
+                                />
                             </div>
                         ) : (
                             // Visual editor

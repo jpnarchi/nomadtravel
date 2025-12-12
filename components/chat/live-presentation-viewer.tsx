@@ -391,10 +391,9 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                                 });
                                 break;
                             case 'line':
-                                fabricObj = new fabric.Line([obj.x1 || 0, obj.y1 || 0, obj.x2 || 100, obj.y2 || 100], {
-                                    stroke: obj.stroke || '#000000',
-                                    strokeWidth: obj.strokeWidth || 1,
-                                });
+                                // Use fromObject to properly restore all line properties
+                                // This ensures strokeLineCap, transformations, etc. are preserved
+                                fabricObj = await fabric.Line.fromObject(obj);
                                 break;
                             case 'image':
                                 if (obj.src) {
