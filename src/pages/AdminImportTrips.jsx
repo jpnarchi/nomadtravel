@@ -14,8 +14,21 @@ export default function AdminImportTrips() {
   const [fileUrl, setFileUrl] = useState('');
   const [importedTripId, setImportedTripId] = useState(null);
   const [selectedAgent, setSelectedAgent] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
 
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      const user = await base44.auth.me();
+      setCurrentUser(user);
+      // If not admin, auto-select their own email
+      if (user.role !== 'admin') {
+        setSelectedAgent(user.email);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
@@ -23,6 +36,7 @@ export default function AdminImportTrips() {
   });
 
   const agents = users.filter(u => u.role === 'user' || u.custom_role === 'agente' || u.custom_role === 'supervisor');
+  const isAdmin = currentUser?.role === 'admin';
 
   const importMutation = useMutation({
     mutationFn: async ({ file_url, agent_email }) => {
@@ -80,7 +94,14 @@ export default function AdminImportTrips() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-stone-800">Smart Import de Viajes</h1>
-        <p className="text-stone-500 text-sm">Importa viajes desde invoices en PDF usando IA</p>
+        <p className="text-stone-500 text-sm">
+          Importa viajes desde invoices en PDF usando IA
+          {!isAdmin && currentUser && (
+            <span className="block mt-1 text-xs" style={{ color: '#2E442A' }}>
+              Los viajes se asignarán automáticamente a tu cuenta
+            </span>
+          )}
+        </p>
       </div>
 
       {/* Upload Section */}
@@ -114,24 +135,26 @@ export default function AdminImportTrips() {
 
           {fileUrl && !importedTripId && (
             <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-stone-800 mb-2">2. Asignar a Agente</h3>
-                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Selecciona un agente..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agents.map(agent => (
-                      <SelectItem key={agent.id} value={agent.email}>
-                        {agent.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {isAdmin && (
+                <div>
+                  <h3 className="font-semibold text-stone-800 mb-2">2. Asignar a Agente</h3>
+                  <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Selecciona un agente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agents.map(agent => (
+                        <SelectItem key={agent.id} value={agent.email}>
+                          {agent.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div>
-                <h3 className="font-semibold text-stone-800 mb-2">3. Extraer Datos del Invoice</h3>
+                <h3 className="font-semibold text-stone-800 mb-2">{isAdmin ? '3' : '2'}. Extraer Datos del Invoice</h3>
                 <Button
                   onClick={handleImport}
                   disabled={importMutation.isPending}
@@ -204,8 +227,14 @@ export default function AdminImportTrips() {
           <li>Sube el invoice en formato PDF</li>
           <li>La IA extraerá automáticamente: cliente, destino, fechas, servicios, precios y pagos</li>
           <li>Se creará el viaje vendido con todos los servicios y pagos</li>
-          <li>Asigna el viaje a un agente para que aparezca en su dashboard</li>
-          <li>El agente podrá ver y editar el viaje importado</li>
+          {isAdmin ? (
+            <>
+              <li>Asigna el viaje a un agente para que aparezca en su dashboard</li>
+              <li>El agente podrá ver y editar el viaje importado</li>
+            </>
+          ) : (
+            <li>El viaje se asignará automáticamente a tu cuenta</li>
+          )}
         </ul>
       </Card>
     </div>
