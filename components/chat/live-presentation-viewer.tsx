@@ -25,8 +25,9 @@ interface LivePresentationViewerProps {
 
 export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) {
     const router = useRouter();
-    const currentVersion = useQuery(api.chats.getCurrentVersion, { chatId });
-    const files = useQuery(api.files.getAll, { chatId, version: currentVersion || 0 });
+    // Use getLatestVersion to always show the most recent version
+    const latestVersion = useQuery(api.files.getLatestVersion, { chatId });
+    const files = useQuery(api.files.getAll, { chatId, version: latestVersion || 0 });
     const updateProjectDownloaded = useMutation(api.chats.updateProjectDownloaded);
 
     const [canvasElement, setCanvasElement] = useState<HTMLCanvasElement | null>(null);
@@ -548,7 +549,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [currentSlideIndex, slides.length]);
 
-    if (!files || !currentVersion) {
+    if (!files || !latestVersion) {
         return (
             <div className="w-full h-full flex flex-col items-center justify-center bg-background p-8 overflow-hidden">
                 <div className="text-center space-y-4">
@@ -580,7 +581,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                 <div className="flex items-center gap-2">
                     <h3 className="text-base md:text-lg font-semibold">Live Preview</h3>
                     <span className="text-xs md:text-sm text-muted-foreground">
-                        Version {currentVersion}
+                        Version {latestVersion}
                     </span>
                     {/* MODIFICADO: Loading indicator en el header */}
                     {isLoadingSlide && isMounted && (
@@ -621,7 +622,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/chat/${chatId}/preview/${currentVersion}`)}
+                        onClick={() => router.push(`/chat/${chatId}/preview/${latestVersion}`)}
                         className="gap-2"
                     >
                         <PencilRuler className="size-4" />

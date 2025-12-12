@@ -364,3 +364,45 @@ export const createBatch = mutation({
         return { success: true, fileIds };
     },
 });
+
+// Get the latest (maximum) version number for a chat
+export const getLatestVersion = query({
+    args: {
+        chatId: v.optional(v.id("chats")),
+    },
+    handler: async (ctx, args) => {
+        try {
+            const user = await getCurrentUser(ctx);
+
+            if (!args.chatId) {
+                return 1;
+            }
+
+            const chat = await ctx.db.get(args.chatId);
+
+            if (!chat) {
+                return 1;
+            }
+
+            if (chat.userId !== user._id && user.role !== "admin") {
+                throw new Error("Access denied");
+            }
+
+            // Get all files for this chat
+            const files = await ctx.db
+                .query("files")
+                .withIndex("by_chat_id", (q) => q.eq("chatId", args.chatId!))
+                .collect();
+
+            // Find the maximum version number
+            const maxVersion = files.reduce((max, file) => {
+                return Math.max(max, file.version || 1);
+            }, 1);
+
+            return maxVersion;
+        } catch (error) {
+            // Return 1 for errors or unauthenticated users
+            return 1;
+        }
+    },
+});
