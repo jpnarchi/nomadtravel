@@ -98,6 +98,7 @@ export default function SoldTripDetail() {
   const [clientPaymentOpen, setClientPaymentOpen] = useState(false);
   const [editingClientPayment, setEditingClientPayment] = useState(null);
   const [supplierPaymentOpen, setSupplierPaymentOpen] = useState(false);
+  const [editingSupplierPayment, setEditingSupplierPayment] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('services');
@@ -283,6 +284,18 @@ export default function SoldTripDetail() {
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
       await updateTripTotals();
       setSupplierPaymentOpen(false);
+      setEditingSupplierPayment(null);
+    }
+  });
+
+  const updateSupplierPaymentMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.SupplierPayment.update(id, data),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      await updateTripTotals();
+      setSupplierPaymentOpen(false);
+      setEditingSupplierPayment(null);
     }
   });
 
@@ -1125,15 +1138,28 @@ export default function SoldTripDetail() {
                      </div>
                      {payment.notes && <p className="text-xs text-stone-400 mt-1">{payment.notes}</p>}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-stone-400 hover:text-red-500"
-                      onClick={() => setDeleteConfirm({ type: 'supplier', item: payment })}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </motion.div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-stone-400 hover:text-blue-600"
+                        onClick={() => {
+                          setEditingSupplierPayment(payment);
+                          setSupplierPaymentOpen(true);
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-stone-400 hover:text-red-500"
+                        onClick={() => setDeleteConfirm({ type: 'supplier', item: payment })}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    </motion.div>
                 ))}
               </div>
             )}
@@ -1229,11 +1255,21 @@ export default function SoldTripDetail() {
 
       <SupplierPaymentForm
         open={supplierPaymentOpen}
-        onClose={() => setSupplierPaymentOpen(false)}
+        onClose={() => {
+          setSupplierPaymentOpen(false);
+          setEditingSupplierPayment(null);
+        }}
         soldTripId={tripId}
         services={services}
-        onSave={(data) => createSupplierPaymentMutation.mutate(data)}
-        isLoading={createSupplierPaymentMutation.isPending}
+        payment={editingSupplierPayment}
+        onSave={(data) => {
+          if (editingSupplierPayment) {
+            updateSupplierPaymentMutation.mutate({ id: editingSupplierPayment.id, data });
+          } else {
+            createSupplierPaymentMutation.mutate(data);
+          }
+        }}
+        isLoading={createSupplierPaymentMutation.isPending || updateSupplierPaymentMutation.isPending}
       />
 
       <PaymentPlanForm

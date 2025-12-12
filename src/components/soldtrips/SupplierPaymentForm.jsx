@@ -10,7 +10,7 @@ import { Loader2, Upload, Sparkles, FileText, CheckCircle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from "sonner";
 
-export default function SupplierPaymentForm({ open, onClose, soldTripId, services, onSave, isLoading }) {
+export default function SupplierPaymentForm({ open, onClose, soldTripId, services, payment, onSave, isLoading }) {
   const [activeTab, setActiveTab] = useState('manual');
   const [smartFileUrls, setSmartFileUrls] = useState([]);
   const [smartUploading, setSmartUploading] = useState(false);
@@ -30,22 +30,37 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (!open) {
-      setFormData({
-        supplier: '',
-        date: new Date().toISOString().split('T')[0],
-        amount: 0,
-        payment_type: 'neto',
-        method: 'transferencia',
-        trip_service_id: '',
-        receipt_url: '',
-        notes: '',
-        confirmed: false
-      });
-      setSmartFileUrls([]);
-      setActiveTab('manual');
+    if (open) {
+      if (payment) {
+        setFormData({
+          supplier: payment.supplier || '',
+          date: payment.date || new Date().toISOString().split('T')[0],
+          amount: payment.amount || 0,
+          payment_type: payment.payment_type || 'neto',
+          method: payment.method || 'transferencia',
+          trip_service_id: payment.trip_service_id || '',
+          receipt_url: payment.receipt_url || '',
+          notes: payment.notes || '',
+          confirmed: payment.confirmed || false
+        });
+        setActiveTab('manual');
+      } else {
+        setFormData({
+          supplier: '',
+          date: new Date().toISOString().split('T')[0],
+          amount: 0,
+          payment_type: 'neto',
+          method: 'transferencia',
+          trip_service_id: '',
+          receipt_url: '',
+          notes: '',
+          confirmed: false
+        });
+        setSmartFileUrls([]);
+        setActiveTab('manual');
+      }
     }
-  }, [open]);
+  }, [open, payment]);
 
   const handleSmartFileUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -164,17 +179,18 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Registrar Pago a Proveedor</DialogTitle>
+          <DialogTitle>{payment ? 'Editar Pago a Proveedor' : 'Registrar Pago a Proveedor'}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="manual">Manual</TabsTrigger>
-            <TabsTrigger value="smart">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Smart Import
-            </TabsTrigger>
-          </TabsList>
+        {!payment && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="manual">Manual</TabsTrigger>
+              <TabsTrigger value="smart">
+                <Sparkles className="w-4 h-4 mr-2" />
+                Smart Import
+              </TabsTrigger>
+            </TabsList>
 
           <TabsContent value="manual">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -310,7 +326,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
                   style={{ backgroundColor: '#2E442A' }}
                 >
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Registrar Pago
+                  {payment ? 'Actualizar Pago' : 'Registrar Pago'}
                 </Button>
               </div>
             </form>
@@ -381,7 +397,145 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
               </div>
             </div>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        )}
+
+        {payment && (
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            <div>
+              <Label>Asociar a Servicio (Opcional)</Label>
+              <Select 
+                value={formData.trip_service_id} 
+                onValueChange={(value) => setFormData({ ...formData, trip_service_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un servicio..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Sin asociar</SelectItem>
+                  {services.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {getServiceLabel(service)} - ${service.total_price.toLocaleString()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Proveedor *</Label>
+              <Input
+                value={formData.supplier}
+                onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                placeholder="Nombre del proveedor"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Fecha *</Label>
+                <Input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label>Monto *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Tipo de Pago *</Label>
+                <Select value={formData.payment_type} onValueChange={(value) => setFormData({ ...formData, payment_type: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="neto">Neto</SelectItem>
+                    <SelectItem value="bruto">Bruto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Método de Pago *</Label>
+                <Select value={formData.method} onValueChange={(value) => setFormData({ ...formData, method: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="transferencia">Transferencia</SelectItem>
+                    <SelectItem value="ms_beyond">MS Beyond</SelectItem>
+                    <SelectItem value="capital_one_blue">Capital One Blue</SelectItem>
+                    <SelectItem value="capital_one_green">Capital One Green</SelectItem>
+                    <SelectItem value="amex">American Express</SelectItem>
+                    <SelectItem value="tarjeta_cliente">Tarjeta de Cliente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label>Comprobante de Pago</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="flex-1"
+                />
+                {uploading && <Loader2 className="w-4 h-4 animate-spin text-stone-400" />}
+              </div>
+              {formData.receipt_url && (
+                <a
+                  href={formData.receipt_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                >
+                  Ver comprobante subido
+                </a>
+              )}
+            </div>
+
+            <div>
+              <Label>Notas</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Notas adicionales..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="text-white"
+                style={{ backgroundColor: '#2E442A' }}
+              >
+                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Actualizar Pago
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
