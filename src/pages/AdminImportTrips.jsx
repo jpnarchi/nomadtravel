@@ -133,26 +133,27 @@ export default function AdminImportTrips() {
               <div>
                 <h3 className="font-semibold text-stone-800 mb-2">3. Extraer Datos del Invoice</h3>
                 <Button
-                onClick={handleImport}
-                disabled={importMutation.isPending}
-                className="text-white"
-                style={{ backgroundColor: '#2E442A' }}
-              >
-                {importMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Extrayendo datos con IA...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Importar Viaje
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-stone-500 mt-2">
-                La IA leerá el invoice y extraerá automáticamente: cliente, destino, fechas, servicios, pagos, etc.
-              </p>
+                  onClick={handleImport}
+                  disabled={importMutation.isPending}
+                  className="text-white"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  {importMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Extrayendo datos con IA...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Importar Viaje
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-stone-500 mt-2">
+                  La IA leerá el invoice y extraerá automáticamente: cliente, destino, fechas, servicios, pagos, etc.
+                </p>
+              </div>
             </div>
           )}
 
