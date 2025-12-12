@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import { toast } from 'sonner'
 import * as fabric from 'fabric'
+import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '../aspect-ratios'
 
 /**
  * Load all fonts (Google Fonts and system fonts) dynamically
@@ -60,14 +61,15 @@ async function ensureFontsLoaded(): Promise<void> {
 /**
  * Render slide using Fabric.js canvas (no HTML/CSS parsing = no oklch issues!)
  */
-async function renderSlideToImage(slideData: any): Promise<string> {
+async function renderSlideToImage(slideData: any, canvasWidth: number, canvasHeight: number): Promise<string> {
     console.log('    🔧 [PDF-EXPORT-V4-FABRIC] renderSlideToImage iniciando...')
     console.log(`    🔧 [PDF-EXPORT-V4-FABRIC] slideData contiene ${slideData.objects?.length || 0} objetos`)
+    console.log(`    🔧 [PDF-EXPORT-V4-FABRIC] Canvas dimensions: ${canvasWidth}x${canvasHeight}`)
 
     // Create temporary canvas element
     const canvasElement = document.createElement('canvas')
-    canvasElement.width = 1920
-    canvasElement.height = 1080
+    canvasElement.width = canvasWidth
+    canvasElement.height = canvasHeight
     canvasElement.style.position = 'fixed'
     canvasElement.style.left = '-9999px'
     canvasElement.style.top = '0'
@@ -78,8 +80,8 @@ async function renderSlideToImage(slideData: any): Promise<string> {
     try {
         // Create Fabric.js canvas
         const fabricCanvas = new fabric.Canvas(canvasElement, {
-            width: 1920,
-            height: 1080,
+            width: canvasWidth,
+            height: canvasHeight,
             backgroundColor: slideData.background || '#ffffff',
             renderOnAddRemove: false, // Performance optimization
         })
@@ -258,13 +260,17 @@ async function renderSlideToImage(slideData: any): Promise<string> {
     }
 }
 
-export async function exportToPDF(slides: any[]) {
+export async function exportToPDF(slides: any[], aspectRatio: AspectRatioType = DEFAULT_ASPECT_RATIO) {
     console.log('🚀 [PDF-EXPORT-V4-FABRIC] Exportación iniciada con', slides.length, 'slides')
+    console.log('🚀 [PDF-EXPORT-V4-FABRIC] Aspect ratio:', aspectRatio)
 
     if (slides.length === 0) {
         toast.error('No slides to export')
         return
     }
+
+    const aspectRatioDimensions = getAspectRatioDimensions(aspectRatio)
+    console.log('🚀 [PDF-EXPORT-V4-FABRIC] Canvas dimensions:', aspectRatioDimensions)
 
     const loadingToast = toast.loading('Preparing slides for PDF export...')
 
@@ -289,16 +295,21 @@ export async function exportToPDF(slides: any[]) {
         await ensureFontsLoaded()
         console.log('✅ [PDF-EXPORT-V4-FABRIC] Fuentes cargadas')
 
-        // Create PDF with 16:9 aspect ratio (matching slide dimensions)
-        const slideAspectRatio = 16 / 9
-        const pageWidth = 297 // mm
-        const pageHeight = pageWidth / slideAspectRatio // Calculate height to maintain 16:9
+        // Create PDF with current aspect ratio (matching slide dimensions)
+        const slideAspectRatio = aspectRatioDimensions.ratio
+        const pageWidth = 297 // mm (A4 width in landscape)
+        const pageHeight = pageWidth / slideAspectRatio // Calculate height to maintain aspect ratio
+
+        // Determine orientation based on aspect ratio
+        const orientation = aspectRatioDimensions.width >= aspectRatioDimensions.height ? 'landscape' : 'portrait'
 
         const pdf = new jsPDF({
-            orientation: 'landscape',
+            orientation,
             unit: 'mm',
-            format: [pageHeight, pageWidth] // [height, width] for landscape
+            format: orientation === 'landscape' ? [pageHeight, pageWidth] : [pageWidth, pageHeight]
         })
+
+        console.log('✅ [PDF-EXPORT-V4-FABRIC] PDF created with', orientation, 'orientation:', pageWidth, 'x', pageHeight, 'mm')
 
         // Process each slide
         console.log('📝 [PDF-EXPORT-V4-FABRIC] Iniciando procesamiento de slides...')
@@ -312,7 +323,7 @@ export async function exportToPDF(slides: any[]) {
             try {
                 // Render slide to image
                 console.log(`  📸 [PDF-EXPORT-V4-FABRIC] Renderizando slide ${i + 1}...`)
-                const imageData = await renderSlideToImage(slide)
+                const imageData = await renderSlideToImage(slide, aspectRatioDimensions.width, aspectRatioDimensions.height)
                 console.log(`  ✅ [PDF-EXPORT-V4-FABRIC] Slide ${i + 1} renderizado (${Math.round(imageData.length / 1024)}kb)`)
 
                 // Add page if not first slide

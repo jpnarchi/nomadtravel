@@ -20,9 +20,9 @@ export const createText = (canvas: fabric.Canvas) => {
         hasBorders: true,
     })
 
-    // Set default list style to bullets
+    // Set default list style to none (users can enable it from the sidebar)
     // @ts-expect-error - Custom property
-    text.listStyle = 'bullets'
+    text.listStyle = 'none'
 
     canvas.add(text)
     canvas.setActiveObject(text)

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Maximize, PencilRuler } from "lucide-react";
 import { Loader } from "@/components/ai-elements/loader";
 import { useRouter } from "next/navigation";
+import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios';
 
 interface LivePresentationViewerProps {
     chatId: Id<"chats">;
@@ -30,6 +31,31 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
     const lastSlideHashRef = useRef<string>('');
     const [containerScale, setContainerScale] = useState(1);
 
+    // Extract aspect ratio from presentation config - MEMOIZED (MUST BE FIRST)
+    const aspectRatio = useMemo(() => {
+        if (!files) return DEFAULT_ASPECT_RATIO;
+
+        const configPath = '/presentation-config.json';
+        const configFile = files[configPath];
+
+        if (configFile) {
+            try {
+                const config = JSON.parse(configFile);
+                return config.aspectRatio || DEFAULT_ASPECT_RATIO;
+            } catch (error) {
+                console.error('Error parsing presentation config:', error);
+                return DEFAULT_ASPECT_RATIO;
+            }
+        }
+
+        return DEFAULT_ASPECT_RATIO;
+    }, [files]);
+
+    // Get aspect ratio dimensions - MEMOIZED (MUST BE SECOND)
+    const aspectRatioDimensions = useMemo(() => {
+        return getAspectRatioDimensions(aspectRatio);
+    }, [aspectRatio]);
+
     // Detectar cuando el componente está montado
     useEffect(() => {
         setIsMounted(true);
@@ -48,17 +74,21 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
 
             const containerWidth = containerElement.clientWidth;
             const containerHeight = containerElement.clientHeight;
-            const canvasWidth = 1920; // Ancho del canvas (igual que editor)
-            const canvasHeight = 1080; // Alto del canvas (igual que editor)
+            const canvasWidth = aspectRatioDimensions.width;
+            const canvasHeight = aspectRatioDimensions.height;
 
             // Calcular padding basado en las clases: p-4 md:p-8 (16px mobile, 32px desktop en cada lado)
             const isMobile = window.innerWidth < 768;
             const paddingPerSide = isMobile ? 16 : 32;
             const totalPadding = paddingPerSide * 2;
 
+            // Reservar espacio para controles (header, botones, navegación, indicadores)
+            // Header: ~60px, Navigation controls: ~50px, Slide indicators: ~40px, gaps: ~48px
+            const controlsHeight = isMobile ? 180 : 200;
+
             // Calcular la escala para que el canvas quepa en el contenedor
             const availableWidth = containerWidth - totalPadding;
-            const availableHeight = containerHeight - totalPadding;
+            const availableHeight = containerHeight - totalPadding - controlsHeight;
             const scaleX = availableWidth / canvasWidth;
             const scaleY = availableHeight / canvasHeight;
             // Limitar la escala a máximo 1 para que nunca sea más grande que el original
@@ -67,11 +97,13 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
             console.log('🎯 Scale calculation:', {
                 containerWidth,
                 containerHeight,
+                aspectRatio,
                 canvasWidth,
                 canvasHeight,
                 isMobile,
                 paddingPerSide,
                 totalPadding,
+                controlsHeight,
                 availableWidth,
                 availableHeight,
                 scaleX,
@@ -102,7 +134,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
             resizeObserver.disconnect();
             window.removeEventListener('resize', updateScale);
         };
-    }, [containerElement]);
+    }, [containerElement, aspectRatioDimensions, aspectRatio]);
 
     // Extract all slides from files - MEMOIZED to prevent unnecessary re-renders
     const slides = useMemo(() => {
@@ -150,31 +182,36 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
         }
     }, [slides.length, currentSlideIndex]);
 
-    // Initialize canvas with same dimensions as editor (1920x1080)
+    // Initialize canvas with dimensions from aspect ratio
     useEffect(() => {
         if (!canvasElement || fabricCanvasRef.current || !containerElement) return;
 
-        // Canvas dimensions - same as editor
-        const canvasWidth = 1920;
-        const canvasHeight = 1080;
+        // Canvas dimensions - from aspect ratio
+        const canvasWidth = aspectRatioDimensions.width;
+        const canvasHeight = aspectRatioDimensions.height;
 
-        // Calculate scale based on container (same logic as editor)
+        // Calculate scale based on container (same logic as updateScale)
         const containerWidth = containerElement.clientWidth;
         const containerHeight = containerElement.clientHeight;
         const isMobile = window.innerWidth < 768;
         const paddingPerSide = isMobile ? 16 : 32;
         const totalPadding = paddingPerSide * 2;
 
+        // Reservar espacio para controles
+        const controlsHeight = isMobile ? 180 : 200;
+
         const scaleX = (containerWidth - totalPadding) / canvasWidth;
-        const scaleY = (containerHeight - totalPadding) / canvasHeight;
+        const scaleY = (containerHeight - totalPadding - controlsHeight) / canvasHeight;
         const scale = Math.min(scaleX, scaleY, 1);
 
         const displayWidth = canvasWidth * scale;
         const displayHeight = canvasHeight * scale;
 
         console.log('🎨 Canvas Init:', {
+            aspectRatio,
             canvasWidth,
             canvasHeight,
+            controlsHeight,
             scale,
             displayWidth,
             displayHeight
@@ -200,18 +237,19 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                 fabricCanvasRef.current = null;
             }
         };
-    }, [canvasElement, containerElement]);
+    }, [canvasElement, containerElement, aspectRatioDimensions, aspectRatio]);
 
     // Update canvas size when containerScale changes
     useEffect(() => {
         if (!fabricCanvasRef.current || !isRendered) return;
 
-        const canvasWidth = 1920;
-        const canvasHeight = 1080;
+        const canvasWidth = aspectRatioDimensions.width;
+        const canvasHeight = aspectRatioDimensions.height;
         const displayWidth = canvasWidth * containerScale;
         const displayHeight = canvasHeight * containerScale;
 
         console.log('🔄 Updating canvas size:', {
+            aspectRatio,
             containerScale,
             displayWidth,
             displayHeight
@@ -222,7 +260,7 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
         fabricCanvasRef.current.setZoom(containerScale);
         fabricCanvasRef.current.viewportTransform = [containerScale, 0, 0, containerScale, 0, 0];
         fabricCanvasRef.current.renderAll();
-    }, [containerScale, isRendered]);
+    }, [containerScale, isRendered, aspectRatioDimensions, aspectRatio]);
 
     // Render current slide
     useEffect(() => {
@@ -532,13 +570,13 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                 </Button>
             </div>
 
-            {/* Canvas Container - SIN OVERLAY */}
+            {/* Canvas Container - Adapts to aspect ratio */}
             <div className="relative flex-shrink-0 max-w-full">
                 <div
                     className="relative rounded-lg shadow-2xl border border-border transition-all duration-300 overflow-hidden"
                     style={{
-                        width: `${1920 * containerScale}px`,
-                        height: `${1080 * containerScale}px`,
+                        width: `${aspectRatioDimensions.width * containerScale}px`,
+                        height: `${aspectRatioDimensions.height * containerScale}px`,
                         boxShadow: '0 20px 60px -12px rgba(0, 0, 0, 0.3)',
                     }}
                 >

@@ -543,13 +543,13 @@ export const sendObjectBackward = (obj: fabric.FabricObject, canvas: fabric.Canv
  * Zoom controls - Viewport-only zoom (doesn't affect object sizes)
  * This approach matches the preview: we calculate a new canvas size based on zoom level
  */
-export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: number): number => {
+export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number): number => {
     let newZoom = currentZoom * 1.2
     if (newZoom > 5) newZoom = 5
 
     // Calculate new canvas dimensions based on zoom
-    const displayWidth = 1920 * newZoom
-    const displayHeight = 1080 * newZoom
+    const displayWidth = canvasWidth * newZoom
+    const displayHeight = canvasHeight * newZoom
 
     // Update canvas dimensions and viewport transform
     canvas.setWidth(displayWidth)
@@ -561,13 +561,13 @@ export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: nu
     return newZoom
 }
 
-export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: number): number => {
+export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number): number => {
     let newZoom = currentZoom / 1.2
     if (newZoom < baseScale * 0.5) newZoom = baseScale * 0.5 // Min 50% of base scale
 
     // Calculate new canvas dimensions based on zoom
-    const displayWidth = 1920 * newZoom
-    const displayHeight = 1080 * newZoom
+    const displayWidth = canvasWidth * newZoom
+    const displayHeight = canvasHeight * newZoom
 
     // Update canvas dimensions and viewport transform
     canvas.setWidth(displayWidth)
@@ -579,10 +579,10 @@ export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: n
     return newZoom
 }
 
-export const resetZoom = (canvas: fabric.Canvas, baseScale: number): number => {
+export const resetZoom = (canvas: fabric.Canvas, baseScale: number, canvasWidth: number, canvasHeight: number): number => {
     // Reset to base scale
-    const displayWidth = 1920 * baseScale
-    const displayHeight = 1080 * baseScale
+    const displayWidth = canvasWidth * baseScale
+    const displayHeight = canvasHeight * baseScale
 
     canvas.setWidth(displayWidth)
     canvas.setHeight(displayHeight)

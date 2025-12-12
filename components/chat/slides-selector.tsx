@@ -64,7 +64,7 @@ export function SlideSelector({
                                     className="absolute top-10 left-0 w-48 bg-white border border-zinc-200 rounded-lg shadow-xl z-50 overflow-hidden max-h-64 overflow-y-auto"
                                 >
                                     <div className="py-1">
-                                        {Array.from({ length: 12 }, (_, i) => i + 4).map((num) => {
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
                                             const isPremiumOnly = !hasPremiumAccess && num > 7;
                                             return (
                                                 <button

@@ -56,6 +56,8 @@ import { Loader } from '../ai-elements/loader'
 import { useQuery, useMutation } from "convex/react";
 import { exportToPDF } from '@/lib/export/pdf-exporter'
 import { exportToPPT } from '@/lib/export/ppt-exporter'
+import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios'
+import { AspectRatioSelector } from './aspect-ratio-selector'
 
 interface FabricPresentationEditorProps {
     initialFiles: Record<string, string>
@@ -87,6 +89,7 @@ export function FabricPresentationEditor({
     const [isBackButtonLoading, setIsBackButtonLoading] = useState(false)
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
     const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false)
+    const [aspectRatio, setAspectRatio] = useState<AspectRatioType>(DEFAULT_ASPECT_RATIO)
     const editorContainerRef = useRef<HTMLDivElement>(null)
     const fullscreenRef = useRef<HTMLDivElement>(null)
     const slideEditorRef = useRef<any>(null)
@@ -97,10 +100,27 @@ export function FabricPresentationEditor({
     const presentationCanvasRef = useRef<fabric.Canvas | null>(null)
     const [presentationCanvasReady, setPresentationCanvasReady] = useState(false)
 
+    // Get current aspect ratio dimensions
+    const aspectRatioDimensions = useMemo(() => getAspectRatioDimensions(aspectRatio), [aspectRatio])
+
     // Load slides from initial files
     useEffect(() => {
         console.log('🟢 FabricPresentationEditor: Cargando slides desde initialFiles');
         console.log('📂 Paths encontrados:', Object.keys(initialFiles).filter(p => p.startsWith('/slides/')).sort());
+
+        // Load aspect ratio from config if exists
+        const configPath = '/presentation-config.json'
+        if (initialFiles[configPath]) {
+            try {
+                const config = JSON.parse(initialFiles[configPath])
+                if (config.aspectRatio) {
+                    console.log('📐 Aspect ratio cargado desde config:', config.aspectRatio)
+                    setAspectRatio(config.aspectRatio)
+                }
+            } catch (error) {
+                console.error('Error parsing presentation config:', error)
+            }
+        }
 
         const slideFiles = Object.entries(initialFiles)
             .filter(([path]) => path.startsWith('/slides/') && path.endsWith('.json'))
@@ -380,7 +400,7 @@ export function FabricPresentationEditor({
             })
             return
         }
-        exportToPPT(slides.map(slide => slide.data))
+        exportToPPT(slides.map(slide => slide.data), aspectRatio)
 
         // Mark project as downloaded
         const chatId = params?.id || params?.chatId;
@@ -395,7 +415,7 @@ export function FabricPresentationEditor({
 
     // Handle PDF export
     const handlePDFExport = async () => {
-        exportToPDF(slides.map(slide => slide.data))
+        exportToPDF(slides.map(slide => slide.data), aspectRatio)
 
         // Mark project as downloaded
         const chatId = params?.id || params?.chatId;
@@ -514,8 +534,8 @@ export function FabricPresentationEditor({
             const availableWidth = viewportWidth * 0.9
             const availableHeight = viewportHeight * 0.75
 
-            // Calculate scale to fit 16:9 aspect ratio
-            const targetAspectRatio = 16 / 9
+            // Calculate scale to fit current aspect ratio
+            const targetAspectRatio = aspectRatioDimensions.ratio
             let displayWidth = availableWidth
             let displayHeight = displayWidth / targetAspectRatio
 
@@ -531,8 +551,8 @@ export function FabricPresentationEditor({
                 selection: false,
             })
 
-            // Set the internal resolution to 1920x1080
-            const scale = displayWidth / 1920
+            // Set the internal resolution based on aspect ratio dimensions
+            const scale = displayWidth / aspectRatioDimensions.width
             canvas.setZoom(scale)
             canvas.setDimensions({
                 width: displayWidth,
@@ -545,7 +565,7 @@ export function FabricPresentationEditor({
         } catch (error) {
             console.error('❌ Error initializing presentation canvas:', error)
         }
-    }, [isFullscreen, presentationCanvasElement])
+    }, [isFullscreen, presentationCanvasElement, aspectRatioDimensions])
 
     // Handle window resize in presentation mode
     useEffect(() => {
@@ -560,7 +580,7 @@ export function FabricPresentationEditor({
             const availableWidth = viewportWidth * 0.9
             const availableHeight = viewportHeight * 0.75
 
-            const targetAspectRatio = 16 / 9
+            const targetAspectRatio = aspectRatioDimensions.ratio
             let displayWidth = availableWidth
             let displayHeight = displayWidth / targetAspectRatio
 
@@ -569,7 +589,7 @@ export function FabricPresentationEditor({
                 displayWidth = displayHeight * targetAspectRatio
             }
 
-            const scale = displayWidth / 1920
+            const scale = displayWidth / aspectRatioDimensions.width
             presentationCanvasRef.current.setZoom(scale)
             presentationCanvasRef.current.setDimensions({
                 width: displayWidth,
@@ -580,7 +600,7 @@ export function FabricPresentationEditor({
 
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
-    }, [isFullscreen])
+    }, [isFullscreen, aspectRatioDimensions])
 
     // Use slide renderer for presentation mode
     useSlideRenderer(
@@ -595,6 +615,14 @@ export function FabricPresentationEditor({
 
 
         const files: Record<string, string> = {}
+
+        // Save presentation config (aspect ratio, etc.)
+        const presentationConfig = {
+            aspectRatio: aspectRatio,
+            version: '1.0'
+        }
+        files['/presentation-config.json'] = JSON.stringify(presentationConfig, null, 2)
+        console.log('💾 Guardando configuración:', presentationConfig)
 
         slides.forEach((slide, index) => {
             console.log(`📄 Slide ${index + 1}:`, {
@@ -614,7 +642,10 @@ export function FabricPresentationEditor({
         })
 
         console.log('📦 Archivos a guardar:', Object.keys(files))
-        console.log('📝 Contenido total:', Object.values(files).map(f => JSON.parse(f).objects.length))
+        console.log('📝 Slides:', Object.entries(files)
+            .filter(([path]) => path.startsWith('/slides/'))
+            .map(([path, content]) => `${path}: ${JSON.parse(content).objects.length} objects`)
+        )
 
         onSave(files)
         setHasUnsavedChanges(false)
@@ -872,9 +903,18 @@ export function FabricPresentationEditor({
                     <h2 className="text-xl text-black font-[family-name:var(--font-ppmori-semibold)]">Presentation Editor</h2>
                 </div>
 
-                {/* Center - Logo */}
-                <div className="flex items-center justify-center">
+                {/* Center - Logo and Aspect Ratio Selector */}
+                <div className="flex items-center justify-center gap-4">
                     <img src="/logo.png" alt="Logo" className="h-12" />
+                    <div className="h-8 w-px bg-gray-300" />
+                    <AspectRatioSelector
+                        value={aspectRatio}
+                        onValueChange={(newRatio) => {
+                            setAspectRatio(newRatio)
+                            setHasUnsavedChanges(true)
+                            toast.success(`Aspect ratio changed to ${newRatio}`)
+                        }}
+                    />
                 </div>
 
                 {/* Right side */}
@@ -1082,6 +1122,7 @@ export function FabricPresentationEditor({
                                     onPasteObject={handlePasteObject}
                                     isSidebarCollapsed={isSidebarCollapsed}
                                     onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                                    aspectRatio={aspectRatio}
                                 />
                             )
                         )}

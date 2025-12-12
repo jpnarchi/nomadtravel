@@ -7,7 +7,7 @@
  * Permite agregar texto, formas, imágenes y editar propiedades
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import * as fabric from 'fabric'
 import { toast } from 'sonner'
 import { useMutation } from "convex/react"
@@ -36,6 +36,7 @@ import { ToolsSidebar } from './fabric-editor/tools-sidebar'
 import { PropertiesSidebar } from './fabric-editor/properties-sidebar'
 import { EditorToolbar } from './fabric-editor/editor-toolbar'
 import {UploadButtonDialog} from "./fabric-editor/image-upload-button"
+import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios'
 
 interface FabricSlideEditorProps {
     slideData: any
@@ -46,6 +47,7 @@ interface FabricSlideEditorProps {
     onPasteObject: () => any
     isSidebarCollapsed?: boolean
     onToggleSidebar?: () => void
+    aspectRatio?: AspectRatioType
 }
 
 export function FabricSlideEditor({
@@ -56,8 +58,12 @@ export function FabricSlideEditor({
     onCopyObject,
     onPasteObject,
     isSidebarCollapsed,
-    onToggleSidebar
+    onToggleSidebar,
+    aspectRatio = DEFAULT_ASPECT_RATIO
 }: FabricSlideEditorProps) {
+    // Get aspect ratio dimensions
+    const aspectRatioDimensions = useMemo(() => getAspectRatioDimensions(aspectRatio), [aspectRatio])
+
     // Refs
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
@@ -228,12 +234,12 @@ export function FabricSlideEditor({
         const containerWidth = container.clientWidth - 64
         const containerHeight = container.clientHeight - 64
 
-        const scaleX = containerWidth / 1920
-        const scaleY = containerHeight / 1080
+        const scaleX = containerWidth / aspectRatioDimensions.width
+        const scaleY = containerHeight / aspectRatioDimensions.height
         const scale = Math.min(scaleX, scaleY, 1)
 
-        const displayWidth = 1920 * scale
-        const displayHeight = 1080 * scale
+        const displayWidth = aspectRatioDimensions.width * scale
+        const displayHeight = aspectRatioDimensions.height * scale
 
         const canvas = new fabric.Canvas(canvasRef.current, {
             width: displayWidth,
@@ -276,12 +282,12 @@ export function FabricSlideEditor({
             const containerWidth = container.clientWidth - 64
             const containerHeight = container.clientHeight - 64
 
-            const scaleX = containerWidth / 1920
-            const scaleY = containerHeight / 1080
+            const scaleX = containerWidth / aspectRatioDimensions.width
+            const scaleY = containerHeight / aspectRatioDimensions.height
             const newScale = Math.min(scaleX, scaleY, 1)
 
-            const displayWidth = 1920 * newScale
-            const displayHeight = 1080 * newScale
+            const displayWidth = aspectRatioDimensions.width * newScale
+            const displayHeight = aspectRatioDimensions.height * newScale
 
             fabricCanvasRef.current.setWidth(displayWidth)
             fabricCanvasRef.current.setHeight(displayHeight)
@@ -313,7 +319,7 @@ export function FabricSlideEditor({
             window.removeEventListener('resize', handleResize)
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [aspectRatioDimensions])
 
     // ============================================================================
     // CANVAS EVENT HANDLERS
@@ -977,19 +983,19 @@ export function FabricSlideEditor({
     // ============================================================================
     const handleZoomIn = () => {
         if (!fabricCanvasRef.current) return
-        const newZoom = zoomIn(fabricCanvasRef.current, zoom, baseScaleRef.current)
+        const newZoom = zoomIn(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
         setZoom(newZoom)
     }
 
     const handleZoomOut = () => {
         if (!fabricCanvasRef.current) return
-        const newZoom = zoomOut(fabricCanvasRef.current, zoom, baseScaleRef.current)
+        const newZoom = zoomOut(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
         setZoom(newZoom)
     }
 
     const handleFitToScreen = () => {
         if (!fabricCanvasRef.current) return
-        const newZoom = resetZoom(fabricCanvasRef.current, baseScaleRef.current)
+        const newZoom = resetZoom(fabricCanvasRef.current, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
         setZoom(newZoom)
     }
 

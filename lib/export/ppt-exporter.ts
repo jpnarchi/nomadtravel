@@ -1,29 +1,60 @@
 import PptxGenJS from 'pptxgenjs'
 import { toast } from 'sonner'
+import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '../aspect-ratios'
 
-export async function exportToPPT(slides: any[]) {
+// PowerPoint layout mappings
+const PPT_LAYOUTS: Record<AspectRatioType, string> = {
+    '16:9': 'LAYOUT_16x9',
+    '4:3': 'LAYOUT_4x3',
+    '1:1': 'LAYOUT_WIDE', // Custom square layout
+    '9:16': 'LAYOUT_WIDE', // Custom portrait layout
+    '21:9': 'LAYOUT_WIDE', // Custom ultra-wide layout
+    'A4': 'LAYOUT_WIDE', // Custom A4 layout (210x297mm)
+}
+
+export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = DEFAULT_ASPECT_RATIO) {
     if (slides.length === 0) {
         toast.error('No slides to export')
         return
     }
+
+    const aspectRatioDimensions = getAspectRatioDimensions(aspectRatio)
+    console.log('🚀 [PPT-EXPORT] Exportación iniciada con', slides.length, 'slides')
+    console.log('🚀 [PPT-EXPORT] Aspect ratio:', aspectRatio, aspectRatioDimensions)
 
     const loadingToast = toast.loading('Downloading to PowerPoint...')
 
     try {
         const pptx = new PptxGenJS()
 
-        // Set presentation size to 16:9 (10 x 5.625 inches)
-        pptx.layout = 'LAYOUT_16x9'
+        // Set presentation size based on aspect ratio
+        const pptLayout = PPT_LAYOUTS[aspectRatio] || 'LAYOUT_16x9'
+
+        // For standard layouts, use PowerPoint presets
+        if (pptLayout === 'LAYOUT_16x9' || pptLayout === 'LAYOUT_4x3') {
+            pptx.layout = pptLayout
+        } else {
+            // For custom layouts, define width and height in inches
+            // PowerPoint uses inches as the unit
+            // We'll use a reference width of 10 inches and scale height accordingly
+            const referenceWidth = 10
+            const calculatedHeight = referenceWidth / aspectRatioDimensions.ratio
+            pptx.defineLayout({ name: 'CUSTOM', width: referenceWidth, height: calculatedHeight })
+            pptx.layout = 'CUSTOM'
+        }
+
         pptx.author = 'Astri'
         pptx.title = 'Presentación'
 
         // Presentation dimensions in inches
-        const slideWidth = 10
-        const slideHeight = 5.625
+        const slideWidth = pptx.presLayout.width
+        const slideHeight = pptx.presLayout.height
 
-        // Scale factors to convert from 1920x1080 pixels to inches
-        const scaleX = slideWidth / 1920
-        const scaleY = slideHeight / 1080
+        console.log('✅ [PPT-EXPORT] PowerPoint layout:', pptLayout, slideWidth, 'x', slideHeight, 'inches')
+
+        // Scale factors to convert from canvas pixels to inches
+        const scaleX = slideWidth / aspectRatioDimensions.width
+        const scaleY = slideHeight / aspectRatioDimensions.height
 
         // Export each slide
         for (let i = 0; i < slides.length; i++) {
