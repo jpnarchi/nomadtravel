@@ -101,7 +101,7 @@ export default function InternalPayments() {
     .filter(payment => payment.method !== 'tarjeta_cliente')
     .map(payment => {
     const trip = tripsMap[payment.sold_trip_id];
-    const agentEmail = payment.created_by || '';
+    const agentEmail = trip?.created_by || '';
     const agent = users.find(u => u.email === agentEmail);
     
     return {
@@ -112,8 +112,8 @@ export default function InternalPayments() {
     };
   });
 
-  // Get unique agents - sorted alphabetically
-  const uniqueAgents = [...new Set(enrichedPayments.map(p => p.agent_name))].filter(Boolean).sort();
+  // Get unique agents
+  const uniqueAgents = [...new Set(enrichedPayments.map(p => p.agent_name))].filter(Boolean);
 
   // Get unique payment methods
   const uniqueMethods = [...new Set(supplierPayments.map(p => p.method))].filter(Boolean);
