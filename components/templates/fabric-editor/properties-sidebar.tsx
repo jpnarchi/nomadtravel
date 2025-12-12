@@ -141,6 +141,9 @@ export function PropertiesSidebar({
                                             <SelectItem value="Lato" className="text-gray-900 hover:bg-gray-100">Lato</SelectItem>
                                             <SelectItem value="Inter" className="text-gray-900 hover:bg-gray-100">Inter</SelectItem>
                                             <SelectItem value="Raleway" className="text-gray-900 hover:bg-gray-100">Raleway</SelectItem>
+
+                                            {/* Custom fonts */}
+                                            <SelectItem value="The Seasons" className="text-gray-900 hover:bg-gray-100">The Seasons</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

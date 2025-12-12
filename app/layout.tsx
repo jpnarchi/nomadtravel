@@ -75,6 +75,12 @@ const ppmoriSemiBold = localFont({
   display: "swap",
 });
 
+const theSeasonsBold = localFont({
+  src: "./fonts/The-Seasons-Bold.ttf",
+  variable: "--font-the-seasons-bold",
+  display: "swap",
+});
+
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://ilovepresentations.io";
 
 export const metadata = {
@@ -123,7 +129,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${montserrat.variable} ${poppins.variable} ${lato.variable} ${raleway.variable} ${esbuildBold.variable} ${ppmoriMedium.variable} ${ppmoriSemiBold.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${montserrat.variable} ${poppins.variable} ${lato.variable} ${raleway.variable} ${esbuildBold.variable} ${ppmoriMedium.variable} ${ppmoriSemiBold.variable} ${theSeasonsBold.variable} antialiased`}
       >
         <ClerkProvider
           appearance={{
