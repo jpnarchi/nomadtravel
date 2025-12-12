@@ -101,7 +101,7 @@ export default function InternalPayments() {
     .filter(payment => payment.method !== 'tarjeta_cliente')
     .map(payment => {
     const trip = tripsMap[payment.sold_trip_id];
-    const agentEmail = trip?.created_by || '';
+    const agentEmail = payment.created_by || '';
     const agent = users.find(u => u.email === agentEmail);
     
     return {
