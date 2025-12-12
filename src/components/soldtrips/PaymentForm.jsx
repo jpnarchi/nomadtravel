@@ -14,6 +14,7 @@ const CLIENT_PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },
   { value: 'tarjeta', label: 'Tarjeta' },
+  { value: 'tarjeta_cliente', label: 'Tarjeta de Cliente' },
   { value: 'wise', label: 'Wise' },
   { value: 'otro', label: 'Otro' }
 ];
