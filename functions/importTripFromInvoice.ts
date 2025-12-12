@@ -90,7 +90,8 @@ Deno.serve(async (req) => {
     let client = null;
     if (data.client_name) {
       const existingClients = await base44.asServiceRole.entities.Client.filter({ 
-        first_name: data.client_name.split(' ')[0]
+        first_name: data.client_name.split(' ')[0],
+        created_by: assignedAgent
       });
       
       if (existingClients.length > 0) {
@@ -100,7 +101,8 @@ Deno.serve(async (req) => {
         client = await base44.asServiceRole.entities.Client.create({
           first_name: nameParts[0] || data.client_name,
           last_name: nameParts.slice(1).join(' ') || '',
-          email: `${data.client_name.toLowerCase().replace(/\s+/g, '.')}@imported.com`
+          email: `${data.client_name.toLowerCase().replace(/\s+/g, '.')}@imported.com`,
+          created_by: assignedAgent
         });
       }
     }
@@ -140,7 +142,8 @@ Deno.serve(async (req) => {
           airline: service.airline,
           route: service.route,
           flight_date: service.flight_date,
-          notes: service.notes
+          notes: service.notes,
+          created_by: assignedAgent
         });
         totalCommission += service.commission || 0;
       }
@@ -154,7 +157,8 @@ Deno.serve(async (req) => {
           sold_trip_id: soldTrip.id,
           date: payment.date || new Date().toISOString().split('T')[0],
           amount: payment.amount || 0,
-          method: payment.method || 'transferencia'
+          method: payment.method || 'transferencia',
+          created_by: assignedAgent
         });
         totalPaid += payment.amount || 0;
       }
