@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import * as fabric from 'fabric';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader } from "../ai-elements/loader";
+import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios';
 
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -33,7 +34,6 @@ import { Label } from "../ui/label";
 import { PricingPopup } from "../pricing/pricing-popup";
 
 interface TemplateCardProps {
-    slideContent: string | null
     name: string
     description: string
     templateId: Id<"templates">
@@ -45,39 +45,103 @@ interface TemplateCardProps {
     basePath?: string
 }
 
-function TemplateCard({ slideContent, name, description, templateId, createdAt, index, onRename, onDelete, onEdit, basePath = '/my-templates' }: TemplateCardProps) {
+function TemplateCard({ name, description, templateId, createdAt, index, onRename, onDelete, onEdit, basePath = '/my-templates' }: TemplateCardProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const [isLoaded, setIsLoaded] = useState(false)
     const [menuOpen, setMenuOpen] = useState(false)
     const router = useRouter()
 
-    useEffect(() => {
-        if (!canvasRef.current || !slideContent) return
+    // Get all files for this template
+    const files = useQuery(api.templates.getFilesByTemplateId, { templateId });
 
-        // Parse slide content
-        let slideData
-        try {
-            slideData = JSON.parse(slideContent)
-        } catch (error) {
-            console.error('Error parsing slide content:', error)
-            return
+    // Extract aspect ratio from presentation config - MEMOIZED
+    const aspectRatio = useMemo(() => {
+        if (!files) return DEFAULT_ASPECT_RATIO;
+
+        const configPath = '/presentation-config.json';
+        const configFile = files[configPath];
+
+        if (configFile) {
+            try {
+                const config = JSON.parse(configFile);
+                return config.aspectRatio || DEFAULT_ASPECT_RATIO;
+            } catch (error) {
+                console.error('Error parsing presentation config:', error);
+                return DEFAULT_ASPECT_RATIO;
+            }
         }
 
-        // Match editor's approach: scale factor for 384x216 preview
-        const scale = 384 / 1920 // 0.2
-        const displayWidth = 1920 * scale  // 384
-        const displayHeight = 1080 * scale // 216
+        return DEFAULT_ASPECT_RATIO;
+    }, [files]);
 
-        // Initialize canvas with scaled dimensions (same as editor)
+    // Get aspect ratio dimensions - MEMOIZED
+    const aspectRatioDimensions = useMemo(() => {
+        return getAspectRatioDimensions(aspectRatio);
+    }, [aspectRatio]);
+
+    // Extract first slide from files
+    const firstSlide = useMemo(() => {
+        if (!files) return null;
+
+        const slideFile = Object.entries(files)
+            .filter(([path]) => path.startsWith('/slides/') && path.endsWith('.json'))
+            .sort((a, b) => {
+                const numA = parseInt(a[0].match(/slide-(\d+)\.json$/)?.[1] || '0');
+                const numB = parseInt(b[0].match(/slide-(\d+)\.json$/)?.[1] || '0');
+                return numA - numB;
+            })
+            .map(([_, content]) => {
+                try {
+                    return JSON.parse(content);
+                } catch {
+                    return null;
+                }
+            })
+            .filter(slide => slide !== null)[0];
+
+        return slideFile || null;
+    }, [files]);
+
+    useEffect(() => {
+        if (!canvasRef.current || !firstSlide || !files) return
+
+        // Calculate thumbnail size based on aspect ratio
+        // Define max container dimensions to keep grid consistent
+        const maxWidth = 384;
+        const maxHeight = 280; // Altura máxima razonable para el grid
+
+        let thumbnailWidth: number;
+        let thumbnailHeight: number;
+
+        // For vertical aspect ratios (like A4), limit by height
+        // For horizontal aspect ratios, limit by width
+        if (aspectRatioDimensions.ratio < 1) {
+            // Vertical: altura es mayor que ancho
+            thumbnailHeight = maxHeight;
+            thumbnailWidth = Math.round(thumbnailHeight * aspectRatioDimensions.ratio);
+        } else {
+            // Horizontal or square: ancho es mayor o igual que altura
+            thumbnailWidth = maxWidth;
+            thumbnailHeight = Math.round(thumbnailWidth / aspectRatioDimensions.ratio);
+
+            // Si la altura calculada excede el máximo, recalcular limitando por altura
+            if (thumbnailHeight > maxHeight) {
+                thumbnailHeight = maxHeight;
+                thumbnailWidth = Math.round(thumbnailHeight * aspectRatioDimensions.ratio);
+            }
+        }
+
+        // Initialize canvas with scaled dimensions
         const canvas = new fabric.Canvas(canvasRef.current, {
-            width: displayWidth,
-            height: displayHeight,
-            backgroundColor: slideData.background || '#1a1a1a',
+            width: thumbnailWidth,
+            height: thumbnailHeight,
+            backgroundColor: firstSlide.background || '#1a1a1a',
             selection: false,
         })
 
-        // Apply viewport transform (same as editor)
+        // Scale from original dimensions to thumbnail
+        const scale = thumbnailWidth / aspectRatioDimensions.width;
         canvas.setZoom(scale)
         canvas.viewportTransform = [scale, 0, 0, scale, 0, 0]
 
@@ -85,14 +149,14 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
 
         // Load objects
         const loadSlideObjects = async () => {
-            if (!slideData.objects || !Array.isArray(slideData.objects)) {
+            if (!firstSlide.objects || !Array.isArray(firstSlide.objects)) {
                 canvas.renderAll()
                 setIsLoaded(true)
                 return
             }
 
             // Sort by zIndex
-            const sortedObjects = [...slideData.objects].sort((a, b) => {
+            const sortedObjects = [...firstSlide.objects].sort((a, b) => {
                 const aIndex = a.zIndex !== undefined ? a.zIndex : 0
                 const bIndex = b.zIndex !== undefined ? b.zIndex : 0
                 return aIndex - bIndex
@@ -198,37 +262,59 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
                             break
 
                         case 'line':
-                            fabricObj = new fabric.Line(
-                                [
-                                    obj.x1 || 0,
-                                    obj.y1 || 0,
-                                    obj.x2 || 100,
-                                    obj.y2 || 100
-                                ],
-                                {
-                                    stroke: obj.stroke || '#000000',
-                                    strokeWidth: obj.strokeWidth || 1,
-                                }
-                            )
+                            // Use fromObject to properly restore all line properties
+                            // This ensures strokeLineCap, transformations, etc. are preserved
+                            fabricObj = await fabric.Line.fromObject(obj);
                             break
 
+                        case 'group':
+                            // Handle groups (like image placeholders)
+                            try {
+                                fabricObj = await fabric.Group.fromObject(obj);
+                            } catch (err) {
+                                console.error('Error loading group:', err);
+                                return null;
+                            }
+                            break
                         case 'image':
                             if (obj.src) {
                                 try {
-                                    const img = await fabric.FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' })
-                                    img.set({
-                                        left: obj.left,
-                                        top: obj.top,
-                                        scaleX: obj.scaleX,
-                                        scaleY: obj.scaleY,
-                                        angle: obj.angle,
-                                        selectable: false,
-                                        evented: false,
-                                    })
-                                    fabricObj = img
+                                    const img = await fabric.FabricImage.fromURL(obj.src, { crossOrigin: 'anonymous' });
+                                    if (obj.left !== undefined) img.set('left', obj.left);
+                                    if (obj.top !== undefined) img.set('top', obj.top);
+                                    if (obj.scaleX !== undefined) img.set('scaleX', obj.scaleX);
+                                    if (obj.scaleY !== undefined) img.set('scaleY', obj.scaleY);
+                                    if (obj.angle !== undefined) img.set('angle', obj.angle);
+                                    if (obj.originX !== undefined) img.set('originX', obj.originX);
+                                    if (obj.originY !== undefined) img.set('originY', obj.originY);
+
+                                    // Restore crop properties for image containers
+                                    if (obj.cropX !== undefined) (img as any).cropX = obj.cropX;
+                                    if (obj.cropY !== undefined) (img as any).cropY = obj.cropY;
+                                    if (obj.width !== undefined) img.set('width', obj.width);
+                                    if (obj.height !== undefined) img.set('height', obj.height);
+
+                                    // Restore clipPath for rounded corners
+                                    if (obj.clipPath && obj.borderRadius) {
+                                        const clipBorderRadius = obj.borderRadius / (obj.scaleX || 1);
+                                        const clipPath = new fabric.Rect({
+                                            width: obj.width,
+                                            height: obj.height,
+                                            rx: clipBorderRadius,
+                                            ry: clipBorderRadius,
+                                            left: -(obj.width) / 2,
+                                            top: -(obj.height) / 2,
+                                            originX: 'left',
+                                            originY: 'top',
+                                        });
+                                        img.set('clipPath', clipPath);
+                                    }
+
+                                    img.set({ selectable: false, evented: false });
+                                    fabricObj = img;
                                 } catch (err) {
-                                    console.error('Error loading image:', err)
-                                    return null
+                                    console.error('Error loading image:', err);
+                                    return null;
                                 }
                             }
                             break
@@ -269,7 +355,7 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
                 fabricCanvasRef.current = null
             }
         }
-    }, [slideContent])
+    }, [firstSlide, aspectRatioDimensions])
 
     const handleClick = () => {
         router.push(`${basePath}/${templateId}`)
@@ -284,8 +370,8 @@ function TemplateCard({ slideContent, name, description, templateId, createdAt, 
             className="group relative rounded-xl sm:rounded-2xl cursor-pointer"
         >
             {/* Canvas Container */}
-            <div className="relative aspect-video bg-white flex items-center justify-center overflow-hidden rounded-t-xl sm:rounded-t-2xl">
-                {!slideContent ? (
+            <div className="relative bg-white flex items-center justify-center overflow-hidden rounded-t-xl sm:rounded-t-2xl" style={{ minHeight: '280px', height: '280px' }}>
+                {!firstSlide ? (
                     /* Show placeholder logo when no slide content */
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
                         <img
@@ -591,7 +677,6 @@ export function TemplatesContainer() {
                     {filteredTemplates.map((template, index) => (
                         <TemplateCard
                             key={template._id}
-                            slideContent={template.firstSlideContent}
                             name={template.name}
                             description={template.description}
                             templateId={template._id}
