@@ -890,6 +890,7 @@ export const getAllPresentationsWithFirstSlide = query({
                         title: chat.title || "Untitled",
                         firstSlideContent: firstSlide?.content || null,
                         createdAt: chat._creationTime,
+                        version: version,
                     };
                 })
             );
