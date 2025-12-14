@@ -305,39 +305,35 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     }
   };
 
-  const handleLocalAmountChange = async (amount) => {
+  const handleLocalAmountChange = (amount) => {
     updateField('local_amount', amount);
-    
-    if (formData.local_currency && formData.local_currency !== 'USD' && amount > 0) {
-      const result = await convertToUSD(amount, formData.local_currency);
-      if (result) {
-        updateField('total_price', Math.round(result.usdAmount * 100) / 100);
-        updateField('quote_exchange_rate', result.exchangeRate);
-        updateField('quote_date', result.quoteDate);
-      }
-    } else if (formData.local_currency === 'USD') {
+    if (formData.local_currency === 'USD') {
       updateField('total_price', amount);
-      updateField('quote_exchange_rate', 1);
-      updateField('quote_date', new Date().toISOString().split('T')[0]);
     }
   };
 
-  const handleCurrencyChange = async (currency) => {
-    updateField('local_currency', currency);
+  const handleConvertToUSD = async () => {
+    if (!formData.local_amount || formData.local_amount <= 0) return;
     
-    if (formData.local_amount > 0) {
-      if (currency !== 'USD') {
-        const result = await convertToUSD(formData.local_amount, currency);
-        if (result) {
-          updateField('total_price', Math.round(result.usdAmount * 100) / 100);
-          updateField('quote_exchange_rate', result.exchangeRate);
-          updateField('quote_date', result.quoteDate);
-        }
-      } else {
-        updateField('total_price', formData.local_amount);
-        updateField('quote_exchange_rate', 1);
-        updateField('quote_date', new Date().toISOString().split('T')[0]);
-      }
+    if (formData.local_currency === 'USD') {
+      updateField('total_price', formData.local_amount);
+      updateField('quote_exchange_rate', 1);
+      updateField('quote_date', new Date().toISOString().split('T')[0]);
+      return;
+    }
+    
+    const result = await convertToUSD(formData.local_amount, formData.local_currency);
+    if (result) {
+      updateField('total_price', Math.round(result.usdAmount * 100) / 100);
+      updateField('quote_exchange_rate', result.exchangeRate);
+      updateField('quote_date', result.quoteDate);
+    }
+  };
+
+  const handleCurrencyChange = (currency) => {
+    updateField('local_currency', currency);
+    if (currency === 'USD' && formData.local_amount > 0) {
+      updateField('total_price', formData.local_amount);
     }
   };
 
@@ -1392,21 +1388,35 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                     onChange={(e) => handleLocalAmountChange(parseFloat(e.target.value) || 0)}
                     className="rounded-xl"
                     placeholder="0.00"
-                    disabled={convertingCurrency}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Precio Total (USD) {convertingCurrency && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.total_price || ''}
-                    onChange={(e) => updateField('total_price', parseFloat(e.target.value) || 0)}
-                    className="rounded-xl bg-stone-50"
-                    placeholder="0.00"
-                    readOnly={formData.local_currency !== 'USD'}
-                  />
+                  <Label>
+                    Precio Total (USD) {convertingCurrency && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.total_price || ''}
+                      onChange={(e) => updateField('total_price', parseFloat(e.target.value) || 0)}
+                      className="rounded-xl bg-stone-50"
+                      placeholder="0.00"
+                      readOnly={formData.local_currency !== 'USD'}
+                    />
+                    {formData.local_currency !== 'USD' && formData.local_amount > 0 && (
+                      <Button
+                        type="button"
+                        onClick={handleConvertToUSD}
+                        disabled={convertingCurrency}
+                        className="rounded-xl whitespace-nowrap"
+                        style={{ backgroundColor: '#2E442A' }}
+                      >
+                        {convertingCurrency ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Convertir'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
               {formData.quote_exchange_rate && formData.quote_date && (
