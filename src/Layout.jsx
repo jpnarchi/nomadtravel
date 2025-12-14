@@ -227,9 +227,9 @@ export default function Layout({ children, currentPageName }) {
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
-          {/* Logo */}
+          {/* Logo & User */}
           <div className="p-6 border-b border-stone-100">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" style={{ backgroundColor: '#2E442A' }}>
                 <MapPin className="w-6 h-6 text-white" />
               </div>
@@ -239,6 +239,27 @@ export default function Layout({ children, currentPageName }) {
                 </h1>
                 <p className="text-xs text-stone-500 font-medium">Society CRM</p>
               </div>
+            </div>
+
+            {/* User Info */}
+            <div className="flex items-center justify-between p-3 bg-stone-50 rounded-xl">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2E442A' }}>
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-stone-800 truncate">{user?.full_name || 'Usuario'}</p>
+                  <p className="text-xs text-stone-500 truncate">{user?.email}</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => base44.auth.logout()}
+                className="flex-shrink-0 h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                Salir
+              </Button>
             </div>
 
             {/* Admin View Mode Switch */}
