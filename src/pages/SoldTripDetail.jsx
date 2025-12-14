@@ -878,19 +878,19 @@ export default function SoldTripDetail() {
                                           ${(service.commission || 0).toLocaleString()}
                                         </p>
                                       </div>
-                                      {service.amount_paid_to_supplier > 0 && (
-                                        <div className="text-center">
-                                          <p className="text-stone-400 mb-0.5">Pagado</p>
-                                          <p className="font-semibold text-amber-600 text-sm">
-                                            ${service.amount_paid_to_supplier.toLocaleString()}
-                                          </p>
-                                        </div>
-                                      )}
                                       {service.total_price - (service.amount_paid_to_supplier || 0) > 0 && (
                                         <div className="text-center">
                                           <p className="text-stone-400 mb-0.5">Falta</p>
                                           <p className="font-semibold text-orange-600 text-sm">
                                             ${(service.total_price - (service.amount_paid_to_supplier || 0)).toLocaleString()}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {service.amount_paid_to_supplier > 0 && (
+                                        <div className="text-center">
+                                          <p className="text-stone-400 mb-0.5">Pagado</p>
+                                          <p className="font-semibold text-amber-600 text-sm">
+                                            ${service.amount_paid_to_supplier.toLocaleString()}
                                           </p>
                                         </div>
                                       )}
