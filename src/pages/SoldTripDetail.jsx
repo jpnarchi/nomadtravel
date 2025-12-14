@@ -805,21 +805,23 @@ export default function SoldTripDetail() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="bg-white p-3 rounded-xl border border-stone-200 hover:border-stone-300 hover:shadow-sm transition-all"
+                                className="bg-white p-2.5 rounded-xl border border-stone-200 hover:border-stone-300 hover:shadow-sm transition-all"
                               >
-                                <div className="flex items-start gap-3">
-                                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colors.bg} flex-shrink-0`}>
-                                    <Icon className={`w-4 h-4 ${colors.text}`} />
+                                <div className="flex items-center gap-2.5">
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.bg} flex-shrink-0`}>
+                                    <Icon className={`w-3.5 h-3.5 ${colors.text}`} />
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between gap-2 mb-1">
-                                      <div className="flex items-center gap-2 flex-wrap flex-1">
-                                        <p className="font-bold text-stone-900 text-sm">{details.title}</p>
+
+                                  <div className="flex-1 min-w-0 grid grid-cols-1 lg:grid-cols-[1fr,auto] gap-2">
+                                    {/* Left: Info */}
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-2 mb-0.5">
+                                        <p className="font-bold text-stone-900 text-sm truncate">{details.title}</p>
                                         <Select
                                           value={service.reservation_status || 'reservado'}
                                           onValueChange={(value) => updateServiceMutation.mutate({ id: service.id, data: { reservation_status: value } })}
                                         >
-                                          <SelectTrigger className={`h-6 w-auto text-xs rounded-md border-0 px-2 font-medium ${
+                                          <SelectTrigger className={`h-5 w-auto text-xs rounded-md border-0 px-1.5 font-medium ${
                                             service.reservation_status === 'pagado' ? 'bg-green-100 text-green-700' :
                                             service.reservation_status === 'cancelado' ? 'bg-red-100 text-red-700' :
                                             'bg-yellow-100 text-yellow-700'
@@ -833,91 +835,83 @@ export default function SoldTripDetail() {
                                           </SelectContent>
                                         </Select>
                                       </div>
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-stone-100">
-                                            <MoreVertical className="w-3.5 h-3.5" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem onClick={() => { setEditingService(service); setServiceFormOpen(true); }}>
-                                            <Edit2 className="w-3.5 h-3.5 mr-2" /> Editar
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem 
-                                            className="text-red-600"
-                                            onClick={() => setDeleteConfirm({ type: 'service', item: service })}
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    </div>
-                                    <p className="text-xs text-stone-600 mb-0.5">{details.subtitle}</p>
-                                    {details.extra && (
-                                      <p className="text-xs text-stone-500 mb-1.5">{details.extra}</p>
-                                    )}
-                                    <div className="space-y-1.5 mb-2">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="text-xs text-stone-500 font-medium">Bookeado por:</span>
-                                        <Badge variant="outline" className="text-xs bg-stone-50 px-1.5 py-0">
-                                          {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
-                                        </Badge>
+
+                                      <p className="text-xs text-stone-600 mb-1">{details.subtitle} {details.extra && `• ${details.extra}`}</p>
+
+                                      <div className="flex items-center gap-2 flex-wrap text-xs">
+                                        <span className="text-stone-500">{service.booked_by === 'montecito' ? 'Montecito' : 'IATA'}</span>
+                                        {(service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider) && (
+                                          <>
+                                            <span className="text-stone-300">•</span>
+                                            <span className="text-purple-700 font-medium">{service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider}</span>
+                                          </>
+                                        )}
+                                        {(service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number) && (
+                                          <>
+                                            <span className="text-stone-300">•</span>
+                                            <span className="font-mono text-blue-700">#{service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number}</span>
+                                          </>
+                                        )}
                                       </div>
 
-                                      {(service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider) && (
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="text-xs text-stone-500 font-medium">Proveedor:</span>
-                                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 px-1.5 py-0">
-                                            {service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider}
-                                          </Badge>
-                                        </div>
-                                      )}
-
-                                      {(service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number) && (
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="text-xs text-stone-500 font-medium">N° Reserva:</span>
-                                          <Badge variant="outline" className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0">
-                                            {service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number}
-                                          </Badge>
+                                      {service.notes && (
+                                        <div className="mt-1.5 p-1 bg-amber-50 rounded text-xs text-amber-800">
+                                          {service.notes}
                                         </div>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-3 pt-2 border-t border-stone-100 text-xs">
-                                      <div>
-                                        <p className="text-stone-500">Total</p>
-                                        <p className="font-bold text-base" style={{ color: '#2E442A' }}>
+
+                                    {/* Right: Amounts */}
+                                    <div className="flex items-center gap-3 lg:gap-4 text-xs border-l border-stone-100 pl-3">
+                                      <div className="text-center">
+                                        <p className="text-stone-400 mb-0.5">Total</p>
+                                        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>
                                           ${(service.total_price || 0).toLocaleString()}
                                         </p>
                                       </div>
-                                      <div>
-                                        <p className="text-stone-500">Comisión</p>
-                                        <p className="font-semibold text-emerald-600">
+                                      <div className="text-center">
+                                        <p className="text-stone-400 mb-0.5">Comisión</p>
+                                        <p className="font-semibold text-emerald-600 text-sm">
                                           ${(service.commission || 0).toLocaleString()}
                                         </p>
                                       </div>
                                       {service.amount_paid_to_supplier > 0 && (
-                                        <div>
-                                          <p className="text-stone-500">Pagado</p>
-                                          <p className="font-semibold text-amber-600">
+                                        <div className="text-center">
+                                          <p className="text-stone-400 mb-0.5">Pagado</p>
+                                          <p className="font-semibold text-amber-600 text-sm">
                                             ${service.amount_paid_to_supplier.toLocaleString()}
                                           </p>
                                         </div>
                                       )}
                                       {service.total_price - (service.amount_paid_to_supplier || 0) > 0 && (
-                                        <div>
-                                          <p className="text-stone-500">Falta</p>
-                                          <p className="font-semibold text-orange-600">
+                                        <div className="text-center">
+                                          <p className="text-stone-400 mb-0.5">Falta</p>
+                                          <p className="font-semibold text-orange-600 text-sm">
                                             ${(service.total_price - (service.amount_paid_to_supplier || 0)).toLocaleString()}
                                           </p>
                                         </div>
                                       )}
                                     </div>
-                                    {service.notes && (
-                                      <div className="mt-2 p-1.5 bg-amber-50 rounded-md border border-amber-200">
-                                        <p className="text-xs text-amber-800">{service.notes}</p>
-                                      </div>
-                                    )}
                                   </div>
+
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-stone-100 flex-shrink-0">
+                                        <MoreVertical className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => { setEditingService(service); setServiceFormOpen(true); }}>
+                                        <Edit2 className="w-3.5 h-3.5 mr-2" /> Editar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        className="text-red-600"
+                                        onClick={() => setDeleteConfirm({ type: 'service', item: service })}
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
                               </motion.div>
                             );
