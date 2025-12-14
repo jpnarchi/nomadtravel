@@ -12,7 +12,7 @@ import {
   Compass, Package, DollarSign, Receipt, FileText,
   CheckCircle, Clock, AlertCircle, TrendingUp,
   CreditCard, Building2, MoreVertical, AlertTriangle, Train,
-  StickyNote, FolderOpen, Bell, Sparkles
+  StickyNote, FolderOpen, Bell, Sparkles, TrendingDown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,9 +105,37 @@ export default function SoldTripDetail() {
   const [paymentPlanOpen, setPaymentPlanOpen] = useState(false);
   const [editingPlanItem, setEditingPlanItem] = useState(null);
   const [editTripOpen, setEditTripOpen] = useState(false);
+  const [currentExchangeRates, setCurrentExchangeRates] = useState({});
 
 
   const queryClient = useQueryClient();
+
+  // Fetch current exchange rates for services with local currency
+  useEffect(() => {
+    const fetchExchangeRates = async () => {
+      const uniqueCurrencies = [...new Set(
+        services
+          .filter(s => s.local_currency && s.local_currency !== 'USD' && s.quote_date)
+          .map(s => s.local_currency)
+      )];
+
+      if (uniqueCurrencies.length === 0) return;
+
+      const rates = {};
+      for (const currency of uniqueCurrencies) {
+        try {
+          const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`);
+          const data = await response.json();
+          rates[currency] = data.rates.USD;
+        } catch (error) {
+          console.error(`Error fetching rate for ${currency}:`, error);
+        }
+      }
+      setCurrentExchangeRates(rates);
+    };
+
+    fetchExchangeRates();
+  }, [services]);
 
   const { data: soldTrip, isLoading: tripLoading } = useQuery({
     queryKey: ['soldTrip', tripId],
@@ -799,6 +827,28 @@ export default function SoldTripDetail() {
                         <AnimatePresence>
                           {typeServices.map((service) => {
                             const details = getServiceDetails(service);
+
+                            // Calculate exchange rate alert
+                            let exchangeAlert = null;
+                            if (service.local_currency && service.local_currency !== 'USD' && service.quote_date && service.quote_exchange_rate && currentExchangeRates[service.local_currency]) {
+                              const originalRate = service.quote_exchange_rate;
+                              const currentRate = currentExchangeRates[service.local_currency];
+                              const difference = ((currentRate - originalRate) / originalRate) * 100;
+                              const originalUSD = service.local_amount * originalRate * 1.01;
+                              const currentUSD = service.local_amount * currentRate * 1.01;
+                              const usdDifference = currentUSD - originalUSD;
+
+                              if (Math.abs(difference) > 2) { // Only show if difference > 2%
+                                exchangeAlert = {
+                                  isGain: difference > 0,
+                                  percentage: Math.abs(difference).toFixed(2),
+                                  usdDifference: Math.abs(usdDifference).toFixed(2),
+                                  originalRate,
+                                  currentRate
+                                };
+                              }
+                            }
+
                             return (
                               <motion.div
                                 key={service.id}
@@ -860,6 +910,37 @@ export default function SoldTripDetail() {
                                       {service.notes && (
                                         <div className="mt-1.5 p-1 bg-amber-50 rounded text-xs text-amber-800">
                                           {service.notes}
+                                        </div>
+                                      )}
+
+                                      {/* Exchange Rate Alert */}
+                                      {exchangeAlert && (
+                                        <div className={`mt-1.5 p-2 rounded-lg border text-xs ${
+                                          exchangeAlert.isGain 
+                                            ? 'bg-green-50 border-green-200 text-green-800' 
+                                            : 'bg-red-50 border-red-200 text-red-800'
+                                        }`}>
+                                          <div className="flex items-start gap-1.5">
+                                            {exchangeAlert.isGain ? (
+                                              <TrendingUp className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                            ) : (
+                                              <TrendingDown className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                                            )}
+                                            <div>
+                                              <p className="font-semibold">
+                                                {exchangeAlert.isGain ? '¡Tipo de cambio favorable!' : 'Alerta: Tipo de cambio desfavorable'}
+                                              </p>
+                                              <p className="mt-0.5">
+                                                El tipo de cambio {exchangeAlert.isGain ? 'subió' : 'bajó'} {exchangeAlert.percentage}% desde la cotización.
+                                              </p>
+                                              <p className="mt-0.5">
+                                                {exchangeAlert.isGain ? 'Ahorrarías' : 'Pagarías'} aprox. <span className="font-bold">${exchangeAlert.usdDifference} USD</span> más si pagas hoy.
+                                              </p>
+                                              <p className="text-xs opacity-75 mt-1">
+                                                Cotizado: ${exchangeAlert.originalRate.toFixed(4)} • Actual: ${exchangeAlert.currentRate.toFixed(4)}
+                                              </p>
+                                            </div>
+                                          </div>
                                         </div>
                                       )}
                                     </div>
