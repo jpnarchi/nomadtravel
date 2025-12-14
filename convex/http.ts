@@ -292,88 +292,60 @@ http.route({
             // model: anthropic('claude-sonnet-4-5-20250929'),
             messages: convertToModelMessages(messages),
             system: `You are iLovePresentations, an AI for Fabric.js presentations (1920x1080).
-
 User: ${userName} | Date: ${currentDate}
-${requestedSlidesCount ? `Target: ${requestedSlidesCount} slides\n` : ''}
-${templates.length === 0 ? '⚠️ No templates available - inform user to create templates first\n' : ''}
+${requestedSlidesCount ? `Target: ${requestedSlidesCount} slides` : ''}
+${templates.length === 0 ? '⚠️ No templates - user must create templates first' : ''}
 
-## Communication
-- 2-3 sentences max, no lists/emojis
-- Be proactive, make assumptions
-- No technical jargon
+## Style
+2-3 sentences max. No lists/emojis. Proactive, not technical.
 
-## Tools
-**Content Creation:**
-- generateInitialCodebase: Start from template${templates.length === 0 ? ' (UNAVAILABLE)' : ''}
-- readFile: Read slide JSON
-- updateSlideTexts: Change text content only
-- updateSlideDesign: Change visual properties (colors, positions, sizes)
-- fillImageContainer: Generate AI images for placeholders
+## Critical Rules
+- After ANY image operation: ALWAYS call showPreview immediately
+- After duplicateSlide containing images: ALWAYS use replaceImagePlaceholder (prevents duplicate images across slides)
+- Read slides before updating them
+- Wait for each tool to complete
 
-**Structure:**
-- duplicateSlide: **PREFERRED** for adding slides - auto-finds similar slide and duplicates it
-- insertSlideAtPosition: Insert blank slide (rarely needed, prefer duplicateSlide)
-- manageFile: Add/remove objects (use sparingly)
-- deleteSlide: Remove slides
-- showPreview: Display final presentation
+## Tools (by purpose)
+Content: generateInitialCodebase, readFile, updateSlideTexts, updateSlideDesign
+Structure: duplicateSlide (preferred), insertSlideAtPosition, deleteSlide, manageFile
+Data: webSearch, readAttachment, showPreview
 
-**Data:**
-- webSearch: Search internet
-- readAttachment: Read user files
-- generateImageTool: Generate standalone images
+**Images (choose carefully):**
 
-## Workflow (Execute Sequentially)
-1. **Start**: generateInitialCodebase → wait
-2. **Adjust Slide Count**:${requestedSlidesCount ? `\n   - Target: ${requestedSlidesCount} slides` : ''}
-   - If template has excess: deleteSlide for each extra → wait per deletion
-   - If template has fewer: duplicateSlide with contentDescription → wait per addition
-3. **Read All**: readFile each slide → wait per read
-4. **Fill Images** (ONLY if placeholders exist):
-   - Scan ALL slides for isImagePlaceholder: true
-   - IF placeholders found: fillImageContainer for each → wait for each
-   - IF NO placeholders found: Skip to next step
-5. **Update Content**: updateSlideTexts for all placeholders → wait
-6. **Preview**: showPreview (only after all steps complete)
+**replaceImagePlaceholder** - Replaces existing image URLs in slides
+Use when:
+- After duplicateSlide (slide has inherited images from source)
+- User says "change/replace/update the image/photo/picture"
+- Slide has actual image objects that need different content
+- You need to swap one image for another while keeping position/size
+How: Targets existing image objects, generates new URL based on description
+Follow with: showPreview (mandatory)
 
-## Tool Selection Rules
-**Use duplicateSlide when:**
-- "Add a slide about..."
-- "Create a new slide for..."
-- User needs more slides than template provides
-- Adding content slides during initial creation
+**fillImageContainer** - Converts placeholder GROUPS into actual images
+Use when:
+- Groups exist with property isImagePlaceholder: true
+- Initial template setup with empty containers
+- Creating images in predefined layout spots
+- NOT after duplicateSlide (those have real images already)
+How: Finds groups marked as placeholders, generates images to fill them
+Follow with: showPreview (mandatory)
 
-**Use updateSlideTexts when:**
-- "Change the title to..."
-- "Update text on slide 2"
-- "Replace Lorem Ipsum"
+**generateImageTool** - Creates standalone images (outside presentation)
+Use when:
+- User wants image for separate use/download
+- Not inserting into any slide
+- Testing image concepts before adding to presentation
 
-**Use updateSlideDesign when:**
-- "Change colors to green"
-- "Make background black"
-- "Move title down/up"
-- "Make image bigger/smaller"
-- "Rotate element"
-- "Add transparency"
-
-**Use manageFile when:**
-- "Add a new circle/rectangle"
-- "Remove this shape"
-- "Complete slide redesign"
-
-## Pre-Preview Checklist
-Before calling showPreview, verify:
-- ✓ Slide count matches request${requestedSlidesCount ? ` (${requestedSlidesCount})` : ''}
-- ✓ All slides read
-- ✓ All image placeholders filled (if any existed)
-- ✓ No "Lorem Ipsum" remains
-- ✓ All requested changes applied
-
-## Efficiency Rules
-- Read before update (always)
-- Batch similar operations when possible
-- Use specific tools (updateSlideTexts/Design) over generic (manageFile)
-- Wait for tool completion before next step
-- Only fill images if placeholders (isImagePlaceholder: true) exist
+## Workflow
+1. generateInitialCodebase
+2. Adjust slide count (deleteSlide excess OR duplicateSlide with contentDescription)
+3. readFile all slides
+4. Image handling (in order):
+   a. If slides were duplicated AND have images → replaceImagePlaceholder each → showPreview
+   b. Scan all slides for isImagePlaceholder: true groups → fillImageContainer each → showPreview
+   c. Skip if no images/placeholders found
+5. updateSlideTexts for all content
+6. Final showPreview
 
 Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
 `.trim(),
@@ -1298,6 +1270,229 @@ Return the slide number (1-based) that is most similar.`,
                             return {
                                 success: false,
                                 message: `Error generating image: ${error instanceof Error ? error.message : 'Unknown error'}`
+                            };
+                        }
+                    },
+                },
+
+                replaceImagePlaceholder: {
+                    description: 'Replace ONLY image placeholders (marked with isImagePlaceholder or isImageContainer flags). Use this when duplicating slides with placeholders or when user specifically asks to replace a placeholder image. WILL NOT replace regular images - only placeholders from duplicated slides. Automatically detects placeholders and generates new images while preserving container properties.',
+                    inputSchema: z.object({
+                        path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
+                        imageUpdates: z.array(z.object({
+                            containerIndex: z.number().optional().describe('Index of the image container. If not provided, will find all image containers automatically'),
+                            prompt: z.string().describe('Detailed prompt to generate the new image'),
+                        })).describe('Array of image replacements. Leave containerIndex empty to auto-detect all image containers'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words'),
+                    }),
+                    execute: async function ({ path, imageUpdates, explanation }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+                            const fileContent = allFiles[path];
+
+                            if (!fileContent) {
+                                return {
+                                    success: false,
+                                    error: `File not found: ${path}`
+                                };
+                            }
+
+                            const slideData = JSON.parse(fileContent);
+
+                            if (!slideData.objects || !Array.isArray(slideData.objects)) {
+                                return {
+                                    success: false,
+                                    error: `Invalid slide structure in ${path}`
+                                };
+                            }
+
+                            // Find all image PLACEHOLDERS (not regular images) if no specific indices provided
+                            // Only include images that are explicitly marked as placeholders or containers
+                            const imageContainers: number[] = [];
+                            slideData.objects.forEach((obj: any, index: number) => {
+                                const objType = (obj.type || '').toLowerCase();
+                                // Only include if it's marked as a placeholder/container
+                                // DO NOT include regular images (those without these flags)
+                                if (objType === 'image' && (obj.isImagePlaceholder === true || obj.isImageContainer === true)) {
+                                    imageContainers.push(index);
+                                }
+                            });
+
+                            // Results tracking
+                            const results = {
+                                successful: [] as { index: number, url: string }[],
+                                failed: [] as { index: number, error: string }[]
+                            };
+
+                            // Process each image update
+                            for (const update of imageUpdates) {
+                                try {
+                                    let targetIndex = update.containerIndex;
+
+                                    // Auto-detect if no index provided
+                                    if (targetIndex === undefined || targetIndex === null) {
+                                        if (imageContainers.length === 0) {
+                                            results.failed.push({
+                                                index: -1,
+                                                error: 'No image containers found in slide'
+                                            });
+                                            continue;
+                                        }
+                                        // Use first available image container
+                                        targetIndex = imageContainers.shift()!;
+                                    }
+
+                                    // Validate index
+                                    if (targetIndex < 0 || targetIndex >= slideData.objects.length) {
+                                        results.failed.push({
+                                            index: targetIndex,
+                                            error: `Invalid index (slide has ${slideData.objects.length} objects)`
+                                        });
+                                        continue;
+                                    }
+
+                                    const container = slideData.objects[targetIndex];
+                                    const objType = (container.type || '').toLowerCase();
+
+                                    // Verify it's an image AND a placeholder/container
+                                    // DO NOT allow replacing regular images
+                                    if (objType !== 'image') {
+                                        results.failed.push({
+                                            index: targetIndex,
+                                            error: `Not an image (type: ${container.type})`
+                                        });
+                                        continue;
+                                    }
+
+                                    // CRITICAL: Only allow replacing placeholders, not regular images
+                                    if (!container.isImagePlaceholder && !container.isImageContainer) {
+                                        results.failed.push({
+                                            index: targetIndex,
+                                            error: `Not an image placeholder. This is a regular image and cannot be replaced.`
+                                        });
+                                        continue;
+                                    }
+
+                                    console.log(`[REPLACE IMAGE] Generating for container ${targetIndex}:`, update.prompt.substring(0, 100));
+
+                                    // Generate image with Gemini
+                                    const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                            model: 'google/gemini-2.5-flash-image-preview',
+                                            messages: [{ role: 'user', content: update.prompt }],
+                                            modalities: ['image', 'text'],
+                                            image_config: { aspect_ratio: '1:1' }
+                                        })
+                                    });
+
+                                    if (!openrouterResponse.ok) {
+                                        const errorText = await openrouterResponse.text();
+                                        console.error(`[REPLACE IMAGE] API Error for container ${targetIndex}:`, errorText);
+                                        results.failed.push({
+                                            index: targetIndex,
+                                            error: `API error: ${openrouterResponse.status}`
+                                        });
+                                        continue;
+                                    }
+
+                                    const responseData = await openrouterResponse.json();
+                                    const imageObject = responseData.choices?.[0]?.message?.images?.[0];
+
+                                    if (!imageObject) {
+                                        console.error(`[REPLACE IMAGE] No image in response for container ${targetIndex}`);
+                                        results.failed.push({
+                                            index: targetIndex,
+                                            error: 'No image generated'
+                                        });
+                                        continue;
+                                    }
+
+                                    // Extract base64
+                                    let imageData: string;
+                                    if (typeof imageObject === 'string') {
+                                        imageData = imageObject;
+                                    } else if (imageObject.url) {
+                                        imageData = imageObject.url;
+                                    } else if (imageObject.image_url?.url) {
+                                        imageData = imageObject.image_url.url;
+                                    } else {
+                                        results.failed.push({
+                                            index: targetIndex,
+                                            error: 'Could not extract image data'
+                                        });
+                                        continue;
+                                    }
+
+                                    // Convert to Uint8Array
+                                    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                                    const binaryString = atob(base64Data);
+                                    const uint8Array = new Uint8Array(binaryString.length);
+                                    for (let i = 0; i < binaryString.length; i++) {
+                                        uint8Array[i] = binaryString.charCodeAt(i);
+                                    }
+
+                                    // Upload to storage
+                                    const imageUrl = await uploadFileToStorageFromHttpAction(ctx, uint8Array, 'image/png');
+
+                                    if (!imageUrl) {
+                                        results.failed.push({
+                                            index: targetIndex,
+                                            error: 'Failed to upload to storage'
+                                        });
+                                        continue;
+                                    }
+
+                                    console.log(`[REPLACE IMAGE] Success for container ${targetIndex}:`, imageUrl);
+
+                                    // ONLY replace the image URL, keep all other properties
+                                    slideData.objects[targetIndex].src = imageUrl;
+
+                                    results.successful.push({ index: targetIndex, url: imageUrl });
+
+                                } catch (error) {
+                                    console.error(`[REPLACE IMAGE] Error processing container:`, error);
+                                    results.failed.push({
+                                        index: update.containerIndex ?? -1,
+                                        error: error instanceof Error ? error.message : 'Unknown error'
+                                    });
+                                }
+                            }
+
+                            // Save updated slide
+                            const updatedContent = JSON.stringify(slideData, null, 2);
+                            await ctx.runMutation(api.files.updateByPath, {
+                                chatId: id,
+                                path,
+                                content: updatedContent,
+                                version: currentVersion ?? 0
+                            });
+
+                            const totalProcessed = imageUpdates.length;
+                            const successCount = results.successful.length;
+                            const failCount = results.failed.length;
+
+                            return {
+                                success: successCount > 0,
+                                message: explanation,
+                                imagesReplaced: successCount,
+                                imagesRequested: totalProcessed,
+                                imagesFailed: failCount,
+                                imageUrls: results.successful.map(r => r.url),
+                                failedContainers: results.failed,
+                                partialSuccess: successCount > 0 && failCount > 0
+                            };
+
+                        } catch (error) {
+                            console.error(`Error replacing images in ${path}:`, error);
+                            return {
+                                success: false,
+                                error: `Error replacing images: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },

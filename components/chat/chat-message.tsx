@@ -56,9 +56,79 @@ export function ChatMessage({
         "Almost ready..."
     ];
 
+    const readMessages = [
+        "Reading slide...",
+        "Loading content...",
+        "Almost ready..."
+    ];
+
+    const manageFileMessages = [
+        "Managing files...",
+        "Updating structure...",
+        "Finalizing changes..."
+    ];
+
+    const duplicateSlideMessages = [
+        "Finding best template...",
+        "Duplicating slide...",
+        "Adjusting content...",
+        "Almost done..."
+    ];
+
+    const insertSlideMessages = [
+        "Inserting slide...",
+        "Renumbering slides...",
+        "Updating structure...",
+        "Done!"
+    ];
+
+    const generateCodebaseMessages = [
+        "Analysing structure...",
+        "Creating slides...",
+        "Setting up structure...",
+        "Finalizing..."
+    ];
+
+    const previewMessages = [
+        "Preparing preview...",
+        "Creating snapshot...",
+        "Generating version...",
+        "Ready!"
+    ];
+
+    const searchMessages = [
+        "Searching the web...",
+        "Processing results...",
+        "Analyzing data...",
+        "Done!"
+    ];
+
+    const attachmentMessages = [
+        "Reading file...",
+        "Analyzing content...",
+        "Processing data...",
+        "Complete!"
+    ];
+
+    const replaceImageMessages = [
+        "Detecting images...",
+        "Generating new image...",
+        "Replacing content...",
+        "Finalizing..."
+    ];
+
     const currentDesignMessage = useProgressiveMessage(designMessages, 1500, isLoading, true);
     const currentTextMessage = useProgressiveMessage(textMessages, 1000, isLoading, true);
     const currentImageMessage = useProgressiveMessage(imageMessages, 1500, isLoading, true);
+    const currentReadMessage = useProgressiveMessage(readMessages, 1000, isLoading, true);
+    const currentManageFileMessage = useProgressiveMessage(manageFileMessages, 1200, isLoading, true);
+    const currentDuplicateSlideMessage = useProgressiveMessage(duplicateSlideMessages, 1500, isLoading, true);
+    const currentInsertSlideMessage = useProgressiveMessage(insertSlideMessages, 1200, isLoading, true);
+    const currentGenerateCodebaseMessage = useProgressiveMessage(generateCodebaseMessages, 1500, isLoading, true);
+    const currentPreviewMessage = useProgressiveMessage(previewMessages, 1200, isLoading, true);
+    const currentSearchMessage = useProgressiveMessage(searchMessages, 1200, isLoading, true);
+    const currentAttachmentMessage = useProgressiveMessage(attachmentMessages, 1200, isLoading, true);
+    const currentReplaceImageMessage = useProgressiveMessage(replaceImageMessages, 1500, isLoading, true);
 
     // Get current user for profile picture
     const user = useQuery(api.users.getUserInfo);
@@ -140,7 +210,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<File className="size-4" />}
-                                        message={operation === 'create' ? "Creating slide..." : currentDesignMessage}
+                                        message={currentManageFileMessage}
                                         isLoading={true}
                                     />
                                 </div>
@@ -167,7 +237,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<File className="size-4" />}
-                                        message={"Inserting slide..."}
+                                        message={currentInsertSlideMessage}
                                         isLoading={true}
                                     />
                                 </div>
@@ -250,7 +320,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<Presentation className="size-4" />}
-                                        message={"Creating presentation..."}
+                                        message={currentGenerateCodebaseMessage}
                                         isLoading={true}
                                     />
                                 </div>
@@ -283,7 +353,7 @@ export function ChatMessage({
                                     <div className="flex flex-row gap-2 items-center">
                                         <Loader />
                                         <div className="text-zinc-500 italic">
-                                            Loading presentation...
+                                            {currentPreviewMessage}
                                         </div>
                                     </div>
                                 </div>
@@ -299,7 +369,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<GoogleIcon />}
-                                        message={"Searching on the internet..."}
+                                        message={"Search completed"}
                                         isLoading={false}
                                     />
                                 </div>
@@ -310,7 +380,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<GoogleIcon />}
-                                        message={"Searching on the internet..."}
+                                        message={currentSearchMessage}
                                         isLoading={true}
                                     />
                                 </div>
@@ -337,7 +407,7 @@ export function ChatMessage({
                                 <div key={index}>
                                     <ToolMessage
                                         icon={<ClipIcon />}
-                                        message={"Reading file..."}
+                                        message={currentAttachmentMessage}
                                         isLoading={true}
                                     />
                                 </div>
@@ -455,6 +525,110 @@ export function ChatMessage({
                                     <ToolMessage
                                         icon={<ImageIcon className="size-4" />}
                                         message={currentImageMessage}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-readFile") {
+                        // Don't show read messages in the chat
+                        return null;
+                    }
+
+                    if (part.type === "tool-updateSlideDesign") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={message || "Design updated"}
+                                        isLoading={false}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={currentDesignMessage}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-duplicateSlide") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            const slideNumber = response.slideNumber as number;
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={message || `Slide ${slideNumber} created`}
+                                        isLoading={false}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={currentDuplicateSlideMessage}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-replaceImagePlaceholder") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            const imagesReplaced = response.imagesReplaced as number;
+                            const imageUrls = response.imageUrls as string[];
+                            return (
+                                <div key={index} className="flex flex-col gap-2">
+                                    <ToolMessage
+                                        icon={<ImageIcon className="size-4" />}
+                                        message={message || `${imagesReplaced} ${imagesReplaced === 1 ? 'image' : 'images'} replaced`}
+                                        isLoading={false}
+                                    />
+                                    {imageUrls && imageUrls.length > 0 && (
+                                        <div className="flex flex-row gap-4 items-start py-2 ml-8">
+                                            {imageUrls.map((url, imgIndex) => (
+                                                <a key={imgIndex} href={url} target="_blank" rel="noopener noreferrer">
+                                                    <Image
+                                                        src={url}
+                                                        alt={`Replaced image ${imgIndex + 1}`}
+                                                        width={200}
+                                                        height={133}
+                                                        className="rounded-xl"
+                                                    />
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<ImageIcon className="size-4" />}
+                                        message={currentReplaceImageMessage}
                                         isLoading={true}
                                     />
                                 </div>
