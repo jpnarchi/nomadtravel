@@ -126,15 +126,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">Dashboard</h1>
-        <p className="text-stone-500 mt-1">Bienvenido a Nomad Travel Society</p>
+    <div className="space-y-4">
+      {/* Header - Compact */}
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-stone-800">Dashboard</h1>
+        <p className="text-sm text-stone-500 mt-0.5">Vista general de tu actividad</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Grid - Compact */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatsCard
           title="Ventas del Mes"
           value={`$${monthlySales.toLocaleString()}`}
@@ -142,13 +142,13 @@ export default function Dashboard() {
           icon={DollarSign}
         />
         <StatsCard
-          title="Comisiones del Mes"
+          title="Comisiones"
           value={`$${monthlyCommission.toLocaleString()}`}
-          subtitle="USD"
+          subtitle="Este mes"
           icon={TrendingUp}
         />
         <StatsCard
-          title="Viajes Activos"
+          title="Viajes"
           value={trips.length}
           subtitle="En proceso"
           icon={Plane}
@@ -156,29 +156,29 @@ export default function Dashboard() {
         <StatsCard
           title="Clientes"
           value={clients.length}
-          subtitle="Total registrados"
+          subtitle="Totales"
           icon={Users}
         />
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Funnel Chart */}
-        <div className="lg:col-span-1">
-          <FunnelChart trips={trips} />
-        </div>
-
-        {/* Upcoming Trips */}
-        <div className="lg:col-span-1">
-          <UpcomingTrips soldTrips={soldTrips} />
-        </div>
-
-        {/* Active Reminders */}
-        <div className="lg:col-span-1">
+      {/* Main Content - Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Left Column - Priority Content */}
+        <div className="lg:col-span-2 space-y-3">
+          {/* Active Reminders - Top Priority */}
           <ActiveReminders userEmail={user?.email} isAdmin={isAdmin} />
+          
+          {/* Two Column Sub-Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <UpcomingTrips soldTrips={soldTrips} />
+            <FunnelChart trips={trips} />
+          </div>
+          
+          {/* Payments */}
+          <UpcomingPayments services={services} soldTrips={soldTrips} />
         </div>
 
-        {/* Tasks */}
+        {/* Right Sidebar - Tasks */}
         <div className="lg:col-span-1">
           <TasksList
             tasks={tasks}
@@ -190,12 +190,6 @@ export default function Dashboard() {
             onCreate={(data) => createTaskMutation.mutate(data)}
           />
         </div>
-      </div>
-
-      {/* Secondary Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming Payments */}
-        <UpcomingPayments services={services} soldTrips={soldTrips} />
       </div>
     </div>
   );
