@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Check, ChevronsUpDown } from 'lucide-react';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,25 @@ const TRAIN_PROVIDERS = [
   { value: 'klook', label: 'Klook' }
 ];
 
+const CURRENCIES = [
+  { value: 'MXN', label: 'MXN – Peso Mexicano' },
+  { value: 'ZAR', label: 'ZAR – Rand Sudafricano' },
+  { value: 'USD', label: 'USD – Dólar Estadounidense' },
+  { value: 'SGD', label: 'SGD – Dólar de Singapur' },
+  { value: 'NZD', label: 'NZD – Dólar Neozelandés' },
+  { value: 'JPY', label: 'JPY – Yen Japonés' },
+  { value: 'THB', label: 'THB – Baht Tailandés' },
+  { value: 'ARS', label: 'ARS – Peso Argentino' },
+  { value: 'EUR', label: 'EUR – Euro' },
+  { value: 'AUD', label: 'AUD – Dólar Australiano' },
+  { value: 'IDR', label: 'IDR – Indonesian Rupiah' },
+  { value: 'VND', label: 'VND – Dong Vietnamita' },
+  { value: 'AED', label: 'AED – Dubai Dólar' },
+  { value: 'SAR', label: 'SAR – Saudi Zar' },
+  { value: 'CAD', label: 'CAD – Dólar Canadiense' },
+  { value: 'ISK', label: 'ISK – Icelandic Krona' }
+];
+
 const CABIN_TYPES = [
   { value: 'interior', label: 'Interior' },
   { value: 'ocean_view', label: 'Vista al Mar' },
@@ -233,12 +253,19 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
     commission: 0,
     booked_by: 'montecito',
     notes: '',
-    reservation_status: 'reservado'
+    reservation_status: 'reservado',
+    local_currency: 'USD',
+    local_amount: 0
   });
+  const [convertingCurrency, setConvertingCurrency] = useState(false);
 
   useEffect(() => {
     if (service) {
-      setFormData({ ...service });
+      setFormData({ 
+        ...service,
+        local_currency: service.local_currency || 'USD',
+        local_amount: service.local_amount || 0
+      });
     } else {
       setFormData({
         service_type: 'hotel',
@@ -246,10 +273,73 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
         commission: 0,
         booked_by: 'montecito',
         notes: '',
-        reservation_status: 'reservado'
+        reservation_status: 'reservado',
+        local_currency: 'USD',
+        local_amount: 0
       });
     }
   }, [service, open]);
+
+  const convertToUSD = async (amount, fromCurrency) => {
+    if (!amount || amount <= 0 || fromCurrency === 'USD') return amount;
+    
+    setConvertingCurrency(true);
+    try {
+      const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`);
+      const data = await response.json();
+      const rate = data.rates.USD;
+      const convertedAmount = amount * rate;
+      const finalAmount = convertedAmount * 1.01; // Apply 1.01 factor
+      
+      return {
+        usdAmount: finalAmount,
+        exchangeRate: rate,
+        quoteDate: new Date().toISOString().split('T')[0]
+      };
+    } catch (error) {
+      console.error('Error converting currency:', error);
+      alert('No se pudo obtener el tipo de cambio. Por favor intenta nuevamente.');
+      return null;
+    } finally {
+      setConvertingCurrency(false);
+    }
+  };
+
+  const handleLocalAmountChange = async (amount) => {
+    updateField('local_amount', amount);
+    
+    if (formData.local_currency && formData.local_currency !== 'USD' && amount > 0) {
+      const result = await convertToUSD(amount, formData.local_currency);
+      if (result) {
+        updateField('total_price', Math.round(result.usdAmount * 100) / 100);
+        updateField('quote_exchange_rate', result.exchangeRate);
+        updateField('quote_date', result.quoteDate);
+      }
+    } else if (formData.local_currency === 'USD') {
+      updateField('total_price', amount);
+      updateField('quote_exchange_rate', 1);
+      updateField('quote_date', new Date().toISOString().split('T')[0]);
+    }
+  };
+
+  const handleCurrencyChange = async (currency) => {
+    updateField('local_currency', currency);
+    
+    if (formData.local_amount > 0) {
+      if (currency !== 'USD') {
+        const result = await convertToUSD(formData.local_amount, currency);
+        if (result) {
+          updateField('total_price', Math.round(result.usdAmount * 100) / 100);
+          updateField('quote_exchange_rate', result.exchangeRate);
+          updateField('quote_date', result.quoteDate);
+        }
+      } else {
+        updateField('total_price', formData.local_amount);
+        updateField('quote_exchange_rate', 1);
+        updateField('quote_date', new Date().toISOString().split('T')[0]);
+      }
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1271,20 +1361,64 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
 
           {/* Common Fields */}
           <div className="border-t border-stone-200 pt-5 space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Precio Total (USD) *</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.total_price || ''}
-                  onChange={(e) => updateField('total_price', parseFloat(e.target.value) || 0)}
-                  className="rounded-xl"
-                  required
-                  placeholder="0.00"
-                />
+            {/* Local Currency Section */}
+            <div className="bg-blue-50 rounded-xl p-4 space-y-3">
+              <h4 className="font-semibold text-sm text-stone-800">Cotización en Moneda Local</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Moneda</Label>
+                  <Select 
+                    value={formData.local_currency || 'USD'} 
+                    onValueChange={handleCurrencyChange}
+                    disabled={convertingCurrency}
+                  >
+                    <SelectTrigger className="rounded-xl bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Monto en {formData.local_currency || 'USD'}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.local_amount || ''}
+                    onChange={(e) => handleLocalAmountChange(parseFloat(e.target.value) || 0)}
+                    className="rounded-xl"
+                    placeholder="0.00"
+                    disabled={convertingCurrency}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Precio Total (USD) {convertingCurrency && <Loader2 className="w-3 h-3 inline animate-spin ml-1" />}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.total_price || ''}
+                    onChange={(e) => updateField('total_price', parseFloat(e.target.value) || 0)}
+                    className="rounded-xl bg-stone-50"
+                    placeholder="0.00"
+                    readOnly={formData.local_currency !== 'USD'}
+                  />
+                </div>
               </div>
+              {formData.quote_exchange_rate && formData.quote_date && (
+                <div className="text-xs text-stone-600 bg-white rounded-lg p-2">
+                  <p>Tipo de cambio: <span className="font-semibold">1 {formData.local_currency} = ${formData.quote_exchange_rate?.toFixed(4)} USD</span></p>
+                  <p>Fecha de cotización: <span className="font-semibold">{format(new Date(formData.quote_date), 'd MMM yyyy', { locale: es })}</span></p>
+                  <p className="text-blue-600">Factor de protección 1.01 aplicado</p>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Comisión (USD)</Label>
                 <Input
