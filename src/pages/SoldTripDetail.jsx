@@ -856,14 +856,30 @@ export default function SoldTripDetail() {
                                     {details.extra && (
                                       <p className="text-xs text-stone-500 mb-1.5">{details.extra}</p>
                                     )}
-                                    <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                                      <Badge variant="outline" className="text-xs bg-stone-50 px-1.5 py-0">
-                                        {service.booked_by === 'montecito' ? 'Montecito' : 'IATA'}
-                                      </Badge>
-                                      {(service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number) && (
-                                        <Badge variant="outline" className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0">
-                                          {service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number}
+                                    <div className="space-y-1.5 mb-2">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-xs text-stone-500 font-medium">Bookeado por:</span>
+                                        <Badge variant="outline" className="text-xs bg-stone-50 px-1.5 py-0">
+                                          {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
                                         </Badge>
+                                      </div>
+
+                                      {(service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider) && (
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="text-xs text-stone-500 font-medium">Proveedor:</span>
+                                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 px-1.5 py-0">
+                                            {service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider}
+                                          </Badge>
+                                        </div>
+                                      )}
+
+                                      {(service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number) && (
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="text-xs text-stone-500 font-medium">N° Reserva:</span>
+                                          <Badge variant="outline" className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0">
+                                            {service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number}
+                                          </Badge>
+                                        </div>
                                       )}
                                     </div>
                                     <div className="flex items-center gap-3 pt-2 border-t border-stone-100 text-xs">
