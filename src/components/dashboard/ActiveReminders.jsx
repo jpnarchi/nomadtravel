@@ -12,19 +12,18 @@ import { createPageUrl } from '@/utils';
 const getActiveTimeline = (startDate) => {
   const tripDate = new Date(startDate);
   const now = new Date();
-  const monthsUntil = differenceInMonths(tripDate, now);
-  const weeksUntil = differenceInWeeks(tripDate, now);
   const daysUntil = differenceInDays(tripDate, now);
-  const hoursUntil = differenceInHours(tripDate, now);
 
-  if (monthsUntil >= 6) return '6_months';
-  if (monthsUntil >= 3) return '3_months';
-  if (monthsUntil >= 1.5) return '1.5_months';
-  if (monthsUntil >= 1) return '1_month';
-  if (weeksUntil >= 3) return '3_weeks';
-  if (weeksUntil >= 1) return '1-2_weeks';
-  if (hoursUntil >= 48) return '72-48_hours';
-  if (hoursUntil > 0) return '24_hours';
+  // Only show reminders within 3 days of each milestone
+  if (daysUntil <= 1) return '24_hours';
+  if (daysUntil >= 2 && daysUntil <= 3) return '72-48_hours';
+  if (daysUntil >= 12 && daysUntil <= 14) return '1-2_weeks';
+  if (daysUntil >= 19 && daysUntil <= 21) return '3_weeks';
+  if (daysUntil >= 28 && daysUntil <= 30) return '1_month';
+  if (daysUntil >= 43 && daysUntil <= 45) return '1.5_months';
+  if (daysUntil >= 88 && daysUntil <= 90) return '3_months';
+  if (daysUntil >= 178 && daysUntil <= 180) return '6_months';
+  
   return null;
 };
 
@@ -67,13 +66,13 @@ export default function ActiveReminders({ userEmail, isAdmin }) {
 
   if (tripsLoading || remindersLoading) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Bell className="w-5 h-5" style={{ color: '#2E442A' }} />
-          <h2 className="font-semibold text-stone-800">Recordatorios Activos</h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Bell className="w-4 h-4" style={{ color: '#2E442A' }} />
+          <h2 className="font-semibold text-stone-800 text-sm">Recordatorios Activos</h2>
         </div>
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#2E442A' }} />
+        <div className="flex items-center justify-center h-24">
+          <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#2E442A' }} />
         </div>
       </div>
     );
@@ -107,53 +106,50 @@ export default function ActiveReminders({ userEmail, isAdmin }) {
 
   if (activeRemindersData.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Bell className="w-5 h-5" style={{ color: '#2E442A' }} />
-          <h2 className="font-semibold text-stone-800">Recordatorios Activos</h2>
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Bell className="w-4 h-4" style={{ color: '#2E442A' }} />
+          <h2 className="font-semibold text-stone-800 text-sm">Recordatorios Activos</h2>
         </div>
-        <div className="text-center py-8">
-          <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500 opacity-50" />
-          <p className="text-sm text-stone-500">No hay recordatorios pendientes</p>
+        <div className="text-center py-6">
+          <CheckCircle className="w-10 h-10 mx-auto mb-2 text-green-500 opacity-50" />
+          <p className="text-xs text-stone-500">No hay recordatorios pendientes</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <Bell className="w-5 h-5" style={{ color: '#2E442A' }} />
-        <h2 className="font-semibold text-stone-800">Recordatorios Activos</h2>
-        <Badge variant="secondary">{activeRemindersData.reduce((sum, d) => sum + d.reminders.length, 0)}</Badge>
+    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Bell className="w-4 h-4" style={{ color: '#2E442A' }} />
+        <h2 className="font-semibold text-stone-800 text-sm">Recordatorios Activos</h2>
+        <Badge variant="secondary" className="text-xs">{activeRemindersData.reduce((sum, d) => sum + d.reminders.length, 0)}</Badge>
       </div>
 
-      <div className="space-y-4 max-h-96 overflow-y-auto">
+      <div className="space-y-2.5 max-h-96 overflow-y-auto">
         {activeRemindersData.map(({ trip, timeline, reminders }) => (
-          <div key={trip.id} className="border border-stone-200 rounded-xl p-4 space-y-3">
+          <div key={trip.id} className="border border-stone-200 rounded-xl p-3 space-y-2">
             <Link to={createPageUrl(`SoldTripDetail?id=${trip.id}`)} className="block">
-              <div className="flex items-start gap-3 mb-3 hover:opacity-80 transition-opacity">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
-                  <MapPin className="w-4 h-4" style={{ color: '#2E442A' }} />
+              <div className="flex items-start gap-2 mb-2 hover:opacity-80 transition-opacity">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#2E442A15' }}>
+                  <MapPin className="w-3.5 h-3.5" style={{ color: '#2E442A' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-stone-800 truncate">{trip.client_name}</p>
-                  <p className="text-xs text-stone-500">{trip.destination}</p>
-                  <p className="text-xs text-stone-400">
-                    {format(new Date(trip.start_date), 'd MMM yyyy', { locale: es })}
-                  </p>
+                  <p className="font-semibold text-stone-800 truncate text-sm">{trip.client_name}</p>
+                  <p className="text-xs text-stone-500">{trip.destination} • {format(new Date(trip.start_date), 'd MMM', { locale: es })}</p>
                 </div>
-                <Badge className="bg-blue-500 text-white text-xs">
+                <Badge className="bg-blue-500 text-white text-xs px-1.5 py-0 flex-shrink-0">
                   {TIMELINE_LABELS[timeline]}
                 </Badge>
               </div>
             </Link>
 
-            <div className="space-y-2 pl-2">
+            <div className="space-y-1.5">
               {reminders.map((reminder) => (
                 <div
                   key={reminder.id}
-                  className="flex items-start gap-2 p-2 rounded-lg hover:bg-stone-50 transition-colors"
+                  className="flex items-start gap-2 p-1.5 rounded-lg hover:bg-stone-50 transition-colors"
                 >
                   <Checkbox
                     checked={false}
@@ -170,7 +166,7 @@ export default function ActiveReminders({ userEmail, isAdmin }) {
                     }}
                     className="mt-0.5"
                   />
-                  <p className="text-sm text-stone-700 flex-1">{reminder.task}</p>
+                  <p className="text-xs text-stone-700 flex-1">{reminder.task}</p>
                 </div>
               ))}
             </div>
