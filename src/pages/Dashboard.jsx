@@ -71,7 +71,7 @@ export default function Dashboard() {
   });
 
   const soldTripIds = soldTrips.map(t => t.id);
-  const { data: services = [] } = useQuery({
+  const { data: allServices = [] } = useQuery({
     queryKey: ['services', soldTripIds],
     queryFn: async () => {
       if (soldTripIds.length === 0) return [];
@@ -79,6 +79,11 @@ export default function Dashboard() {
     },
     enabled: soldTripIds.length > 0
   });
+
+  // Filter services to only show user's trips
+  const services = allServices.filter(service => 
+    soldTripIds.includes(service.sold_trip_id)
+  );
 
   const createTaskMutation = useMutation({
     mutationFn: (data) => base44.entities.Task.create(data),
