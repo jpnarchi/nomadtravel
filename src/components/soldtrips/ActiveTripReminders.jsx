@@ -7,19 +7,35 @@ import { Bell, CheckCircle } from 'lucide-react';
 const getActiveTimeline = (startDate) => {
   const tripDate = new Date(startDate);
   const now = new Date();
-  const monthsUntil = differenceInMonths(tripDate, now);
-  const weeksUntil = differenceInWeeks(tripDate, now);
   const daysUntil = differenceInDays(tripDate, now);
-  const hoursUntil = differenceInHours(tripDate, now);
 
-  if (monthsUntil >= 6) return '6_months';
-  if (monthsUntil >= 3) return '3_months';
-  if (monthsUntil >= 1.5) return '1.5_months';
-  if (monthsUntil >= 1) return '1_month';
-  if (weeksUntil >= 3) return '3_weeks';
-  if (weeksUntil >= 1) return '1-2_weeks';
-  if (hoursUntil >= 48) return '72-48_hours';
-  if (hoursUntil > 0) return '24_hours';
+  // Solo mostrar recordatorios 3 días antes de cada milestone
+  const ALERT_WINDOW = 3; // días antes para mostrar el recordatorio
+
+  // 6 meses = ~180 días
+  if (daysUntil >= 177 && daysUntil <= 183) return '6_months';
+  
+  // 3 meses = ~90 días
+  if (daysUntil >= 87 && daysUntil <= 93) return '3_months';
+  
+  // 1.5 meses = ~45 días
+  if (daysUntil >= 42 && daysUntil <= 48) return '1.5_months';
+  
+  // 1 mes = ~30 días
+  if (daysUntil >= 27 && daysUntil <= 33) return '1_month';
+  
+  // 3 semanas = 21 días
+  if (daysUntil >= 18 && daysUntil <= 24) return '3_weeks';
+  
+  // 1-2 semanas = 7-14 días
+  if (daysUntil >= 7 && daysUntil <= 14) return '1-2_weeks';
+  
+  // 72-48 horas = 2-3 días
+  if (daysUntil >= 2 && daysUntil <= 3) return '72-48_hours';
+  
+  // 24 horas = 1 día
+  if (daysUntil === 1) return '24_hours';
+  
   return null;
 };
 
