@@ -554,44 +554,43 @@ export default function SoldTripDetail() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
-          {/* Back & Title */}
-          <div className="flex items-start gap-4 flex-1">
+      <div className="bg-gradient-to-br from-white to-stone-50 rounded-3xl shadow-lg border border-stone-200 overflow-hidden">
+        <div className="p-8">
+          <div className="flex items-start gap-4 mb-6">
             <Link to={createPageUrl('SoldTrips')}>
-              <Button variant="ghost" size="icon" className="rounded-xl">
+              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-white">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-stone-800">{soldTrip.client_name}</h1>
-                <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-3xl font-bold text-stone-900">{soldTrip.client_name}</h1>
+                <Badge className={`${statusConfig.color} text-sm px-3 py-1`}>{statusConfig.label}</Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-stone-500">
-                <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-4 text-stone-600">
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg">
                   <MapPin className="w-4 h-4" style={{ color: '#2E442A' }} />
-                  <span className="font-medium">{soldTrip.destination}</span>
+                  <span className="font-semibold">{soldTrip.destination}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
+                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg">
+                  <Calendar className="w-4 h-4 text-blue-600" />
                   <span>
                     {format(new Date(soldTrip.start_date), 'd MMM yyyy', { locale: es })}
                     {soldTrip.end_date && ` - ${format(new Date(soldTrip.end_date), 'd MMM', { locale: es })}`}
                   </span>
                 </div>
                 {soldTrip.travelers && (
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg">
+                    <Users className="w-4 h-4 text-purple-600" />
                     <span>{soldTrip.travelers} viajero(s)</span>
                   </div>
                 )}
                 {!isTripPast && (
                   <Badge 
                     variant="outline" 
-                    className={`${daysUntilTrip <= 7 ? 'border-red-300 text-red-600' : 'border-stone-300'}`}
+                    className={`${daysUntilTrip <= 7 ? 'bg-red-50 border-red-300 text-red-700' : 'bg-blue-50 border-blue-300 text-blue-700'} px-3 py-1 text-sm font-semibold`}
                   >
-                    {daysUntilTrip === 0 ? '¡Viaje hoy!' : daysUntilTrip < 0 ? 'Viaje pasado' : `Faltan ${daysUntilTrip} días`}
+                    {daysUntilTrip === 0 ? '¡Viaje hoy!' : daysUntilTrip < 0 ? 'Viaje pasado' : `⏱️ ${daysUntilTrip} días`}
                   </Badge>
                 )}
               </div>
@@ -599,11 +598,11 @@ export default function SoldTripDetail() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-stone-200">
             <Button
               variant="outline"
               onClick={() => setEditTripOpen(true)}
-              className="rounded-xl"
+              className="rounded-xl hover:bg-white"
               style={{ borderColor: '#2E442A', color: '#2E442A' }}
             >
               <Edit2 className="w-4 h-4 mr-2" />
@@ -613,7 +612,7 @@ export default function SoldTripDetail() {
               <Button
                 variant="outline"
                 onClick={() => setPaymentPlanOpen(true)}
-                className="rounded-xl"
+                className="rounded-xl hover:bg-white"
                 style={{ borderColor: '#2E442A', color: '#2E442A' }}
               >
                 <Calendar className="w-4 h-4 mr-2" />
@@ -623,7 +622,7 @@ export default function SoldTripDetail() {
             <Button
               variant="outline"
               onClick={() => setInvoiceOpen(true)}
-              className="rounded-xl"
+              className="rounded-xl hover:bg-white"
               style={{ borderColor: '#2E442A', color: '#2E442A' }}
             >
               <FileText className="w-4 h-4 mr-2" />
@@ -633,7 +632,7 @@ export default function SoldTripDetail() {
               value={soldTrip.status} 
               onValueChange={(value) => updateTripMutation.mutate({ status: value })}
             >
-              <SelectTrigger className="w-40 rounded-xl">
+              <SelectTrigger className="w-40 rounded-xl bg-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -648,80 +647,80 @@ export default function SoldTripDetail() {
       </div>
 
       {/* Financial Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
-              <DollarSign className="w-5 h-5" style={{ color: '#2E442A' }} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-gradient-to-br from-stone-800 to-stone-900 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="w-5 h-5 text-stone-300" />
+              <p className="text-xs text-stone-300 font-medium">Total Viaje</p>
             </div>
-            <div>
-              <p className="text-xs text-stone-400">Total Viaje</p>
-              <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${totalServices.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-xs text-stone-400">Comisiones</p>
-              <p className="text-xl font-bold text-emerald-600">${totalCommissions.toLocaleString()}</p>
-            </div>
+            <p className="text-3xl font-bold text-white">${totalServices.toLocaleString()}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-50">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-5 h-5 text-emerald-100" />
+              <p className="text-xs text-emerald-100 font-medium">Comisiones</p>
             </div>
-            <div>
-              <p className="text-xs text-stone-400">Cobrado</p>
-              <p className="text-xl font-bold text-green-600">${totalClientPaid.toLocaleString()}</p>
-            </div>
+            <p className="text-3xl font-bold text-white">${totalCommissions.toLocaleString()}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-orange-50">
-              <AlertCircle className="w-5 h-5 text-orange-500" />
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="w-5 h-5 text-green-100" />
+              <p className="text-xs text-green-100 font-medium">Cobrado</p>
             </div>
-            <div>
-              <p className="text-xs text-stone-400">Por Cobrar</p>
-              <p className={`text-xl font-bold ${clientBalance > 0 ? 'text-orange-500' : 'text-green-600'}`}>
-                ${clientBalance.toLocaleString()}
-              </p>
-            </div>
+            <p className="text-3xl font-bold text-white">${totalClientPaid.toLocaleString()}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50">
-              <Building2 className="w-5 h-5 text-amber-600" />
+        <div className={`${clientBalance > 0 ? 'bg-gradient-to-br from-orange-500 to-orange-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600'} rounded-2xl p-6 shadow-lg relative overflow-hidden`}>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className={`w-5 h-5 ${clientBalance > 0 ? 'text-orange-100' : 'text-emerald-100'}`} />
+              <p className={`text-xs font-medium ${clientBalance > 0 ? 'text-orange-100' : 'text-emerald-100'}`}>Por Cobrar</p>
             </div>
-            <div>
-              <p className="text-xs text-stone-400">Pagado Proveedores</p>
-              <p className="text-xl font-bold text-amber-600">${totalSupplierPaid.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-white">${clientBalance.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-6 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-2">
+              <Building2 className="w-5 h-5 text-amber-100" />
+              <p className="text-xs text-amber-100 font-medium">Pagado Proveedores</p>
             </div>
+            <p className="text-3xl font-bold text-white">${totalSupplierPaid.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
       {/* Payment Progress */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-stone-800">Progreso de Cobro</h3>
-          <span className="text-sm font-medium" style={{ color: '#2E442A' }}>{paymentProgress}%</span>
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-sm border border-blue-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-blue-600" />
+            </div>
+            <h3 className="font-semibold text-stone-800 text-lg">Progreso de Cobro</h3>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-bold text-blue-600">{paymentProgress}%</span>
+          </div>
         </div>
-        <Progress value={paymentProgress} className="h-3" />
-        <div className="flex justify-between mt-2 text-xs text-stone-400">
-          <span>$0</span>
-          <span>${totalServices.toLocaleString()}</span>
+        <Progress value={paymentProgress} className="h-4 bg-blue-100" />
+        <div className="flex justify-between mt-3 text-sm">
+          <span className="text-stone-600 font-medium">$0</span>
+          <span className="text-stone-600 font-medium">${totalClientPaid.toLocaleString()} / ${totalServices.toLocaleString()}</span>
         </div>
       </div>
 
@@ -855,105 +854,125 @@ export default function SoldTripDetail() {
                   
                   return (
                     <div key={type}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.bg}`}>
-                          <Icon className={`w-4 h-4 ${colors.text}`} />
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors.bg} shadow-sm`}>
+                          <Icon className={`w-5 h-5 ${colors.text}`} />
                         </div>
-                        <h4 className="font-semibold text-stone-700">{SERVICE_LABELS[type]}s</h4>
-                        <Badge variant="outline" className="text-xs">{typeServices.length}</Badge>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-stone-800 text-lg">{SERVICE_LABELS[type]}s</h4>
+                            <Badge className={`${colors.bg} ${colors.text} border-0`}>{typeServices.length}</Badge>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="space-y-3 ml-10">
+                      <div className="space-y-3">
                         <AnimatePresence>
                           {typeServices.map((service) => {
                             const details = getServiceDetails(service);
                             return (
                               <motion.div
                                 key={service.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                className={`p-4 rounded-xl border ${colors.border} ${colors.bg} hover:shadow-sm transition-all`}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="bg-white p-5 rounded-2xl border-2 border-stone-100 hover:border-stone-300 hover:shadow-md transition-all"
                               >
-                                <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-start gap-4">
+                                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${colors.bg} shadow-sm flex-shrink-0`}>
+                                    <Icon className={`w-6 h-6 ${colors.text}`} />
+                                  </div>
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                      <Badge className={`${colors.text} ${colors.bg} text-xs font-medium`}>
-                                        {SERVICE_LABELS[service.service_type]}
-                                      </Badge>
-                                      <p className="font-semibold text-stone-800">{details.title}</p>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="font-bold text-stone-900 text-lg">{details.title}</p>
+                                        <Select
+                                          value={service.reservation_status || 'reservado'}
+                                          onValueChange={(value) => updateServiceMutation.mutate({ id: service.id, data: { reservation_status: value } })}
+                                        >
+                                          <SelectTrigger className={`h-7 w-auto text-xs rounded-lg border-0 px-3 font-medium ${
+                                            service.reservation_status === 'pagado' ? 'bg-green-100 text-green-700' :
+                                            service.reservation_status === 'cancelado' ? 'bg-red-100 text-red-700' :
+                                            'bg-yellow-100 text-yellow-700'
+                                          }`}>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="reservado">Reservado</SelectItem>
+                                            <SelectItem value="pagado">Pagado</SelectItem>
+                                            <SelectItem value="cancelado">Cancelado</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-stone-100">
+                                            <MoreVertical className="w-4 h-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onClick={() => { setEditingService(service); setServiceFormOpen(true); }}>
+                                            <Edit2 className="w-4 h-4 mr-2" /> Editar
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem 
+                                            className="text-red-600"
+                                            onClick={() => setDeleteConfirm({ type: 'service', item: service })}
+                                          >
+                                            <Trash2 className="w-4 h-4 mr-2" /> Eliminar
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
                                     </div>
-                                    <p className="text-sm text-stone-600">{details.subtitle}</p>
+                                    <p className="text-stone-600 mb-1">{details.subtitle}</p>
                                     {details.extra && (
-                                      <p className="text-xs text-stone-400 mt-1">{details.extra}</p>
+                                      <p className="text-sm text-stone-500 mb-2">{details.extra}</p>
                                     )}
-                                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                      <Badge variant="outline" className="text-xs">
+                                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                                      <Badge variant="outline" className="text-xs bg-stone-50">
                                         {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
                                       </Badge>
                                       {(service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number) && (
-                                        <Badge variant="outline" className="text-xs font-mono">
-                                          {service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number}
+                                        <Badge variant="outline" className="text-xs font-mono bg-blue-50 text-blue-700">
+                                          📋 {service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number}
                                         </Badge>
                                       )}
-                                      <Select
-                                        value={service.reservation_status || 'reservado'}
-                                        onValueChange={(value) => updateServiceMutation.mutate({ id: service.id, data: { reservation_status: value } })}
-                                      >
-                                        <SelectTrigger className={`h-6 w-auto text-xs rounded-md border-0 px-2 ${
-                                          service.reservation_status === 'pagado' ? 'bg-green-100 text-green-700' :
-                                          service.reservation_status === 'cancelado' ? 'bg-red-100 text-red-700' :
-                                          'bg-yellow-100 text-yellow-700'
-                                        }`}>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="reservado">Reservado</SelectItem>
-                                          <SelectItem value="pagado">Pagado</SelectItem>
-                                          <SelectItem value="cancelado">Cancelado</SelectItem>
-                                        </SelectContent>
-                                      </Select>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-3 border-t border-stone-100">
+                                      <div>
+                                        <p className="text-xs text-stone-500 mb-0.5">Precio Total</p>
+                                        <p className="font-bold text-2xl" style={{ color: '#2E442A' }}>
+                                          ${(service.total_price || 0).toLocaleString()}
+                                        </p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="text-xs text-stone-500 mb-0.5">Comisión</p>
+                                        <p className="font-semibold text-emerald-600 text-lg">
+                                          ${(service.commission || 0).toLocaleString()}
+                                        </p>
+                                      </div>
+                                      {service.amount_paid_to_supplier > 0 && (
+                                        <div className="text-right">
+                                          <p className="text-xs text-stone-500 mb-0.5">Pagado</p>
+                                          <p className="font-semibold text-amber-600 text-lg">
+                                            ${service.amount_paid_to_supplier.toLocaleString()}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {service.total_price - (service.amount_paid_to_supplier || 0) > 0 && (
+                                        <div className="text-right">
+                                          <p className="text-xs text-stone-500 mb-0.5">Por Pagar</p>
+                                          <p className="font-semibold text-orange-600 text-lg">
+                                            ${(service.total_price - (service.amount_paid_to_supplier || 0)).toLocaleString()}
+                                          </p>
+                                        </div>
+                                      )}
                                     </div>
                                     {service.notes && (
-                                      <p className="text-xs text-stone-500 mt-2 italic">"{service.notes}"</p>
+                                      <div className="mt-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                                        <p className="text-xs text-amber-800">💡 {service.notes}</p>
+                                      </div>
                                     )}
                                   </div>
-                                  <div className="text-right">
-                                  <p className="font-bold text-lg" style={{ color: '#2E442A' }}>
-                                   ${(service.total_price || 0).toLocaleString()}
-                                  </p>
-                                  <p className="text-xs text-stone-400">
-                                   Comisión: ${(service.commission || 0).toLocaleString()}
-                                  </p>
-                                  {service.amount_paid_to_supplier > 0 && (
-                                   <p className="text-xs text-amber-600 mt-1">
-                                     Pagado: ${service.amount_paid_to_supplier.toLocaleString()}
-                                   </p>
-                                  )}
-                                  {service.total_price - (service.amount_paid_to_supplier || 0) > 0 && (
-                                   <p className="text-xs text-orange-500">
-                                     Falta: ${(service.total_price - (service.amount_paid_to_supplier || 0)).toLocaleString()}
-                                   </p>
-                                  )}
-                                  </div>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="w-4 h-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => { setEditingService(service); setServiceFormOpen(true); }}>
-                                        <Edit2 className="w-4 h-4 mr-2" /> Editar
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem 
-                                        className="text-red-600"
-                                        onClick={() => setDeleteConfirm({ type: 'service', item: service })}
-                                      >
-                                        <Trash2 className="w-4 h-4 mr-2" /> Eliminar
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
                                 </div>
                               </motion.div>
                             );
