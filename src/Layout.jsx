@@ -26,6 +26,7 @@ import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
 
