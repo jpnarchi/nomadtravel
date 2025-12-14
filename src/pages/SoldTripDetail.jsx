@@ -110,33 +110,6 @@ export default function SoldTripDetail() {
 
   const queryClient = useQueryClient();
 
-  // Fetch current exchange rates for services with local currency
-  useEffect(() => {
-    const fetchExchangeRates = async () => {
-      const uniqueCurrencies = [...new Set(
-        services
-          .filter(s => s.local_currency && s.local_currency !== 'USD' && s.quote_date)
-          .map(s => s.local_currency)
-      )];
-
-      if (uniqueCurrencies.length === 0) return;
-
-      const rates = {};
-      for (const currency of uniqueCurrencies) {
-        try {
-          const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`);
-          const data = await response.json();
-          rates[currency] = data.rates.USD;
-        } catch (error) {
-          console.error(`Error fetching rate for ${currency}:`, error);
-        }
-      }
-      setCurrentExchangeRates(rates);
-    };
-
-    fetchExchangeRates();
-  }, [services]);
-
   const { data: soldTrip, isLoading: tripLoading } = useQuery({
     queryKey: ['soldTrip', tripId],
     queryFn: async () => {
@@ -188,6 +161,33 @@ export default function SoldTripDetail() {
     queryFn: () => base44.entities.TripReminder.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
+
+  // Fetch current exchange rates for services with local currency
+  useEffect(() => {
+    const fetchExchangeRates = async () => {
+      const uniqueCurrencies = [...new Set(
+        services
+          .filter(s => s.local_currency && s.local_currency !== 'USD' && s.quote_date)
+          .map(s => s.local_currency)
+      )];
+
+      if (uniqueCurrencies.length === 0) return;
+
+      const rates = {};
+      for (const currency of uniqueCurrencies) {
+        try {
+          const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`);
+          const data = await response.json();
+          rates[currency] = data.rates.USD;
+        } catch (error) {
+          console.error(`Error fetching rate for ${currency}:`, error);
+        }
+      }
+      setCurrentExchangeRates(rates);
+    };
+
+    fetchExchangeRates();
+  }, [services]);
 
   // Mutations
   const createServiceMutation = useMutation({
