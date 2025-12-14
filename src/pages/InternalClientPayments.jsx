@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
-  Loader2, Search, CreditCard, Calendar, ArrowUpDown, Users, Clock, CheckCircle, Edit2, Trash2, LogOut, User
+  Loader2, Search, CreditCard, Calendar, ArrowUpDown, Users, Clock, CheckCircle, Edit2, Trash2
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -64,11 +64,6 @@ export default function InternalClientPayments() {
     queryFn: () => base44.entities.User.list()
   });
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
-  });
-
   const isLoading = loadingPayments || loadingTrips;
 
   const updatePaymentMutation = useMutation({
@@ -102,8 +97,8 @@ export default function InternalClientPayments() {
     .filter(payment => payment.method !== 'tarjeta_cliente')
     .map(payment => {
       const trip = tripsMap[payment.sold_trip_id];
-      // Prioritize trip's created_by, then payment's created_by
-      const agentEmail = trip?.created_by || payment.created_by || '';
+      // Try payment's created_by first, then fallback to trip's created_by
+      const agentEmail = payment.created_by || trip?.created_by || '';
       const agent = users.find(u => u.email === agentEmail);
       
       // Determine agent display name
@@ -177,34 +172,10 @@ export default function InternalClientPayments() {
 
   return (
     <div className="space-y-6">
-      {/* User Header */}
-      <div className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-800">Pagos Internos Clientes</h1>
-          <p className="text-stone-500 text-sm mt-1">Registro de depósitos de clientes por todos los agentes</p>
-        </div>
-        {currentUser && (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
-                <User className="w-5 h-5" style={{ color: '#2E442A' }} />
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-stone-800">{currentUser.full_name}</p>
-                <p className="text-xs text-stone-500">{currentUser.email}</p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => base44.auth.logout()}
-              className="rounded-xl"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Salir
-            </Button>
-          </div>
-        )}
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-stone-800">Pagos Internos Clientes</h1>
+        <p className="text-stone-500 text-sm mt-1">Registro de depósitos de clientes por todos los agentes</p>
       </div>
 
       {/* Stats */}
