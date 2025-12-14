@@ -839,17 +839,20 @@ export default function SoldTripDetail() {
                                       <p className="text-xs text-stone-600 mb-1">{details.subtitle} {details.extra && `• ${details.extra}`}</p>
 
                                       <div className="flex items-center gap-2 flex-wrap text-xs">
-                                        <span className="text-stone-500">{service.booked_by === 'montecito' ? 'Montecito' : 'IATA'}</span>
+                                        <span className="text-stone-400">Bookeado:</span>
+                                        <span className="text-stone-700 font-medium">{service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}</span>
                                         {(service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider) && (
                                           <>
                                             <span className="text-stone-300">•</span>
+                                            <span className="text-stone-400">Proveedor:</span>
                                             <span className="text-purple-700 font-medium">{service.reserved_by || service.flight_consolidator || service.cruise_provider || service.train_provider}</span>
                                           </>
                                         )}
                                         {(service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number) && (
                                           <>
                                             <span className="text-stone-300">•</span>
-                                            <span className="font-mono text-blue-700">#{service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number}</span>
+                                            <span className="text-stone-400">N° Reserva:</span>
+                                            <span className="font-mono text-blue-700">{service.reservation_number || service.flight_reservation_number || service.tour_reservation_number || service.cruise_reservation_number || service.dmc_reservation_number || service.train_reservation_number}</span>
                                           </>
                                         )}
                                       </div>
