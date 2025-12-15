@@ -722,7 +722,7 @@ export function ProjectsPreviewHero() {
                         <p className="text-zinc-500 text-base sm:text-lg px-4">No presentations found matching "{searchQuery}"</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 -mt-4 md:-mt-10">
                         {filteredAndSortedPresentations.map((presentation, index) => (
                             <SlideCanvas
                                 key={presentation.chatId}

@@ -2,40 +2,37 @@
 
 /**
  * Editor de Slides con Fabric.js - REFACTORIZADO
- *
- * Componente para editar un slide individual usando Fabric.js canvas
- * Permite agregar texto, formas, imágenes y editar propiedades
  */
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import * as fabric from 'fabric'
 import { toast } from 'sonner'
-import { useMutation } from "convex/react"
-import { api } from "@/convex/_generated/api"
 
-// Import utilities and components
-import { createText, createRectangle, createCircle, createTriangle, createRing, updateRingThickness, createLine, addImageToCanvas, createImagePlaceholder, replaceImagePlaceholderWithImage } from './fabric-editor/shape-factory'
-import { loadObjectsToCanvas } from './fabric-editor/object-loader'
+// Utilities
 import {
-    serializeCanvas,
-    copyObjectToJSON,
-    pasteObjectFromJSON,
-    updateObjectProperty,
-    updateObjectFillColor,
-    toggleObjectLock,
-    bringObjectToFront,
-    sendObjectToBack,
-    bringObjectForward,
-    sendObjectBackward,
-    zoomIn,
-    zoomOut,
-    resetZoom,
-    applyListFormatting,
+    createText, createRectangle, createCircle, createTriangle, createRing,
+    updateRingThickness, createLine, addImageToCanvas, createImagePlaceholder,
+    replaceImagePlaceholderWithImage
+} from './fabric-editor/shape-factory'
+import {
+    serializeCanvas, copyObjectToJSON, pasteObjectFromJSON, updateObjectProperty,
+    updateObjectFillColor, toggleObjectLock, bringObjectToFront, sendObjectToBack,
+    bringObjectForward, sendObjectBackward, zoomIn, zoomOut, resetZoom
 } from './fabric-editor/canvas-utils'
+
+// Components
 import { ToolsSidebar } from './fabric-editor/tools-sidebar'
 import { PropertiesSidebar } from './fabric-editor/properties-sidebar'
 import { EditorToolbar } from './fabric-editor/editor-toolbar'
-import {UploadButtonDialog} from "./fabric-editor/image-upload-button"
+import { UploadButtonDialog } from "./fabric-editor/image-upload-button"
+
+// Hooks
+import { useFabricCanvas } from './hooks/use-fabric-canvas'
+import { useCanvasHistory } from './hooks/use-canvas-history'
+import { useCanvasKeyboard } from './hooks/use-canvas-keyboard'
+import { useImageUpload } from './hooks/use-image-upload'
+
+// Types
 import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios'
 
 interface FabricSlideEditorProps {
@@ -61,284 +58,37 @@ export function FabricSlideEditor({
     onToggleSidebar,
     aspectRatio = DEFAULT_ASPECT_RATIO
 }: FabricSlideEditorProps) {
-    // Get aspect ratio dimensions
-    const aspectRatioDimensions = useMemo(() => getAspectRatioDimensions(aspectRatio), [aspectRatio])
+    const aspectRatioDimensions = getAspectRatioDimensions(aspectRatio)
 
     // Refs
     const canvasRef = useRef<HTMLCanvasElement>(null)
-    const fabricCanvasRef = useRef<fabric.Canvas | null>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const saveCanvasRef = useRef<() => void>(() => {})
-    const isInitialLoadRef = useRef(true)
-    const baseScaleRef = useRef(1)
-
-
-    // Convex mutations
-    const generateUploadUrl = useMutation(api.files.generateUploadUrl)
-    const saveImage = useMutation(api.files.saveImage)
 
     // State
     const [selectedObject, setSelectedObject] = useState<fabric.FabricObject | null>(null)
     const [backgroundColor, setBackgroundColor] = useState(slideData?.background || '#ffffff')
     const [zoom, setZoom] = useState(1)
     const [showUploadDialog, setShowUploadDialog] = useState(false)
-    const [isUploading, setIsUploading] = useState(false)
     const [selectedPlaceholder, setSelectedPlaceholder] = useState<fabric.FabricObject | null>(null)
 
-    // History management for undo/redo
-    const historyRef = useRef<any[]>([])
-    const historyStepRef = useRef<number>(-1)
-    const isUndoRedoRef = useRef<boolean>(false)
+    // Custom hooks
+    const { isUploading, uploadImage, uploadFromClipboard } = useImageUpload()
+    const {
+        saveStateToHistory,
+        undo,
+        redo,
+        completeInitialLoad,
+        isInitialLoadRef
+    } = useCanvasHistory(backgroundColor)
 
-    // ============================================================================
-    // SAVE CANVAS FUNCTION
-    // ============================================================================
-    const saveCanvas = () => {
-        console.log('💾 saveCanvas llamado - isInitialLoad:', isInitialLoadRef.current)
-
-        if (isInitialLoadRef.current) {
-            console.log('⏭️ Saltando guardado - aún en carga inicial')
-            return
-        }
-
-        if (!fabricCanvasRef.current) {
-            console.log('❌ No hay canvas para guardar')
-            return
-        }
-
-        // Log current canvas objects before serialization
-        console.log('📊 Objetos en canvas ANTES de serializar:')
-        const objects = fabricCanvasRef.current.getObjects()
-        objects.forEach((obj, index) => {
-            console.log(`  ${index}. ${obj.type} at (${obj.left}, ${obj.top}) scale(${obj.scaleX}, ${obj.scaleY})`)
-
-            // Warn about suspicious coordinates (likely ActiveSelection bug)
-            if (obj.left < -100 || obj.top < -100) {
-                console.warn(`⚠️ ADVERTENCIA: Objeto ${index} tiene coordenadas sospechosas: (${obj.left}, ${obj.top})`)
-                console.warn('   Esto puede indicar que el objeto está en un grupo ActiveSelection')
-            }
-        })
-
-        const slideJSON = serializeCanvas(fabricCanvasRef.current, backgroundColor)
-
-
-
-        // Log what's being saved
-        console.log('📦 Datos que se guardarán:')
-        slideJSON.objects.forEach((obj, index) => {
-            console.log(`  ${index}. ${obj.type} at (${obj.left}, ${obj.top}) scale(${obj.scaleX}, ${obj.scaleY})`)
-        })
-
-        console.log('🔄 Llamando onSlideChange con:', JSON.stringify(slideJSON, null, 2))
-        onSlideChange(slideJSON)
-        console.log('✅ onSlideChange llamado exitosamente')
-    }
-
-    // Update ref
-    useEffect(() => {
-        saveCanvasRef.current = saveCanvas
-    })
-
-    // ============================================================================
-    // HISTORY (UNDO/REDO) FUNCTIONS
-    // ============================================================================
-    const saveStateToHistory = () => {
-        if (!fabricCanvasRef.current || isUndoRedoRef.current || isInitialLoadRef.current) {
-            return
-        }
-
-        const json = (fabricCanvasRef.current as any).toJSON(['selectable', 'evented', 'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY', 'hasControls', 'hasBorders', 'opacity', 'src', 'left', 'top', 'scaleX', 'scaleY', 'angle', 'width', 'height', 'originX', 'originY'])
-        const state = {
-            json,
-            backgroundColor
-        }
-
-        // Remove any states after current step (if we're not at the end)
-        historyRef.current = historyRef.current.slice(0, historyStepRef.current + 1)
-
-        // Add new state
-        historyRef.current.push(state)
-        historyStepRef.current++
-
-        // Limit history to 50 steps
-        if (historyRef.current.length > 50) {
-            historyRef.current.shift()
-            historyStepRef.current--
-        }
-
-        console.log('💾 Estado guardado en historial. Step:', historyStepRef.current, 'Total:', historyRef.current.length)
-    }
-
-    const undo = async () => {
-        if (historyStepRef.current <= 0 || !fabricCanvasRef.current) {
-            console.log('⏮️ No hay más estados para deshacer')
-            return
-        }
-
-        isUndoRedoRef.current = true
-        historyStepRef.current--
-
-        const state = historyRef.current[historyStepRef.current]
-
-        fabricCanvasRef.current.clear()
-        await fabricCanvasRef.current.loadFromJSON(state.json)
-
-        setBackgroundColor(state.backgroundColor)
-        fabricCanvasRef.current.backgroundColor = state.backgroundColor
-        fabricCanvasRef.current.renderAll()
-
-        saveCanvas()
-
-        setTimeout(() => {
-            isUndoRedoRef.current = false
-        }, 100)
-
-        
-        
-    }
-
-    const redo = async () => {
-        if (historyStepRef.current >= historyRef.current.length - 1 || !fabricCanvasRef.current) {
-            console.log('⏭️ No hay más estados para rehacer')
-            return
-        }
-
-        isUndoRedoRef.current = true
-        historyStepRef.current++
-
-        const state = historyRef.current[historyStepRef.current]
-
-        fabricCanvasRef.current.clear()
-        await fabricCanvasRef.current.loadFromJSON(state.json)
-
-        setBackgroundColor(state.backgroundColor)
-        fabricCanvasRef.current.backgroundColor = state.backgroundColor
-        fabricCanvasRef.current.renderAll()
-
-        saveCanvas()
-
-        setTimeout(() => {
-            isUndoRedoRef.current = false
-        }, 100)
-
-    }
-
-    // ============================================================================
-    // INITIALIZE CANVAS
-    // ============================================================================
-    useEffect(() => {
-        if (!canvasRef.current || !containerRef.current) return
-
-        const container = containerRef.current
-        // Account for padding (16px on each side = 32px total)
-        const containerWidth = container.clientWidth - 64
-        const containerHeight = container.clientHeight - 64
-
-        const scaleX = containerWidth / aspectRatioDimensions.width
-        const scaleY = containerHeight / aspectRatioDimensions.height
-        const scale = Math.min(scaleX, scaleY, 1)
-
-        const displayWidth = aspectRatioDimensions.width * scale
-        const displayHeight = aspectRatioDimensions.height * scale
-
-        const canvas = new fabric.Canvas(canvasRef.current, {
-            width: displayWidth,
-            height: displayHeight,
-            backgroundColor: backgroundColor,
-            selection: true,
-            preserveObjectStacking: true,
-        })
-
-        canvas.setZoom(scale)
-        canvas.viewportTransform = [scale, 0, 0, scale, 0, 0]
-        setZoom(scale)
-        baseScaleRef.current = scale
-
-        fabricCanvasRef.current = canvas
-
-        console.log('✅ Editor - Canvas initialized')
-
-        // Load existing slide data
-        loadObjectsToCanvas(canvas, slideData, slideNumber)
-
-        // Setup event handlers
-        setupCanvasEvents(canvas)
-
-        // Mark initial load as complete after delay
-        setTimeout(() => {
-            isInitialLoadRef.current = false
-            console.log('✅ Carga inicial completa, auto-guardado habilitado')
-
-            // Save initial state to history
-            saveStateToHistory()
-        }, 1500)
-
-        // Handle resize
-        const handleResize = () => {
-            if (!canvasRef.current || !containerRef.current || !fabricCanvasRef.current) return
-
-            const container = containerRef.current
-            // Account for padding (16px on each side = 32px total)
-            const containerWidth = container.clientWidth - 64
-            const containerHeight = container.clientHeight - 64
-
-            const scaleX = containerWidth / aspectRatioDimensions.width
-            const scaleY = containerHeight / aspectRatioDimensions.height
-            const newScale = Math.min(scaleX, scaleY, 1)
-
-            const displayWidth = aspectRatioDimensions.width * newScale
-            const displayHeight = aspectRatioDimensions.height * newScale
-
-            fabricCanvasRef.current.setWidth(displayWidth)
-            fabricCanvasRef.current.setHeight(displayHeight)
-            fabricCanvasRef.current.setZoom(newScale)
-            fabricCanvasRef.current.viewportTransform = [newScale, 0, 0, newScale, 0, 0]
-            setZoom(newScale)
-            baseScaleRef.current = newScale
-
-            fabricCanvasRef.current.renderAll()
-        }
-        window.addEventListener('resize', handleResize)
-
-        return () => {
-            if (fabricCanvasRef.current) {
-
-
-                // CRITICAL: Clear any active selection before cleanup save
-                // This prevents saving objects with group-relative coordinates
-                const activeObject = fabricCanvasRef.current.getActiveObject()
-                if (activeObject && activeObject.type === 'activeSelection') {
-                    console.log('⚠️ ActiveSelection detectada durante cleanup - limpiando selección')
-                    fabricCanvasRef.current.discardActiveObject()
-                    fabricCanvasRef.current.renderAll()
-                }
-
-                saveCanvasRef.current()
-            }
-            canvas.dispose()
-            window.removeEventListener('resize', handleResize)
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [aspectRatioDimensions])
-
-    // ============================================================================
-    // CANVAS EVENT HANDLERS
-    // ============================================================================
-    const setupCanvasEvents = (canvas: fabric.Canvas) => {
+    // Canvas setup with event handlers
+    const setupCanvasEvents = useCallback((canvas: fabric.Canvas) => {
         // Selection events
         canvas.on('selection:created', (e) => {
             const obj = e.selected?.[0] || null
-            console.log('🔍 Objeto seleccionado:', {
-                type: obj?.type,
-                isImagePlaceholder: (obj as any)?.isImagePlaceholder,
-                isImageContainer: (obj as any)?.isImageContainer,
-                borderRadius: (obj as any)?.borderRadius,
-                placeholderWidth: (obj as any)?.placeholderWidth,
-                placeholderHeight: (obj as any)?.placeholderHeight,
-            })
             setSelectedObject(obj)
             if (obj && (obj as any).isImagePlaceholder) {
-                console.log('✅ Detectado placeholder - habilitando controles')
                 setSelectedPlaceholder(obj)
             } else {
                 setSelectedPlaceholder(null)
@@ -347,15 +97,8 @@ export function FabricSlideEditor({
 
         canvas.on('selection:updated', (e) => {
             const obj = e.selected?.[0] || null
-            console.log('🔍 Objeto actualizado:', {
-                type: obj?.type,
-                isImagePlaceholder: (obj as any)?.isImagePlaceholder,
-                isImageContainer: (obj as any)?.isImageContainer,
-                borderRadius: (obj as any)?.borderRadius,
-            })
             setSelectedObject(obj)
             if (obj && (obj as any).isImagePlaceholder) {
-                console.log('✅ Detectado placeholder - habilitando controles')
                 setSelectedPlaceholder(obj)
             } else {
                 setSelectedPlaceholder(null)
@@ -370,12 +113,7 @@ export function FabricSlideEditor({
         // Double click to load image into placeholder
         canvas.on('mouse:dblclick', (e) => {
             const target = e.target
-            console.log('👆 Doble click en:', {
-                type: target?.type,
-                isImagePlaceholder: (target as any)?.isImagePlaceholder,
-            })
             if (target && (target as any).isImagePlaceholder) {
-                console.log('✅ Abriendo diálogo de imagen para placeholder')
                 setSelectedPlaceholder(target)
                 setShowUploadDialog(true)
             }
@@ -388,74 +126,34 @@ export function FabricSlideEditor({
         const debouncedSave = () => {
             if (isInitialLoad) return
             if (saveTimeout) clearTimeout(saveTimeout)
-            saveTimeout = setTimeout(() => {
-                saveCanvas()
-            }, 500)
+            saveTimeout = setTimeout(() => saveCanvas(), 500)
         }
 
-        setTimeout(() => {
-            isInitialLoad = false
-        }, 1500)
+        setTimeout(() => { isInitialLoad = false }, 1500)
 
-        // Save state to history on meaningful changes
         canvas.on('object:modified', () => {
-            saveStateToHistory()
+            saveStateToHistory(canvas)
             debouncedSave()
         })
-        canvas.on('object:added', (e) => {
+        canvas.on('object:added', () => {
             if (!isInitialLoad) {
-                saveStateToHistory()
+                saveStateToHistory(canvas)
                 debouncedSave()
             }
         })
         canvas.on('object:removed', () => {
-            saveStateToHistory()
+            saveStateToHistory(canvas)
             debouncedSave()
         })
-        canvas.on('object:scaling', () => debouncedSave())
-        canvas.on('object:rotating', () => debouncedSave())
-        canvas.on('object:moving', () => debouncedSave())
-        canvas.on('text:changed', (e) => {
-            if (!isInitialLoad) {
-                // Apply list formatting if applicable
-                const target = e.target as any
-                if (target && (target.type === 'i-text' || target.type === 'textbox') && target.listStyle && target.listStyle !== 'none') {
-                    const currentText = target.text || ''
-                    const listStyle = target.listStyle
-
-                    // Store cursor position
-                    const cursorPosition = target.selectionStart || 0
-
-                    // Apply formatting
-                    const formattedText = applyListFormatting(currentText, listStyle)
-
-                    // Only update if text changed
-                    if (formattedText !== currentText) {
-                        target.set('text', formattedText)
-                        // Restore cursor position (approximate)
-                        if (target.isEditing) {
-                            target.selectionStart = cursorPosition
-                            target.selectionEnd = cursorPosition
-                        }
-                        canvas.renderAll()
-                    }
-                }
-                debouncedSave()
-            }
+        canvas.on('object:scaling', debouncedSave)
+        canvas.on('object:rotating', debouncedSave)
+        canvas.on('object:moving', debouncedSave)
+        canvas.on('text:changed', () => {
+            if (!isInitialLoad) debouncedSave()
         })
-        canvas.on('text:editing:exited', (e) => {
+        canvas.on('text:editing:exited', () => {
             if (!isInitialLoad) {
-                // Apply list formatting when exiting text editing
-                const target = e.target as any
-                if (target && (target.type === 'i-text' || target.type === 'textbox') && target.listStyle && target.listStyle !== 'none') {
-                    const currentText = target.text || ''
-                    const formattedText = applyListFormatting(currentText, target.listStyle)
-                    if (formattedText !== currentText) {
-                        target.set('text', formattedText)
-                        canvas.renderAll()
-                    }
-                }
-                saveStateToHistory()
+                saveStateToHistory(canvas)
                 debouncedSave()
             }
         })
@@ -496,197 +194,125 @@ export function FabricSlideEditor({
             canvas.selection = true
             canvas.defaultCursor = 'default'
         })
-    }
+    }, [])
 
-    // ============================================================================
-    // BACKGROUND COLOR EFFECT
-    // ============================================================================
+    const { fabricCanvasRef, baseScaleRef } = useFabricCanvas({
+        canvasRef,
+        containerRef,
+        slideData,
+        slideNumber,
+        backgroundColor,
+        aspectRatio,
+        onCanvasEvents: setupCanvasEvents
+    })
+
+    // Complete initial load and save first state
+    useEffect(() => {
+        setTimeout(() => {
+            completeInitialLoad()
+            if (fabricCanvasRef.current) {
+                saveStateToHistory(fabricCanvasRef.current)
+            }
+        }, 1500)
+    }, [])
+
+    // Save canvas function
+    const saveCanvas = useCallback(() => {
+        if (isInitialLoadRef.current || !fabricCanvasRef.current) return
+
+        const slideJSON = serializeCanvas(fabricCanvasRef.current, backgroundColor)
+        onSlideChange(slideJSON)
+    }, [fabricCanvasRef, backgroundColor, onSlideChange, isInitialLoadRef])
+
+    // Update saveCanvasRef
+    useEffect(() => {
+        saveCanvasRef.current = saveCanvas
+    }, [saveCanvas])
+
+    // Background color effect
     useEffect(() => {
         if (fabricCanvasRef.current && !isInitialLoadRef.current) {
             fabricCanvasRef.current.backgroundColor = backgroundColor
             fabricCanvasRef.current.renderAll()
-            saveStateToHistory()
+            saveStateToHistory(fabricCanvasRef.current)
             saveCanvas()
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [backgroundColor])
 
-    // ============================================================================
-    // SHAPE CREATION HANDLERS
-    // ============================================================================
+    // Shape creation handlers
     const handleAddText = () => {
         if (!fabricCanvasRef.current) return
         isInitialLoadRef.current = false
         createText(fabricCanvasRef.current)
-        
     }
 
-    const handleAddRectangle = () => {
-        if (!fabricCanvasRef.current) return
-        createRectangle(fabricCanvasRef.current)
-        
-    }
-
-    const handleAddCircle = () => {
-        if (!fabricCanvasRef.current) return
-        createCircle(fabricCanvasRef.current)
-        
-    }
-
-    const handleAddTriangle = () => {
-        if (!fabricCanvasRef.current) return
-        createTriangle(fabricCanvasRef.current)
-
-    }
-
-    const handleAddRing = () => {
-        if (!fabricCanvasRef.current) return
-        createRing(fabricCanvasRef.current)
-
-    }
-
-    const handleAddLine = () => {
-        if (!fabricCanvasRef.current) return
-        createLine(fabricCanvasRef.current)
-
-    }
-
+    const handleAddRectangle = () => fabricCanvasRef.current && createRectangle(fabricCanvasRef.current)
+    const handleAddCircle = () => fabricCanvasRef.current && createCircle(fabricCanvasRef.current)
+    const handleAddTriangle = () => fabricCanvasRef.current && createTriangle(fabricCanvasRef.current)
+    const handleAddRing = () => fabricCanvasRef.current && createRing(fabricCanvasRef.current)
+    const handleAddLine = () => fabricCanvasRef.current && createLine(fabricCanvasRef.current)
     const handleAddImagePlaceholder = async () => {
-        if (!fabricCanvasRef.current) return
-        await createImagePlaceholder(fabricCanvasRef.current)
-
+        if (fabricCanvasRef.current) await createImagePlaceholder(fabricCanvasRef.current)
     }
 
-    // ============================================================================
-    // IMAGE HANDLERS
-    // ============================================================================
+    // Image handlers
     const handleFileSelect = async (file: File) => {
-        if (!fabricCanvasRef.current) return
-
-        if (!file.type.startsWith('image/')) {
-            toast.error('Por favor selecciona un archivo de imagen')
-            return
-        }
-
-        setIsUploading(true)
-        toast.info('Adding image...')
-
-        try {
-            // Generate upload URL
-            const uploadUrl = await generateUploadUrl()
-
-            // Upload file to Convex storage
-            const result = await fetch(uploadUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': file.type },
-                body: file,
-            })
-
-            if (!result.ok) {
-                throw new Error('Failed to upload file')
-            }
-
-            const { storageId } = await result.json()
-
-            // Get the public URL from Convex
-            const { url } = await saveImage({ storageId })
-
-            // Add image to canvas
-            handleAddImage(url)
-        } catch (error) {
-            console.error('Error uploading image:', error)
-            toast.error('Error al subir la imagen')
-        } finally {
-            setIsUploading(false)
-        }
+        const url = await uploadImage(file)
+        if (url) handleAddImage(url)
     }
 
     const handleAddImage = (imgSrc: string) => {
         if (!fabricCanvasRef.current) return
 
-        // Check if we're replacing a placeholder
         if (selectedPlaceholder && (selectedPlaceholder as any).isImagePlaceholder) {
             replaceImagePlaceholderWithImage(fabricCanvasRef.current, selectedPlaceholder, imgSrc)
                 .then(() => {
                     toast.success('Image added to container')
                     setSelectedPlaceholder(null)
                 })
-                .catch(() => toast.error('Error al cargar la imagen. Verifica la URL.'))
+                .catch(() => toast.error('Error al cargar la imagen'))
         } else {
-            // Add image normally
             addImageToCanvas(fabricCanvasRef.current, imgSrc)
                 .then(() => toast.success('Image added'))
-                .catch(() => toast.error('Error al cargar la imagen. Verifica la URL.'))
+                .catch(() => toast.error('Error al cargar la imagen'))
         }
     }
 
-    // ============================================================================
-    // OBJECT OPERATIONS
-    // ============================================================================
+    // Object operations
     const handleDeleteSelected = () => {
         if (!fabricCanvasRef.current) return
 
         const activeObjects = fabricCanvasRef.current.getActiveObjects()
-
         if (activeObjects.length === 0) return
 
-        // Remove all selected objects
-        activeObjects.forEach(obj => {
-            fabricCanvasRef.current?.remove(obj)
-        })
-
+        activeObjects.forEach(obj => fabricCanvasRef.current?.remove(obj))
         fabricCanvasRef.current.discardActiveObject()
         fabricCanvasRef.current.renderAll()
         setSelectedObject(null)
         saveCanvas()
-
         toast.success(`${activeObjects.length} object${activeObjects.length > 1 ? 's' : ''} deleted`)
     }
 
     const handleCopyObject = () => {
         if (!fabricCanvasRef.current) return
 
-        const activeSelection = fabricCanvasRef.current.getActiveObject()
-
-        if (!activeSelection) {
-            toast.error('No objects selected to copy')
-            return
-        }
-
         const activeObjects = fabricCanvasRef.current.getActiveObjects()
-
         if (activeObjects.length === 0) {
             toast.error('No objects selected to copy')
             return
         }
 
-        // Copy all selected objects
         const objectsData = activeObjects.map(obj => {
             const data = copyObjectToJSON(obj)
-
-            // CRITICAL FIX: Get TRUE canvas position using calcTransformMatrix + qrDecompose
-            // This correctly extracts absolute canvas coordinates even when object is in an ActiveSelection group
             const matrix = obj.calcTransformMatrix()
             const decomposed = fabric.util.qrDecompose(matrix)
-
-            console.log(`📋 Copying ${obj.type}:`, {
-                groupRelative: { left: obj.left, top: obj.top },
-                trueCanvasPosition: { left: decomposed.translateX, top: decomposed.translateY }
-            })
-
-            // Override with TRUE canvas coordinates
             data.left = decomposed.translateX
             data.top = decomposed.translateY
-
             return data
         })
 
-        // Store as array if multiple, single object if one
         const dataToStore = objectsData.length === 1 ? objectsData[0] : objectsData
-
-        onCopyObject(dataToStore) // Parent will show success toast
-
-        console.log(`📋 ${objectsData.length} objeto(s) copiado(s) con posiciones absolutas`)
+        onCopyObject(dataToStore)
     }
 
     const handlePasteObject = async () => {
@@ -699,127 +325,42 @@ export function FabricSlideEditor({
         }
 
         try {
-            // Check if it's an array (multiple objects) or single object
             const objectsToPaste = Array.isArray(copiedData) ? copiedData : [copiedData]
 
-            console.log(`📋 Pegando ${objectsToPaste.length} objeto(s)`)
-
-            // Calculate bounding box of all objects
-            let minLeft = Infinity
-            let minTop = Infinity
-            let maxRight = -Infinity
-            let maxBottom = -Infinity
-
+            let minLeft = Infinity, minTop = Infinity
             objectsToPaste.forEach(obj => {
-                const left = obj.left || 0
-                const top = obj.top || 0
-                const width = (obj.width || 100) * (obj.scaleX || 1)
-                const height = (obj.height || 100) * (obj.scaleY || 1)
-
-                minLeft = Math.min(minLeft, left)
-                minTop = Math.min(minTop, top)
-                maxRight = Math.max(maxRight, left + width)
-                maxBottom = Math.max(maxBottom, top + height)
+                minLeft = Math.min(minLeft, obj.left || 0)
+                minTop = Math.min(minTop, obj.top || 0)
             })
 
-            const groupWidth = maxRight - minLeft
-            const groupHeight = maxBottom - minTop
-
-            console.log('📏 Bounding box original:', {
-                minLeft, minTop, maxRight, maxBottom, groupWidth, groupHeight,
-                objects: objectsToPaste.map(o => ({ left: o.left, top: o.top, width: o.width, height: o.height }))
-            })
-
-            // If objects are off-screen (negative or too large), paste at canvas center
-            // Otherwise paste with 50px offset
-            let targetLeft, targetTop
-
-            if (minLeft < 0 || minTop < 0 || minLeft > 1920 || minTop > 1080) {
-                // Objects are off-screen, paste at center
-                targetLeft = (1920 - groupWidth) / 2
-                targetTop = (1080 - groupHeight) / 2
-                console.log('📍 Objetos fuera de pantalla, pegando en centro:', { targetLeft, targetTop })
-            } else {
-                // Objects are on-screen, paste with offset
-                targetLeft = minLeft + 50
-                targetTop = minTop + 50
-                console.log('📍 Pegando con offset de 50px:', { targetLeft, targetTop })
-            }
-
-            // Calculate the offset to apply to all objects
+            const targetLeft = minLeft < 0 || minTop < 0 ? 960 : minLeft + 50
+            const targetTop = minTop < 0 || minTop < 0 ? 540 : minTop + 50
             const offsetX = targetLeft - minLeft
             const offsetY = targetTop - minTop
 
-            console.log('📐 Offset calculation:', {
-                targetLeft, targetTop,
-                minLeft, minTop,
-                offsetX, offsetY
-            })
-
-            // Paste all objects with relative positioning maintained
             const pastedObjects: fabric.FabricObject[] = []
             for (const objData of objectsToPaste) {
-                // Create a copy of objData with offset applied
                 const offsetObjData = {
                     ...objData,
                     left: objData.left + offsetX,
                     top: objData.top + offsetY
                 }
-
-                console.log('📋 Pegando objeto:', {
-                    type: offsetObjData.type,
-                    originalLeft: objData.left,
-                    originalTop: objData.top,
-                    newLeft: offsetObjData.left,
-                    newTop: offsetObjData.top
-                })
-
                 const pastedObj = await pasteObjectFromJSON(fabricCanvasRef.current, offsetObjData)
-                if (pastedObj) {
-                    pastedObjects.push(pastedObj)
-                }
+                if (pastedObj) pastedObjects.push(pastedObj)
             }
 
-            // Log positions before selection
-            console.log('📍 Posiciones ANTES de selección:')
-            pastedObjects.forEach((obj, i) => {
-                console.log(`  ${i}. ${obj.type} at (${obj.left}, ${obj.top})`)
-            })
-
-            // Select all pasted objects if multiple
-            // CRITICAL: Use setActiveObject with an ActiveSelection WITHOUT transforming coordinates
-            // We need to let Fabric handle the selection naturally
-            if (pastedObjects.length > 0 && fabricCanvasRef.current) {
+            if (pastedObjects.length > 0) {
                 if (pastedObjects.length === 1) {
-                    // Single object - just select it
                     fabricCanvasRef.current.setActiveObject(pastedObjects[0])
                 } else {
-                    // Multiple objects - let user see them but don't force a selection
-                    // Creating an ActiveSelection here would transform coordinates
                     fabricCanvasRef.current.discardActiveObject()
                 }
                 fabricCanvasRef.current.renderAll()
             }
 
-            // Log positions after selection
-            console.log('📍 Posiciones DESPUÉS de selección:')
-            pastedObjects.forEach((obj, i) => {
-                console.log(`  ${i}. ${obj.type} at (${obj.left}, ${obj.top})`)
-            })
-
-            // Save AFTER selection is complete
             setTimeout(() => {
-                console.log('📍 Posiciones ANTES de saveCanvas:')
-                pastedObjects.forEach((obj, i) => {
-                    console.log(`  ${i}. ${obj.type} at (${obj.left}, ${obj.top})`)
-                })
-
-                // CRITICAL: Force save even if initial load hasn't completed
-                // This ensures cross-slide paste operations are saved
-                const wasInitialLoad = isInitialLoadRef.current
                 isInitialLoadRef.current = false
                 saveCanvas()
-                console.log(`🔧 Force-disabled isInitialLoad for paste save (was: ${wasInitialLoad})`)
             }, 50)
 
             toast.success(`${pastedObjects.length} object${pastedObjects.length > 1 ? 's' : ''} pasted`)
@@ -836,9 +377,7 @@ export function FabricSlideEditor({
         toast.success(isLocked ? 'Object blocked' : 'Object unblocked')
     }
 
-    // ============================================================================
-    // PROPERTY UPDATES
-    // ============================================================================
+    // Property updates
     const handleUpdateTextProperty = (property: string, value: any) => {
         if (!selectedObject || !fabricCanvasRef.current) return
         updateObjectProperty(selectedObject, property, value, fabricCanvasRef.current)
@@ -851,95 +390,22 @@ export function FabricSlideEditor({
         saveCanvas()
     }
 
-    const handleUpdateBorderRadius = (radius: number) => {
-        if (!selectedObject || !fabricCanvasRef.current) return
-
-        // Store the new border radius
-        ;(selectedObject as any).borderRadius = radius
-
-        // If it's an image placeholder (group), update the rectangles inside
-        if ((selectedObject as any).isImagePlaceholder && selectedObject.type === 'group') {
-            const group = selectedObject as fabric.Group
-            const objects = group.getObjects()
-
-            objects.forEach(obj => {
-                if (obj.type === 'rect') {
-                    const rect = obj as fabric.Rect
-                    rect.set({
-                        rx: radius,
-                        ry: radius,
-                    })
-                }
-            })
-
-            group.setCoords()
-            fabricCanvasRef.current.renderAll()
-        }
-
-        // If it's an image container, update the clipPath
-        if ((selectedObject as any).isImageContainer && selectedObject.type === 'image') {
-            const img = selectedObject as fabric.FabricImage
-
-            // Get the current crop and scale values
-            const cropX = (img as any).cropX || 0
-            const cropY = (img as any).cropY || 0
-            const imgWidth = img.width || 100
-            const imgHeight = img.height || 100
-            const scale = img.scaleX || 1
-
-            // Create new clipPath with updated border radius
-            if (radius > 0) {
-                const clipBorderRadius = radius / scale
-
-                const newClipPath = new fabric.Rect({
-                    width: imgWidth - (cropX * 2),
-                    height: imgHeight - (cropY * 2),
-                    rx: clipBorderRadius,
-                    ry: clipBorderRadius,
-                    left: -(imgWidth - (cropX * 2)) / 2,
-                    top: -(imgHeight - (cropY * 2)) / 2,
-                    originX: 'left',
-                    originY: 'top',
-                })
-
-                img.set({ clipPath: newClipPath })
-            } else {
-                // Remove clipPath if radius is 0
-                img.set({ clipPath: undefined })
-            }
-
-            fabricCanvasRef.current.renderAll()
-        }
-
-        saveCanvas()
-    }
-
     const handleUpdateStrokeColor = (color: string) => {
         if (!selectedObject || !fabricCanvasRef.current) return
-
-        selectedObject.set({
-            stroke: color
-        })
-
+        selectedObject.set({ stroke: color })
         fabricCanvasRef.current.renderAll()
         saveCanvas()
     }
 
     const handleUpdateStrokeWidth = (width: number) => {
         if (!selectedObject || !fabricCanvasRef.current) return
-
-        selectedObject.set({
-            strokeWidth: width
-        })
-
+        selectedObject.set({ strokeWidth: width })
         fabricCanvasRef.current.renderAll()
         saveCanvas()
     }
 
     const handleUpdateRingThickness = (thickness: number) => {
         if (!selectedObject || !fabricCanvasRef.current) return
-
-        // Only apply to ring objects
         if ((selectedObject as any).isRing) {
             updateRingThickness(selectedObject, thickness)
             fabricCanvasRef.current.renderAll()
@@ -947,40 +413,73 @@ export function FabricSlideEditor({
         }
     }
 
-    // ============================================================================
-    // LAYER CONTROLS
-    // ============================================================================
+    const handleUpdateBorderRadius = (radius: number) => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+        ;(selectedObject as any).borderRadius = radius
+
+        if ((selectedObject as any).isImagePlaceholder && selectedObject.type === 'group') {
+            const group = selectedObject as fabric.Group
+            group.getObjects().forEach(obj => {
+                if (obj.type === 'rect') {
+                    (obj as fabric.Rect).set({ rx: radius, ry: radius })
+                }
+            })
+            group.setCoords()
+            fabricCanvasRef.current.renderAll()
+        }
+
+        if ((selectedObject as any).isImageContainer && selectedObject.type === 'image') {
+            const img = selectedObject as fabric.FabricImage
+            const scale = img.scaleX || 1
+
+            if (radius > 0) {
+                const clipBorderRadius = radius / scale
+                const clipPath = new fabric.Rect({
+                    width: img.width! - ((img as any).cropX * 2),
+                    height: img.height! - ((img as any).cropY * 2),
+                    rx: clipBorderRadius,
+                    ry: clipBorderRadius,
+                    left: -(img.width! - ((img as any).cropX * 2)) / 2,
+                    top: -(img.height! - ((img as any).cropY * 2)) / 2,
+                    originX: 'left',
+                    originY: 'top',
+                })
+                img.set({ clipPath })
+            } else {
+                img.set({ clipPath: undefined })
+            }
+            fabricCanvasRef.current.renderAll()
+        }
+
+        saveCanvas()
+    }
+
+    // Layer controls
     const handleBringToFront = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
         bringObjectToFront(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        
     }
 
     const handleSendToBack = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
         sendObjectToBack(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        
     }
 
     const handleBringForward = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
         bringObjectForward(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        
     }
 
     const handleSendBackward = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
         sendObjectBackward(selectedObject, fabricCanvasRef.current)
         saveCanvas()
-        
     }
 
-    // ============================================================================
-    // ZOOM CONTROLS
-    // ============================================================================
+    // Zoom controls
     const handleZoomIn = () => {
         if (!fabricCanvasRef.current) return
         const newZoom = zoomIn(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
@@ -999,55 +498,17 @@ export function FabricSlideEditor({
         setZoom(newZoom)
     }
 
-    // ============================================================================
-    // KEYBOARD SHORTCUTS
-    // ============================================================================
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const target = e.target as HTMLElement
-            const isTextInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+    // Keyboard shortcuts
+    useCanvasKeyboard({
+        fabricCanvasRef,
+        onCopy: handleCopyObject,
+        onPaste: handlePasteObject,
+        onDelete: handleDeleteSelected,
+        onUndo: () => undo(fabricCanvasRef.current, setBackgroundColor),
+        onRedo: () => redo(fabricCanvasRef.current, setBackgroundColor)
+    })
 
-            if (fabricCanvasRef.current) {
-                const activeObject = fabricCanvasRef.current.getActiveObject()
-                if (activeObject && (activeObject.type === 'i-text' || activeObject.type === 'textbox') && (activeObject as any).isEditing) {
-                    return
-                }
-            }
-
-            if (isTextInput) return
-
-            if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
-                e.preventDefault()
-                handleCopyObject()
-            }
-
-            if ((e.metaKey || e.ctrlKey) && e.key === 'v') {
-                e.preventDefault()
-                handlePasteObject()
-            }
-
-            if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
-                e.preventDefault()
-                redo()
-            } else if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-                e.preventDefault()
-                undo()
-            }
-
-            if ((e.key === 'Delete' || e.key === 'Backspace') && !isTextInput) {
-                e.preventDefault()
-                handleDeleteSelected()
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyDown)
-        return () => window.removeEventListener('keydown', handleKeyDown)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedObject, handleCopyObject, handlePasteObject, handleDeleteSelected, undo, redo])
-
-    // ============================================================================
-    // CLIPBOARD & DRAG-DROP
-    // ============================================================================
+    // Clipboard paste
     useEffect(() => {
         const handlePaste = async (e: ClipboardEvent) => {
             const items = e.clipboardData?.items
@@ -1059,40 +520,11 @@ export function FabricSlideEditor({
                     if (!blob) continue
 
                     e.preventDefault()
-
-                    setIsUploading(true)
-                    toast.info('Subiendo imagen desde portapapeles...')
-
-                    try {
-                        // Generate upload URL
-                        const uploadUrl = await generateUploadUrl()
-
-                        // Upload file to Convex storage
-                        const result = await fetch(uploadUrl, {
-                            method: 'POST',
-                            headers: { 'Content-Type': blob.type },
-                            body: blob,
-                        })
-
-                        if (!result.ok) {
-                            throw new Error('Failed to upload file')
-                        }
-
-                        const { storageId } = await result.json()
-
-                        // Get the public URL from Convex
-                        const { url } = await saveImage({ storageId })
-
-                        // Add image to canvas
+                    const url = await uploadFromClipboard(blob)
+                    if (url) {
                         handleAddImage(url)
                         toast.success('Imagen paste')
-                    } catch (error) {
-                        console.error('Error uploading pasted image:', error)
-                        toast.error('Error al subir la imagen')
-                    } finally {
-                        setIsUploading(false)
                     }
-
                     break
                 }
             }
@@ -1100,19 +532,14 @@ export function FabricSlideEditor({
 
         window.addEventListener('paste', handlePaste)
         return () => window.removeEventListener('paste', handlePaste)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    // Drag and drop is now handled globally by the parent FabricPresentationEditor
-    // This component only listens for the global 'addImageToSlide' event
-
-    // Listen for global image addition events from parent
+    // Global image addition events
     useEffect(() => {
         const handleGlobalImageAdd = (e: Event) => {
             const customEvent = e as CustomEvent
             const { imageUrl, slideIndex } = customEvent.detail
 
-            // Only process if this is the current slide
             if (slideIndex === slideNumber - 1 && fabricCanvasRef.current) {
                 addImageToCanvas(fabricCanvasRef.current, imageUrl)
                     .then(() => toast.success('Image added'))
@@ -1121,18 +548,11 @@ export function FabricSlideEditor({
         }
 
         window.addEventListener('addImageToSlide', handleGlobalImageAdd)
-
-        return () => {
-            window.removeEventListener('addImageToSlide', handleGlobalImageAdd)
-        }
+        return () => window.removeEventListener('addImageToSlide', handleGlobalImageAdd)
     }, [slideNumber])
 
-    // ============================================================================
-    // RENDER
-    // ============================================================================
     return (
         <div className="h-full flex">
-            {/* Left Sidebar - Tools */}
             <ToolsSidebar
                 onAddText={handleAddText}
                 onAddRectangle={handleAddRectangle}
@@ -1147,9 +567,7 @@ export function FabricSlideEditor({
                 onToggleSidebar={onToggleSidebar}
             />
 
-            {/* Center - Canvas Area */}
             <div className="flex-1 min-w-0 flex flex-col">
-                {/* Top Toolbar */}
                 <EditorToolbar
                     slideNumber={slideNumber}
                     totalSlides={totalSlides}
@@ -1164,11 +582,10 @@ export function FabricSlideEditor({
                     onSendToBack={handleSendToBack}
                     onToggleLock={handleToggleLock}
                     onDelete={handleDeleteSelected}
-                    onUndo={undo}
-                    onRedo={redo}
+                    onUndo={() => undo(fabricCanvasRef.current, setBackgroundColor)}
+                    onRedo={() => redo(fabricCanvasRef.current, setBackgroundColor)}
                 />
 
-                {/* Canvas */}
                 <div
                     ref={containerRef}
                     className="flex-1 bg-gray-200 flex items-start justify-center overflow-auto relative p-4"
@@ -1183,18 +600,11 @@ export function FabricSlideEditor({
                     <canvas
                         ref={canvasRef}
                         className="shadow-2xl border-2 border-gray-400 rounded-sm flex-shrink-0"
-                        style={{
-                            display: 'block',
-                        }}
+                        style={{ display: 'block' }}
                     />
-
-                    {/* <div className="absolute bottom-4 left-4 bg-white/90 text-gray-900 text-xs px-2 py-1.5 rounded backdrop-blur-sm border border-gray-300">
-                        <p className="text-[10px] text-gray-600">Shift+Drag to move</p>
-                    </div> */}
                 </div>
             </div>
 
-            {/* Right Sidebar - Properties */}
             <PropertiesSidebar
                 selectedObject={selectedObject}
                 backgroundColor={backgroundColor}
@@ -1207,7 +617,6 @@ export function FabricSlideEditor({
                 onUpdateRingThickness={handleUpdateRingThickness}
             />
 
-            {/* Image Upload Dialog */}
             <UploadButtonDialog
                 open={showUploadDialog}
                 onOpenChange={setShowUploadDialog}
