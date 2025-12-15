@@ -407,7 +407,7 @@ function SlideCanvas({ chatId, version, title, createdAt, index, userInfo, onRen
             </div>
 
             {/* Info Section */}
-            <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 bg-white rounded-b-xl sm:rounded-b-2xl cursor-pointer">
+            <div className="p-3 -mt-4 sm:p-4 space-y-2 sm:space-y-3 bg-white rounded-b-xl sm:rounded-b-2xl cursor-pointer">
                 <div className="flex items-start gap-2 sm:gap-3">
                     <Avatar className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 pointer-events-none">
                         <AvatarImage src={userInfo?.pictureUrl} alt={userInfo?.name || 'User'} />
