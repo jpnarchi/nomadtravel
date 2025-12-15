@@ -7,7 +7,7 @@
  * Ahora usa hooks personalizados y componentes modulares
  */
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { FabricSlideEditor } from './fabric-slide-editor'
 import { Button } from '../ui/button'
 import { api } from "@/convex/_generated/api"
@@ -255,6 +255,14 @@ export function FabricPresentationEditor({
         setHasUnsavedChanges(true)
         toast.success(`Aspect ratio changed to ${newRatio}`)
     }
+
+    // Update editableCode when showCode changes or currentSlideIndex changes
+    useEffect(() => {
+        if (showCode && slides[currentSlideIndex]) {
+            setEditableCode(JSON.stringify(slides[currentSlideIndex].data, null, 2))
+            setCodeError(null)
+        }
+    }, [showCode, currentSlideIndex, slides])
 
     if (isLoading) {
         return (
