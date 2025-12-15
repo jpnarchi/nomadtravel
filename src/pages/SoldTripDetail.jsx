@@ -292,23 +292,19 @@ export default function SoldTripDetail() {
   const createSupplierPaymentMutation = useMutation({
     mutationFn: async (data) => {
       const payment = await base44.entities.SupplierPayment.create(data);
-      
-      // If associated with a service, update service's amount_paid_to_supplier
-      if (data.trip_service_id) {
-        const currentService = await base44.entities.TripService.filter({ id: data.trip_service_id });
-        if (currentService.length > 0) {
-          const existingAmountPaid = currentService[0].amount_paid_to_supplier || 0;
-          const newTotalPaid = existingAmountPaid + (data.amount || 0);
-          
-          await base44.entities.TripService.update(data.trip_service_id, {
-            amount_paid_to_supplier: newTotalPaid
-          });
-        }
-      }
-      
       return payment;
     },
-    onSuccess: async () => {
+    onSuccess: async (newPayment) => {
+      // If associated with a service, recalculate amount_paid_to_supplier from all related payments
+      if (newPayment.trip_service_id) {
+        const relatedPayments = await base44.entities.SupplierPayment.filter({ trip_service_id: newPayment.trip_service_id });
+        const totalPaidForService = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        await base44.entities.TripService.update(newPayment.trip_service_id, {
+          amount_paid_to_supplier: totalPaidForService
+        });
+      }
+      
       await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
       await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
       await updateTripTotals();
@@ -319,7 +315,17 @@ export default function SoldTripDetail() {
 
   const updateSupplierPaymentMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SupplierPayment.update(id, data),
-    onSuccess: async () => {
+    onSuccess: async (updatedPayment) => {
+      // If associated with a service, recalculate amount_paid_to_supplier from all related payments
+      if (updatedPayment.trip_service_id) {
+        const relatedPayments = await base44.entities.SupplierPayment.filter({ trip_service_id: updatedPayment.trip_service_id });
+        const totalPaidForService = relatedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        
+        await base44.entities.TripService.update(updatedPayment.trip_service_id, {
+          amount_paid_to_supplier: totalPaidForService
+        });
+      }
+      
       await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
       await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
       await updateTripTotals();
