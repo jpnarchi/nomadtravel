@@ -31,6 +31,7 @@ import { useFabricCanvas } from './hooks/use-fabric-canvas'
 import { useCanvasHistory } from './hooks/use-canvas-history'
 import { useCanvasKeyboard } from './hooks/use-canvas-keyboard'
 import { useImageUpload } from './hooks/use-image-upload'
+import { useAlignmentGuides } from './hooks/use-alignment-guides'
 
 // Types
 import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios'
@@ -81,9 +82,16 @@ export function FabricSlideEditor({
         completeInitialLoad,
         isInitialLoadRef
     } = useCanvasHistory(backgroundColor)
+    const { setupAlignmentGuides } = useAlignmentGuides({
+        enabled: true,
+        snapThreshold: 10
+    })
 
     // Canvas setup with event handlers
     const setupCanvasEvents = useCallback((canvas: fabric.Canvas) => {
+        // Setup alignment guides
+        const cleanupAlignmentGuides = setupAlignmentGuides(canvas)
+
         // Selection events
         canvas.on('selection:created', (e) => {
             const obj = e.selected?.[0] || null
@@ -194,7 +202,14 @@ export function FabricSlideEditor({
             canvas.selection = true
             canvas.defaultCursor = 'default'
         })
-    }, [])
+
+        // Return cleanup function
+        return () => {
+            if (cleanupAlignmentGuides) {
+                cleanupAlignmentGuides()
+            }
+        }
+    }, [setupAlignmentGuides])
 
     const { fabricCanvasRef, baseScaleRef } = useFabricCanvas({
         canvasRef,

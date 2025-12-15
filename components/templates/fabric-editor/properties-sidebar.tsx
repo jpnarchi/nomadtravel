@@ -62,7 +62,7 @@ export function PropertiesSidebar({
                             type="color"
                             value={backgroundColor}
                             onChange={(e) => onBackgroundColorChange(e.target.value)}
-                            className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
+                            className="w-10 h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900 rounded-2xl"
                         />
                     </div>
                 </div>

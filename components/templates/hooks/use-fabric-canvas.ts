@@ -14,7 +14,7 @@ interface UseFabricCanvasProps {
     slideNumber: number
     backgroundColor: string
     aspectRatio: AspectRatioType
-    onCanvasEvents?: (canvas: fabric.Canvas) => void
+    onCanvasEvents?: (canvas: fabric.Canvas) => void | (() => void)
 }
 
 export function useFabricCanvas({
@@ -63,8 +63,12 @@ export function useFabricCanvas({
         loadObjectsToCanvas(canvas, slideData, slideNumber)
 
         // Setup event handlers if provided
+        let cleanupCanvasEvents: (() => void) | undefined
         if (onCanvasEvents) {
-            onCanvasEvents(canvas)
+            const result = onCanvasEvents(canvas)
+            if (typeof result === 'function') {
+                cleanupCanvasEvents = result
+            }
         }
 
         // Handle resize
@@ -94,6 +98,9 @@ export function useFabricCanvas({
         window.addEventListener('resize', handleResize)
 
         return () => {
+            if (cleanupCanvasEvents) {
+                cleanupCanvasEvents()
+            }
             canvas.dispose()
             window.removeEventListener('resize', handleResize)
         }
