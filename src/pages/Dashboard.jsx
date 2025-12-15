@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
-  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+  const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
@@ -40,7 +40,7 @@ export default function Dashboard() {
     enabled: !!user
   });
 
-  const { data: soldTrips = [], isLoading: soldLoading } = useQuery({
+  const { data: allSoldTrips = [], isLoading: soldLoading } = useQuery({
     queryKey: ['soldTrips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
@@ -50,7 +50,7 @@ export default function Dashboard() {
     enabled: !!user
   });
 
-  const { data: clients = [] } = useQuery({
+  const { data: allClients = [] } = useQuery({
     queryKey: ['clients', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
@@ -59,6 +59,11 @@ export default function Dashboard() {
     },
     enabled: !!user
   });
+
+  // Filter out deleted records
+  const trips = allTrips.filter(t => !t.is_deleted);
+  const soldTrips = allSoldTrips.filter(t => !t.is_deleted);
+  const clients = allClients.filter(c => !c.is_deleted);
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks', user?.email, isAdmin],
