@@ -212,7 +212,12 @@ export function detectActiveGuides(
     // Solo mantener la guía más cercana al objeto
     const filteredGuides = filterCloseGuides(uniqueGuides, 20)
 
-    return filteredGuides
+    // Limitar a máximo 2 guías (las más relevantes)
+    // Ordenar por snapDistance y tomar las 2 más cercanas
+    const sortedByRelevance = filteredGuides.sort((a, b) => a.snapDistance - b.snapDistance)
+    const maxGuides = sortedByRelevance.slice(0, 2)
+
+    return maxGuides
 }
 
 /**
