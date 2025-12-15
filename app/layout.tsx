@@ -87,7 +87,12 @@ export const metadata = {
   title: "iLovePresentations ",
   description: "iLovePresentations is a platform powered by artificial intelligence that creates presentations automatically, quickly and optimized for any business or project.",
   icons: {
-    icon: "/logo.svg"
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.svg", type: "image/svg+xml" }
+    ],
+    apple: "/logo.png",
+    shortcut: "/favicon.ico"
   },
   manifest: "/manifest.json",
   themeColor: "#E5332D",
