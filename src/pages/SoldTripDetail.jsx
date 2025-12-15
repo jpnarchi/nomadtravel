@@ -966,14 +966,26 @@ export default function SoldTripDetail() {
                                           ${(service.commission || 0).toLocaleString()}
                                         </p>
                                       </div>
-                                      {service.total_price - (service.amount_paid_to_supplier || 0) > 0 && (
-                                        <div className="text-center">
-                                          <p className="text-stone-400 mb-0.5">Falta</p>
-                                          <p className="font-semibold text-orange-600 text-sm">
-                                            ${(service.total_price - (service.amount_paid_to_supplier || 0)).toLocaleString()}
-                                          </p>
-                                        </div>
-                                      )}
+                                      {(() => {
+                                        const servicePayments = supplierPayments.filter(p => p.trip_service_id === service.id);
+                                        const hasNetoPayments = servicePayments.some(p => p.payment_type === 'neto');
+                                        const costToPay = hasNetoPayments 
+                                          ? (service.total_price || 0) - (service.commission || 0)
+                                          : (service.total_price || 0);
+                                        const outstanding = Math.max(0, costToPay - (service.amount_paid_to_supplier || 0));
+                                        
+                                        if (outstanding > 0) {
+                                          return (
+                                            <div className="text-center">
+                                              <p className="text-stone-400 mb-0.5">Falta</p>
+                                              <p className="font-semibold text-orange-600 text-sm">
+                                                ${outstanding.toLocaleString()}
+                                              </p>
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
                                       {service.amount_paid_to_supplier > 0 && (
                                         <div className="text-center">
                                           <p className="text-stone-400 mb-0.5">Pagado</p>
