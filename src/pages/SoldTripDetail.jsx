@@ -298,7 +298,7 @@ export default function SoldTripDetail() {
         const servicePayments = await base44.entities.SupplierPayment.filter({ 
           trip_service_id: data.trip_service_id 
         });
-        const totalPaid = servicePayments.reduce((sum, p) => sum + (p.amount || 0), 0) + data.amount;
+        const totalPaid = servicePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
         
         await base44.entities.TripService.update(data.trip_service_id, {
           amount_paid_to_supplier: totalPaid
