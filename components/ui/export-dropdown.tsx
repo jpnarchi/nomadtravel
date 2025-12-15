@@ -71,7 +71,7 @@ export function ExportDropdown({
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Export Presentation</DialogTitle>
+                    <DialogTitle className='font-[family-name:var(--font-ppmori-semibold)]'>Export Presentation</DialogTitle>
                     <DialogDescription>
                         Select the format to download your presentation
                     </DialogDescription>
