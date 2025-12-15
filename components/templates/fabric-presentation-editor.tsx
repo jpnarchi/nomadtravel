@@ -13,12 +13,6 @@ import { Button } from '../ui/button'
 import { api } from "@/convex/_generated/api";
 import { ScrollArea } from '../ui/scroll-area'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
-import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -54,10 +48,11 @@ import {
 import { toast } from 'sonner'
 import { Loader } from '../ai-elements/loader'
 import { useQuery, useMutation } from "convex/react";
-import { exportToPDF } from '@/lib/export/pdf-exporter'
+import { exportToPDF, PDFQuality } from '@/lib/export/pdf-exporter'
 import { exportToPPT } from '@/lib/export/ppt-exporter'
 import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios'
 import { AspectRatioSelector } from './aspect-ratio-selector'
+import { ExportDropdown } from '../ui/export-dropdown'
 
 interface FabricPresentationEditorProps {
     initialFiles: Record<string, string>
@@ -425,8 +420,8 @@ export function FabricPresentationEditor({
     }
 
     // Handle PDF export
-    const handlePDFExport = async () => {
-        exportToPDF(slides.map(slide => slide.data), aspectRatio)
+    const handlePDFExport = async (quality: PDFQuality = 'high') => {
+        exportToPDF(slides.map(slide => slide.data), aspectRatio, quality)
 
         // Mark project as downloaded
         const chatId = params?.id || params?.chatId;
@@ -965,29 +960,15 @@ export function FabricPresentationEditor({
                     >
                         {showCode ? <Eye className="size-4" /> : <Code className="size-4" />}
                     </Button>)}
-                    {/* Share Dropdown */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                // variant="outline"
-                                size="sm"
-                                className=" transition-all border-1 p-6 px-4"
-                            >
-                                <Share className="size-4 mr-2" />
-                                Share
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handlePDFExport}>
-                                <FileDown className="size-4 mr-2" />
-                                Export as PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handlePPTExport}>
-                                <FileDown className="size-4 mr-2" />
-                                Export as PPT
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Export Dropdown */}
+                    <ExportDropdown
+                        onExportPDF={handlePDFExport}
+                        onExportPPT={handlePPTExport}
+                        triggerText="Share"
+                        triggerIcon={<Share className="size-4 mr-2" />}
+                        variant="default"
+                        className="transition-all border-1 p-6 px-4"
+                    />
 
                     {/* Fullscreen Button */}
                     <Button

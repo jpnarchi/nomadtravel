@@ -16,7 +16,13 @@ import * as fabric from 'fabric'
 import { ChevronLeft, ChevronRight, Maximize, Minimize, Grid3x3, ZoomIn, ZoomOut, FileDown, Presentation, SkipForward, SkipBack } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { exportToPDF } from '@/lib/export/pdf-exporter'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '../ui/dropdown-menu'
+import { exportToPDF, PDFQuality } from '@/lib/export/pdf-exporter'
 import { exportToPPT } from '@/lib/export/ppt-exporter'
 import { useSlideRenderer } from '@/lib/hooks/use-slide-renderer'
 import { parseSlidesFromFiles } from '@/lib/utils/slide-parser'
@@ -404,22 +410,36 @@ export function FabricPresentationPreview({
 
                                 <div className="h-8 w-px bg-zinc-700/50" />
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => exportToPDF(slides)}
-                                            className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all text-white"
-                                        >
-                                            <FileDown className="size-4 mr-2 text-white" />
-                                            PDF
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Export presentation as PDF</p>
-                                    </TooltipContent>
-                                </Tooltip>
+                                <DropdownMenu>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-9 hover:bg-blue-500/10 hover:text-blue-400 transition-all text-white"
+                                                >
+                                                    <FileDown className="size-4 mr-2 text-white" />
+                                                    PDF
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Export presentation as PDF</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                    <DropdownMenuContent align="center">
+                                        <DropdownMenuItem onClick={() => exportToPDF(slides, undefined, 'standard')}>
+                                            Standard Quality (2x)
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => exportToPDF(slides, undefined, 'high')}>
+                                            High Quality (3x) - Recommended
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => exportToPDF(slides, undefined, 'print')}>
+                                            Print Quality (4x)
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
 
                                 <Tooltip>
                                     <TooltipTrigger asChild>

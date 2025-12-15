@@ -4,6 +4,35 @@ import * as fabric from 'fabric'
 import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '../aspect-ratios'
 
 /**
+ * PDF export quality settings
+ */
+export type PDFQuality = 'standard' | 'high' | 'print'
+
+interface QualityConfig {
+    multiplier: number
+    compression: 'FAST' | 'SLOW' | 'NONE'
+    fontRenderDelay: number
+}
+
+const QUALITY_CONFIGS: Record<PDFQuality, QualityConfig> = {
+    standard: {
+        multiplier: 2,
+        compression: 'FAST',
+        fontRenderDelay: 300
+    },
+    high: {
+        multiplier: 3,
+        compression: 'SLOW',
+        fontRenderDelay: 500
+    },
+    print: {
+        multiplier: 4,
+        compression: 'SLOW',
+        fontRenderDelay: 600
+    }
+}
+
+/**
  * Load all fonts (Google Fonts and system fonts) dynamically
  */
 async function ensureFontsLoaded(): Promise<void> {
@@ -61,7 +90,7 @@ async function ensureFontsLoaded(): Promise<void> {
 /**
  * Render slide using Fabric.js canvas (no HTML/CSS parsing = no oklch issues!)
  */
-async function renderSlideToImage(slideData: any, canvasWidth: number, canvasHeight: number): Promise<string> {
+async function renderSlideToImage(slideData: any, canvasWidth: number, canvasHeight: number, qualityConfig: QualityConfig): Promise<string> {
     console.log('    🔧 [PDF-EXPORT-V4-FABRIC] renderSlideToImage iniciando...')
     console.log(`    🔧 [PDF-EXPORT-V4-FABRIC] slideData contiene ${slideData.objects?.length || 0} objetos`)
     console.log(`    🔧 [PDF-EXPORT-V4-FABRIC] Canvas dimensions: ${canvasWidth}x${canvasHeight}`)
@@ -92,7 +121,7 @@ async function renderSlideToImage(slideData: any, canvasWidth: number, canvasHei
         if (!slideData.objects || slideData.objects.length === 0) {
             console.log('    ⚠️  Slide vacío, renderizando solo fondo...')
             fabricCanvas.renderAll()
-            const imageData = fabricCanvas.toDataURL({ multiplier: 1, format: 'png', quality: 1.0 })
+            const imageData = fabricCanvas.toDataURL({ multiplier: qualityConfig.multiplier, format: 'png', quality: 1.0 })
             console.log(`    ✅ [PDF-EXPORT-V4-FABRIC] PNG generado (${Math.round(imageData.length / 1024)}kb)`)
             return imageData
         }
@@ -271,12 +300,12 @@ async function renderSlideToImage(slideData: any, canvasWidth: number, canvasHei
         console.log('    🔧 [PDF-EXPORT-V4-FABRIC] Renderizando canvas...')
         fabricCanvas.renderAll()
 
-        // Wait a bit for fonts to render
-        await new Promise(resolve => setTimeout(resolve, 300))
+        // Wait a bit for fonts to render (longer delay for higher quality)
+        await new Promise(resolve => setTimeout(resolve, qualityConfig.fontRenderDelay))
 
-        // Export to image
-        console.log('    🔧 [PDF-EXPORT-V4-FABRIC] Exportando a PNG...')
-        const imageData = fabricCanvas.toDataURL({ multiplier: 1, format: 'png', quality: 1.0 })
+        // Export to image with quality multiplier
+        console.log(`    🔧 [PDF-EXPORT-V4-FABRIC] Exportando a PNG (multiplier: ${qualityConfig.multiplier}x)...`)
+        const imageData = fabricCanvas.toDataURL({ multiplier: qualityConfig.multiplier, format: 'png', quality: 1.0 })
         console.log(`    ✅ [PDF-EXPORT-V4-FABRIC] PNG generado (${Math.round(imageData.length / 1024)}kb)`)
 
         return imageData
@@ -294,9 +323,17 @@ async function renderSlideToImage(slideData: any, canvasWidth: number, canvasHei
     }
 }
 
-export async function exportToPDF(slides: any[], aspectRatio: AspectRatioType = DEFAULT_ASPECT_RATIO) {
+export async function exportToPDF(
+    slides: any[],
+    aspectRatio: AspectRatioType = DEFAULT_ASPECT_RATIO,
+    quality: PDFQuality = 'high'
+) {
     console.log('🚀 [PDF-EXPORT-V4-FABRIC] Exportación iniciada con', slides.length, 'slides')
     console.log('🚀 [PDF-EXPORT-V4-FABRIC] Aspect ratio:', aspectRatio)
+    console.log('🚀 [PDF-EXPORT-V4-FABRIC] Quality level:', quality)
+
+    const qualityConfig = QUALITY_CONFIGS[quality]
+    console.log('🚀 [PDF-EXPORT-V4-FABRIC] Quality config:', qualityConfig)
 
     if (slides.length === 0) {
         toast.error('No slides to export')
@@ -379,7 +416,7 @@ export async function exportToPDF(slides: any[], aspectRatio: AspectRatioType = 
             try {
                 // Render slide to image
                 console.log(`  📸 [PDF-EXPORT-V4-FABRIC] Renderizando slide ${i + 1}...`)
-                const imageData = await renderSlideToImage(slide, aspectRatioDimensions.width, aspectRatioDimensions.height)
+                const imageData = await renderSlideToImage(slide, aspectRatioDimensions.width, aspectRatioDimensions.height, qualityConfig)
                 console.log(`  ✅ [PDF-EXPORT-V4-FABRIC] Slide ${i + 1} renderizado (${Math.round(imageData.length / 1024)}kb)`)
 
                 // Add page if not first slide
@@ -388,9 +425,9 @@ export async function exportToPDF(slides: any[], aspectRatio: AspectRatioType = 
                     console.log(`  📄 [PDF-EXPORT-V4-FABRIC] Nueva página agregada`)
                 }
 
-                // Add image to PDF
-                console.log(`  📄 [PDF-EXPORT-V4-FABRIC] Insertando imagen en PDF...`)
-                pdf.addImage(imageData, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+                // Add image to PDF with quality compression
+                console.log(`  📄 [PDF-EXPORT-V4-FABRIC] Insertando imagen en PDF (compression: ${qualityConfig.compression})...`)
+                pdf.addImage(imageData, 'PNG', 0, 0, pageWidth, pageHeight, undefined, qualityConfig.compression)
 
                 console.log(`✅ [PDF-EXPORT-V4-FABRIC] Slide ${i + 1} completado`)
             } catch (slideError) {

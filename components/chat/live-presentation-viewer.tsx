@@ -10,14 +10,9 @@ import { ChevronLeft, ChevronRight, Maximize, PencilRuler, Download } from "luci
 import { Loader } from "@/components/ai-elements/loader";
 import { useRouter } from "next/navigation";
 import { AspectRatioType, DEFAULT_ASPECT_RATIO, getAspectRatioDimensions } from '@/lib/aspect-ratios';
-import { exportToPDF } from '@/lib/export/pdf-exporter';
+import { exportToPDF, PDFQuality } from '@/lib/export/pdf-exporter';
 import { exportToPPT } from '@/lib/export/ppt-exporter';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 
 interface LivePresentationViewerProps {
     chatId: Id<"chats">;
@@ -516,8 +511,8 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
     };
 
     // Export handlers with download tracking
-    const handleExportToPDF = async () => {
-        await exportToPDF(slides, aspectRatio);
+    const handleExportToPDF = async (quality: PDFQuality = 'high') => {
+        await exportToPDF(slides, aspectRatio, quality);
 
         // Mark project as downloaded
         try {
@@ -595,31 +590,14 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                     )}
                 </div>
                 <div className="flex items-center gap-2">
-                    {/* Download Button with Dropdown */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                            >
-                                <Download className="size-4" />
-                                <span className="hidden md:inline">Download</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                                onClick={handleExportToPDF}
-                            >
-                                Download as PDF
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={handleExportToPPT}
-                            >
-                                Download as PowerPoint
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Export Dropdown */}
+                    <ExportDropdown
+                        onExportPDF={handleExportToPDF}
+                        onExportPPT={handleExportToPPT}
+                        triggerText="Download"
+                        triggerIcon={<Download className="size-4 mr-2" />}
+                        variant="outline"
+                    />
 
                     {/* Edit Presentation Button */}
                     <Button

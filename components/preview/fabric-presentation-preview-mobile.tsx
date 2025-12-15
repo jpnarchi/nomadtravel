@@ -13,7 +13,7 @@ import { Loader } from '../ai-elements/loader'
 import * as fabric from 'fabric'
 import { ChevronLeft, ChevronRight, FileDown } from 'lucide-react'
 import { Button } from '../ui/button'
-import { exportToPDF } from '@/lib/export/pdf-exporter'
+import { exportToPDF, PDFQuality } from '@/lib/export/pdf-exporter'
 import { exportToPPT } from '@/lib/export/ppt-exporter'
 import { useSlideRenderer } from '@/lib/hooks/use-slide-renderer'
 import { parseSlidesFromFiles } from '@/lib/utils/slide-parser'
@@ -22,6 +22,9 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
 
 interface FabricPresentationPreviewMobileProps {
@@ -266,10 +269,23 @@ export function FabricPresentationPreviewMobile({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem onClick={() => exportToPDF(slides)}>
-                                <FileDown className="size-4 mr-2" />
-                                Download as PDF
-                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <FileDown className="size-4 mr-2" />
+                                    Download as PDF
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => exportToPDF(slides, undefined, 'standard')}>
+                                        Standard (2x)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => exportToPDF(slides, undefined, 'high')}>
+                                        High (3x) ⭐
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => exportToPDF(slides, undefined, 'print')}>
+                                        Print (4x)
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
                             <DropdownMenuItem onClick={() => exportToPPT(slides)}>
                                 <FileDown className="size-4 mr-2" />
                                 Download as PPT
