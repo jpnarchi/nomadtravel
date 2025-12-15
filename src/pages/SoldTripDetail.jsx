@@ -295,21 +295,22 @@ export default function SoldTripDetail() {
       
       // If associated with a service, update service's amount_paid_to_supplier
       if (data.trip_service_id) {
-        const servicePayments = await base44.entities.SupplierPayment.filter({ 
-          trip_service_id: data.trip_service_id 
-        });
-        const totalPaid = servicePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        
-        await base44.entities.TripService.update(data.trip_service_id, {
-          amount_paid_to_supplier: totalPaid
-        });
+        const currentService = await base44.entities.TripService.filter({ id: data.trip_service_id });
+        if (currentService.length > 0) {
+          const existingAmountPaid = currentService[0].amount_paid_to_supplier || 0;
+          const newTotalPaid = existingAmountPaid + (data.amount || 0);
+          
+          await base44.entities.TripService.update(data.trip_service_id, {
+            amount_paid_to_supplier: newTotalPaid
+          });
+        }
       }
       
       return payment;
     },
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
       await updateTripTotals();
       setSupplierPaymentOpen(false);
       setEditingSupplierPayment(null);
@@ -319,8 +320,8 @@ export default function SoldTripDetail() {
   const updateSupplierPaymentMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SupplierPayment.update(id, data),
     onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
+      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
       await updateTripTotals();
       setSupplierPaymentOpen(false);
       setEditingSupplierPayment(null);
