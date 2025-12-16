@@ -47,6 +47,11 @@ import TripNotesList from '@/components/soldtrips/TripNotesList';
 import TripDocumentsList from '@/components/soldtrips/TripDocumentsList';
 import TripRemindersList from '@/components/soldtrips/TripRemindersList';
 import ActiveTripReminders from '@/components/soldtrips/ActiveTripReminders';
+import { 
+  updateSoldTripAndPaymentPlanTotals,
+  updateSoldTripAndTripServiceTotals,
+  updateSoldTripTotalsFromServices
+} from '@/components/utils/soldTripRecalculations';
 
 
 const SERVICE_ICONS = {
@@ -192,113 +197,59 @@ export default function SoldTripDetail() {
   // Mutations
   const createServiceMutation = useMutation({
     mutationFn: (data) => base44.entities.TripService.create(data),
-    onSuccess: async () => {
-      await updateTripTotals();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['allServices'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
+    onSuccess: async (newService) => {
+      await updateSoldTripTotalsFromServices(newService.sold_trip_id, queryClient);
       setServiceFormOpen(false);
     }
   });
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
-    onSuccess: async () => {
-      await updateTripTotals();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['allServices'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
+    onSuccess: async (_, variables) => {
+      const updatedService = services.find(s => s.id === variables.id);
+      if (updatedService?.sold_trip_id) {
+        await updateSoldTripTotalsFromServices(updatedService.sold_trip_id, queryClient);
+      }
       setServiceFormOpen(false);
       setEditingService(null);
     }
   });
 
   const deleteServiceMutation = useMutation({
-    mutationFn: (id) => base44.entities.TripService.delete(id),
-    onSuccess: async () => {
-      await updateTripTotals();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['allServices'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
+    mutationFn: ({ id, sold_trip_id }) => base44.entities.TripService.delete(id),
+    onSuccess: async (_, variables) => {
+      if (variables.sold_trip_id) {
+        await updateSoldTripTotalsFromServices(variables.sold_trip_id, queryClient);
+      }
       setDeleteConfirm(null);
     }
   });
 
   const updateClientPaymentMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.ClientPayment.update(id, data),
-    onSuccess: async () => {
-      await updateTripTotals();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await queryClient.refetchQueries({ queryKey: ['clientPayments', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
+    onSuccess: async (_, variables) => {
+      const payment = clientPayments.find(p => p.id === variables.id);
+      if (payment?.sold_trip_id) {
+        await updateSoldTripAndPaymentPlanTotals(payment.sold_trip_id, queryClient);
+      }
       setClientPaymentOpen(false);
       setEditingClientPayment(null);
     }
   });
 
   const createClientPaymentMutation = useMutation({
-    mutationFn: async (data) => {
-      const payment = await base44.entities.ClientPayment.create(data);
-      
-      // Update payment plan if exists
-      const plan = await base44.entities.ClientPaymentPlan.filter({ sold_trip_id: tripId });
-      if (plan.length > 0) {
-        // Sort by due date, prioritize overdue and pending
-        const sortedPlan = plan
-          .filter(p => p.status !== 'pagado')
-          .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-        
-        let remainingAmount = data.amount;
-        
-        for (const planItem of sortedPlan) {
-          if (remainingAmount <= 0) break;
-          
-          const amountDue = planItem.amount_due - (planItem.amount_paid || 0);
-          const amountToApply = Math.min(remainingAmount, amountDue);
-          
-          const newAmountPaid = (planItem.amount_paid || 0) + amountToApply;
-          const newStatus = newAmountPaid >= planItem.amount_due ? 'pagado' : 'parcial';
-          
-          await base44.entities.ClientPaymentPlan.update(planItem.id, {
-            amount_paid: newAmountPaid,
-            status: newStatus
-          });
-          
-          remainingAmount -= amountToApply;
-        }
-      }
-      
-      return payment;
-    },
-    onSuccess: async () => {
-      await updateTripTotals();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await queryClient.refetchQueries({ queryKey: ['clientPayments', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['paymentPlan', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
+    mutationFn: async (data) => base44.entities.ClientPayment.create(data),
+    onSuccess: async (newPayment) => {
+      await updateSoldTripAndPaymentPlanTotals(newPayment.sold_trip_id, queryClient);
       setClientPaymentOpen(false);
       setEditingClientPayment(null);
     }
   });
 
   const createSupplierPaymentMutation = useMutation({
-    mutationFn: async (data) => {
-      const payment = await base44.entities.SupplierPayment.create(data);
-      return payment;
-    },
-    onSuccess: async () => {
-      await recalculateServiceSupplierPayments();
-      await updateTripTotals();
-      await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
+    mutationFn: async (data) => base44.entities.SupplierPayment.create(data),
+    onSuccess: async (newPayment) => {
+      await updateSoldTripAndTripServiceTotals(newPayment.sold_trip_id, queryClient);
       setSupplierPaymentOpen(false);
       setEditingSupplierPayment(null);
     }
@@ -306,11 +257,11 @@ export default function SoldTripDetail() {
 
   const updateSupplierPaymentMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SupplierPayment.update(id, data),
-    onSuccess: async () => {
-      await recalculateServiceSupplierPayments();
-      await updateTripTotals();
-      await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
+    onSuccess: async (_, variables) => {
+      const payment = supplierPayments.find(p => p.id === variables.id);
+      if (payment?.sold_trip_id) {
+        await updateSoldTripAndTripServiceTotals(payment.sold_trip_id, queryClient);
+      }
       setSupplierPaymentOpen(false);
       setEditingSupplierPayment(null);
     }
@@ -335,21 +286,16 @@ export default function SoldTripDetail() {
   });
 
   const deletePaymentMutation = useMutation({
-    mutationFn: ({ type, id }) => {
+    mutationFn: ({ type, id, sold_trip_id }) => {
       if (type === 'client') return base44.entities.ClientPayment.delete(id);
       return base44.entities.SupplierPayment.delete(id);
     },
     onSuccess: async (_, variables) => {
-      if (variables.type === 'supplier') {
-        await recalculateServiceSupplierPayments();
+      if (variables.type === 'client') {
+        await updateSoldTripAndPaymentPlanTotals(variables.sold_trip_id, queryClient);
+      } else if (variables.type === 'supplier') {
+        await updateSoldTripAndTripServiceTotals(variables.sold_trip_id, queryClient);
       }
-      await updateTripTotals();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await queryClient.refetchQueries({ queryKey: ['clientPayments', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['supplierPayments', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['tripServices', tripId] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrips'] });
-      await queryClient.refetchQueries({ queryKey: ['soldTrip', tripId] });
       setDeleteConfirm(null);
     }
   });
@@ -1019,7 +965,7 @@ export default function SoldTripDetail() {
                                       </DropdownMenuItem>
                                       <DropdownMenuItem 
                                         className="text-red-600"
-                                        onClick={() => setDeleteConfirm({ type: 'service', item: service })}
+                                        onClick={() => setDeleteConfirm({ type: 'service', item: service, sold_trip_id: service.sold_trip_id })}
                                       >
                                         <Trash2 className="w-3.5 h-3.5 mr-2" /> Eliminar
                                       </DropdownMenuItem>
@@ -1123,7 +1069,7 @@ export default function SoldTripDetail() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-stone-400 hover:text-red-500"
-                        onClick={() => setDeleteConfirm({ type: 'client', item: payment })}
+                        onClick={() => setDeleteConfirm({ type: 'client', item: payment, sold_trip_id: payment.sold_trip_id })}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -1214,7 +1160,7 @@ export default function SoldTripDetail() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-stone-400 hover:text-red-500"
-                        onClick={() => setDeleteConfirm({ type: 'supplier', item: payment })}
+                        onClick={() => setDeleteConfirm({ type: 'supplier', item: payment, sold_trip_id: payment.sold_trip_id })}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -1379,9 +1325,9 @@ export default function SoldTripDetail() {
             <AlertDialogAction
               onClick={() => {
                 if (deleteConfirm.type === 'service') {
-                  deleteServiceMutation.mutate(deleteConfirm.item.id);
+                  deleteServiceMutation.mutate({ id: deleteConfirm.item.id, sold_trip_id: deleteConfirm.sold_trip_id });
                 } else {
-                  deletePaymentMutation.mutate({ type: deleteConfirm.type, id: deleteConfirm.item.id });
+                  deletePaymentMutation.mutate({ type: deleteConfirm.type, id: deleteConfirm.item.id, sold_trip_id: deleteConfirm.sold_trip_id });
                 }
               }}
               className="bg-red-600 hover:bg-red-700"
