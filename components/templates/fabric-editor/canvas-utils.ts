@@ -8,6 +8,82 @@ import * as fabric from 'fabric'
  * Serializa el canvas a JSON
  */
 export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) => {
+    // CRITICAL FIX: Handle ActiveSelection (multiple objects selected)
+    // When multiple objects are selected, they form an ActiveSelection group
+    // where objects have coordinates relative to the group center, not the canvas
+    // We need to calculate absolute coordinates before serializing
+    const activeObject = canvas.getActiveObject()
+    // IMPORTANT: Fabric.js returns 'activeselection' in lowercase!
+    const isActiveSelection = activeObject?.type?.toLowerCase() === 'activeselection'
+
+    console.log('🔧 serializeCanvas llamado:', {
+        hasActiveObject: !!activeObject,
+        activeObjectType: activeObject?.type,
+        isActiveSelection
+    })
+
+    // Store absolute coordinates for objects in ActiveSelection
+    const absoluteCoords = new Map<fabric.FabricObject, { left: number; top: number }>()
+
+    if (isActiveSelection && activeObject) {
+        const activeSelection = activeObject as fabric.ActiveSelection
+        const selectedObjects = activeSelection.getObjects()
+
+        console.log('✅ ActiveSelection detectada!', {
+            numObjects: selectedObjects.length,
+            types: selectedObjects.map(o => o.type)
+        })
+
+        // Calculate absolute coordinates for each selected object
+        selectedObjects.forEach(obj => {
+            // Get the absolute center point of the object on the canvas
+            const centerPoint = obj.getCenterPoint()
+
+            // Get scaled dimensions (width and height considering scale)
+            const width = obj.getScaledWidth()
+            const height = obj.getScaledHeight()
+
+            // Calculate left and top based on center point and origin
+            // getCenterPoint() always returns the visual center of the object
+            // We need to calculate where the origin point (left/top) should be
+            let left: number
+            let top: number
+
+            // Calculate left based on originX
+            if (obj.originX === 'left') {
+                left = centerPoint.x - width / 2
+            } else if (obj.originX === 'center') {
+                left = centerPoint.x
+            } else if (obj.originX === 'right') {
+                left = centerPoint.x + width / 2
+            } else {
+                // Default to 'left'
+                left = centerPoint.x - width / 2
+            }
+
+            // Calculate top based on originY
+            if (obj.originY === 'top') {
+                top = centerPoint.y - height / 2
+            } else if (obj.originY === 'center') {
+                top = centerPoint.y
+            } else if (obj.originY === 'bottom') {
+                top = centerPoint.y + height / 2
+            } else {
+                // Default to 'top'
+                top = centerPoint.y - height / 2
+            }
+
+            absoluteCoords.set(obj, { left, top })
+
+            console.log(`🔍 Calculando coords absolutas para ${obj.type}:`, {
+                centerPoint,
+                size: { width, height },
+                origin: { x: obj.originX, y: obj.originY },
+                calculated: { left, top }
+            })
+        })
+    }
+
     const objects = canvas.getObjects().map((obj, index) => {
         // Include all necessary properties for serialization
         // @ts-expect-error - fabric.js toJSON accepts propertiesToInclude array
@@ -141,6 +217,22 @@ export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) 
                 fontSize: (obj as any).fontSize,
                 zIndex: index,
                 json: json
+            })
+        }
+
+        // CRITICAL: Override coordinates with absolute values for objects in ActiveSelection
+        if (absoluteCoords.has(obj)) {
+            const coords = absoluteCoords.get(obj)!
+            const beforeLeft = json.left
+            const beforeTop = json.top
+
+            json.left = coords.left
+            json.top = coords.top
+
+            console.log(`📍 Corrigiendo coordenadas de objeto ${index} en ActiveSelection:`, {
+                type: obj.type,
+                before: { left: beforeLeft, top: beforeTop },
+                after: { left: coords.left, top: coords.top }
             })
         }
 

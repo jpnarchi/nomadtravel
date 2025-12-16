@@ -132,30 +132,49 @@ export function FabricSlideEditor({
         let isInitialLoad = true
 
         const debouncedSave = () => {
+            console.log('⏱️ debouncedSave llamado', { isInitialLoad })
             if (isInitialLoad) return
             if (saveTimeout) clearTimeout(saveTimeout)
-            saveTimeout = setTimeout(() => saveCanvas(), 500)
+            saveTimeout = setTimeout(() => {
+                console.log('⏰ Timeout completado, llamando a saveCanvasRef.current()')
+                saveCanvasRef.current()
+            }, 500)
         }
 
-        setTimeout(() => { isInitialLoad = false }, 1500)
+        setTimeout(() => {
+            isInitialLoad = false
+            console.log('✅ isInitialLoad cambiado a false - auto-save activado')
+        }, 1500)
 
         canvas.on('object:modified', () => {
+            console.log('🎯 object:modified disparado')
             saveStateToHistory(canvas)
             debouncedSave()
         })
         canvas.on('object:added', () => {
+            console.log('🎯 object:added disparado', { isInitialLoad })
             if (!isInitialLoad) {
                 saveStateToHistory(canvas)
                 debouncedSave()
             }
         })
         canvas.on('object:removed', () => {
+            console.log('🎯 object:removed disparado')
             saveStateToHistory(canvas)
             debouncedSave()
         })
-        canvas.on('object:scaling', debouncedSave)
-        canvas.on('object:rotating', debouncedSave)
-        canvas.on('object:moving', debouncedSave)
+        canvas.on('object:scaling', () => {
+            console.log('🎯 object:scaling disparado')
+            debouncedSave()
+        })
+        canvas.on('object:rotating', () => {
+            console.log('🎯 object:rotating disparado')
+            debouncedSave()
+        })
+        canvas.on('object:moving', () => {
+            console.log('🎯 object:moving disparado')
+            debouncedSave()
+        })
         canvas.on('text:changed', () => {
             if (!isInitialLoad) debouncedSave()
         })
@@ -233,6 +252,11 @@ export function FabricSlideEditor({
 
     // Save canvas function
     const saveCanvas = useCallback(() => {
+        console.log('💾 saveCanvas llamado', {
+            isInitialLoad: isInitialLoadRef.current,
+            hasCanvas: !!fabricCanvasRef.current
+        })
+
         if (isInitialLoadRef.current || !fabricCanvasRef.current) return
 
         const slideJSON = serializeCanvas(fabricCanvasRef.current, backgroundColor)
