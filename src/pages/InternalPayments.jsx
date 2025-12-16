@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EmptyState from '@/components/ui/EmptyState';
 import { toast } from "sonner";
-import { updateSoldTripAndTripServiceTotals } from '@/utils/soldTripRecalculations';
+import { updateSoldTripAndTripServiceTotals } from '@/components/utils/soldTripRecalculations';
 
 const PAYMENT_METHOD_LABELS = {
   transferencia: 'Transferencia',

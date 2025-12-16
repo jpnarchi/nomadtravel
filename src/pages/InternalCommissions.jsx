@@ -26,7 +26,7 @@ import {
 import InternalCommissionForm from '@/components/commissions/InternalCommissionForm';
 import EmptyState from '@/components/ui/EmptyState';
 import AgentCommissionInvoice from '@/components/commissions/AgentCommissionInvoice';
-import { updateSoldTripTotalsFromServices } from '@/utils/soldTripRecalculations';
+import { updateSoldTripTotalsFromServices } from '@/components/utils/soldTripRecalculations';
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
