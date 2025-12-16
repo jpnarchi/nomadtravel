@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EmptyState from '@/components/ui/EmptyState';
 import { toast } from "sonner";
+import { updateSoldTripAndTripServiceTotals } from '@/utils/soldTripRecalculations';
 
 const PAYMENT_METHOD_LABELS = {
   transferencia: 'Transferencia',
@@ -71,19 +72,24 @@ export default function InternalPayments() {
 
   const updatePaymentMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SupplierPayment.update(id, data),
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
+      const payment = supplierPayments.find(p => p.id === variables.id);
+      if (payment?.sold_trip_id) {
+        await updateSoldTripAndTripServiceTotals(payment.sold_trip_id, queryClient);
+      }
       await queryClient.invalidateQueries({ queryKey: ['allSupplierPayments'] });
-      await queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       setEditingPayment(null);
       toast.success('Pago actualizado');
     }
   });
 
   const deletePaymentMutation = useMutation({
-    mutationFn: (id) => base44.entities.SupplierPayment.delete(id),
-    onSuccess: async () => {
+    mutationFn: ({ id, sold_trip_id }) => base44.entities.SupplierPayment.delete(id),
+    onSuccess: async (_, variables) => {
+      if (variables.sold_trip_id) {
+        await updateSoldTripAndTripServiceTotals(variables.sold_trip_id, queryClient);
+      }
       await queryClient.invalidateQueries({ queryKey: ['allSupplierPayments'] });
-      await queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       setDeleteConfirm(null);
       toast.success('Pago eliminado');
     }
@@ -375,7 +381,7 @@ export default function InternalPayments() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deletePaymentMutation.mutate(deleteConfirm.id)}
+              onClick={() => deletePaymentMutation.mutate({ id: deleteConfirm.id, sold_trip_id: deleteConfirm.sold_trip_id })}
               className="bg-red-600 hover:bg-red-700"
             >
               Eliminar

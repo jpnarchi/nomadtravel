@@ -26,6 +26,7 @@ import {
 import InternalCommissionForm from '@/components/commissions/InternalCommissionForm';
 import EmptyState from '@/components/ui/EmptyState';
 import AgentCommissionInvoice from '@/components/commissions/AgentCommissionInvoice';
+import { updateSoldTripTotalsFromServices } from '@/utils/soldTripRecalculations';
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
@@ -169,7 +170,11 @@ export default function InternalCommissions() {
 
   const updateTripServiceMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
+      const service = tripServices.find(s => s.id === variables.id);
+      if (service?.sold_trip_id) {
+        await updateSoldTripTotalsFromServices(service.sold_trip_id, queryClient);
+      }
       queryClient.invalidateQueries({ queryKey: ['tripServices'] });
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
     }
@@ -183,27 +188,14 @@ export default function InternalCommissions() {
   });
 
   const deleteTripServiceMutation = useMutation({
-    mutationFn: async (serviceId) => {
-      // Delete the service
+    mutationFn: async ({ serviceId, sold_trip_id }) => {
       await base44.entities.TripService.delete(serviceId);
-      
-      // Get the service to find its sold_trip_id before deletion
-      const services = await base44.entities.TripService.list();
-      const deletedService = tripServices.find(s => s.id === serviceId);
-      
-      if (deletedService?.sold_trip_id) {
-        // Recalculate total commission for the sold trip
-        const tripServices = await base44.entities.TripService.filter({ sold_trip_id: deletedService.sold_trip_id });
-        const totalCommission = tripServices.reduce((sum, s) => sum + (s.commission || 0), 0);
-        const totalPrice = tripServices.reduce((sum, s) => sum + (s.total_price || 0), 0);
-        
-        await base44.entities.SoldTrip.update(deletedService.sold_trip_id, {
-          total_commission: totalCommission,
-          total_price: totalPrice
-        });
-      }
+      return sold_trip_id;
     },
-    onSuccess: () => {
+    onSuccess: async (sold_trip_id) => {
+      if (sold_trip_id) {
+        await updateSoldTripTotalsFromServices(sold_trip_id, queryClient);
+      }
       queryClient.invalidateQueries({ queryKey: ['tripServices'] });
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
@@ -739,7 +731,7 @@ export default function InternalCommissions() {
             <AlertDialogAction
               onClick={() => {
                 if (deleteConfirm?.source === 'tripService') {
-                  deleteTripServiceMutation.mutate(deleteConfirm.service_id);
+                  deleteTripServiceMutation.mutate({ serviceId: deleteConfirm.service_id, sold_trip_id: deleteConfirm.sold_trip_id });
                 } else {
                   deleteMutation.mutate(deleteConfirm.id);
                 }
