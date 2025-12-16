@@ -18,20 +18,25 @@ export default function AdminDashboard() {
     queryFn: () => base44.entities.User.list()
   });
 
-  const { data: allTrips = [], isLoading: tripsLoading } = useQuery({
+  const { data: rawTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],
     queryFn: () => base44.entities.Trip.list()
   });
 
-  const { data: allSoldTrips = [], isLoading: soldLoading } = useQuery({
+  const { data: rawSoldTrips = [], isLoading: soldLoading } = useQuery({
     queryKey: ['soldTrips'],
     queryFn: () => base44.entities.SoldTrip.list()
   });
 
-  const { data: allClients = [] } = useQuery({
+  const { data: rawClients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () => base44.entities.Client.list()
   });
+
+  // Filter out deleted records
+  const allTrips = rawTrips.filter(t => !t.is_deleted);
+  const allSoldTrips = rawSoldTrips.filter(t => !t.is_deleted);
+  const allClients = rawClients.filter(c => !c.is_deleted);
 
   const { data: allClientPayments = [] } = useQuery({
     queryKey: ['clientPayments'],
