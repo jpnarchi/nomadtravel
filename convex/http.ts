@@ -297,55 +297,74 @@ ${requestedSlidesCount ? `Target: ${requestedSlidesCount} slides` : ''}
 ${templates.length === 0 ? '⚠️ No templates - user must create templates first' : ''}
 
 ## Style
-2-3 sentences max. No lists/emojis. Proactive, not technical.
+Be extremely concise. 1 sentence max per response exlpaining what your doing.  No emojis, no lists, no step-by-step explanations. Only speak when asking questions or confirming completion.
 
 ## Critical Rules
+- FIRST PRIORITY: After generateInitialCodebase, IMMEDIATELY delete excess slides BEFORE any other operation
+- SECOND PRIORITY: ALWAYS GENERATE ALL IMAGES - Never complete a presentation without generating images for ALL placeholders
+  - Use replaceImagePlaceholder for EVERY slide with isImagePlaceholder or isImageContainer
+  - This is MANDATORY, not optional
+  - Never say "presentation complete" without generating images first
+- Color contrast: When changing slide or text colors, ALWAYS ensure text color contrasts with background (never same/similar colors). Light backgrounds need dark text, dark backgrounds need light text
 - After ANY image operation: ALWAYS call showPreview immediately
-- After duplicateSlide containing images: ALWAYS use replaceImagePlaceholder (prevents duplicate images across slides)
+- After duplicateSlide: MANDATORY workflow:
+  1. readFile the new slide with textOnly: true
+  2. updateSlideTexts to change ALL texts (make content unique and relevant to the new slide purpose)
+  3. If slide has images, use replaceImagePlaceholder to generate NEW images (prevents duplicate images)
+  4. showPreview
 - Read slides before updating them
 - Wait for each tool to complete
 
 ## Tools (by purpose)
-Content: generateInitialCodebase, readFile, updateSlideTexts, updateSlideDesign
+Content: generateInitialCodebase, readFile (use textOnly: true by default), updateSlideTexts, updateSlideDesign
 Structure: duplicateSlide (preferred), insertSlideAtPosition, deleteSlide, manageFile
 Data: webSearch, readAttachment, showPreview
+Images: replaceImagePlaceholder (unified tool for ALL image placeholder operations)
 
-**Images (choose carefully):**
+**Image Tool:**
 
-**replaceImagePlaceholder** - Replaces existing image URLs in slides
+**replaceImagePlaceholder** - Unified tool for generating and replacing ALL image placeholders
 Use when:
-- After duplicateSlide (slide has inherited images from source)
-- User says "change/replace/update the image/photo/picture"
-- Slide has actual image objects that need different content
-- You need to swap one image for another while keeping position/size
-How: Targets existing image objects, generates new URL based on description
+- ⚠️ MANDATORY: During initial setup (ALWAYS scan and generate images for ALL placeholders)
+- After duplicateSlide (inherited images need new content)
+- User says "change/replace/update/add the image/photo/picture"
+- Slide has placeholders that need content (groups OR image objects)
+How: Auto-detects placeholder type (group or image), generates image with AI, converts/replaces appropriately
 Follow with: showPreview (mandatory)
-
-**fillImageContainer** - Converts placeholder GROUPS into actual images
-Use when:
-- Groups exist with property isImagePlaceholder: true
-- Initial template setup with empty containers
-- Creating images in predefined layout spots
-- NOT after duplicateSlide (those have real images already)
-How: Finds groups marked as placeholders, generates images to fill them
-Follow with: showPreview (mandatory)
-
-**generateImageTool** - Creates standalone images (outside presentation)
-Use when:
-- User wants image for separate use/download
-- Not inserting into any slide
-- Testing image concepts before adding to presentation
+IMPORTANT: Never complete a presentation creation without using this tool for ALL placeholders
 
 ## Workflow
+
+**Initial Setup (MANDATORY SEQUENCE - NEVER SKIP STEPS):**
 1. generateInitialCodebase
-2. Adjust slide count (deleteSlide excess OR duplicateSlide with contentDescription)
-3. readFile all slides
-4. Image handling (in order):
-   a. If slides were duplicated AND have images → replaceImagePlaceholder each → showPreview
-   b. Scan all slides for isImagePlaceholder: true groups → fillImageContainer each → showPreview
-   c. Skip if no images/placeholders found
-5. updateSlideTexts for all content
-6. Final showPreview
+2. **IMMEDIATELY delete excess slides** (if template has 7 and user wants 5, delete slides 6-7 FIRST)
+   - Use deleteSlide for each excess slide
+   - Do this BEFORE reading, updating, or generating images
+3. Add slides if needed (duplicateSlide with contentDescription for each missing slide)
+4. readFile all slides with textOnly: true
+5. updateSlideTexts for all content to match user's topic
+6. **⚠️ MANDATORY IMAGE GENERATION (CANNOT BE SKIPPED):**
+   - readFile each slide (textOnly: false to see full structure)
+   - Identify ALL image placeholders (isImagePlaceholder or isImageContainer flags)
+   - Use replaceImagePlaceholder for EVERY placeholder found
+   - Generate images for ALL slides with placeholders
+   - If any slide has placeholders, you MUST generate images
+   - NEVER skip this step or say "done" without generating images
+7. Final showPreview (only after ALL images are generated)
+
+**Adding New Slides (when user requests):**
+- duplicateSlide with contentDescription
+- **IMMEDIATELY after duplicateSlide:**
+  - readFile with textOnly: true on the new slide
+  - updateSlideTexts to change ALL texts (make unique content based on contentDescription)
+  - replaceImagePlaceholder to generate NEW images for all placeholders
+  - showPreview
+
+**Updating Existing Content:**
+- readFile slides with textOnly: true (saves tokens)
+- updateSlideTexts for content changes
+- replaceImagePlaceholder if user requests image changes
+- showPreview
 
 Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
 `.trim(),
@@ -356,8 +375,9 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                     description: 'Read slide content. Use BEFORE updating.',
                     inputSchema: z.object({
                         path: z.string().describe('Path of the file to read (e.g.: "/slides/slide-1.json")'),
+                        textOnly: z.boolean().optional().describe('If true, returns only text content (saves tokens). Use false only when you need full slide structure for design changes.'),
                     }),
-                    execute: async function ({ path }: any) {
+                    execute: async function ({ path, textOnly }: any) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
                             const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
@@ -368,6 +388,36 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                                     success: false,
                                     error: `File not found: ${path}`
                                 };
+                            }
+
+                            // If textOnly mode, extract just text content
+                            if (textOnly) {
+                                try {
+                                    const slideData = JSON.parse(fileContent);
+                                    const texts = slideData.objects
+                                        ?.map((obj: any, index: number) => {
+                                            const objType = (obj.type || '').toLowerCase();
+                                            if (['text', 'i-text', 'textbox', 'itext'].includes(objType)) {
+                                                return {
+                                                    index,
+                                                    text: obj.text || ''
+                                                };
+                                            }
+                                            return null;
+                                        })
+                                        .filter((t: any) => t !== null) || [];
+
+                                    return {
+                                        success: true,
+                                        path: path,
+                                        textOnly: true,
+                                        texts: texts,
+                                        background: slideData.background
+                                    };
+                                } catch (parseError) {
+                                    console.error(`Error parsing slide for textOnly mode:`, parseError);
+                                    // Fallback to full content if parsing fails
+                                }
                             }
 
                             return {
@@ -692,17 +742,13 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                 },
 
                 duplicateSlide: {
-                    description: 'PREFERRED tool for adding new slides. Automatically finds and duplicates the most similar existing slide, then modifies content. Use this instead of insertSlideAtPosition or manageFile create.',
+                    description: 'PREFERRED tool for adding new slides. Automatically finds and duplicates the most similar existing slide. IMPORTANT: After using this tool, you MUST update all texts and images to make the new slide unique - never leave duplicate content.',
                     inputSchema: z.object({
                         position: z.number().min(1).describe('Position where to insert the new slide (1 = first slide, 2 = second slide, etc.)'),
-                        contentDescription: z.string().describe('Detailed description of what content the new slide should have. Be specific about the topic, purpose, and any key elements needed.'),
-                        textUpdates: z.array(z.object({
-                            objectIndex: z.number().describe('Index of text object to modify (0-based)'),
-                            newText: z.string().describe('New text content')
-                        })).optional().describe('Text modifications to apply after duplication'),
+                        contentDescription: z.string().describe('Detailed description of what content the new slide should have. Be specific about the topic, purpose, and any key elements needed. This will be used to select the best template slide.'),
                         explanation: z.string().describe('Explanation in 1 to 3 words for users'),
                     }),
-                    execute: async function ({ position, contentDescription, textUpdates, explanation }: any) {
+                    execute: async function ({ position, contentDescription, explanation }: any) {
                         try {
                             const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
                             const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
@@ -801,25 +847,9 @@ Return the slide number (1-based) that is most similar.`,
 
                             const selectedPath = slidePaths[selection.selectedSlideNumber - 1];
                             const selectedContent = allFiles[selectedPath];
-                            let duplicatedSlide = JSON.parse(selectedContent);
+                            const duplicatedSlide = JSON.parse(selectedContent);
 
                             console.log(`[DUPLICATE SLIDE] Selected ${selectedPath} for duplication. Reason: ${selection.reasoning}`);
-
-                            // Apply text updates if provided
-                            if (textUpdates && textUpdates.length > 0) {
-                                for (const update of textUpdates) {
-                                    const { objectIndex, newText } = update;
-
-                                    if (objectIndex >= 0 && objectIndex < duplicatedSlide.objects.length) {
-                                        const obj = duplicatedSlide.objects[objectIndex];
-                                        const objType = (obj.type || '').toLowerCase();
-
-                                        if (['text', 'i-text', 'textbox', 'itext'].includes(objType)) {
-                                            duplicatedSlide.objects[objectIndex].text = newText;
-                                        }
-                                    }
-                                }
-                            }
 
                             const newSlideContent = JSON.stringify(duplicatedSlide, null, 2);
 
@@ -852,8 +882,10 @@ Return the slide number (1-based) that is most similar.`,
                                     success: true,
                                     message: explanation,
                                     slideNumber: position,
+                                    newSlidePath: `/slides/slide-${position}.json`,
                                     duplicatedFrom: selectedPath,
-                                    reasoning: selection.reasoning
+                                    reasoning: selection.reasoning,
+                                    nextSteps: 'REQUIRED: readFile → updateSlideTexts (all texts) → replaceImagePlaceholder (if images) → showPreview'
                                 };
                             }
 
@@ -893,9 +925,11 @@ Return the slide number (1-based) that is most similar.`,
                                 success: true,
                                 message: explanation,
                                 slideNumber: position,
+                                newSlidePath: newPath,
                                 duplicatedFrom: selectedPath,
                                 reasoning: selection.reasoning,
-                                slidesRenumbered: slidesToRenumber.length
+                                slidesRenumbered: slidesToRenumber.length,
+                                nextSteps: 'REQUIRED: readFile → updateSlideTexts (all texts) → replaceImagePlaceholder (if images) → showPreview'
                             };
 
                         } catch (error) {
@@ -1032,7 +1066,7 @@ Return the slide number (1-based) that is most similar.`,
                 },
 
                 generateInitialCodebase: {
-                    description: 'Start presentation with template.',
+                    description: 'Start presentation with template. IMPORTANT: After this tool, you MUST follow the complete workflow: delete excess slides → read all slides → update texts → GENERATE ALL IMAGES → showPreview.',
                     inputSchema: z.object({
                         templateName: templates.length > 0
                             ? z.union(
@@ -1107,6 +1141,7 @@ Return the slide number (1-based) that is most similar.`,
                             success: true,
                             message: message,
                             filesCreated: filesCreated,
+                            nextSteps: 'REQUIRED WORKFLOW: Delete excess slides → Read all slides → Update texts → GENERATE ALL IMAGES (use replaceImagePlaceholder for every placeholder) → showPreview'
                         };
                     },
                 },
@@ -1276,13 +1311,13 @@ Return the slide number (1-based) that is most similar.`,
                 },
 
                 replaceImagePlaceholder: {
-                    description: 'Replace ONLY image placeholders (marked with isImagePlaceholder or isImageContainer flags). Use this when duplicating slides with placeholders or when user specifically asks to replace a placeholder image. WILL NOT replace regular images - only placeholders from duplicated slides. Automatically detects placeholders and generates new images while preserving container properties.',
+                    description: 'Unified tool to generate and replace ALL image placeholders. Automatically detects and handles both types: (1) Groups marked as placeholders - converts to images, (2) Image objects with placeholder flags - replaces URLs. Always use this when working with image placeholders.',
                     inputSchema: z.object({
                         path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
                         imageUpdates: z.array(z.object({
-                            containerIndex: z.number().optional().describe('Index of the image container. If not provided, will find all image containers automatically'),
+                            containerIndex: z.number().optional().describe('Index of the placeholder. If not provided, will auto-detect all placeholders'),
                             prompt: z.string().describe('Detailed prompt to generate the new image'),
-                        })).describe('Array of image replacements. Leave containerIndex empty to auto-detect all image containers'),
+                        })).describe('Array of image updates. Leave containerIndex empty to auto-detect all placeholders'),
                         explanation: z.string().describe('Explanation in 1 to 3 words'),
                     }),
                     execute: async function ({ path, imageUpdates, explanation }: any) {
@@ -1307,15 +1342,14 @@ Return the slide number (1-based) that is most similar.`,
                                 };
                             }
 
-                            // Find all image PLACEHOLDERS (not regular images) if no specific indices provided
-                            // Only include images that are explicitly marked as placeholders or containers
-                            const imageContainers: number[] = [];
+                            // Find all image placeholders (both groups and images)
+                            const imagePlaceholders: number[] = [];
                             slideData.objects.forEach((obj: any, index: number) => {
                                 const objType = (obj.type || '').toLowerCase();
-                                // Only include if it's marked as a placeholder/container
-                                // DO NOT include regular images (those without these flags)
-                                if (objType === 'image' && (obj.isImagePlaceholder === true || obj.isImageContainer === true)) {
-                                    imageContainers.push(index);
+                                // Include groups with isImagePlaceholder OR images with placeholder/container flags
+                                if ((objType === 'group' && obj.isImagePlaceholder === true) ||
+                                    (objType === 'image' && (obj.isImagePlaceholder === true || obj.isImageContainer === true))) {
+                                    imagePlaceholders.push(index);
                                 }
                             });
 
@@ -1332,15 +1366,14 @@ Return the slide number (1-based) that is most similar.`,
 
                                     // Auto-detect if no index provided
                                     if (targetIndex === undefined || targetIndex === null) {
-                                        if (imageContainers.length === 0) {
+                                        if (imagePlaceholders.length === 0) {
                                             results.failed.push({
                                                 index: -1,
-                                                error: 'No image containers found in slide'
+                                                error: 'No image placeholders found in slide'
                                             });
                                             continue;
                                         }
-                                        // Use first available image container
-                                        targetIndex = imageContainers.shift()!;
+                                        targetIndex = imagePlaceholders.shift()!;
                                     }
 
                                     // Validate index
@@ -1355,26 +1388,19 @@ Return the slide number (1-based) that is most similar.`,
                                     const container = slideData.objects[targetIndex];
                                     const objType = (container.type || '').toLowerCase();
 
-                                    // Verify it's an image AND a placeholder/container
-                                    // DO NOT allow replacing regular images
-                                    if (objType !== 'image') {
+                                    // Verify it's a valid placeholder type
+                                    const isGroupPlaceholder = objType === 'group' && container.isImagePlaceholder === true;
+                                    const isImagePlaceholder = objType === 'image' && (container.isImagePlaceholder === true || container.isImageContainer === true);
+
+                                    if (!isGroupPlaceholder && !isImagePlaceholder) {
                                         results.failed.push({
                                             index: targetIndex,
-                                            error: `Not an image (type: ${container.type})`
+                                            error: `Not an image placeholder (type: ${container.type})`
                                         });
                                         continue;
                                     }
 
-                                    // CRITICAL: Only allow replacing placeholders, not regular images
-                                    if (!container.isImagePlaceholder && !container.isImageContainer) {
-                                        results.failed.push({
-                                            index: targetIndex,
-                                            error: `Not an image placeholder. This is a regular image and cannot be replaced.`
-                                        });
-                                        continue;
-                                    }
-
-                                    console.log(`[REPLACE IMAGE] Generating for container ${targetIndex}:`, update.prompt.substring(0, 100));
+                                    console.log(`[IMAGE PLACEHOLDER] Generating for ${objType} at index ${targetIndex}:`, update.prompt.substring(0, 100));
 
                                     // Generate image with Gemini
                                     const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -1393,7 +1419,7 @@ Return the slide number (1-based) that is most similar.`,
 
                                     if (!openrouterResponse.ok) {
                                         const errorText = await openrouterResponse.text();
-                                        console.error(`[REPLACE IMAGE] API Error for container ${targetIndex}:`, errorText);
+                                        console.error(`[IMAGE PLACEHOLDER] API Error for index ${targetIndex}:`, errorText);
                                         results.failed.push({
                                             index: targetIndex,
                                             error: `API error: ${openrouterResponse.status}`
@@ -1405,7 +1431,7 @@ Return the slide number (1-based) that is most similar.`,
                                     const imageObject = responseData.choices?.[0]?.message?.images?.[0];
 
                                     if (!imageObject) {
-                                        console.error(`[REPLACE IMAGE] No image in response for container ${targetIndex}`);
+                                        console.error(`[IMAGE PLACEHOLDER] No image in response for index ${targetIndex}`);
                                         results.failed.push({
                                             index: targetIndex,
                                             error: 'No image generated'
@@ -1448,15 +1474,84 @@ Return the slide number (1-based) that is most similar.`,
                                         continue;
                                     }
 
-                                    console.log(`[REPLACE IMAGE] Success for container ${targetIndex}:`, imageUrl);
+                                    console.log(`[IMAGE PLACEHOLDER] Success for index ${targetIndex}:`, imageUrl);
 
-                                    // ONLY replace the image URL, keep all other properties
-                                    slideData.objects[targetIndex].src = imageUrl;
+                                    // Handle based on placeholder type
+                                    if (isGroupPlaceholder) {
+                                        // Convert group placeholder to image object
+                                        const placeholderWidth = container.placeholderWidth || 400;
+                                        const placeholderHeight = container.placeholderHeight || 300;
+                                        const borderRadius = container.borderRadius || 0;
+                                        const containerLeft = container.left || 100;
+                                        const containerTop = container.top || 100;
+                                        const containerAngle = container.angle || 0;
+                                        const containerScaleX = container.scaleX || 1;
+                                        const containerScaleY = container.scaleY || 1;
+                                        const containerOriginX = container.originX || 'center';
+                                        const containerOriginY = container.originY || 'center';
+
+                                        const imgWidth = 1024;
+                                        const imgHeight = 1024;
+                                        const actualContainerWidth = placeholderWidth * containerScaleX;
+                                        const actualContainerHeight = placeholderHeight * containerScaleY;
+
+                                        const scaleX = actualContainerWidth / imgWidth;
+                                        const scaleY = actualContainerHeight / imgHeight;
+                                        const scale = Math.max(scaleX, scaleY);
+
+                                        const scaledImageWidth = imgWidth * scale;
+                                        const scaledImageHeight = imgHeight * scale;
+                                        const cropX = (scaledImageWidth - actualContainerWidth) / (2 * scale);
+                                        const cropY = (scaledImageHeight - actualContainerHeight) / (2 * scale);
+
+                                        let clipPath = undefined;
+                                        if (borderRadius > 0) {
+                                            const clipBorderRadius = borderRadius / scale;
+                                            clipPath = {
+                                                type: 'rect',
+                                                width: imgWidth - (cropX * 2),
+                                                height: imgHeight - (cropY * 2),
+                                                rx: clipBorderRadius,
+                                                ry: clipBorderRadius,
+                                                left: -(imgWidth - (cropX * 2)) / 2,
+                                                top: -(imgHeight - (cropY * 2)) / 2,
+                                                originX: 'left',
+                                                originY: 'top',
+                                            };
+                                        }
+
+                                        slideData.objects[targetIndex] = {
+                                            type: 'image',
+                                            left: containerLeft,
+                                            top: containerTop,
+                                            angle: containerAngle,
+                                            originX: containerOriginX,
+                                            originY: containerOriginY,
+                                            scaleX: scale,
+                                            scaleY: scale,
+                                            cropX: cropX,
+                                            cropY: cropY,
+                                            width: imgWidth - (cropX * 2),
+                                            height: imgHeight - (cropY * 2),
+                                            src: imageUrl,
+                                            clipPath: clipPath,
+                                            isImageContainer: true,
+                                            borderRadius: borderRadius,
+                                            selectable: true,
+                                            evented: true,
+                                            hasControls: true,
+                                            hasBorders: true,
+                                            crossOrigin: 'anonymous',
+                                        };
+                                    } else {
+                                        // Just replace the URL for image placeholders
+                                        slideData.objects[targetIndex].src = imageUrl;
+                                    }
 
                                     results.successful.push({ index: targetIndex, url: imageUrl });
 
                                 } catch (error) {
-                                    console.error(`[REPLACE IMAGE] Error processing container:`, error);
+                                    console.error(`[IMAGE PLACEHOLDER] Error processing:`, error);
                                     results.failed.push({
                                         index: update.containerIndex ?? -1,
                                         error: error instanceof Error ? error.message : 'Unknown error'
@@ -1480,7 +1575,7 @@ Return the slide number (1-based) that is most similar.`,
                             return {
                                 success: successCount > 0,
                                 message: explanation,
-                                imagesReplaced: successCount,
+                                imagesProcessed: successCount,
                                 imagesRequested: totalProcessed,
                                 imagesFailed: failCount,
                                 imageUrls: results.successful.map(r => r.url),
@@ -1489,261 +1584,10 @@ Return the slide number (1-based) that is most similar.`,
                             };
 
                         } catch (error) {
-                            console.error(`Error replacing images in ${path}:`, error);
+                            console.error(`Error processing image placeholders in ${path}:`, error);
                             return {
                                 success: false,
-                                error: `Error replacing images: ${error instanceof Error ? error.message : 'Unknown error'}`
-                            };
-                        }
-                    },
-                },
-
-                fillImageContainer: {
-                    description: 'Fill image placeholders with AI-generated images.',
-                    inputSchema: z.object({
-                        path: z.string().describe('Slide path (e.g., "/slides/slide-1.json")'),
-                        imagePrompts: z.array(z.object({
-                            containerIndex: z.number().describe('Index of the image placeholder/container'),
-                            prompt: z.string().describe('Detailed prompt to generate image'),
-                        })),
-                        explanation: z.string().describe('Explanation in 1 to 3 words'),
-                    }),
-                    execute: async function ({ path, imagePrompts, explanation }: any) {
-                        try {
-                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
-                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
-                            const fileContent = allFiles[path];
-
-                            if (!fileContent) {
-                                return {
-                                    success: false,
-                                    error: `File not found: ${path}`
-                                };
-                            }
-
-                            const slideData = JSON.parse(fileContent);
-
-                            if (!slideData.objects || !Array.isArray(slideData.objects)) {
-                                return {
-                                    success: false,
-                                    error: `Invalid slide structure in ${path}`
-                                };
-                            }
-
-                            // Arrays para tracking de resultados
-                            const results = {
-                                successful: [] as { index: number, url: string }[],
-                                failed: [] as { index: number, error: string }[]
-                            };
-
-                            // Procesar cada contenedor individualmente
-                            for (const { containerIndex, prompt } of imagePrompts) {
-                                try {
-                                    // Validar índice
-                                    if (containerIndex < 0 || containerIndex >= slideData.objects.length) {
-                                        results.failed.push({
-                                            index: containerIndex,
-                                            error: `Invalid index (slide has ${slideData.objects.length} objects)`
-                                        });
-                                        continue; // Continuar con la siguiente imagen
-                                    }
-
-                                    const container = slideData.objects[containerIndex];
-
-                                    // Verificar que sea un placeholder
-                                    const objType = (container.type || '').toLowerCase();
-                                    if (!container.isImagePlaceholder || objType !== 'group') {
-                                        results.failed.push({
-                                            index: containerIndex,
-                                            error: `Not an image placeholder (type: ${container.type})`
-                                        });
-                                        continue;
-                                    }
-
-                                    console.log(`[GEMINI IMAGE] Generating for container ${containerIndex}:`, prompt.substring(0, 100));
-
-                                    // Generar imagen
-                                    const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                                            'Content-Type': 'application/json',
-                                        },
-                                        body: JSON.stringify({
-                                            model: 'google/gemini-2.5-flash-image-preview',
-                                            messages: [{ role: 'user', content: prompt }],
-                                            modalities: ['image', 'text'],
-                                            image_config: { aspect_ratio: '1:1' }
-                                        })
-                                    });
-
-                                    if (!openrouterResponse.ok) {
-                                        const errorText = await openrouterResponse.text();
-                                        console.error(`[GEMINI IMAGE] API Error for container ${containerIndex}:`, errorText);
-                                        results.failed.push({
-                                            index: containerIndex,
-                                            error: `API error: ${openrouterResponse.status}`
-                                        });
-                                        continue;
-                                    }
-
-                                    const responseData = await openrouterResponse.json();
-                                    const imageObject = responseData.choices?.[0]?.message?.images?.[0];
-
-                                    if (!imageObject) {
-                                        console.error(`[GEMINI IMAGE] No image in response for container ${containerIndex}`);
-                                        results.failed.push({
-                                            index: containerIndex,
-                                            error: 'No image generated'
-                                        });
-                                        continue;
-                                    }
-
-                                    // Extraer base64
-                                    let imageData: string;
-                                    if (typeof imageObject === 'string') {
-                                        imageData = imageObject;
-                                    } else if (imageObject.url) {
-                                        imageData = imageObject.url;
-                                    } else if (imageObject.image_url?.url) {
-                                        imageData = imageObject.image_url.url;
-                                    } else {
-                                        results.failed.push({
-                                            index: containerIndex,
-                                            error: 'Could not extract image data'
-                                        });
-                                        continue;
-                                    }
-
-                                    // Convertir a Uint8Array
-                                    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
-                                    const binaryString = atob(base64Data);
-                                    const uint8Array = new Uint8Array(binaryString.length);
-                                    for (let i = 0; i < binaryString.length; i++) {
-                                        uint8Array[i] = binaryString.charCodeAt(i);
-                                    }
-
-                                    // Upload a storage
-                                    const imageUrl = await uploadFileToStorageFromHttpAction(ctx, uint8Array, 'image/png');
-
-                                    if (!imageUrl) {
-                                        results.failed.push({
-                                            index: containerIndex,
-                                            error: 'Failed to upload to storage'
-                                        });
-                                        continue;
-                                    }
-
-                                    console.log(`[GEMINI IMAGE] Success for container ${containerIndex}:`, imageUrl);
-
-                                    // Guardar URL exitosa
-                                    results.successful.push({ index: containerIndex, url: imageUrl });
-
-                                    // Actualizar el slide data con la imagen
-                                    const placeholderWidth = container.placeholderWidth || 400;
-                                    const placeholderHeight = container.placeholderHeight || 300;
-                                    const borderRadius = container.borderRadius || 0;
-                                    const containerLeft = container.left || 100;
-                                    const containerTop = container.top || 100;
-                                    const containerAngle = container.angle || 0;
-                                    const containerScaleX = container.scaleX || 1;
-                                    const containerScaleY = container.scaleY || 1;
-                                    const containerOriginX = container.originX || 'center';
-                                    const containerOriginY = container.originY || 'center';
-
-                                    const imgWidth = 1024;
-                                    const imgHeight = 1024;
-                                    const actualContainerWidth = placeholderWidth * containerScaleX;
-                                    const actualContainerHeight = placeholderHeight * containerScaleY;
-
-                                    const scaleX = actualContainerWidth / imgWidth;
-                                    const scaleY = actualContainerHeight / imgHeight;
-                                    const scale = Math.max(scaleX, scaleY);
-
-                                    const scaledImageWidth = imgWidth * scale;
-                                    const scaledImageHeight = imgHeight * scale;
-                                    const cropX = (scaledImageWidth - actualContainerWidth) / (2 * scale);
-                                    const cropY = (scaledImageHeight - actualContainerHeight) / (2 * scale);
-
-                                    let clipPath = undefined;
-                                    if (borderRadius > 0) {
-                                        const clipBorderRadius = borderRadius / scale;
-                                        clipPath = {
-                                            type: 'rect',
-                                            width: imgWidth - (cropX * 2),
-                                            height: imgHeight - (cropY * 2),
-                                            rx: clipBorderRadius,
-                                            ry: clipBorderRadius,
-                                            left: -(imgWidth - (cropX * 2)) / 2,
-                                            top: -(imgHeight - (cropY * 2)) / 2,
-                                            originX: 'left',
-                                            originY: 'top',
-                                        };
-                                    }
-
-                                    slideData.objects[containerIndex] = {
-                                        type: 'image',
-                                        left: containerLeft,
-                                        top: containerTop,
-                                        angle: containerAngle,
-                                        originX: containerOriginX,
-                                        originY: containerOriginY,
-                                        scaleX: scale,
-                                        scaleY: scale,
-                                        cropX: cropX,
-                                        cropY: cropY,
-                                        width: imgWidth - (cropX * 2),
-                                        height: imgHeight - (cropY * 2),
-                                        src: imageUrl,
-                                        clipPath: clipPath,
-                                        isImageContainer: true,
-                                        borderRadius: borderRadius,
-                                        selectable: true,
-                                        evented: true,
-                                        hasControls: true,
-                                        hasBorders: true,
-                                        crossOrigin: 'anonymous',
-                                    };
-
-                                } catch (error) {
-                                    console.error(`[GEMINI IMAGE] Error processing container ${containerIndex}:`, error);
-                                    results.failed.push({
-                                        index: containerIndex,
-                                        error: error instanceof Error ? error.message : 'Unknown error'
-                                    });
-                                }
-                            }
-
-                            // Guardar el slide actualizado (incluso con solo algunas imágenes exitosas)
-                            const updatedContent = JSON.stringify(slideData, null, 2);
-                            await ctx.runMutation(api.files.updateByPath, {
-                                chatId: id,
-                                path,
-                                content: updatedContent,
-                                version: currentVersion ?? 0
-                            });
-
-                            // Retornar resultados detallados
-                            const totalProcessed = imagePrompts.length;
-                            const successCount = results.successful.length;
-                            const failCount = results.failed.length;
-
-                            return {
-                                success: successCount > 0, // Success si al menos una imagen funcionó
-                                message: explanation,
-                                imagesFilled: successCount,
-                                imagesRequested: totalProcessed,
-                                imagesFailed: failCount,
-                                imageUrls: results.successful.map(r => r.url),
-                                failedContainers: results.failed,
-                                partialSuccess: successCount > 0 && failCount > 0
-                            };
-
-                        } catch (error) {
-                            console.error(`Error filling image containers in ${path}:`, error);
-                            return {
-                                success: false,
-                                error: `Error filling image containers: ${error instanceof Error ? error.message : 'Unknown error'}`
+                                error: `Error processing image placeholders: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },

@@ -360,6 +360,8 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                                     angle: obj.angle || 0,
                                     scaleX: obj.scaleX || 1,
                                     scaleY: obj.scaleY || 1,
+                                    originX: obj.originX || 'left',
+                                    originY: obj.originY || 'top',
                                 });
                                 break;
                             case 'circle':
@@ -373,7 +375,19 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                                     angle: obj.angle || 0,
                                     scaleX: obj.scaleX || 1,
                                     scaleY: obj.scaleY || 1,
+                                    originX: obj.originX || 'left',
+                                    originY: obj.originY || 'top',
                                 });
+
+                                // Restore custom ring properties
+                                if (obj.isRing) {
+                                    (fabricObj as any).isRing = true;
+                                    (fabricObj as any).ringRadius = obj.ringRadius || obj.radius;
+                                    (fabricObj as any).ringThickness = obj.ringThickness || obj.strokeWidth;
+                                    (fabricObj as any).ringColor = obj.ringColor || obj.stroke;
+                                    (fabricObj as any).outerRadius = obj.outerRadius;
+                                    (fabricObj as any).innerRadius = obj.innerRadius;
+                                }
                                 break;
                             case 'triangle':
                                 fabricObj = new fabric.Triangle({
@@ -387,6 +401,8 @@ export function LivePresentationViewer({ chatId }: LivePresentationViewerProps) 
                                     angle: obj.angle || 0,
                                     scaleX: obj.scaleX || 1,
                                     scaleY: obj.scaleY || 1,
+                                    originX: obj.originX || 'left',
+                                    originY: obj.originY || 'top',
                                 });
                                 break;
                             case 'line':
