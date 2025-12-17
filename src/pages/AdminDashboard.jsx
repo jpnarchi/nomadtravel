@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isWithinInterval, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DollarSign, Plane, Users, TrendingUp, Loader2, Award, AlertCircle } from 'lucide-react';
+import { DollarSign, Plane, Users, TrendingUp, Loader2, Award, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
 import StatsCard from '@/components/ui/StatsCard';
 import { parseLocalDate } from '@/components/utils/dateHelpers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export default function AdminDashboard() {
   const [selectedAgent, setSelectedAgent] = useState('all');
@@ -47,6 +51,11 @@ export default function AdminDashboard() {
   const { data: allSupplierPayments = [] } = useQuery({
     queryKey: ['supplierPayments'],
     queryFn: () => base44.entities.SupplierPayment.list()
+  });
+
+  const { data: allServices = [] } = useQuery({
+    queryKey: ['allServices'],
+    queryFn: () => base44.entities.TripService.list()
   });
 
   // Calculate account balance (confirmed payments only)
@@ -153,6 +162,61 @@ export default function AdminDashboard() {
       trips: agentSoldTrips.length
     };
   }).sort((a, b) => b.sales - a.sales);
+
+  // Net Commissions Post-Trip Control
+  const today = new Date();
+  const finishedTripsWithNetCommissions = allSoldTrips
+    .filter(trip => trip.end_date && isPast(parseLocalDate(trip.end_date)))
+    .map(trip => {
+      // Calculate client balance
+      const totalPrice = trip.total_price || 0;
+      const totalPaidByClient = trip.total_paid_by_client || 0;
+      const clientBalance = totalPaidByClient - totalPrice;
+
+      // Get services for this trip
+      const tripServices = allServices.filter(s => s.sold_trip_id === trip.id);
+
+      // Get supplier payments for this trip
+      const supplierPaymentsForTrip = allSupplierPayments.filter(p => p.sold_trip_id === trip.id);
+
+      // Calculate net commissions pending
+      const netCommissionsPending = tripServices.reduce((sum, service) => {
+        // Check if any supplier payment for this service is "neto"
+        const hasNetoPayment = supplierPaymentsForTrip.some(
+          p => p.trip_service_id === service.id && p.payment_type === 'neto'
+        );
+
+        // If commission not paid to agent yet and has neto payment
+        if (!service.paid_to_agent && hasNetoPayment) {
+          return sum + ((service.commission || 0) * 0.5); // 50% to agent
+        }
+        return sum;
+      }, 0);
+
+      // Only include trips with pending net commissions
+      if (netCommissionsPending > 0) {
+        const status = clientBalance >= netCommissionsPending ? 'ready' : 'review';
+        const agent = allUsers.find(u => u.email === trip.created_by);
+        
+        return {
+          ...trip,
+          clientBalance,
+          netCommissionsPending,
+          status,
+          agentName: agent?.full_name || 'Sin asignar'
+        };
+      }
+      return null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      // Sort: ready first, then by date
+      if (a.status !== b.status) return a.status === 'ready' ? -1 : 1;
+      return new Date(b.end_date) - new Date(a.end_date);
+    });
+
+  const readyCount = finishedTripsWithNetCommissions.filter(t => t.status === 'ready').length;
+  const reviewCount = finishedTripsWithNetCommissions.filter(t => t.status === 'review').length;
 
   const isLoading = tripsLoading || soldLoading || usersLoading;
 
@@ -370,6 +434,79 @@ export default function AdminDashboard() {
           icon={Users}
         />
       </div>
+
+      {/* Net Commissions Post-Trip Control */}
+      {finishedTripsWithNetCommissions.length > 0 && (
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5" style={{ color: '#2E442A' }} />
+              <h3 className="text-lg font-bold text-stone-800">Viajes Terminados con Comisiones Netas</h3>
+            </div>
+            <div className="flex gap-3">
+              <Badge className="bg-green-100 text-green-700 border-0">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                {readyCount} listos
+              </Badge>
+              <Badge className="bg-orange-100 text-orange-700 border-0">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                {reviewCount} en revisión
+              </Badge>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            {finishedTripsWithNetCommissions.map(trip => (
+              <div 
+                key={trip.id} 
+                className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold text-stone-800 truncate">{trip.client_name}</p>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${
+                        trip.status === 'ready' 
+                          ? 'bg-green-50 text-green-700 border-green-200' 
+                          : 'bg-orange-50 text-orange-700 border-orange-200'
+                      }`}
+                    >
+                      {trip.status === 'ready' ? '✅ Listo' : '⚠️ Revisión'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-stone-500">
+                    <span>{trip.destination}</span>
+                    <span>•</span>
+                    <span>Fin: {format(parseLocalDate(trip.end_date), 'd MMM yyyy', { locale: es })}</span>
+                    <span>•</span>
+                    <span>Agente: {trip.agentName}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 ml-4">
+                  <div className="text-right">
+                    <p className="text-xs text-stone-400">Saldo Cliente</p>
+                    <p className={`font-semibold text-sm ${trip.clientBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ${trip.clientBalance.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-stone-400">Netas Pendientes</p>
+                    <p className="font-semibold text-sm" style={{ color: '#2E442A' }}>
+                      ${trip.netCommissionsPending.toLocaleString()}
+                    </p>
+                  </div>
+                  <Link to={`${createPageUrl('SoldTripDetail')}?id=${trip.id}`}>
+                    <Button variant="ghost" size="sm" className="h-8">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Top Performers */}
       <Card className="p-6">
