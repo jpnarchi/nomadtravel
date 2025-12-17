@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DollarSign, Plane, Users, TrendingUp, Loader2, Award, AlertCircle } from 'lucide-react';
 import StatsCard from '@/components/ui/StatsCard';
+import { parseLocalDate } from '@/components/utils/dateHelpers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 
@@ -92,14 +93,14 @@ export default function AdminDashboard() {
 
   const monthlySales = soldTrips
     .filter(trip => {
-      const created = new Date(trip.created_date);
+      const created = parseLocalDate(trip.created_date?.split('T')[0]);
       return isWithinInterval(created, { start: monthStart, end: monthEnd });
     })
     .reduce((sum, trip) => sum + (trip.total_price || 0), 0);
 
   const monthlyCommission = soldTrips
     .filter(trip => {
-      const created = new Date(trip.created_date);
+      const created = parseLocalDate(trip.created_date?.split('T')[0]);
       return isWithinInterval(created, { start: monthStart, end: monthEnd });
     })
     .reduce((sum, trip) => sum + (trip.total_commission || 0), 0);
