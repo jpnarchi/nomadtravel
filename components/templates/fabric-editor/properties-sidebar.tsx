@@ -20,6 +20,29 @@ import {
     AlignJustify
 } from 'lucide-react'
 
+// Custom styles for circular color pickers
+const colorPickerStyles = `
+    .circular-color-picker {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        border: none;
+        background: transparent;
+    }
+    .circular-color-picker::-webkit-color-swatch-wrapper {
+        padding: 0;
+        border-radius: 50%;
+    }
+    .circular-color-picker::-webkit-color-swatch {
+        border: none;
+        border-radius: 50%;
+    }
+    .circular-color-picker::-moz-color-swatch {
+        border: none;
+        border-radius: 50%;
+    }
+`
+
 interface PropertiesSidebarProps {
     selectedObject: fabric.FabricObject | null
     backgroundColor: string
@@ -51,26 +74,30 @@ export function PropertiesSidebar({
     const isRing = selectedObject && (selectedObject as any).isRing
 
     return (
-        <div className="w-64 bg-gray-50 border-l border-gray-300 overflow-y-auto">
-            <div className="p-4 space-y-4">
+        <>
+            <style dangerouslySetInnerHTML={{ __html: colorPickerStyles }} />
+            <div className="w-72 bg-gradient-to-b from-white to-gray-50 border-l border-gray-200 overflow-y-auto shadow-inner">
+                <div className="p-5 space-y-4">
                 {/* Slide Properties */}
-                <div className="bg-white rounded-lg p-3 border border-gray-300">
-                    <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3 tracking-wide">Slide</h4>
+                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <h4 className="text-xs font-bold text-gray-800 uppercase mb-4 tracking-wider">Slide</h4>
                     <div>
                         <Label className="text-xs text-gray-700 mb-2 block font-medium">Background color</Label>
-                        <Input
-                            type="color"
-                            value={backgroundColor}
-                            onChange={(e) => onBackgroundColorChange(e.target.value)}
-                            className="w-10 h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900 rounded-2xl"
-                        />
+                        <div className="relative w-14 h-14 rounded-full border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                            <input
+                                type="color"
+                                value={backgroundColor}
+                                onChange={(e) => onBackgroundColorChange(e.target.value)}
+                                className="circular-color-picker w-14 h-14 cursor-pointer"
+                            />
+                        </div>
                     </div>
                 </div>
 
                 {/* Object Properties */}
                 {selectedObject && (
-                    <div className="bg-white rounded-lg p-3 border border-gray-300">
-                        <h4 className="text-xs font-semibold text-gray-900 uppercase mb-3 tracking-wide">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                        <h4 className="text-xs font-bold text-gray-800 uppercase mb-4 tracking-wider">
                             {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Text' :
                              isRing ? 'Ring' :
                              selectedObject.type === 'rect' ? 'Rectangle' :
@@ -88,93 +115,97 @@ export function PropertiesSidebar({
                                         type="number"
                                         value={(selectedObject as any).fontSize || 60}
                                         onChange={(e) => onUpdateTextProperty('fontSize', parseInt(e.target.value))}
-                                        className="h-10 bg-gray-100 border-gray-300 text-gray-900"
+                                        className="h-10 bg-white border-gray-200 text-gray-900 rounded-lg shadow-sm hover:border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
                                     />
                                 </div>
                                 <div>
                                     <Label className="text-xs text-gray-700 mb-2 block font-medium">Color</Label>
-                                    <Input
-                                        type="color"
-                                        value={(selectedObject as any).fill as string || '#ffffff'}
-                                        onChange={(e) => onUpdateFillColor(e.target.value)}
-                                        className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
-                                    />
+                                    <div className="relative w-14 h-14 rounded-full border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                                        <input
+                                            type="color"
+                                            value={(selectedObject as any).fill as string || '#ffffff'}
+                                            onChange={(e) => onUpdateFillColor(e.target.value)}
+                                            className="circular-color-picker w-14 h-14 cursor-pointer"
+                                        />
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label className="text-xs text-gray-700 mb-2 block font-medium">Font</Label>
-                                    <Select
-                                        value={(selectedObject as any).fontFamily || 'Arial'}
-                                        onValueChange={(value) => onUpdateTextProperty('fontFamily', value)}
-                                    >
-                                        <SelectTrigger className="h-10 bg-gray-100 border-gray-300 text-gray-900">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-white border-gray-300 max-h-80">
-                                            {/* Sans-serif fonts */}
-                                            <SelectItem value="Arial" className="text-gray-900 hover:bg-gray-100">Arial</SelectItem>
-                                            <SelectItem value="Helvetica" className="text-gray-900 hover:bg-gray-100">Helvetica</SelectItem>
-                                            <SelectItem value="Verdana" className="text-gray-900 hover:bg-gray-100">Verdana</SelectItem>
-                                            <SelectItem value="Tahoma" className="text-gray-900 hover:bg-gray-100">Tahoma</SelectItem>
-                                            <SelectItem value="Trebuchet MS" className="text-gray-900 hover:bg-gray-100">Trebuchet MS</SelectItem>
-                                            <SelectItem value="Lucida Sans Unicode" className="text-gray-900 hover:bg-gray-100">Lucida Sans</SelectItem>
-                                            <SelectItem value="Impact" className="text-gray-900 hover:bg-gray-100">Impact</SelectItem>
-                                            <SelectItem value="Comic Sans MS" className="text-gray-900 hover:bg-gray-100">Comic Sans MS</SelectItem>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <Label className="text-xs text-gray-700 mb-2 block font-medium">Font</Label>
+                                        <Select
+                                            value={(selectedObject as any).fontFamily || 'Arial'}
+                                            onValueChange={(value) => onUpdateTextProperty('fontFamily', value)}
+                                        >
+                                            <SelectTrigger className="h-10 bg-white border-gray-200 text-gray-900 rounded-lg shadow-sm hover:border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white border-gray-200 max-h-80 rounded-lg shadow-lg">
+                                                {/* Sans-serif fonts */}
+                                                <SelectItem value="Arial" className="text-gray-900 hover:bg-gray-100">Arial</SelectItem>
+                                                <SelectItem value="Helvetica" className="text-gray-900 hover:bg-gray-100">Helvetica</SelectItem>
+                                                <SelectItem value="Verdana" className="text-gray-900 hover:bg-gray-100">Verdana</SelectItem>
+                                                <SelectItem value="Tahoma" className="text-gray-900 hover:bg-gray-100">Tahoma</SelectItem>
+                                                <SelectItem value="Trebuchet MS" className="text-gray-900 hover:bg-gray-100">Trebuchet MS</SelectItem>
+                                                <SelectItem value="Lucida Sans Unicode" className="text-gray-900 hover:bg-gray-100">Lucida Sans</SelectItem>
+                                                <SelectItem value="Impact" className="text-gray-900 hover:bg-gray-100">Impact</SelectItem>
+                                                <SelectItem value="Comic Sans MS" className="text-gray-900 hover:bg-gray-100">Comic Sans MS</SelectItem>
 
-                                            {/* Serif fonts */}
-                                            <SelectItem value="Times New Roman" className="text-gray-900 hover:bg-gray-100">Times New Roman</SelectItem>
-                                            <SelectItem value="Georgia" className="text-gray-900 hover:bg-gray-100">Georgia</SelectItem>
-                                            <SelectItem value="Garamond" className="text-gray-900 hover:bg-gray-100">Garamond</SelectItem>
-                                            <SelectItem value="Palatino Linotype" className="text-gray-900 hover:bg-gray-100">Palatino</SelectItem>
-                                            <SelectItem value="Book Antiqua" className="text-gray-900 hover:bg-gray-100">Book Antiqua</SelectItem>
+                                                {/* Serif fonts */}
+                                                <SelectItem value="Times New Roman" className="text-gray-900 hover:bg-gray-100">Times New Roman</SelectItem>
+                                                <SelectItem value="Georgia" className="text-gray-900 hover:bg-gray-100">Georgia</SelectItem>
+                                                <SelectItem value="Garamond" className="text-gray-900 hover:bg-gray-100">Garamond</SelectItem>
+                                                <SelectItem value="Palatino Linotype" className="text-gray-900 hover:bg-gray-100">Palatino</SelectItem>
+                                                <SelectItem value="Book Antiqua" className="text-gray-900 hover:bg-gray-100">Book Antiqua</SelectItem>
 
-                                            {/* Monospace fonts */}
-                                            <SelectItem value="Courier New" className="text-gray-900 hover:bg-gray-100">Courier New</SelectItem>
-                                            <SelectItem value="Consolas" className="text-gray-900 hover:bg-gray-100">Consolas</SelectItem>
-                                            <SelectItem value="Monaco" className="text-gray-900 hover:bg-gray-100">Monaco</SelectItem>
-                                            <SelectItem value="Lucida Console" className="text-gray-900 hover:bg-gray-100">Lucida Console</SelectItem>
+                                                {/* Monospace fonts */}
+                                                <SelectItem value="Courier New" className="text-gray-900 hover:bg-gray-100">Courier New</SelectItem>
+                                                <SelectItem value="Consolas" className="text-gray-900 hover:bg-gray-100">Consolas</SelectItem>
+                                                <SelectItem value="Monaco" className="text-gray-900 hover:bg-gray-100">Monaco</SelectItem>
+                                                <SelectItem value="Lucida Console" className="text-gray-900 hover:bg-gray-100">Lucida Console</SelectItem>
 
-                                            {/* Modern web fonts */}
-                                            <SelectItem value="Roboto" className="text-gray-900 hover:bg-gray-100">Roboto</SelectItem>
-                                            <SelectItem value="Open Sans" className="text-gray-900 hover:bg-gray-100">Open Sans</SelectItem>
-                                            <SelectItem value="Montserrat" className="text-gray-900 hover:bg-gray-100">Montserrat</SelectItem>
-                                            <SelectItem value="Poppins" className="text-gray-900 hover:bg-gray-100">Poppins</SelectItem>
-                                            <SelectItem value="Lato" className="text-gray-900 hover:bg-gray-100">Lato</SelectItem>
-                                            <SelectItem value="Inter" className="text-gray-900 hover:bg-gray-100">Inter</SelectItem>
-                                            <SelectItem value="Raleway" className="text-gray-900 hover:bg-gray-100">Raleway</SelectItem>
+                                                {/* Modern web fonts */}
+                                                <SelectItem value="Roboto" className="text-gray-900 hover:bg-gray-100">Roboto</SelectItem>
+                                                <SelectItem value="Open Sans" className="text-gray-900 hover:bg-gray-100">Open Sans</SelectItem>
+                                                <SelectItem value="Montserrat" className="text-gray-900 hover:bg-gray-100">Montserrat</SelectItem>
+                                                <SelectItem value="Poppins" className="text-gray-900 hover:bg-gray-100">Poppins</SelectItem>
+                                                <SelectItem value="Lato" className="text-gray-900 hover:bg-gray-100">Lato</SelectItem>
+                                                <SelectItem value="Inter" className="text-gray-900 hover:bg-gray-100">Inter</SelectItem>
+                                                <SelectItem value="Raleway" className="text-gray-900 hover:bg-gray-100">Raleway</SelectItem>
 
-                                            {/* Custom fonts */}
-                                            <SelectItem value="The Seasons" className="text-gray-900 hover:bg-gray-100">The Seasons</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <Label className="text-xs text-gray-700 mb-2 block font-medium">Weight</Label>
-                                    <Select
-                                        value={(selectedObject as any).fontWeight || 'normal'}
-                                        onValueChange={(value) => onUpdateTextProperty('fontWeight', value)}
-                                    >
-                                        <SelectTrigger className="h-10 bg-gray-100 border-gray-300 text-gray-900">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-white border-gray-300">
-                                            <SelectItem value="normal" className="text-gray-900 hover:bg-gray-100">Normal</SelectItem>
-                                            <SelectItem value="bold" className="text-gray-900 hover:bg-gray-100">Bold</SelectItem>
-                                            <SelectItem value="100" className="text-gray-900 hover:bg-gray-100">Thin</SelectItem>
-                                            <SelectItem value="300" className="text-gray-900 hover:bg-gray-100">Light</SelectItem>
-                                            <SelectItem value="500" className="text-gray-900 hover:bg-gray-100">Medium</SelectItem>
-                                            <SelectItem value="700" className="text-gray-900 hover:bg-gray-100">Bold</SelectItem>
-                                            <SelectItem value="900" className="text-gray-900 hover:bg-gray-100">Black</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                                {/* Custom fonts */}
+                                                <SelectItem value="The Seasons" className="text-gray-900 hover:bg-gray-100">The Seasons</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-gray-700 mb-2 block font-medium">Weight</Label>
+                                        <Select
+                                            value={(selectedObject as any).fontWeight || 'normal'}
+                                            onValueChange={(value) => onUpdateTextProperty('fontWeight', value)}
+                                        >
+                                            <SelectTrigger className="h-10 bg-white border-gray-200 text-gray-900 rounded-lg shadow-sm hover:border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-white border-gray-200 rounded-lg shadow-lg">
+                                                <SelectItem value="normal" className="text-gray-900 hover:bg-gray-100">Normal</SelectItem>
+                                                <SelectItem value="bold" className="text-gray-900 hover:bg-gray-100">Bold</SelectItem>
+                                                <SelectItem value="100" className="text-gray-900 hover:bg-gray-100">Thin</SelectItem>
+                                                <SelectItem value="300" className="text-gray-900 hover:bg-gray-100">Light</SelectItem>
+                                                <SelectItem value="500" className="text-gray-900 hover:bg-gray-100">Medium</SelectItem>
+                                                <SelectItem value="700" className="text-gray-900 hover:bg-gray-100">Bold</SelectItem>
+                                                <SelectItem value="900" className="text-gray-900 hover:bg-gray-100">Black</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                                 <div>
                                     <Label className="text-xs text-gray-700 mb-2 block font-medium">Alignment</Label>
-                                    <div className="grid grid-cols-4 gap-1">
+                                    <div className="grid grid-cols-4 gap-1.5">
                                         <Button
                                             variant={((selectedObject as any).textAlign || 'left') === 'left' ? 'default' : 'outline'}
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'left')}
-                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-300"
+                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-200 rounded-lg shadow-sm hover:shadow transition-all duration-200"
                                             title="Align left"
                                         >
                                             <AlignLeft className="size-4" />
@@ -183,7 +214,7 @@ export function PropertiesSidebar({
                                             variant={((selectedObject as any).textAlign || 'left') === 'center' ? 'default' : 'outline'}
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'center')}
-                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-300"
+                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-200 rounded-lg shadow-sm hover:shadow transition-all duration-200"
                                             title="Center"
                                         >
                                             <AlignCenter className="size-4" />
@@ -192,7 +223,7 @@ export function PropertiesSidebar({
                                             variant={((selectedObject as any).textAlign || 'left') === 'right' ? 'default' : 'outline'}
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'right')}
-                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-300"
+                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-200 rounded-lg shadow-sm hover:shadow transition-all duration-200"
                                             title="Align right"
                                         >
                                             <AlignRight className="size-4" />
@@ -201,7 +232,7 @@ export function PropertiesSidebar({
                                             variant={((selectedObject as any).textAlign || 'left') === 'justify' ? 'default' : 'outline'}
                                             size="icon"
                                             onClick={() => onUpdateTextProperty('textAlign', 'justify')}
-                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-300"
+                                            className="h-10 text-gray-900 hover:text-gray-700 border-gray-200 rounded-lg shadow-sm hover:shadow transition-all duration-200"
                                             title="Justify"
                                         >
                                             <AlignJustify className="size-4" />
@@ -218,7 +249,7 @@ export function PropertiesSidebar({
                                             max="3"
                                             value={(selectedObject as any).lineHeight || 1.16}
                                             onChange={(e) => onUpdateTextProperty('lineHeight', parseFloat(e.target.value))}
-                                            className="h-10 bg-gray-100 border-gray-300 text-gray-900"
+                                            className="h-10 bg-white border-gray-200 text-gray-900 rounded-lg shadow-sm hover:border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all duration-200"
                                         />
                                     </div>
                                     <div>
@@ -233,7 +264,7 @@ export function PropertiesSidebar({
                                                 const nextStyle = styles[(currentIndex + 1) % styles.length]
                                                 onUpdateTextProperty('listStyle', nextStyle)
                                             }}
-                                            className="w-full h-10 bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 flex items-center justify-center gap-1"
+                                            className="w-full h-10 bg-white border-gray-200 text-gray-900 hover:bg-gray-50 rounded-lg shadow-sm hover:shadow transition-all duration-200 flex items-center justify-center gap-1"
                                         >
                                             {(() => {
                                                 const currentStyle = (selectedObject as any).listStyle || 'bullets'
@@ -277,12 +308,14 @@ export function PropertiesSidebar({
                                 {onUpdateStrokeColor && (
                                     <div>
                                         <Label className="text-xs text-gray-700 mb-2 block font-medium">Ring Color</Label>
-                                        <Input
-                                            type="color"
-                                            value={(selectedObject as any).stroke as string || '#fbbf24'}
-                                            onChange={(e) => onUpdateStrokeColor(e.target.value)}
-                                            className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
-                                        />
+                                        <div className="relative w-14 h-14 rounded-full border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                                            <input
+                                                type="color"
+                                                value={(selectedObject as any).stroke as string || '#fbbf24'}
+                                                onChange={(e) => onUpdateStrokeColor(e.target.value)}
+                                                className="circular-color-picker w-14 h-14 cursor-pointer"
+                                            />
+                                        </div>
                                     </div>
                                 )}
 
@@ -291,11 +324,11 @@ export function PropertiesSidebar({
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <Label className="text-xs text-gray-700 font-medium">Ring Thickness</Label>
-                                            <span className="text-xs text-gray-600 font-medium">
+                                            <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
                                                 {Math.round((selectedObject as any).ringThickness ?? 50)}px
                                             </span>
                                         </div>
-                                        <Input
+                                        <input
                                             type="range"
                                             min="5"
                                             max="200"
@@ -316,40 +349,47 @@ export function PropertiesSidebar({
                             selectedObject.type !== 'i-text' &&
                             selectedObject.type !== 'textbox' &&
                             selectedObject.type !== 'image' && (
+                            
                             <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <Label className="text-xs text-gray-700 mb-2 block font-medium">Color</Label>
-                                    <Input
-                                        type="color"
-                                        value={(selectedObject as any).fill as string || '#667eea'}
-                                        onChange={(e) => onUpdateFillColor(e.target.value)}
-                                        className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
-                                    />
+                                    <div className="relative w-14 h-14 rounded-full border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                                        <input
+                                            type="color"
+                                            value={(selectedObject as any).fill as string || '#667eea'}
+                                            onChange={(e) => onUpdateFillColor(e.target.value)}
+                                            className="circular-color-picker w-14 h-14 cursor-pointer"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Stroke Color Control */}
                                 {onUpdateStrokeColor && (
                                     <div>
                                         <Label className="text-xs text-gray-700 mb-2 block font-medium">Border Color</Label>
-                                        <Input
-                                            type="color"
-                                            value={(selectedObject as any).stroke as string || '#000000'}
-                                            onChange={(e) => onUpdateStrokeColor(e.target.value)}
-                                            className="h-10 cursor-pointer bg-gray-100 border-gray-300 text-gray-900"
-                                        />
+                                        <div className="relative w-14 h-14 rounded-full border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                                            <input
+                                                type="color"
+                                                value={(selectedObject as any).stroke as string || '#000000'}
+                                                onChange={(e) => onUpdateStrokeColor(e.target.value)}
+                                                className="circular-color-picker w-14 h-14 cursor-pointer"
+                                            />
+                                        </div>
                                     </div>
                                 )}
+                                </div>
 
                                 {/* Stroke Width Control */}
                                 {onUpdateStrokeWidth && (
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
                                             <Label className="text-xs text-gray-700 font-medium">Border Width</Label>
-                                            <span className="text-xs text-gray-600 font-medium">
+                                            <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
                                                 {Math.round((selectedObject as any).strokeWidth ?? 0)}px
                                             </span>
                                         </div>
-                                        <Input
+                                        <input
                                             type="range"
                                             min="0"
                                             max="20"
@@ -368,11 +408,11 @@ export function PropertiesSidebar({
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                     <Label className="text-xs text-gray-700 font-medium">Corner Radius</Label>
-                                    <span className="text-xs text-gray-600 font-medium">
+                                    <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
                                         {Math.round((selectedObject as any).borderRadius ?? 0)}px
                                     </span>
                                 </div>
-                                <Input
+                                <input
                                     type="range"
                                     min="0"
                                     max="100"
@@ -388,11 +428,11 @@ export function PropertiesSidebar({
                         <div className="space-y-2">
                             <div className="flex items-center justify-between mt-4">
                                 <Label className="text-xs text-gray-700 font-medium">Opacity</Label>
-                                <span className="text-xs text-gray-600 font-medium">
+                                <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
                                     {Math.round(((selectedObject as any).opacity ?? 1) * 100)}%
                                 </span>
                             </div>
-                            <Input
+                            <input
                                 type="range"
                                 min="0"
                                 max="1"
@@ -406,11 +446,12 @@ export function PropertiesSidebar({
                 )}
 
                 {!selectedObject && (
-                    <div className="text-center text-gray-600 text-sm py-12 px-4">
-                        <p className="leading-relaxed">Select an object on the canvas to edit its properties</p>
+                    <div className="text-center text-gray-500 text-sm py-16 px-4">
+                        <p className="leading-relaxed font-medium">Select an object on the canvas to edit its properties</p>
                     </div>
                 )}
             </div>
         </div>
+        </>
     )
 }

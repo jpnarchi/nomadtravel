@@ -9,7 +9,7 @@ import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { createPromptWithAttachments } from "@/lib/utils";
 import { PricingPopup } from "../pricing/pricing-popup";
-import { DragDropOverlay } from "../global/drag-drop-overlay";
+// import { DragDropOverlay } from "../global/drag-drop-overlay";
 import { ProjectsPreviewHero } from "./projects-preview-hero"
 import { SlideSelector } from "../chat/slides-selector"
 import { Footer } from "../global/footer"
@@ -228,7 +228,7 @@ export function ChatContainer() {
 
                 {/* Drag Drop Overlay */}
 
-                <DragDropOverlay files={files} setFiles={setFiles} />
+                {/* <DragDropOverlay files={files} setFiles={setFiles} /> */}
 
                 <Footer />
             </div>
