@@ -12,7 +12,7 @@ import {
   Compass, Package, DollarSign, Receipt, FileText,
   CheckCircle, Clock, AlertCircle, TrendingUp,
   CreditCard, Building2, MoreVertical, AlertTriangle, Train,
-  StickyNote, FolderOpen, Bell, Sparkles, TrendingDown
+  StickyNote, FolderOpen, Bell, Sparkles, TrendingDown, Lock
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -112,6 +112,7 @@ export default function SoldTripDetail() {
   const [editingPlanItem, setEditingPlanItem] = useState(null);
   const [editTripOpen, setEditTripOpen] = useState(false);
   const [currentExchangeRates, setCurrentExchangeRates] = useState({});
+  const [closeTripConfirm, setCloseTripConfirm] = useState(false);
 
 
   const queryClient = useQueryClient();
@@ -365,6 +366,27 @@ export default function SoldTripDetail() {
     }
   });
 
+  const closeTripMutation = useMutation({
+    mutationFn: async () => {
+      const user = await base44.auth.me();
+      const profitability = totalClientPaid > 0 ? (totalCommissions / totalClientPaid) * 100 : 0;
+      
+      return base44.entities.SoldTrip.update(tripId, {
+        is_closed: true,
+        closed_date: new Date().toISOString(),
+        closed_by: user.email,
+        frozen_total_paid: totalClientPaid,
+        frozen_commission: totalCommissions,
+        frozen_profitability: profitability
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setCloseTripConfirm(false);
+    }
+  });
+
   const recalculateServiceSupplierPayments = async () => {
     if (!tripId) return;
 
@@ -516,6 +538,19 @@ export default function SoldTripDetail() {
   const clientBalance = totalServices - totalClientPaid;
   const paymentProgress = totalServices > 0 ? Math.round((totalClientPaid / totalServices) * 100) : 0;
   
+  // Profitability calculation
+  const profitability = totalClientPaid > 0 ? (totalCommissions / totalClientPaid) * 100 : 0;
+  const getProfitabilityColor = (value) => {
+    if (value < 10) return { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-300' };
+    if (value < 15) return { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-300' };
+    return { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-300' };
+  };
+  const profitabilityColors = getProfitabilityColor(profitability);
+
+  // Check if all commissions are paid
+  const allCommissionsPaid = services.every(s => s.commission_paid === true);
+  const canCloseTrip = allCommissionsPaid && !soldTrip.is_closed;
+  
   const daysUntilTrip = differenceInDays(parseLocalDate(soldTrip.start_date), new Date());
   const isTripPast = isPast(parseLocalDate(soldTrip.start_date));
   const statusConfig = STATUS_CONFIG[soldTrip.status] || STATUS_CONFIG.pendiente;
@@ -594,59 +629,135 @@ export default function SoldTripDetail() {
               <Button size="sm" variant="outline" onClick={() => setInvoiceOpen(true)} className="h-8 px-3 text-xs rounded-lg">
                 <FileText className="w-3 h-3 mr-1" />Invoice
               </Button>
-              <Select value={soldTrip.status} onValueChange={(value) => updateTripMutation.mutate({ status: value })}>
-                <SelectTrigger className="h-8 w-32 text-xs rounded-lg">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="parcial">Parcial</SelectItem>
-                  <SelectItem value="pagado">Pagado</SelectItem>
-                  <SelectItem value="completado">Completado</SelectItem>
-                </SelectContent>
-              </Select>
+              {soldTrip.is_closed ? (
+                <Badge className="bg-stone-800 text-white h-8 px-3">
+                  <Lock className="w-3 h-3 mr-1" />Cerrado
+                </Badge>
+              ) : (
+                <>
+                  {canCloseTrip && (
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => setCloseTripConfirm(true)}
+                      className="h-8 px-3 text-xs rounded-lg border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      <Lock className="w-3 h-3 mr-1" />Cerrar Viaje
+                    </Button>
+                  )}
+                  <Select value={soldTrip.status} onValueChange={(value) => updateTripMutation.mutate({ status: value })}>
+                    <SelectTrigger className="h-8 w-32 text-xs rounded-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="parcial">Parcial</SelectItem>
+                      <SelectItem value="pagado">Pagado</SelectItem>
+                      <SelectItem value="completado">Completado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Financial Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-gradient-to-br from-stone-800 to-stone-900 rounded-xl p-3 shadow-sm relative overflow-hidden">
-          <p className="text-xs text-stone-300 mb-1">Total</p>
-          <p className="text-xl font-bold text-white">${totalServices.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
-          <p className="text-xs text-emerald-100 mb-1">Comisión</p>
-          <p className="text-xl font-bold text-white">${totalCommissions.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
-          <p className="text-xs text-green-100 mb-1">Cobrado</p>
-          <p className="text-xl font-bold text-white">${totalClientPaid.toLocaleString()}</p>
-        </div>
-
-        <div className={`${clientBalance > 0 ? 'bg-gradient-to-br from-orange-500 to-orange-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600'} rounded-xl p-3 shadow-sm relative overflow-hidden`}>
-          <p className={`text-xs mb-1 ${clientBalance > 0 ? 'text-orange-100' : 'text-emerald-100'}`}>Por Cobrar</p>
-          <p className="text-xl font-bold text-white">${clientBalance.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
-          <p className="text-xs text-amber-100 mb-1">A Proveedores</p>
-          <p className="text-xl font-bold text-white">${totalSupplierPaid.toLocaleString()}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 shadow-sm relative overflow-hidden flex items-center justify-between">
-          <div>
-            <p className="text-xs text-blue-100 mb-1">Progreso</p>
-            <p className="text-xl font-bold text-white">{paymentProgress}%</p>
+      {/* Final Report - Closed Trip */}
+      {soldTrip.is_closed && (
+        <div className="bg-gradient-to-br from-stone-800 to-stone-900 rounded-2xl p-6 shadow-lg text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Lock className="w-6 h-6" />
+              <div>
+                <h3 className="text-xl font-bold">Reporte Final del Viaje</h3>
+                <p className="text-sm text-stone-300">
+                  Cerrado el {format(new Date(soldTrip.closed_date), 'd MMM yyyy HH:mm', { locale: es })}
+                </p>
+              </div>
+            </div>
+            <Badge className={`${profitabilityColors.bg} ${profitabilityColors.text} text-lg px-4 py-2`}>
+              {soldTrip.frozen_profitability?.toFixed(2)}% Rentabilidad
+            </Badge>
           </div>
-          <div className="w-12 h-12 rounded-full border-4 border-white/30 flex items-center justify-center">
-            <span className="text-xs font-bold text-white">{paymentProgress}%</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs text-stone-300 mb-1">Total Cobrado</p>
+              <p className="text-2xl font-bold">${soldTrip.frozen_total_paid?.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs text-stone-300 mb-1">Comisión Final</p>
+              <p className="text-2xl font-bold text-emerald-400">${soldTrip.frozen_commission?.toLocaleString()}</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-4">
+              <p className="text-xs text-stone-300 mb-1">Revenue</p>
+              <p className="text-2xl font-bold text-green-400">${soldTrip.frozen_commission?.toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Service Profitability Details */}
+          <div className="mt-4 bg-white/10 rounded-xl p-4">
+            <h4 className="font-semibold mb-3">Rentabilidad por Servicio</h4>
+            <div className="space-y-2">
+              {services.map(service => {
+                const serviceProfitability = service.total_price > 0 
+                  ? (service.commission / service.total_price) * 100 
+                  : 0;
+                const serviceColors = getProfitabilityColor(serviceProfitability);
+                
+                return (
+                  <div key={service.id} className="flex items-center justify-between text-sm bg-white/5 rounded-lg p-2">
+                    <span className="truncate flex-1">{getServiceDetails(service).title}</span>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="text-stone-300">${service.total_price?.toLocaleString()}</span>
+                      <span className="text-emerald-400 font-medium">${service.commission?.toLocaleString()}</span>
+                      <Badge className={`${serviceColors.bg} ${serviceColors.text} text-xs`}>
+                        {serviceProfitability.toFixed(1)}%
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Financial Summary - Active Trip */}
+      {!soldTrip.is_closed && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-gradient-to-br from-stone-800 to-stone-900 rounded-xl p-3 shadow-sm relative overflow-hidden">
+            <p className="text-xs text-stone-300 mb-1">Total</p>
+            <p className="text-xl font-bold text-white">${totalServices.toLocaleString()}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
+            <p className="text-xs text-emerald-100 mb-1">Comisión / Revenue</p>
+            <p className="text-xl font-bold text-white">${totalCommissions.toLocaleString()}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
+            <p className="text-xs text-green-100 mb-1">Cobrado</p>
+            <p className="text-xl font-bold text-white">${totalClientPaid.toLocaleString()}</p>
+          </div>
+
+          <div className={`${clientBalance > 0 ? 'bg-gradient-to-br from-orange-500 to-orange-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600'} rounded-xl p-3 shadow-sm relative overflow-hidden`}>
+            <p className={`text-xs mb-1 ${clientBalance > 0 ? 'text-orange-100' : 'text-emerald-100'}`}>Por Cobrar</p>
+            <p className="text-xl font-bold text-white">${clientBalance.toLocaleString()}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
+            <p className="text-xs text-amber-100 mb-1">A Proveedores</p>
+            <p className="text-xl font-bold text-white">${totalSupplierPaid.toLocaleString()}</p>
+          </div>
+
+          <div className={`bg-gradient-to-br ${profitabilityColors.bg.replace('bg-', 'from-')}-400 to-${profitabilityColors.bg.replace('bg-', '')}-500 rounded-xl p-3 shadow-sm relative overflow-hidden`}>
+            <p className="text-xs text-white/90 mb-1">Rentabilidad</p>
+            <p className="text-xl font-bold text-white">{profitability.toFixed(1)}%</p>
+          </div>
+        </div>
+      )}
 
 
 
@@ -911,18 +1022,33 @@ export default function SoldTripDetail() {
 
                                     {/* Right: Amounts */}
                                     <div className="flex items-center gap-3 lg:gap-4 text-xs border-l border-stone-100 pl-3">
-                                      <div className="text-center">
-                                        <p className="text-stone-400 mb-0.5">Total</p>
-                                        <p className="font-bold text-sm" style={{ color: '#2E442A' }}>
-                                          ${(service.total_price || 0).toLocaleString()}
-                                        </p>
-                                      </div>
-                                      <div className="text-center">
-                                        <p className="text-stone-400 mb-0.5">Comisión</p>
-                                        <p className="font-semibold text-emerald-600 text-sm">
-                                          ${(service.commission || 0).toLocaleString()}
-                                        </p>
-                                      </div>
+                                     <div className="text-center">
+                                       <p className="text-stone-400 mb-0.5">Total</p>
+                                       <p className="font-bold text-sm" style={{ color: '#2E442A' }}>
+                                         ${(service.total_price || 0).toLocaleString()}
+                                       </p>
+                                     </div>
+                                     <div className="text-center">
+                                       <p className="text-stone-400 mb-0.5">Comisión</p>
+                                       <p className="font-semibold text-emerald-600 text-sm">
+                                         ${(service.commission || 0).toLocaleString()}
+                                       </p>
+                                     </div>
+                                     {!soldTrip.is_closed && (() => {
+                                       const serviceProfitability = service.total_price > 0 
+                                         ? (service.commission / service.total_price) * 100 
+                                         : 0;
+                                       const serviceColors = getProfitabilityColor(serviceProfitability);
+
+                                       return (
+                                         <div className="text-center">
+                                           <p className="text-stone-400 mb-0.5">Rentabilidad</p>
+                                           <Badge className={`${serviceColors.bg} ${serviceColors.text} text-xs px-1.5 py-0.5`}>
+                                             {serviceProfitability.toFixed(1)}%
+                                           </Badge>
+                                         </div>
+                                       );
+                                     })()}
                                       {(() => {
                                         const servicePayments = supplierPayments.filter(p => p.trip_service_id === service.id);
                                         const paidToSupplier = servicePayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
@@ -1343,6 +1469,44 @@ export default function SoldTripDetail() {
               className="bg-red-600 hover:bg-red-700"
             >
               Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Close Trip Confirmation */}
+      <AlertDialog open={closeTripConfirm} onOpenChange={setCloseTripConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Cerrar viaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Al cerrar el viaje se congelarán los siguientes valores:
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Total cobrado:</span>
+                  <span className="font-semibold">${totalClientPaid.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Comisión total:</span>
+                  <span className="font-semibold text-emerald-600">${totalCommissions.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Rentabilidad:</span>
+                  <Badge className={`${profitabilityColors.bg} ${profitabilityColors.text}`}>
+                    {profitability.toFixed(2)}%
+                  </Badge>
+                </div>
+              </div>
+              <p className="mt-4 text-red-600 font-medium">Esta acción no se puede deshacer.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => closeTripMutation.mutate()}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Cerrar Viaje
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
