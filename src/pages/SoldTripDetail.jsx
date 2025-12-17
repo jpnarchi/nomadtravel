@@ -12,7 +12,7 @@ import {
   Compass, Package, DollarSign, Receipt, FileText,
   CheckCircle, Clock, AlertCircle, TrendingUp,
   CreditCard, Building2, MoreVertical, AlertTriangle, Train,
-  StickyNote, FolderOpen, Bell, Sparkles, TrendingDown
+  StickyNote, FolderOpen, Bell, Sparkles, TrendingDown, Lock
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
