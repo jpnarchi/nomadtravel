@@ -6,6 +6,13 @@ import { es } from 'date-fns/locale';
 import { Printer, MapPin, Hotel, Plane, Car, Compass, Package, Ship, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
+// Helper to parse date-only strings (YYYY-MM-DD) as local dates, avoiding UTC timezone shifts
+function parseDateOnlyLocal(dateStr) {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d); // local date, no UTC shift
+}
+
 const SERVICE_ICONS = {
   hotel: Hotel,
   vuelo: Plane,
@@ -124,7 +131,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
     doc.setTextColor(80, 80, 80);
     doc.text(`Destino: ${soldTrip.destination}`, margin + 3, yPosition);
     yPosition += 6;
-    doc.text(`Fechas: ${format(new Date(soldTrip.start_date), 'd MMM yyyy', { locale: es })}${soldTrip.end_date ? ` - ${format(new Date(soldTrip.end_date), 'd MMM yyyy', { locale: es })}` : ''}`, margin + 3, yPosition);
+    doc.text(`Fechas: ${format(parseDateOnlyLocal(soldTrip.start_date), 'd MMM yyyy', { locale: es })}${soldTrip.end_date ? ` - ${format(parseDateOnlyLocal(soldTrip.end_date), 'd MMM yyyy', { locale: es })}` : ''}`, margin + 3, yPosition);
     yPosition += 6;
     doc.text(`Viajeros: ${soldTrip.travelers}`, margin + 3, yPosition);
     yPosition += 15;
@@ -553,8 +560,8 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
             <h3 className="text-sm font-semibold text-stone-500 mb-2">Cliente</h3>
             <p className="text-lg font-semibold text-stone-800">{soldTrip.client_name}</p>
             <p className="text-sm text-stone-600">
-              Viaje: {soldTrip.destination} | {format(new Date(soldTrip.start_date), 'd MMM yyyy', { locale: es })}
-              {soldTrip.end_date && ` - ${format(new Date(soldTrip.end_date), 'd MMM yyyy', { locale: es })}`}
+              Viaje: {soldTrip.destination}{soldTrip.trip_name ? ` — ${soldTrip.trip_name}` : ''} | {format(parseDateOnlyLocal(soldTrip.start_date), 'd MMM yyyy', { locale: es })}
+              {soldTrip.end_date && ` - ${format(parseDateOnlyLocal(soldTrip.end_date), 'd MMM yyyy', { locale: es })}`}
             </p>
             <p className="text-sm text-stone-600">{soldTrip.travelers} viajero(s)</p>
           </div>
