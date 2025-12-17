@@ -17,7 +17,7 @@ import {
 import {
     serializeCanvas, copyObjectToJSON, pasteObjectFromJSON, updateObjectProperty,
     updateObjectFillColor, toggleObjectLock, bringObjectToFront, sendObjectToBack,
-    bringObjectForward, sendObjectBackward, zoomIn, zoomOut, resetZoom
+    bringObjectForward, sendObjectBackward, zoomIn, zoomOut, resetZoom, zoomToPoint
 } from './fabric-editor/canvas-utils'
 
 // Components
@@ -643,23 +643,23 @@ export function FabricSlideEditor({
     }
 
     // Zoom controls
-    const handleZoomIn = () => {
+    const handleZoomIn = useCallback(() => {
         if (!fabricCanvasRef.current) return
         const newZoom = zoomIn(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
         setZoom(newZoom)
-    }
+    }, [fabricCanvasRef, zoom, aspectRatioDimensions.width, aspectRatioDimensions.height])
 
-    const handleZoomOut = () => {
+    const handleZoomOut = useCallback(() => {
         if (!fabricCanvasRef.current) return
         const newZoom = zoomOut(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
         setZoom(newZoom)
-    }
+    }, [fabricCanvasRef, zoom, aspectRatioDimensions.width, aspectRatioDimensions.height])
 
-    const handleFitToScreen = () => {
+    const handleFitToScreen = useCallback(() => {
         if (!fabricCanvasRef.current) return
         const newZoom = resetZoom(fabricCanvasRef.current, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
         setZoom(newZoom)
-    }
+    }, [fabricCanvasRef, aspectRatioDimensions.width, aspectRatioDimensions.height])
 
     // Keyboard shortcuts
     useCanvasKeyboard({
@@ -696,6 +696,31 @@ export function FabricSlideEditor({
         window.addEventListener('paste', handlePaste)
         return () => window.removeEventListener('paste', handlePaste)
     }, [])
+
+    // Mouse wheel zoom
+    useEffect(() => {
+        const container = containerRef.current
+        if (!container) return
+
+        const handleWheel = (e: WheelEvent) => {
+            // Only zoom if Ctrl/Cmd key is pressed (standard zoom behavior)
+            // This allows normal scrolling without Ctrl/Cmd
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault()
+
+                // deltaY < 0 means scrolling up (zoom in)
+                // deltaY > 0 means scrolling down (zoom out)
+                if (e.deltaY < 0) {
+                    handleZoomIn()
+                } else if (e.deltaY > 0) {
+                    handleZoomOut()
+                }
+            }
+        }
+
+        container.addEventListener('wheel', handleWheel, { passive: false })
+        return () => container.removeEventListener('wheel', handleWheel)
+    }, [handleZoomIn, handleZoomOut])
 
     // Global image addition events
     useEffect(() => {

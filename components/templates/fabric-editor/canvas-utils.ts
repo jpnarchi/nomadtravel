@@ -671,6 +671,68 @@ export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: n
     return newZoom
 }
 
+/**
+ * Zoom hacia un punto específico (cursor position)
+ * @param canvas - Fabric canvas
+ * @param point - Punto focal del zoom (coordenadas relativas al canvas element)
+ * @param zoomIn - true para zoom in, false para zoom out
+ * @param currentZoom - Zoom actual
+ * @param baseScale - Escala base del canvas
+ * @param canvasWidth - Ancho original del canvas
+ * @param canvasHeight - Alto original del canvas
+ */
+export const zoomToPoint = (
+    canvas: fabric.Canvas,
+    point: { x: number; y: number },
+    zoomIn: boolean,
+    currentZoom: number,
+    baseScale: number,
+    canvasWidth: number,
+    canvasHeight: number
+): number => {
+    // Calculate new zoom level
+    let newZoom = zoomIn ? currentZoom * 1.2 : currentZoom / 1.2
+
+    // Apply zoom limits
+    if (newZoom > 5) newZoom = 5
+    if (newZoom < baseScale * 0.5) newZoom = baseScale * 0.5
+
+    // If zoom didn't change (hit limits), return current zoom
+    if (newZoom === currentZoom) return currentZoom
+
+    // Get current viewport transform
+    const vpt = canvas.viewportTransform
+    if (!vpt) return currentZoom
+
+    // The point is in canvas element coordinates
+    // We need to find what point in the canvas coordinate system this corresponds to
+    // Canvas coordinate system: (0,0) at top-left, no zoom applied
+    const pointInCanvasCoords = {
+        x: point.x / currentZoom,
+        y: point.y / currentZoom
+    }
+
+    // Calculate new canvas dimensions
+    const displayWidth = canvasWidth * newZoom
+    const displayHeight = canvasHeight * newZoom
+
+    // After zoom, we want pointInCanvasCoords to be at the same screen position (point)
+    // New viewport offset calculation:
+    // point.x = pointInCanvasCoords.x * newZoom + newVptX
+    // Therefore: newVptX = point.x - pointInCanvasCoords.x * newZoom
+    const newVptX = point.x - pointInCanvasCoords.x * newZoom
+    const newVptY = point.y - pointInCanvasCoords.y * newZoom
+
+    // Update canvas
+    canvas.setWidth(displayWidth)
+    canvas.setHeight(displayHeight)
+    canvas.setZoom(newZoom)
+    canvas.viewportTransform = [newZoom, 0, 0, newZoom, newVptX, newVptY]
+    canvas.renderAll()
+
+    return newZoom
+}
+
 export const resetZoom = (canvas: fabric.Canvas, baseScale: number, canvasWidth: number, canvasHeight: number): number => {
     // Reset to base scale
     const displayWidth = canvasWidth * baseScale
