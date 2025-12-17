@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import EmptyState from '@/components/ui/EmptyState';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseLocalDate } from '@/components/utils/dateHelpers';
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
@@ -159,7 +160,7 @@ export default function AdminSoldTrips() {
                     </td>
                     <td className="p-3 text-stone-600">{trip.destination}</td>
                     <td className="p-3 text-stone-600">
-                      {trip.start_date ? format(new Date(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
+                      {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
                     </td>
                     <td className="p-3 text-right font-semibold text-stone-800">
                       ${(trip.total_price || 0).toLocaleString()}
