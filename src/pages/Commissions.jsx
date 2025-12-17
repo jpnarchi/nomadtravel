@@ -71,6 +71,8 @@ export default function Commissions() {
   const [selectedServices, setSelectedServices] = useState([]);
   const [activeTab, setActiveTab] = useState('pendientes');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editingService, setEditingService] = useState(null);
+  const [editValues, setEditValues] = useState({});
 
   const queryClient = useQueryClient();
 
@@ -142,11 +144,48 @@ export default function Commissions() {
     }
   });
 
-  const togglePaid = (service) => {
+  const togglePaid = (service, newValue) => {
     updateServiceMutation.mutate({
       id: service.id,
-      data: { commission_paid: !service.commission_paid }
+      data: { commission_paid: newValue }
     });
+  };
+
+  const startEditing = (service) => {
+    setEditingService(service.id);
+    setEditValues({
+      commission: service.commission || 0,
+      commission_payment_date: service.commission_payment_date || ''
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingService(null);
+    setEditValues({});
+  };
+
+  const saveEditing = (service) => {
+    const commission = parseFloat(editValues.commission);
+    if (isNaN(commission) || commission < 0) {
+      alert('El monto debe ser un número válido mayor o igual a cero');
+      return;
+    }
+
+    if (editValues.commission_payment_date && isNaN(new Date(editValues.commission_payment_date).getTime())) {
+      alert('La fecha no es válida');
+      return;
+    }
+
+    updateServiceMutation.mutate({
+      id: service.id,
+      data: {
+        commission: commission,
+        commission_payment_date: editValues.commission_payment_date || null
+      }
+    });
+
+    setEditingService(null);
+    setEditValues({});
   };
 
   // Create a map of sold trips for quick lookup
@@ -292,7 +331,7 @@ export default function Commissions() {
               <table className="w-full text-sm">
             <thead className="bg-stone-50 border-b border-stone-100">
               <tr>
-                <th className="text-left p-3 font-semibold text-stone-600">
+                <th className="text-left p-3 font-semibold text-stone-600 w-12">
                   <Checkbox
                     checked={selectedServices.length === filteredServices.length && filteredServices.length > 0}
                     onCheckedChange={(checked) => {
@@ -304,20 +343,24 @@ export default function Commissions() {
                     }}
                   />
                 </th>
-                <th className="text-left p-3 font-semibold text-stone-600">Pagada</th>
+                <th className="text-left p-3 font-semibold text-stone-600 w-24">Pagada</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Cliente</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Servicio</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Tipo</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Bookeado por</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Reservado por</th>
-                <th className="text-left p-3 font-semibold text-stone-600">Fecha Pago</th>
-                <th className="text-right p-3 font-semibold text-stone-600">Comisión</th>
-                <th className="text-center p-3 font-semibold text-stone-600">Acciones</th>
+                <th className="text-left p-3 font-semibold text-stone-600 w-32">Fecha Pago</th>
+                <th className="text-right p-3 font-semibold text-stone-600 w-32">Comisión</th>
+                <th className="text-center p-3 font-semibold text-stone-600 w-24">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
               {filteredServices.map((service) => {
               const trip = tripsMap[service.sold_trip_id];
+              const isEditing = editingService === service.id;
+              const isPaid = service.commission_paid || false;
+              const canEdit = isAdmin || !isPaid;
+              
               return (
                 <tr key={service.id} className="hover:bg-stone-50 transition-colors">
                   <td className="p-3">
@@ -333,11 +376,18 @@ export default function Commissions() {
                     />
                   </td>
                   <td className="p-3">
-                    <Checkbox
-                      checked={service.commission_paid || false}
-                      onCheckedChange={() => togglePaid(service)}
-                      className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                    />
+                    <Select
+                      value={isPaid ? 'yes' : 'no'}
+                      onValueChange={(value) => togglePaid(service, value === 'yes')}
+                    >
+                      <SelectTrigger className={`h-8 w-20 text-xs ${isPaid ? 'bg-green-50 text-green-700 border-green-200' : 'bg-stone-50'}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No</SelectItem>
+                        <SelectItem value="yes">Sí</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </td>
                     <td className="p-3">
                       <span className="font-medium text-stone-800">{trip?.client_name || '-'}</span>
@@ -361,26 +411,73 @@ export default function Commissions() {
                       </span>
                     </td>
                     <td className="p-3">
-                      <span className="text-stone-500">
-                        {service.commission_payment_date 
-                          ? format(new Date(service.commission_payment_date), 'd MMM yy', { locale: es })
-                          : '-'}
-                      </span>
+                      {isEditing ? (
+                        <Input
+                          type="date"
+                          value={editValues.commission_payment_date || ''}
+                          onChange={(e) => setEditValues({...editValues, commission_payment_date: e.target.value})}
+                          className="h-8 text-xs"
+                        />
+                      ) : (
+                        <span 
+                          className={`text-stone-500 ${canEdit ? 'cursor-pointer hover:text-blue-600' : 'cursor-not-allowed opacity-60'}`}
+                          onClick={() => canEdit && startEditing(service)}
+                        >
+                          {service.commission_payment_date 
+                            ? format(new Date(service.commission_payment_date), 'd MMM yy', { locale: es })
+                            : '-'}
+                        </span>
+                      )}
                     </td>
                     <td className="p-3 text-right">
-                      <span className={`font-semibold ${service.commission_paid ? 'text-green-600' : 'text-stone-800'}`}>
-                        ${(service.commission || 0).toLocaleString()}
-                      </span>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={editValues.commission || 0}
+                          onChange={(e) => setEditValues({...editValues, commission: e.target.value})}
+                          className="h-8 text-xs text-right"
+                        />
+                      ) : (
+                        <span 
+                          className={`font-semibold ${service.commission_paid ? 'text-green-600' : 'text-stone-800'} ${canEdit ? 'cursor-pointer hover:text-blue-600' : 'cursor-not-allowed opacity-60'}`}
+                          onClick={() => canEdit && startEditing(service)}
+                        >
+                          ${(service.commission || 0).toLocaleString()}
+                        </span>
+                      )}
                     </td>
                     <td className="p-3 text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteConfirm(service)}
-                        className="h-8 w-8 text-stone-400 hover:text-red-600"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {isEditing ? (
+                        <div className="flex gap-1 justify-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => saveEditing(service)}
+                            className="h-8 w-8 text-green-600 hover:bg-green-50"
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={cancelEditing}
+                            className="h-8 w-8 text-red-600 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteConfirm(service)}
+                          className="h-8 w-8 text-stone-400 hover:text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
