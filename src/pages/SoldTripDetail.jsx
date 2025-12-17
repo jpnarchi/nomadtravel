@@ -310,24 +310,6 @@ export default function SoldTripDetail() {
     }
   });
 
-  const closeTripMutation = useMutation({
-    mutationFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.SoldTrip.update(tripId, {
-        is_closed: true,
-        closed_date: new Date().toISOString().split('T')[0],
-        closed_by: user.email,
-        closed_total_price: totalServices,
-        closed_total_commission: totalCommissions,
-        closed_total_paid_by_client: totalClientPaid
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
-    }
-  });
-
   // Trip Notes Mutations
   const createNoteMutation = useMutation({
     mutationFn: (data) => base44.entities.TripNote.create({ ...data, sold_trip_id: tripId }),
@@ -533,14 +515,6 @@ export default function SoldTripDetail() {
   const totalSupplierPaid = supplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const clientBalance = totalServices - totalClientPaid;
   const paymentProgress = totalServices > 0 ? Math.round((totalClientPaid / totalServices) * 100) : 0;
-
-  // Calculate profitability
-  const revenue = totalCommissions;
-  const profitability = totalClientPaid > 0 ? (totalCommissions / totalClientPaid) * 100 : 0;
-
-  // Check if all commissions are paid
-  const allCommissionsPaid = services.every(s => s.paid_to_agent === true);
-  const canCloseTripStatus = allCommissionsPaid && !soldTrip.is_closed;
   
   const daysUntilTrip = differenceInDays(parseLocalDate(soldTrip.start_date), new Date());
   const isTripPast = isPast(parseLocalDate(soldTrip.start_date));
@@ -609,144 +583,43 @@ export default function SoldTripDetail() {
               </div>
             </div>
             <div className="flex gap-2">
-              {!soldTrip.is_closed && (
-                <>
-                  <Button size="sm" variant="outline" onClick={() => setEditTripOpen(true)} className="h-8 px-3 text-xs rounded-lg">
-                    <Edit2 className="w-3 h-3 mr-1" />Editar
-                  </Button>
-                  {paymentPlan.length === 0 && (
-                    <Button size="sm" variant="outline" onClick={() => setPaymentPlanOpen(true)} className="h-8 px-3 text-xs rounded-lg">
-                      <Calendar className="w-3 h-3 mr-1" />Plan
-                    </Button>
-                  )}
-                  <Button size="sm" variant="outline" onClick={() => setInvoiceOpen(true)} className="h-8 px-3 text-xs rounded-lg">
-                    <FileText className="w-3 h-3 mr-1" />Invoice
-                  </Button>
-                  <Select value={soldTrip.status} onValueChange={(value) => updateTripMutation.mutate({ status: value })}>
-                    <SelectTrigger className="h-8 w-32 text-xs rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pendiente">Pendiente</SelectItem>
-                      <SelectItem value="parcial">Parcial</SelectItem>
-                      <SelectItem value="pagado">Pagado</SelectItem>
-                      <SelectItem value="completado">Completado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    size="sm"
-                    onClick={() => closeTripMutation.mutate()}
-                    disabled={!canCloseTripStatus || closeTripMutation.isPending}
-                    className="h-8 px-3 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={!allCommissionsPaid ? 'Todas las comisiones deben estar pagadas para cerrar el viaje' : 'Cerrar viaje'}
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    {closeTripMutation.isPending ? 'Cerrando...' : 'Cerrar Viaje'}
-                  </Button>
-                </>
-              )}
-              {soldTrip.is_closed && (
-                <Button size="sm" variant="outline" onClick={() => setInvoiceOpen(true)} className="h-8 px-3 text-xs rounded-lg">
-                  <FileText className="w-3 h-3 mr-1" />Invoice
+              <Button size="sm" variant="outline" onClick={() => setEditTripOpen(true)} className="h-8 px-3 text-xs rounded-lg">
+                <Edit2 className="w-3 h-3 mr-1" />Editar
+              </Button>
+              {paymentPlan.length === 0 && (
+                <Button size="sm" variant="outline" onClick={() => setPaymentPlanOpen(true)} className="h-8 px-3 text-xs rounded-lg">
+                  <Calendar className="w-3 h-3 mr-1" />Plan
                 </Button>
               )}
+              <Button size="sm" variant="outline" onClick={() => setInvoiceOpen(true)} className="h-8 px-3 text-xs rounded-lg">
+                <FileText className="w-3 h-3 mr-1" />Invoice
+              </Button>
+              <Select value={soldTrip.status} onValueChange={(value) => updateTripMutation.mutate({ status: value })}>
+                <SelectTrigger className="h-8 w-32 text-xs rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendiente">Pendiente</SelectItem>
+                  <SelectItem value="parcial">Parcial</SelectItem>
+                  <SelectItem value="pagado">Pagado</SelectItem>
+                  <SelectItem value="completado">Completado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Closed Trip Report */}
-      {soldTrip.is_closed && (
-        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border-2 border-indigo-200 shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-indigo-900">Viaje Cerrado</h3>
-              <p className="text-sm text-indigo-600">
-                Cerrado el {format(parseLocalDate(soldTrip.closed_date), 'd MMM yyyy', { locale: es })} por {soldTrip.closed_by}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="bg-white/70 rounded-lg p-3">
-              <p className="text-xs text-indigo-600 mb-1">Total Cobrado</p>
-              <p className="text-xl font-bold text-indigo-900">${(soldTrip.closed_total_paid_by_client || 0).toLocaleString()}</p>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3">
-              <p className="text-xs text-indigo-600 mb-1">Revenue (Comisión)</p>
-              <p className="text-xl font-bold text-emerald-600">${(soldTrip.closed_total_commission || 0).toLocaleString()}</p>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3">
-              <p className="text-xs text-indigo-600 mb-1">Rentabilidad</p>
-              <p className={`text-xl font-bold ${
-                ((soldTrip.closed_total_commission / soldTrip.closed_total_paid_by_client) * 100) > 15 ? 'text-green-600' :
-                ((soldTrip.closed_total_commission / soldTrip.closed_total_paid_by_client) * 100) >= 10 ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
-                {((soldTrip.closed_total_commission / soldTrip.closed_total_paid_by_client) * 100).toFixed(1)}%
-              </p>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3">
-              <p className="text-xs text-indigo-600 mb-1">Precio Total</p>
-              <p className="text-lg font-bold text-stone-800">${(soldTrip.closed_total_price || 0).toLocaleString()}</p>
-            </div>
-          </div>
-
-          {/* Service Profitability Details */}
-          <div className="bg-white/70 rounded-lg p-4">
-            <h4 className="font-semibold text-indigo-900 mb-3 text-sm">Rentabilidad por Servicio</h4>
-            <div className="space-y-2">
-              {services.map(service => {
-                const serviceProfitability = service.total_price > 0 ? ((service.commission || 0) / service.total_price) * 100 : 0;
-                const details = getServiceDetails(service);
-                return (
-                  <div key={service.id} className="flex items-center justify-between text-xs bg-white/50 rounded p-2">
-                    <span className="font-medium text-stone-800">{details.title}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-stone-600">${(service.total_price || 0).toLocaleString()}</span>
-                      <span className="text-emerald-600 font-semibold">${(service.commission || 0).toLocaleString()}</span>
-                      <span className={`font-bold ${
-                        serviceProfitability > 15 ? 'text-green-600' :
-                        serviceProfitability >= 10 ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`}>
-                        {serviceProfitability.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Financial Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-gradient-to-br from-stone-800 to-stone-900 rounded-xl p-3 shadow-sm relative overflow-hidden">
           <p className="text-xs text-stone-300 mb-1">Total</p>
           <p className="text-xl font-bold text-white">${totalServices.toLocaleString()}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
-          <p className="text-xs text-purple-100 mb-1">Revenue</p>
-          <p className="text-xl font-bold text-white">${revenue.toLocaleString()}</p>
-        </div>
-
-        <div className={`rounded-xl p-3 shadow-sm relative overflow-hidden ${
-          profitability > 15 ? 'bg-gradient-to-br from-green-500 to-green-600' :
-          profitability >= 10 ? 'bg-gradient-to-br from-yellow-500 to-yellow-600' :
-          'bg-gradient-to-br from-red-500 to-red-600'
-        }`}>
-          <p className={`text-xs mb-1 ${
-            profitability > 15 ? 'text-green-100' :
-            profitability >= 10 ? 'text-yellow-100' :
-            'text-red-100'
-          }`}>Rentabilidad</p>
-          <p className="text-xl font-bold text-white">{profitability.toFixed(1)}%</p>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
+          <p className="text-xs text-emerald-100 mb-1">Comisión</p>
+          <p className="text-xl font-bold text-white">${totalCommissions.toLocaleString()}</p>
         </div>
 
         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 shadow-sm relative overflow-hidden">
@@ -1048,16 +921,6 @@ export default function SoldTripDetail() {
                                         <p className="text-stone-400 mb-0.5">Comisión</p>
                                         <p className="font-semibold text-emerald-600 text-sm">
                                           ${(service.commission || 0).toLocaleString()}
-                                        </p>
-                                      </div>
-                                      <div className="text-center">
-                                        <p className="text-stone-400 mb-0.5">Rentabilidad</p>
-                                        <p className={`font-bold text-sm ${
-                                          ((service.commission || 0) / (service.total_price || 1)) * 100 > 15 ? 'text-green-600' :
-                                          ((service.commission || 0) / (service.total_price || 1)) * 100 >= 10 ? 'text-yellow-600' :
-                                          'text-red-600'
-                                        }`}>
-                                          {(((service.commission || 0) / (service.total_price || 1)) * 100).toFixed(1)}%
                                         </p>
                                       </div>
                                       {(() => {
