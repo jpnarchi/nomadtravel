@@ -47,6 +47,9 @@ import TripNotesList from '@/components/soldtrips/TripNotesList';
 import TripDocumentsList from '@/components/soldtrips/TripDocumentsList';
 import TripRemindersList from '@/components/soldtrips/TripRemindersList';
 import ActiveTripReminders from '@/components/soldtrips/ActiveTripReminders';
+import ProfitabilityPanel from '@/components/soldtrips/ProfitabilityPanel';
+import ServiceProfitability from '@/components/soldtrips/ServiceProfitability';
+import CloseTripDialog from '@/components/soldtrips/CloseTripDialog';
 import { 
   updateSoldTripAndPaymentPlanTotals,
   updateSoldTripAndTripServiceTotals,
@@ -112,6 +115,7 @@ export default function SoldTripDetail() {
   const [editingPlanItem, setEditingPlanItem] = useState(null);
   const [editTripOpen, setEditTripOpen] = useState(false);
   const [currentExchangeRates, setCurrentExchangeRates] = useState({});
+  const [closeTripOpen, setCloseTripOpen] = useState(false);
 
 
   const queryClient = useQueryClient();
@@ -307,6 +311,24 @@ export default function SoldTripDetail() {
       queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       setEditTripOpen(false);
+    }
+  });
+
+  const closeTripMutation = useMutation({
+    mutationFn: async ({ snapshot, notas }) => {
+      const user = await base44.auth.me();
+      return base44.entities.SoldTrip.update(tripId, {
+        status_financiero: 'cerrado',
+        snapshot_financiero: snapshot,
+        fecha_cierre: new Date().toISOString().split('T')[0],
+        cerrado_por: user.email,
+        notas_cierre: notas
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      setCloseTripOpen(false);
     }
   });
 
@@ -650,6 +672,27 @@ export default function SoldTripDetail() {
 
 
 
+      {/* Profitability Panel */}
+      <ProfitabilityPanel
+        soldTrip={soldTrip}
+        services={services}
+        clientPayments={clientPayments}
+        supplierPayments={supplierPayments}
+      />
+
+      {/* Close Trip Button */}
+      {soldTrip.status_financiero !== 'cerrado' && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setCloseTripOpen(true)}
+            className="bg-slate-700 hover:bg-slate-800 text-white"
+          >
+            <Lock className="w-4 h-4 mr-2" />
+            Cerrar Viaje
+          </Button>
+        </div>
+      )}
+
       {/* Grid: Payment Alerts & Active Reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Payment Alerts */}
@@ -876,6 +919,12 @@ export default function SoldTripDetail() {
                                           {service.notes}
                                         </div>
                                       )}
+
+                                      {/* Service Profitability */}
+                                      <ServiceProfitability
+                                        service={service}
+                                        supplierPayments={supplierPayments}
+                                      />
 
                                       {/* Exchange Rate Alert */}
                                       {exchangeAlert && (
@@ -1320,6 +1369,17 @@ export default function SoldTripDetail() {
         soldTrip={soldTrip}
         onSave={(data) => updateTripMutation.mutate(data)}
         isLoading={updateTripMutation.isPending}
+      />
+
+      <CloseTripDialog
+        open={closeTripOpen}
+        onClose={() => setCloseTripOpen(false)}
+        soldTrip={soldTrip}
+        services={services}
+        clientPayments={clientPayments}
+        supplierPayments={supplierPayments}
+        onConfirm={(snapshot, notas) => closeTripMutation.mutate({ snapshot, notas })}
+        isLoading={closeTripMutation.isPending}
       />
 
       <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
