@@ -151,6 +151,15 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
         case 'tour':
           supplierName = selectedService.tour_name || '';
           break;
+        case 'crucero':
+          supplierName = selectedService.cruise_line || '';
+          break;
+        case 'tren':
+          supplierName = selectedService.train_operator || '';
+          break;
+        case 'dmc':
+          supplierName = selectedService.dmc_name || selectedService.name || selectedService.provider_name || '';
+          break;
         default:
           supplierName = selectedService.other_name || '';
       }
@@ -170,6 +179,10 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
         return `Tour: ${service.tour_name || 'Sin nombre'}`;
       case 'crucero':
         return `Crucero: ${service.cruise_line || 'Sin nombre'}`;
+      case 'tren':
+        return `Tren: ${service.train_operator || service.train_route || 'Sin nombre'}`;
+      case 'dmc':
+        return `DMC: ${service.dmc_name || service.name || service.provider_name || service.supplier_name || service.description || 'Sin nombre'}`;
       default:
         return `Otro: ${service.other_name || 'Sin nombre'}`;
     }
