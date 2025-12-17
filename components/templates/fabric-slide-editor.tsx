@@ -645,13 +645,13 @@ export function FabricSlideEditor({
     // Zoom controls
     const handleZoomIn = useCallback(() => {
         if (!fabricCanvasRef.current) return
-        const newZoom = zoomIn(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
+        const newZoom = zoomIn(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height, containerRef)
         setZoom(newZoom)
     }, [fabricCanvasRef, zoom, aspectRatioDimensions.width, aspectRatioDimensions.height])
 
     const handleZoomOut = useCallback(() => {
         if (!fabricCanvasRef.current) return
-        const newZoom = zoomOut(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height)
+        const newZoom = zoomOut(fabricCanvasRef.current, zoom, baseScaleRef.current, aspectRatioDimensions.width, aspectRatioDimensions.height, containerRef)
         setZoom(newZoom)
     }, [fabricCanvasRef, zoom, aspectRatioDimensions.width, aspectRatioDimensions.height])
 
@@ -776,19 +776,21 @@ export function FabricSlideEditor({
 
                 <div
                     ref={containerRef}
-                    className="flex-1 bg-gray-200 flex items-start justify-center overflow-auto relative p-4"
+                    className="flex-1 bg-gray-200 overflow-auto relative p-4"
                     style={{
                         backgroundImage: "url('/img/background.svg')",
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat',
-                        backgroundAttachment: 'fixed'
+                        backgroundAttachment: 'fixed',
+                        display: 'grid',
+                        placeItems: 'center'
                     }}
                 >
                     <canvas
                         ref={canvasRef}
-                        className="shadow-2xl border-2 border-gray-400 rounded-sm flex-shrink-0"
-                        style={{ display: 'block' }}
+                        className="shadow-2xl border-2 border-gray-400 rounded-sm"
+                        style={{ display: 'block', margin: 'auto' }}
                     />
                 </div>
             </div>

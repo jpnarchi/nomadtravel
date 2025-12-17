@@ -635,7 +635,7 @@ export const sendObjectBackward = (obj: fabric.FabricObject, canvas: fabric.Canv
  * Zoom controls - Viewport-only zoom (doesn't affect object sizes)
  * This approach matches the preview: we calculate a new canvas size based on zoom level
  */
-export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number): number => {
+export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number, containerRef?: React.RefObject<HTMLDivElement>): number => {
     let newZoom = currentZoom * 1.2
     if (newZoom > 5) newZoom = 5
 
@@ -643,6 +643,18 @@ export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: nu
     const displayWidth = canvasWidth * newZoom
     const displayHeight = canvasHeight * newZoom
 
+    // Get current scroll position to maintain relative position
+    let scrollLeft = 0
+    let scrollTop = 0
+    if (containerRef?.current) {
+        scrollLeft = containerRef.current.scrollLeft
+        scrollTop = containerRef.current.scrollTop
+    }
+
+    // Calculate the center point of the current viewport in canvas coordinates
+    const centerX = (scrollLeft + (containerRef?.current?.clientWidth || displayWidth) / 2) / currentZoom
+    const centerY = (scrollTop + (containerRef?.current?.clientHeight || displayHeight) / 2) / currentZoom
+
     // Update canvas dimensions and viewport transform
     canvas.setWidth(displayWidth)
     canvas.setHeight(displayHeight)
@@ -650,10 +662,18 @@ export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: nu
     canvas.viewportTransform = [newZoom, 0, 0, newZoom, 0, 0]
     canvas.renderAll()
 
+    // Update scroll position to keep the same center point visible
+    if (containerRef?.current) {
+        const newScrollLeft = centerX * newZoom - containerRef.current.clientWidth / 2
+        const newScrollTop = centerY * newZoom - containerRef.current.clientHeight / 2
+        containerRef.current.scrollLeft = newScrollLeft
+        containerRef.current.scrollTop = newScrollTop
+    }
+
     return newZoom
 }
 
-export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number): number => {
+export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number, containerRef?: React.RefObject<HTMLDivElement>): number => {
     let newZoom = currentZoom / 1.2
     if (newZoom < baseScale * 0.5) newZoom = baseScale * 0.5 // Min 50% of base scale
 
@@ -661,12 +681,32 @@ export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: n
     const displayWidth = canvasWidth * newZoom
     const displayHeight = canvasHeight * newZoom
 
+    // Get current scroll position to maintain relative position
+    let scrollLeft = 0
+    let scrollTop = 0
+    if (containerRef?.current) {
+        scrollLeft = containerRef.current.scrollLeft
+        scrollTop = containerRef.current.scrollTop
+    }
+
+    // Calculate the center point of the current viewport in canvas coordinates
+    const centerX = (scrollLeft + (containerRef?.current?.clientWidth || displayWidth) / 2) / currentZoom
+    const centerY = (scrollTop + (containerRef?.current?.clientHeight || displayHeight) / 2) / currentZoom
+
     // Update canvas dimensions and viewport transform
     canvas.setWidth(displayWidth)
     canvas.setHeight(displayHeight)
     canvas.setZoom(newZoom)
     canvas.viewportTransform = [newZoom, 0, 0, newZoom, 0, 0]
     canvas.renderAll()
+
+    // Update scroll position to keep the same center point visible
+    if (containerRef?.current) {
+        const newScrollLeft = centerX * newZoom - containerRef.current.clientWidth / 2
+        const newScrollTop = centerY * newZoom - containerRef.current.clientHeight / 2
+        containerRef.current.scrollLeft = newScrollLeft
+        containerRef.current.scrollTop = newScrollTop
+    }
 
     return newZoom
 }
