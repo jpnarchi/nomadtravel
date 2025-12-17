@@ -48,6 +48,8 @@ const SERVICE_TYPE_LABELS = {
   traslado: 'Traslado',
   tour: 'Tour',
   crucero: 'Crucero',
+  tren: 'Tren',
+  dmc: 'DMC',
   otro: 'Otro'
 };
 
@@ -188,6 +190,8 @@ export default function Commissions() {
       case 'traslado': return `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
       case 'tour': return service.tour_name || 'Tour';
       case 'crucero': return `${service.cruise_ship || 'Crucero'} - ${service.cruise_itinerary || ''}`;
+      case 'tren': return service.train_operator || service.train_route || 'Tren';
+      case 'dmc': return service.dmc_name || service.dmc_services || service.dmc_destination || 'DMC';
       default: return service.other_name || 'Servicio';
     }
   };
