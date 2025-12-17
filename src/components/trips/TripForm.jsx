@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, ChevronDown } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -56,6 +56,10 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
     notes: '',
     lost_reason: ''
   });
+  
+  const [destinationSearch, setDestinationSearch] = useState('');
+  const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
+  const destinationInputRef = useRef(null);
 
   useEffect(() => {
     if (trip) {
@@ -73,6 +77,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         notes: trip.notes || '',
         lost_reason: trip.lost_reason || ''
       });
+      setDestinationSearch('');
     } else if (prefilledClient) {
       setFormData({
         trip_name: '',
@@ -88,6 +93,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         notes: '',
         lost_reason: ''
       });
+      setDestinationSearch('');
     } else {
       setFormData({
         trip_name: '',
@@ -103,6 +109,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         notes: '',
         lost_reason: ''
       });
+      setDestinationSearch('');
     }
   }, [trip, open, prefilledClient]);
 
@@ -113,6 +120,39 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
       client_id: clientId,
       client_name: selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : ''
     });
+  };
+
+  const filteredDestinations = DESTINATIONS.filter(dest =>
+    dest.region.toLowerCase().includes(destinationSearch.toLowerCase()) ||
+    dest.countries.toLowerCase().includes(destinationSearch.toLowerCase())
+  );
+
+  const handleDestinationSelect = (region) => {
+    let currentDests = formData.destination ? formData.destination.split(', ').filter(d => d) : [];
+    if (!currentDests.includes(region)) {
+      currentDests.push(region);
+      setFormData({ ...formData, destination: currentDests.join(', ') });
+    }
+    setDestinationSearch('');
+    setShowDestinationDropdown(false);
+  };
+
+  const handleDestinationInputChange = (e) => {
+    const value = e.target.value;
+    setDestinationSearch(value);
+    setShowDestinationDropdown(true);
+  };
+
+  const handleDestinationInputBlur = () => {
+    // Delay to allow click on dropdown item
+    setTimeout(() => {
+      setShowDestinationDropdown(false);
+      // Don't accept free text - clear if not valid
+      const validRegion = DESTINATIONS.find(d => d.region.toLowerCase() === destinationSearch.toLowerCase());
+      if (destinationSearch && !validRegion) {
+        setDestinationSearch('');
+      }
+    }, 200);
   };
 
   const handleSubmit = (e) => {
@@ -188,63 +228,69 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
 
           <div className="space-y-2">
             <Label>Destino <span className="text-red-500">*</span></Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start rounded-xl font-normal h-auto min-h-10 py-2"
-                >
-                  {formData.destination ? (
-                    <div className="flex flex-wrap gap-1">
-                      {formData.destination.split(', ').map((destName) => (
-                        <Badge key={destName} variant="secondary" className="text-xs">
-                          {destName}
-                          <X
-                            className="w-3 h-3 ml-1 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const newDests = formData.destination.split(', ').filter(d => d !== destName);
-                              setFormData({ ...formData, destination: newDests.join(', ') });
-                            }}
-                          />
-                        </Badge>
-                      ))}
+            
+            {/* Selected destinations */}
+            {formData.destination && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {formData.destination.split(', ').map((destName) => (
+                  <Badge key={destName} variant="secondary" className="text-xs">
+                    {destName}
+                    <X
+                      className="w-3 h-3 ml-1 cursor-pointer"
+                      onClick={() => {
+                        const newDests = formData.destination.split(', ').filter(d => d !== destName);
+                        setFormData({ ...formData, destination: newDests.join(', ') });
+                      }}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Autocomplete input */}
+            <div className="relative">
+              <Input
+                ref={destinationInputRef}
+                value={destinationSearch}
+                onChange={handleDestinationInputChange}
+                onFocus={() => setShowDestinationDropdown(true)}
+                onBlur={handleDestinationInputBlur}
+                placeholder="Escribe para buscar destino..."
+                className="rounded-xl pr-8"
+              />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              
+              {/* Dropdown */}
+              {showDestinationDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
+                  {filteredDestinations.length > 0 ? (
+                    <div className="p-2">
+                      {filteredDestinations.map((dest) => {
+                        const isSelected = formData.destination?.split(', ').includes(dest.region);
+                        return (
+                          <div
+                            key={dest.region}
+                            onClick={() => handleDestinationSelect(dest.region)}
+                            className={`px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                              isSelected 
+                                ? 'bg-emerald-50 text-emerald-700' 
+                                : 'hover:bg-stone-50'
+                            }`}
+                          >
+                            <div className="font-medium text-sm">{dest.region}</div>
+                            <div className="text-xs text-stone-500 mt-0.5">{dest.countries}</div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
-                    <span className="text-stone-400">Seleccionar destinos</span>
+                    <div className="p-4 text-sm text-stone-500 text-center">
+                      No se encontraron destinos
+                    </div>
                   )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0">
-                <div className="max-h-[400px] overflow-y-auto p-3 space-y-2">
-                  {DESTINATIONS.map((dest) => {
-                    const isSelected = formData.destination?.split(', ').includes(dest.region);
-                    return (
-                      <div key={dest.region} className="flex items-start gap-2 py-1">
-                        <Checkbox
-                          id={dest.region}
-                          checked={isSelected}
-                          onCheckedChange={(checked) => {
-                            let currentDests = formData.destination ? formData.destination.split(', ').filter(d => d) : [];
-                            if (checked) {
-                              currentDests.push(dest.region);
-                            } else {
-                              currentDests = currentDests.filter(d => d !== dest.region);
-                            }
-                            setFormData({ ...formData, destination: currentDests.join(', ') });
-                          }}
-                          className="mt-1"
-                        />
-                        <label htmlFor={dest.region} className="text-sm cursor-pointer flex-1">
-                          <div className="font-medium">{dest.region}</div>
-                          <div className="text-xs text-stone-500">{dest.countries}</div>
-                        </label>
-                      </div>
-                    );
-                  })}
                 </div>
-              </PopoverContent>
-            </Popover>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
