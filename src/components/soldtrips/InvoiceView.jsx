@@ -6,11 +6,35 @@ import { es } from 'date-fns/locale';
 import { Printer, MapPin, Hotel, Plane, Car, Compass, Package, Ship, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 
-// Helper to parse date-only strings (YYYY-MM-DD) as local dates, avoiding UTC timezone shifts
+// Helpers to parse dates correctly, avoiding UTC timezone shifts
 function parseDateOnlyLocal(dateStr) {
   if (!dateStr) return null;
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d); // local date, no UTC shift
+
+  // Si viene con hora (ISO), usar Date normal
+  if (typeof dateStr === "string" && dateStr.includes("T")) {
+    return new Date(dateStr);
+  }
+
+  // Si viene YYYY-MM-DD, parsear como fecha LOCAL
+  const parts = String(dateStr).split("-");
+  if (parts.length === 3) {
+    const [y, m, d] = parts.map(Number);
+    if (y && m && d) return new Date(y, m - 1, d);
+  }
+
+  return new Date(dateStr);
+}
+
+function parseDateTimeSafe(value) {
+  if (!value) return null;
+
+  // YYYY-MM-DD sin hora → tratar como date-only local
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return parseDateOnlyLocal(value);
+  }
+
+  // Con hora → Date normal
+  return new Date(value);
 }
 
 const SERVICE_ICONS = {
@@ -177,12 +201,12 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
         
         // Date
         let serviceDate = '';
-        if (type === 'hotel' && service.check_in) serviceDate = format(new Date(service.check_in), 'd MMM', { locale: es });
-        else if (type === 'vuelo' && service.flight_date) serviceDate = format(new Date(service.flight_date), 'd MMM', { locale: es });
-        else if (type === 'tour' && service.tour_date) serviceDate = format(new Date(service.tour_date), 'd MMM', { locale: es });
-        else if (type === 'crucero' && service.cruise_departure_date) serviceDate = format(new Date(service.cruise_departure_date), 'd MMM', { locale: es });
-        else if (type === 'traslado' && service.transfer_datetime) serviceDate = format(new Date(service.transfer_datetime), 'd MMM', { locale: es });
-        else if (type === 'otro' && service.other_date) serviceDate = format(new Date(service.other_date), 'd MMM', { locale: es });
+        if (type === 'hotel' && service.check_in) serviceDate = format(parseDateOnlyLocal(service.check_in), 'd MMM', { locale: es });
+        else if (type === 'vuelo' && service.flight_date) serviceDate = format(parseDateOnlyLocal(service.flight_date), 'd MMM', { locale: es });
+        else if (type === 'tour' && service.tour_date) serviceDate = format(parseDateOnlyLocal(service.tour_date), 'd MMM', { locale: es });
+        else if (type === 'crucero' && service.cruise_departure_date) serviceDate = format(parseDateOnlyLocal(service.cruise_departure_date), 'd MMM', { locale: es });
+        else if (type === 'traslado' && service.transfer_datetime) serviceDate = format(parseDateTimeSafe(service.transfer_datetime), 'd MMM', { locale: es });
+        else if (type === 'otro' && service.other_date) serviceDate = format(parseDateOnlyLocal(service.other_date), 'd MMM', { locale: es });
         
         doc.text(serviceDate || '-', margin + 2, yPosition + 3);
         
@@ -260,7 +284,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
 
       // Payment rows
       let paymentIndex = 0;
-      clientPayments.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach((payment) => {
+      clientPayments.sort((a, b) => parseDateOnlyLocal(a.date) - parseDateOnlyLocal(b.date)).forEach((payment) => {
         checkAddPage(8);
         
         if (paymentIndex % 2 === 0) {
@@ -271,7 +295,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
-        doc.text(format(new Date(payment.date), 'd MMM yyyy', { locale: es }), margin + 2, yPosition + 2);
+        doc.text(format(parseDateOnlyLocal(payment.date), 'd MMM yyyy', { locale: es }), margin + 2, yPosition + 2);
         doc.text(PAYMENT_METHOD_LABELS[payment.method] || payment.method, margin + 40, yPosition + 2);
         doc.setTextColor(34, 197, 94);
         doc.setFont(undefined, 'bold');
@@ -381,7 +405,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
             {service.room_type && <p>Habitación: {service.room_type}</p>}
             {service.check_in && service.check_out && (
-              <p>Fechas: {format(new Date(service.check_in), 'd MMM', { locale: es })} - {format(new Date(service.check_out), 'd MMM yyyy', { locale: es })}</p>
+              <p>Fechas: {format(parseDateOnlyLocal(service.check_in), 'd MMM', { locale: es })} - {format(parseDateOnlyLocal(service.check_out), 'd MMM yyyy', { locale: es })}</p>
             )}
             {service.meal_plan && <p>Plan: {MEAL_PLAN_LABELS[service.meal_plan] || service.meal_plan}</p>}
             {service.num_rooms && <p>Habitaciones: {service.num_rooms}</p>}
@@ -402,7 +426,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
           {service.route && <p className="text-xs text-stone-500">{service.route}</p>}
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
             {service.flight_number && <p>Vuelo: #{service.flight_number}</p>}
-            {service.flight_date && <p>Fecha: {format(new Date(service.flight_date), 'd MMM yyyy', { locale: es })}</p>}
+            {service.flight_date && <p>Fecha: {format(parseDateOnlyLocal(service.flight_date), 'd MMM yyyy', { locale: es })}</p>}
             {(service.departure_time || service.arrival_time) && (
               <p>Horarios: {service.departure_time || '--'} → {service.arrival_time || '--'}</p>
             )}
@@ -426,7 +450,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
           </p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
             {service.transfer_type && <p>Tipo: {service.transfer_type === 'privado' ? 'Privado' : 'Compartido'}</p>}
-            {service.transfer_datetime && <p>Fecha/Hora: {format(new Date(service.transfer_datetime), 'd MMM yyyy HH:mm', { locale: es })}</p>}
+            {service.transfer_datetime && <p>Fecha/Hora: {format(parseDateTimeSafe(service.transfer_datetime), 'd MMM yyyy HH:mm', { locale: es })}</p>}
             {service.vehicle && <p>Vehículo: {service.vehicle}</p>}
             {service.transfer_passengers && <p>Pasajeros: {service.transfer_passengers}</p>}
           </div>
@@ -443,7 +467,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
           <p className="font-semibold text-stone-800">{service.tour_name || 'Tour'}</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
             {service.tour_city && <p>Lugar: {service.tour_city}</p>}
-            {service.tour_date && <p>Fecha: {format(new Date(service.tour_date), 'd MMM yyyy', { locale: es })}</p>}
+            {service.tour_date && <p>Fecha: {format(parseDateOnlyLocal(service.tour_date), 'd MMM yyyy', { locale: es })}</p>}
             {service.tour_duration && <p>Duración: {service.tour_duration}</p>}
             {service.tour_people && <p>Personas: {service.tour_people}</p>}
             {service.tour_includes && <p className="col-span-2">Incluye: {service.tour_includes}</p>}
@@ -466,7 +490,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
             {service.cruise_departure_port && <p>Salida: {service.cruise_departure_port}</p>}
             {service.cruise_arrival_port && <p>Llegada: {service.cruise_arrival_port}</p>}
             {service.cruise_departure_date && service.cruise_arrival_date && (
-              <p>Fechas: {format(new Date(service.cruise_departure_date), 'd MMM', { locale: es })} - {format(new Date(service.cruise_arrival_date), 'd MMM yyyy', { locale: es })}</p>
+              <p>Fechas: {format(parseDateOnlyLocal(service.cruise_departure_date), 'd MMM', { locale: es })} - {format(parseDateOnlyLocal(service.cruise_arrival_date), 'd MMM yyyy', { locale: es })}</p>
             )}
             {service.cruise_nights && <p>Noches: {service.cruise_nights}</p>}
             {service.cruise_cabin_type && <p>Cabina: {service.cruise_cabin_type}</p>}
@@ -487,7 +511,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
           <p className="font-semibold text-stone-800">{service.other_name || 'Servicio'}</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-stone-600 mt-1">
             {service.other_description && <p className="col-span-2">{service.other_description}</p>}
-            {service.other_date && <p>Fecha: {format(new Date(service.other_date), 'd MMM yyyy', { locale: es })}</p>}
+            {service.other_date && <p>Fecha: {format(parseDateOnlyLocal(service.other_date), 'd MMM yyyy', { locale: es })}</p>}
           </div>
         </div>
         <p className="font-bold text-sm" style={{ color: '#2E442A' }}>${(service.total_price || 0).toLocaleString()} USD</p>
@@ -598,10 +622,10 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
                     </tr>
                   </thead>
                   <tbody>
-                    {clientPayments.sort((a, b) => new Date(a.date) - new Date(b.date)).map((payment, index) => (
+                    {clientPayments.sort((a, b) => parseDateOnlyLocal(a.date) - parseDateOnlyLocal(b.date)).map((payment, index) => (
                       <tr key={index} className="border-b border-stone-100 last:border-0">
                         <td className="py-2 text-stone-700">
-                          {format(new Date(payment.date), 'd MMM yyyy', { locale: es })}
+                          {format(parseDateOnlyLocal(payment.date), 'd MMM yyyy', { locale: es })}
                         </td>
                         <td className="py-2 text-stone-700">
                           {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
