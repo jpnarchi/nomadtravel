@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Printer, MapPin, Hotel, Plane, Car, Compass, Package, Ship, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 // Helpers to parse dates correctly, avoiding UTC timezone shifts
@@ -87,311 +88,42 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
   };
 
   const handleDownloadPDF = async () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 25;
-    const contentWidth = pageWidth - 2 * margin;
-    let yPosition = margin;
+    const element = document.getElementById("invoice-content");
+    if (!element) return;
 
-    // Helper function to add new page if needed
-    const checkAddPage = (requiredSpace = 15) => {
-      if (yPosition + requiredSpace > pageHeight - margin - 20) {
-        doc.addPage();
-        yPosition = margin;
-        return true;
-      }
-      return false;
-    };
-
-    // Add Logo
-    const logoUrl = 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/6930fcb7e80b1a2000e4e198/fcb856ad6_NOMAD-LOGOTIPOPRINCIPAL_transparente2-051.png';
-    try {
-      doc.addImage(logoUrl, 'PNG', margin, yPosition, 50, 15);
-    } catch (e) {
-      // Fallback if image fails
-      doc.setFontSize(18);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(46, 68, 42);
-      doc.text('Nomad Travel Society', margin, yPosition + 10);
-    }
-
-    // Header - Date and Invoice Title
-    doc.setFontSize(22);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(46, 68, 42);
-    doc.text('INVOICE', pageWidth - margin, yPosition + 8, { align: 'right' });
-    
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Fecha: ${format(new Date(), 'd MMMM yyyy', { locale: es })}`, pageWidth - margin, yPosition + 15, { align: 'right' });
-
-    yPosition += 30;
-
-    // Horizontal divider
-    doc.setDrawColor(46, 68, 42);
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 15;
-
-    // SECTION A: Client Information
-    doc.setFillColor(245, 245, 245);
-    doc.rect(margin, yPosition, contentWidth, 8, 'F');
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(46, 68, 42);
-    doc.text('INFORMACIÓN DEL CLIENTE', margin + 3, yPosition + 5.5);
-    yPosition += 12;
-    
-    doc.setFontSize(13);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text(soldTrip.client_name, margin + 3, yPosition);
-    yPosition += 8;
-    
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Destino: ${soldTrip.destination}`, margin + 3, yPosition);
-    yPosition += 6;
-    doc.text(`Fechas: ${format(parseDateOnlyLocal(soldTrip.start_date), 'd MMM yyyy', { locale: es })}${soldTrip.end_date ? ` - ${format(parseDateOnlyLocal(soldTrip.end_date), 'd MMM yyyy', { locale: es })}` : ''}`, margin + 3, yPosition);
-    yPosition += 6;
-    doc.text(`Viajeros: ${soldTrip.travelers}`, margin + 3, yPosition);
-    yPosition += 15;
-
-    // SECTION B: Services Table
-    checkAddPage(40);
-    doc.setFillColor(245, 245, 245);
-    doc.rect(margin, yPosition, contentWidth, 8, 'F');
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(46, 68, 42);
-    doc.text('SERVICIOS DEL VIAJE', margin + 3, yPosition + 5.5);
-    yPosition += 12;
-
-    // Table Headers
-    doc.setFillColor(46, 68, 42);
-    doc.rect(margin, yPosition, contentWidth, 7, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'bold');
-    doc.text('FECHA', margin + 2, yPosition + 4.5);
-    doc.text('TIPO', margin + 27, yPosition + 4.5);
-    doc.text('PROVEEDOR', margin + 52, yPosition + 4.5);
-    doc.text('DESCRIPCIÓN', margin + 92, yPosition + 4.5);
-    doc.text('PRECIO', pageWidth - margin - 2, yPosition + 4.5, { align: 'right' });
-    yPosition += 9;
-
-    // Service rows
-    let rowIndex = 0;
-    Object.entries(servicesByType).forEach(([type, typeServices]) => {
-      typeServices.forEach((service) => {
-        checkAddPage(12);
-        
-        // Alternate row colors
-        if (rowIndex % 2 === 0) {
-          doc.setFillColor(250, 250, 250);
-          doc.rect(margin, yPosition - 3, contentWidth, 10, 'F');
-        }
-        
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        
-        // Date
-        let serviceDate = '';
-        if (type === 'hotel' && service.check_in) serviceDate = format(parseDateOnlyLocal(service.check_in), 'd MMM', { locale: es });
-        else if (type === 'vuelo' && service.flight_date) serviceDate = format(parseDateOnlyLocal(service.flight_date), 'd MMM', { locale: es });
-        else if (type === 'tour' && service.tour_date) serviceDate = format(parseDateOnlyLocal(service.tour_date), 'd MMM', { locale: es });
-        else if (type === 'crucero' && service.cruise_departure_date) serviceDate = format(parseDateOnlyLocal(service.cruise_departure_date), 'd MMM', { locale: es });
-        else if (type === 'traslado' && service.transfer_datetime) serviceDate = format(parseDateTimeSafe(service.transfer_datetime), 'd MMM', { locale: es });
-        else if (type === 'otro' && service.other_date) serviceDate = format(parseDateOnlyLocal(service.other_date), 'd MMM', { locale: es });
-        
-        doc.text(serviceDate || '-', margin + 2, yPosition + 3);
-        
-        // Type
-        doc.text(SERVICE_LABELS[type] || 'Servicio', margin + 27, yPosition + 3);
-        
-        // Provider
-        let provider = '';
-        if (type === 'hotel') provider = service.hotel_chain || service.hotel_brand || '-';
-        else if (type === 'vuelo') provider = service.airline || '-';
-        else if (type === 'crucero') provider = service.cruise_line || '-';
-        else provider = '-';
-        
-        const providerText = doc.splitTextToSize(provider, 35);
-        doc.text(providerText[0], margin + 52, yPosition + 3);
-        
-        // Description
-        let description = '';
-        if (type === 'hotel') description = service.hotel_name || 'Hotel';
-        else if (type === 'vuelo') description = service.route || `Vuelo ${service.flight_number || ''}`.trim();
-        else if (type === 'traslado') description = `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
-        else if (type === 'tour') description = service.tour_name || 'Tour';
-        else if (type === 'crucero') description = service.cruise_ship || 'Crucero';
-        else description = service.other_name || 'Servicio';
-        
-        const descText = doc.splitTextToSize(description, 50);
-        doc.text(descText[0], margin + 92, yPosition + 3);
-        
-        // Price
-        doc.setFont(undefined, 'bold');
-        doc.text(`$${(service.total_price || 0).toLocaleString()}`, pageWidth - margin - 2, yPosition + 3, { align: 'right' });
-        
-        yPosition += 10;
-        rowIndex++;
-      });
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      scrollY: -window.scrollY,
     });
 
-    // Services Total
-    checkAddPage(15);
-    yPosition += 3;
-    doc.setDrawColor(46, 68, 42);
-    doc.setLineWidth(0.3);
-    doc.line(pageWidth - margin - 70, yPosition, pageWidth - margin, yPosition);
-    yPosition += 7;
-    
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(46, 68, 42);
-    doc.text('TOTAL SERVICIOS:', pageWidth - margin - 70, yPosition);
-    doc.setFontSize(13);
-    doc.text(`$${total.toLocaleString()} USD`, pageWidth - margin - 2, yPosition, { align: 'right' });
-    yPosition += 18;
+    const imgData = canvas.toDataURL("image/png");
 
-    // SECTION C: Client Payments
-    checkAddPage(35);
-    doc.setFillColor(245, 245, 245);
-    doc.rect(margin, yPosition, contentWidth, 8, 'F');
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(46, 68, 42);
-    doc.text('PAGOS REALIZADOS POR EL CLIENTE', margin + 3, yPosition + 5.5);
-    yPosition += 12;
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-    if (clientPayments.length > 0) {
-      // Table Headers
-      doc.setFillColor(46, 68, 42);
-      doc.rect(margin, yPosition, contentWidth, 7, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text('FECHA', margin + 2, yPosition + 4.5);
-      doc.text('MÉTODO DE PAGO', margin + 40, yPosition + 4.5);
-      doc.text('MONTO', pageWidth - margin - 2, yPosition + 4.5, { align: 'right' });
-      yPosition += 9;
+    // Escalar imagen al ancho de la hoja
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Payment rows
-      let paymentIndex = 0;
-      clientPayments.sort((a, b) => parseDateOnlyLocal(a.date) - parseDateOnlyLocal(b.date)).forEach((payment) => {
-        checkAddPage(8);
-        
-        if (paymentIndex % 2 === 0) {
-          doc.setFillColor(250, 250, 250);
-          doc.rect(margin, yPosition - 3, contentWidth, 8, 'F');
-        }
-        
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
-        doc.text(format(parseDateOnlyLocal(payment.date), 'd MMM yyyy', { locale: es }), margin + 2, yPosition + 2);
-        doc.text(PAYMENT_METHOD_LABELS[payment.method] || payment.method, margin + 40, yPosition + 2);
-        doc.setTextColor(34, 197, 94);
-        doc.setFont(undefined, 'bold');
-        doc.text(`$${(payment.amount || 0).toLocaleString()}`, pageWidth - margin - 2, yPosition + 2, { align: 'right' });
-        
-        yPosition += 8;
-        paymentIndex++;
-      });
-    } else {
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.setFont(undefined, 'italic');
-      doc.text('No se han registrado pagos', margin + 3, yPosition + 5);
-      yPosition += 8;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // Primera página
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    // Páginas adicionales
+    while (heightLeft > 0) {
+      pdf.addPage();
+      position = heightLeft - imgHeight;
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
     }
 
-    yPosition += 18;
-
-    // SECTION D: Final Summary
-    checkAddPage(40);
-    doc.setFillColor(245, 245, 245);
-    doc.rect(margin, yPosition, contentWidth, 8, 'F');
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(46, 68, 42);
-    doc.text('RESUMEN FINAL', margin + 3, yPosition + 5.5);
-    yPosition += 15;
-
-    // Summary box
-    const boxWidth = 85;
-    const boxX = pageWidth - margin - boxWidth;
-    
-    doc.setFillColor(250, 250, 250);
-    doc.rect(boxX, yPosition, boxWidth, 35, 'F');
-    doc.setDrawColor(46, 68, 42);
-    doc.setLineWidth(0.5);
-    doc.rect(boxX, yPosition, boxWidth, 35, 'S');
-    
-    yPosition += 8;
-    
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(80, 80, 80);
-    doc.text('Total del Viaje:', boxX + 3, yPosition);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text(`$${total.toLocaleString()} USD`, pageWidth - margin - 3, yPosition, { align: 'right' });
-    
-    yPosition += 8;
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(80, 80, 80);
-    doc.text('Total Pagado:', boxX + 3, yPosition);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(34, 197, 94);
-    doc.text(`$${totalPaid.toLocaleString()} USD`, pageWidth - margin - 3, yPosition, { align: 'right' });
-    
-    yPosition += 10;
-    doc.setDrawColor(46, 68, 42);
-    doc.setLineWidth(0.5);
-    doc.line(boxX + 3, yPosition, pageWidth - margin - 3, yPosition);
-    yPosition += 8;
-    
-    doc.setFontSize(13);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(46, 68, 42);
-    doc.text('Saldo Pendiente:', boxX + 3, yPosition);
-    doc.setFontSize(14);
-    doc.setTextColor(balance > 0 ? 220 : 22, balance > 0 ? 38 : 163, balance > 0 ? 38 : 74);
-    doc.text(`$${balance.toLocaleString()} USD`, pageWidth - margin - 3, yPosition, { align: 'right' });
-    
-    yPosition += 25;
-
-    // Footer
-    if (yPosition > pageHeight - 30) {
-      doc.addPage();
-      yPosition = pageHeight - 25;
-    } else {
-      yPosition = pageHeight - 25;
-    }
-    
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 7;
-    
-    doc.setFontSize(10);
-    doc.setTextColor(120, 120, 120);
-    doc.setFont(undefined, 'normal');
-    doc.text('Gracias por confiar en Nomad Travel Society', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 5;
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text('contacto@nomadtravelsociety.com | San Pedro Garza García, N.L.', pageWidth / 2, yPosition, { align: 'center' });
-
-    // Save PDF
-    doc.save(`Invoice_${soldTrip.client_name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    pdf.save(`Invoice_${soldTrip.client_name.replace(/\s+/g, '_')}.pdf`);
   };
 
   const renderHotelService = (service, index) => (
