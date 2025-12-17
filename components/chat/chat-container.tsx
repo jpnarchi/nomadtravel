@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { PricingPopup } from '../pricing/pricing-popup';
 import { DragDropOverlay } from '../global/drag-drop-overlay';
 import { LivePresentationViewer } from './live-presentation-viewer';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function ChatContainer({
     id,
@@ -53,6 +54,7 @@ export function ChatContainer({
     const [input, setInput] = useState('');
     const [isGeneratingSync, setIsGeneratingSync] = useState(false);
     const [showPricingPopup, setShowPricingPopup] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     // Initialize templateSource from localStorage if available
     const [templateSource, setTemplateSource] = useState<'default' | 'my-templates'>(() => {
         if (typeof window !== 'undefined') {
@@ -363,16 +365,23 @@ export function ChatContainer({
 
     if (!isLoading && isGenerating && !isGeneratingSync) {
         return (
-            <div className="flex flex-row h-[calc(100dvh-4rem)] bg-black">
+            <div className="flex flex-row h-[calc(100dvh-4rem)] bg-black relative">
                 {/* Chat column - 40% left */}
-                <div className="w-2/5 flex flex-col h-full bg-primary">
+                <motion.div
+                    className="flex flex-col h-full bg-primary"
+                    initial={false}
+                    animate={{
+                        width: isCollapsed ? '0%' : '40%',
+                        transition: { duration: 0.3, ease: "easeInOut" }
+                    }}
+                >
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="chat-state"
                             className="flex flex-col w-full h-full overflow-hidden bg-white"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{
-                                opacity: 1,
+                                opacity: isCollapsed ? 0 : 1,
                                 y: 0,
                                 transition: { duration: 0.4, ease: "easeOut" }
                             }}
@@ -420,28 +429,57 @@ export function ChatContainer({
                         </motion.div>
                     </AnimatePresence>
                     <DragDropOverlay files={files} setFiles={setFiles} />
-                </div>
+                </motion.div>
+
+                {/* Collapse/Expand button */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-gray-100 border-t border-r border-b border-gray-300 rounded-r-lg p-2 shadow-lg transition-all duration-300"
+                    style={{
+                        left: isCollapsed ? '0' : '40%',
+                    }}
+                >
+                    {isCollapsed ? (
+                        <ChevronRight className="w-5 h-5 text-gray-700" />
+                    ) : (
+                        <ChevronLeft className="w-5 h-5 text-gray-700" />
+                    )}
+                </button>
 
                 {/* New column - 60% right */}
-                <div className="w-3/5 h-full bg-background border-l">
+                <motion.div
+                    className="h-full bg-background border-l"
+                    initial={false}
+                    animate={{
+                        width: isCollapsed ? '100%' : '60%',
+                        transition: { duration: 0.3, ease: "easeInOut" }
+                    }}
+                >
                     <LivePresentationViewer chatId={id} />
-                </div>
+                </motion.div>
             </div>
         )
     }
 
     return (
         <>
-            <div className="flex flex-row h-[calc(100dvh-4rem)] bg-black">
+            <div className="flex flex-row h-[calc(100dvh-4rem)] bg-black relative">
                 {/* Chat column - 40% left */}
-                <div className="w-2/5 flex flex-col h-full bg-gradient-to-t from-primary from-20% to-[#F4A7B6] to-95%">
+                <motion.div
+                    className="flex flex-col h-full bg-gradient-to-t from-primary from-20% to-[#F4A7B6] to-95%"
+                    initial={false}
+                    animate={{
+                        width: isCollapsed ? '0%' : '40%',
+                        transition: { duration: 0.3, ease: "easeInOut" }
+                    }}
+                >
                     <AnimatePresence mode="wait">
                         <motion.div
                             key="chat-state"
                             className="flex flex-col w-full h-full overflow-hidden bg-white"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{
-                                opacity: 1,
+                                opacity: isCollapsed ? 0 : 1,
                                 y: 0,
                                 transition: { duration: 0.4, ease: "easeOut" }
                             }}
@@ -486,12 +524,34 @@ export function ChatContainer({
                         </motion.div>
                     </AnimatePresence>
                     <DragDropOverlay files={files} setFiles={setFiles} />
-                </div>
+                </motion.div>
+
+                {/* Collapse/Expand button */}
+                <button
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="absolute left-0 bottom-10 -translate-y-1/2 z-50 bg-white hover:bg-gray-100 border-t border-r border-b border-gray-300 rounded-r-lg p-2 shadow-lg transition-all duration-300"
+                    style={{
+                        left: isCollapsed ? '0' : '40%',
+                    }}
+                >
+                    {isCollapsed ? (
+                        <ChevronRight className="w-5 h-5 text-gray-700" />
+                    ) : (
+                        <ChevronLeft className="w-5 h-5 text-gray-700" />
+                    )}
+                </button>
 
                 {/* New column - 60% right */}
-                <div className="w-3/5 h-full bg-background border-l">
+                <motion.div
+                    className="h-full bg-background border-l"
+                    initial={false}
+                    animate={{
+                        width: isCollapsed ? '100%' : '60%',
+                        transition: { duration: 0.3, ease: "easeInOut" }
+                    }}
+                >
                     <LivePresentationViewer chatId={id} />
-                </div>
+                </motion.div>
             </div>
             <PricingPopup
                 isOpen={showPricingPopup}
