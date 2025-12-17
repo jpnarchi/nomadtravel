@@ -413,10 +413,14 @@ export default function AdminDashboard() {
                 {clientsWithNegativeBalance.map(trip => (
                   <div key={trip.id} className="bg-white rounded-lg p-3 border border-red-200">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-stone-800">{trip.client_name || 'Sin cliente'}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-semibold text-stone-800">{trip.client_name || 'Sin cliente'}</p>
+                          <Badge variant="outline" className="text-xs">
+                            {trip.agentName}
+                          </Badge>
+                        </div>
                         <p className="text-sm text-stone-600">{trip.destination}</p>
-                        <p className="text-xs text-stone-500 mt-1">Agente: {trip.agentName}</p>
                         <div className="flex gap-3 mt-2 text-xs">
                           <span className="text-green-600">Recibido: ${trip.clientPayments.toLocaleString()}</span>
                           <span className="text-red-600">Pagado: ${trip.supplierPayments.toLocaleString()}</span>
@@ -452,19 +456,23 @@ export default function AdminDashboard() {
               <div className="space-y-2">
                 {highValueTrips.map(trip => (
                   <div key={trip.id} className="bg-white rounded-lg p-3 border border-amber-200">
-                    <div className="flex items-center justify-between">
-                      <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
                         <p className="font-semibold text-stone-800">{trip.client_name || 'Sin cliente'}</p>
-                        <p className="text-sm text-stone-600">{trip.destination}</p>
-                        <p className="text-xs text-stone-500 mt-1">Agente: {trip.agentName}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {trip.agentName}
+                        </Badge>
                       </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-amber-600">
-                          ${(trip.budget || 0).toLocaleString()}
-                        </p>
-                        <p className="text-xs text-stone-500">presupuesto</p>
-                      </div>
+                      <p className="text-sm text-stone-600">{trip.destination}</p>
                     </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-amber-600">
+                        ${(trip.budget || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-stone-500">presupuesto</p>
+                    </div>
+                  </div>
                   </div>
                 ))}
               </div>
@@ -526,7 +534,7 @@ export default function AdminDashboard() {
               <div 
                 key={trip.id} 
                 className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors"
-              >
+                >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-semibold text-stone-800 truncate">{trip.client_name}</p>
@@ -540,13 +548,14 @@ export default function AdminDashboard() {
                     >
                       {trip.status === 'ready' ? '✅ Listo' : '⚠️ Revisión'}
                     </Badge>
+                    <Badge variant="outline" className="text-xs bg-stone-50">
+                      {trip.agentName}
+                    </Badge>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-stone-500">
                     <span>{trip.destination}</span>
                     <span>•</span>
                     <span>Fin: {format(parseLocalDate(trip.end_date), 'd MMM yyyy', { locale: es })}</span>
-                    <span>•</span>
-                    <span>Agente: {trip.agentName}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 ml-4">
