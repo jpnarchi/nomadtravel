@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { parseLocalDate } from '@/components/utils/dateHelpers';
 
 const TIMELINE_REMINDERS = {
   '6_months': {
@@ -71,7 +72,7 @@ const TIMELINE_REMINDERS = {
 };
 
 export default function TripRemindersList({ startDate, reminders = [], onCreate, onUpdate }) {
-  const tripDate = new Date(startDate);
+  const tripDate = parseLocalDate(startDate);
   const now = new Date();
 
   // Initialize reminders if empty

@@ -3,9 +3,10 @@ import { differenceInMonths, differenceInWeeks, differenceInDays, differenceInHo
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCircle } from 'lucide-react';
+import { parseLocalDate } from '@/components/utils/dateHelpers';
 
 const getActiveTimeline = (startDate) => {
-  const tripDate = new Date(startDate);
+  const tripDate = parseLocalDate(startDate);
   const now = new Date();
   const daysUntil = differenceInDays(tripDate, now);
 

@@ -3,6 +3,7 @@ import { format, addMonths, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Plane } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { parseLocalDate } from '@/components/utils/dateHelpers';
 
 export default function UpcomingTrips({ soldTrips }) {
   const now = new Date();
@@ -11,10 +12,10 @@ export default function UpcomingTrips({ soldTrips }) {
   const sortedTrips = [...soldTrips]
     .filter(trip => {
       if (!trip.start_date) return false;
-      const tripDate = new Date(trip.start_date);
+      const tripDate = parseLocalDate(trip.start_date);
       return isAfter(tripDate, now) && isBefore(tripDate, threeMonthsFromNow);
     })
-    .sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+    .sort((a, b) => parseLocalDate(a.start_date) - parseLocalDate(b.start_date));
 
   if (sortedTrips.length === 0) {
     return (
@@ -47,7 +48,7 @@ export default function UpcomingTrips({ soldTrips }) {
               {trip.client_name} - {trip.destination}
             </span>
             <span className="text-stone-400 whitespace-nowrap">
-              {format(new Date(trip.start_date), 'd MMM yy', { locale: es })}
+              {format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es })}
             </span>
           </div>
         ))}

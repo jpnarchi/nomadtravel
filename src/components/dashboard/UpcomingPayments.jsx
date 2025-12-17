@@ -5,6 +5,7 @@ import { AlertTriangle, Clock, DollarSign, Hotel, Plane as PlaneIcon } from 'luc
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { parseLocalDate } from '@/components/utils/dateHelpers';
 
 export default function UpcomingPayments({ services, soldTrips }) {
   const getTripInfo = (tripId) => {
@@ -14,7 +15,7 @@ export default function UpcomingPayments({ services, soldTrips }) {
   const upcomingPayments = services
     .filter(service => service.payment_due_date && service.reservation_status !== 'pagado')
     .map(service => {
-      const days = differenceInDays(new Date(service.payment_due_date), new Date());
+      const days = differenceInDays(parseLocalDate(service.payment_due_date), new Date());
       const trip = getTripInfo(service.sold_trip_id);
       return { ...service, daysUntilDue: days, tripInfo: trip };
     })
