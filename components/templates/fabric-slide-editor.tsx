@@ -28,7 +28,7 @@ import { UploadButtonDialog } from "./fabric-editor/image-upload-button"
 
 // Hooks
 import { useFabricCanvas } from './hooks/use-fabric-canvas'
-import { useCanvasHistory } from './hooks/use-canvas-history'
+import { useObjectHistory } from './hooks/use-object-history'
 import { useCanvasKeyboard } from './hooks/use-canvas-keyboard'
 import { useImageUpload } from './hooks/use-image-upload'
 import { useAlignmentGuides } from './hooks/use-alignment-guides'
@@ -76,12 +76,19 @@ export function FabricSlideEditor({
     // Custom hooks
     const { isUploading, uploadImage, uploadFromClipboard } = useImageUpload()
     const {
-        saveStateToHistory,
+        saveObjectModification,
+        saveObjectAddition,
+        saveObjectRemoval,
+        saveBackgroundChange,
         undo,
         redo,
         completeInitialLoad,
-        isInitialLoadRef
-    } = useCanvasHistory(backgroundColor)
+        isInitialLoadRef,
+        isUndoRedoRef,
+        syncObjectMap,
+        getObjectId,
+        serializeObject
+    } = useObjectHistory(backgroundColor)
     const { setupAlignmentGuides } = useAlignmentGuides({
         enabled: true,
         snapThreshold: 10
@@ -91,6 +98,15 @@ export function FabricSlideEditor({
     const setupCanvasEvents = useCallback((canvas: fabric.Canvas) => {
         // Setup alignment guides
         const cleanupAlignmentGuides = setupAlignmentGuides(canvas)
+
+        // Map para guardar estados previos de objetos
+        const objectPreviousStates = new Map<fabric.FabricObject, any>()
+
+        // Función para limpiar estados pendientes
+        const clearPendingStates = () => {
+            objectPreviousStates.clear()
+            console.log('🧹 Estados pendientes limpiados')
+        }
 
         // Selection events
         canvas.on('selection:created', (e) => {
@@ -146,43 +162,82 @@ export function FabricSlideEditor({
             console.log('✅ isInitialLoad cambiado a false - auto-save activado')
         }, 1500)
 
-        canvas.on('object:modified', () => {
-            console.log('🎯 object:modified disparado')
-            saveStateToHistory(canvas)
-            debouncedSave()
-        })
-        canvas.on('object:added', () => {
-            console.log('🎯 object:added disparado', { isInitialLoad })
-            if (!isInitialLoad) {
-                saveStateToHistory(canvas)
-                debouncedSave()
+        // Guardar estado ANTES de modificar (para poder hacer undo)
+        canvas.on('mouse:down', (e) => {
+            const target = e.target
+            if (target && !isUndoRedoRef.current) {
+                // Guardar estado previo del objeto que va a ser modificado
+                objectPreviousStates.set(target, serializeObject(target))
             }
         })
-        canvas.on('object:removed', () => {
-            console.log('🎯 object:removed disparado')
-            saveStateToHistory(canvas)
+
+        // Guardar estado DESPUÉS de modificar (para comparar)
+        canvas.on('object:modified', (e) => {
+            const target = e.target
+            if (!target || isInitialLoad) return
+
+            console.log('🎯 object:modified disparado')
+
+            const previousState = objectPreviousStates.get(target)
+            if (previousState) {
+                saveObjectModification(canvas, target, previousState)
+                objectPreviousStates.delete(target)
+            }
+
             debouncedSave()
         })
+
+        // Objeto añadido
+        canvas.on('object:added', (e) => {
+            const target = e.target
+            if (!target || isInitialLoad || isUndoRedoRef.current) return
+
+            console.log('🎯 object:added disparado para:', target.type)
+            saveObjectAddition(canvas, target)
+            debouncedSave()
+        })
+
+        // Objeto eliminado
+        canvas.on('object:removed', (e) => {
+            const target = e.target
+            if (!target || isUndoRedoRef.current) return
+
+            console.log('🎯 object:removed disparado para:', target.type)
+            saveObjectRemoval(canvas, target)
+            debouncedSave()
+        })
+
+        // Auto-save durante transformaciones (sin guardar en historial aún)
         canvas.on('object:scaling', () => {
-            console.log('🎯 object:scaling disparado')
             debouncedSave()
         })
         canvas.on('object:rotating', () => {
-            console.log('🎯 object:rotating disparado')
             debouncedSave()
         })
         canvas.on('object:moving', () => {
-            console.log('🎯 object:moving disparado')
             debouncedSave()
         })
-        canvas.on('text:changed', () => {
-            if (!isInitialLoad) debouncedSave()
-        })
-        canvas.on('text:editing:exited', () => {
-            if (!isInitialLoad) {
-                saveStateToHistory(canvas)
-                debouncedSave()
+
+        // Texto editado
+        canvas.on('text:editing:entered', (e) => {
+            const target = e.target
+            if (target && !isInitialLoad) {
+                // Guardar estado antes de editar texto
+                objectPreviousStates.set(target, serializeObject(target))
             }
+        })
+
+        canvas.on('text:editing:exited', (e) => {
+            const target = e.target
+            if (!target || isInitialLoad) return
+
+            const previousState = objectPreviousStates.get(target)
+            if (previousState) {
+                saveObjectModification(canvas, target, previousState)
+                objectPreviousStates.delete(target)
+            }
+
+            debouncedSave()
         })
 
         // Panning
@@ -222,13 +277,22 @@ export function FabricSlideEditor({
             canvas.defaultCursor = 'default'
         })
 
+        // Exponer clearPendingStates al canvas para acceso desde undo/redo
+        ;(canvas as any).__clearPendingStates = clearPendingStates
+
+        // Exponer función para forzar guardado después de undo/redo
+        ;(canvas as any).__forceSave = () => {
+            console.log('🔥 __forceSave llamado desde undo/redo')
+            saveCanvasRef.current()
+        }
+
         // Return cleanup function
         return () => {
             if (cleanupAlignmentGuides) {
                 cleanupAlignmentGuides()
             }
         }
-    }, [setupAlignmentGuides])
+    }, [setupAlignmentGuides, serializeObject, saveObjectModification, saveObjectAddition, saveObjectRemoval, isUndoRedoRef])
 
     const { fabricCanvasRef, baseScaleRef } = useFabricCanvas({
         canvasRef,
@@ -240,15 +304,17 @@ export function FabricSlideEditor({
         onCanvasEvents: setupCanvasEvents
     })
 
-    // Complete initial load and save first state
+    // Complete initial load and sync object map
     useEffect(() => {
         setTimeout(() => {
             completeInitialLoad()
             if (fabricCanvasRef.current) {
-                saveStateToHistory(fabricCanvasRef.current)
+                // Sincronizar el mapa de objetos con el canvas cargado
+                syncObjectMap(fabricCanvasRef.current)
+                console.log('✅ Mapa de objetos sincronizado al cargar slide')
             }
         }, 1500)
-    }, [])
+    }, [completeInitialLoad, syncObjectMap])
 
     // Save canvas function
     const saveCanvas = useCallback(() => {
@@ -273,10 +339,10 @@ export function FabricSlideEditor({
         if (fabricCanvasRef.current && !isInitialLoadRef.current) {
             fabricCanvasRef.current.backgroundColor = backgroundColor
             fabricCanvasRef.current.renderAll()
-            saveStateToHistory(fabricCanvasRef.current)
+            saveBackgroundChange(backgroundColor)
             saveCanvas()
         }
-    }, [backgroundColor])
+    }, [backgroundColor, saveBackgroundChange])
 
     // Shape creation handlers
     const handleAddText = () => {
