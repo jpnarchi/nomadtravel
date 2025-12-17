@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Users, Search, Eye, Mail, Phone, Loader2 } from 'lucide-react';
+import { Users, Search, Eye, Mail, Phone, Loader2, AlertCircle } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,28 +15,60 @@ export default function AdminClients() {
   const [selectedAgent, setSelectedAgent] = useState('all');
   const navigate = useNavigate();
 
-  const { data: allUsers = [] } = useQuery({
+  const { data: allUsers = [], isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list()
   });
 
-  const { data: allClients = [], isLoading } = useQuery({
+  const { data: allClients = [], isLoading: clientsLoading, error: clientsError } = useQuery({
     queryKey: ['clients'],
     queryFn: () => base44.entities.Client.list()
   });
 
-  const agents = allUsers.filter(u => u.role === 'user');
-  
-  const filteredClients = allClients
-    .filter(c => selectedAgent === 'all' || c.created_by === selectedAgent)
-    .filter(c => {
-      const searchLower = search.toLowerCase();
-      return (
-        c.first_name?.toLowerCase().includes(searchLower) ||
-        c.last_name?.toLowerCase().includes(searchLower) ||
-        c.email?.toLowerCase().includes(searchLower)
-      );
-    });
+  // Create users map by email for O(1) lookups
+  const usersByEmail = useMemo(() => {
+    return allUsers.reduce((map, user) => {
+      map[user.email] = user;
+      return map;
+    }, {});
+  }, [allUsers]);
+
+  const agents = useMemo(() => 
+    allUsers.filter(u => u.role === 'user'),
+    [allUsers]
+  );
+
+  // Memoize filtered clients
+  const filteredClients = useMemo(() => {
+    return allClients
+      .filter(c => selectedAgent === 'all' || c.created_by === selectedAgent)
+      .filter(c => {
+        const searchLower = search.toLowerCase();
+        return (
+          c.first_name?.toLowerCase().includes(searchLower) ||
+          c.last_name?.toLowerCase().includes(searchLower) ||
+          c.email?.toLowerCase().includes(searchLower)
+        );
+      });
+  }, [allClients, selectedAgent, search]);
+
+  // Unified loading state
+  const isLoading = usersLoading || clientsLoading;
+
+  // Error handling
+  if (usersError || clientsError) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+          <h3 className="text-lg font-semibold text-stone-800 mb-2">Error al cargar datos</h3>
+          <p className="text-sm text-stone-600">
+            {usersError ? 'Error al cargar usuarios' : 'Error al cargar clientes'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -97,12 +129,13 @@ export default function AdminClients() {
             </thead>
             <tbody className="divide-y divide-stone-100">
               {filteredClients.map((client) => {
-                const agent = allUsers.find(u => u.email === client.created_by);
+                const agent = usersByEmail[client.created_by];
+                const clientFullName = `${client.first_name} ${client.last_name}`;
                 return (
                   <tr key={client.id} className="hover:bg-stone-50 transition-colors">
                     <td className="p-3">
                       <span className="font-medium text-stone-800">
-                        {client.first_name} {client.last_name}
+                        {clientFullName}
                       </span>
                     </td>
                     <td className="p-3">
@@ -125,6 +158,7 @@ export default function AdminClients() {
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate(createPageUrl(`ClientDetail?id=${client.id}`))}
+                        aria-label={`Ver detalles de ${clientFullName}`}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
