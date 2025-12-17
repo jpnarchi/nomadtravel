@@ -84,7 +84,9 @@ export const serializeCanvas = (canvas: fabric.Canvas, backgroundColor: string) 
         })
     }
 
-    const objects = canvas.getObjects().map((obj, index) => {
+    const objects = canvas.getObjects()
+        .filter(obj => !(obj as any).isAlignmentGuide) // Exclude alignment guides
+        .map((obj, index) => {
         // Include all necessary properties for serialization
         // @ts-expect-error - fabric.js toJSON accepts propertiesToInclude array
         const json = obj.toJSON([

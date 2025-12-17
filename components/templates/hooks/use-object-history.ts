@@ -168,15 +168,17 @@ export function useObjectHistory(backgroundColor: string) {
         historyRef.current.push(action)
         historyStepRef.current++
 
-        // Limitar historial a 50 pasos
-        if (historyRef.current.length > 50) {
-            historyRef.current.shift()
-            historyStepRef.current--
-        }
+        // Sin límite de historial - se mantiene hasta que se guarde la presentación
+        console.log(`📊 Historial actual: ${historyRef.current.length} acciones`)
     }, [])
 
     // Guarda el estado de modificación de un objeto
     const saveObjectModification = useCallback((canvas: fabric.Canvas, obj: fabric.FabricObject, previousState: any) => {
+        // Excluir alignment guides del historial
+        if ((obj as any).isAlignmentGuide) {
+            return
+        }
+
         const objectId = getObjectId(obj)
         const newState = serializeObject(obj)
 
@@ -195,6 +197,11 @@ export function useObjectHistory(backgroundColor: string) {
 
     // Guarda el estado de adición de un objeto
     const saveObjectAddition = useCallback((canvas: fabric.Canvas, obj: fabric.FabricObject) => {
+        // Excluir alignment guides del historial
+        if ((obj as any).isAlignmentGuide) {
+            return
+        }
+
         const objectId = getObjectId(obj)
         const newState = serializeObject(obj)
 
@@ -213,6 +220,11 @@ export function useObjectHistory(backgroundColor: string) {
 
     // Guarda el estado de eliminación de un objeto
     const saveObjectRemoval = useCallback((canvas: fabric.Canvas, obj: fabric.FabricObject) => {
+        // Excluir alignment guides del historial
+        if ((obj as any).isAlignmentGuide) {
+            return
+        }
+
         const objectId = getObjectId(obj)
         const previousState = serializeObject(obj)
 
@@ -477,11 +489,35 @@ export function useObjectHistory(backgroundColor: string) {
     const syncObjectMap = useCallback((canvas: fabric.Canvas) => {
         objectMapRef.current.clear()
         canvas.getObjects().forEach(obj => {
+            // Excluir alignment guides del mapa
+            if ((obj as any).isAlignmentGuide) {
+                return
+            }
             const id = getObjectId(obj)
             objectMapRef.current.set(id, obj)
         })
         console.log('🔄 Mapa de objetos sincronizado:', objectMapRef.current.size, 'objetos')
     }, [getObjectId])
+
+    // Limpia el historial (llamar cuando se guarda la presentación)
+    const clearHistory = useCallback(() => {
+        const currentLength = historyRef.current.length
+        historyRef.current = []
+        historyStepRef.current = -1
+        console.log(`🗑️ Historial limpiado - se eliminaron ${currentLength} acciones`)
+    }, [])
+
+    // Obtiene información del estado actual del historial
+    const getHistoryInfo = useCallback(() => {
+        return {
+            totalActions: historyRef.current.length,
+            currentStep: historyStepRef.current,
+            canUndo: historyStepRef.current >= 0,
+            canRedo: historyStepRef.current < historyRef.current.length - 1,
+            undoStepsAvailable: historyStepRef.current + 1,
+            redoStepsAvailable: historyRef.current.length - historyStepRef.current - 1
+        }
+    }, [])
 
     return {
         saveObjectModification,
@@ -495,6 +531,8 @@ export function useObjectHistory(backgroundColor: string) {
         isUndoRedoRef,
         syncObjectMap,
         getObjectId,
-        serializeObject
+        serializeObject,
+        clearHistory,
+        getHistoryInfo
     }
 }

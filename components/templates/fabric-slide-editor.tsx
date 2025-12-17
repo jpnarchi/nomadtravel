@@ -87,7 +87,9 @@ export function FabricSlideEditor({
         isUndoRedoRef,
         syncObjectMap,
         getObjectId,
-        serializeObject
+        serializeObject,
+        clearHistory,
+        getHistoryInfo
     } = useObjectHistory(backgroundColor)
     const { setupAlignmentGuides } = useAlignmentGuides({
         enabled: true,
@@ -165,7 +167,7 @@ export function FabricSlideEditor({
         // Guardar estado ANTES de modificar (para poder hacer undo)
         canvas.on('mouse:down', (e) => {
             const target = e.target
-            if (target && !isUndoRedoRef.current) {
+            if (target && !isUndoRedoRef.current && !(target as any).isAlignmentGuide) {
                 // Guardar estado previo del objeto que va a ser modificado
                 objectPreviousStates.set(target, serializeObject(target))
             }
