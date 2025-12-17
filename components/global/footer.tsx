@@ -39,7 +39,7 @@ const socialLinks = [
     },
     {
         name: 'Github',
-        href: 'https://github.com/ilovepresentations.io',
+        href: 'https://github.com/jpnarchi',
         icon: Github,
     },
 ]
