@@ -9,28 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, X, ChevronDown } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-
-const DESTINATIONS = [
-  { region: 'Sudeste Asiático', countries: 'Tailandia, Vietnam, Indonesia' },
-  { region: 'Asia Oriental', countries: 'Japón, Corea del Sur, China' },
-  { region: 'Asia del Sur', countries: 'India, Sri Lanka, Maldivas' },
-  { region: 'Medio Oriente', countries: 'Emiratos Árabes, Jordania, Israel' },
-  { region: 'Europa Occidental', countries: 'Francia, España, Italia' },
-  { region: 'Europa del Este', countries: 'República Checa, Polonia, Hungría' },
-  { region: 'Europa del Norte', countries: 'Noruega, Islandia, Finlandia' },
-  { region: 'Europa del Sur', countries: 'Grecia, Portugal, Croacia' },
-  { region: 'África del Norte', countries: 'Marruecos, Egipto, Túnez' },
-  { region: 'África del Este', countries: 'Kenia, Tanzania, Ruanda' },
-  { region: 'África del Sur', countries: 'Sudáfrica, Namibia, Botsuana' },
-  { region: 'África Occidental', countries: 'Ghana, Senegal, Costa de Marfil' },
-  { region: 'Oceanía / Pacífico', countries: 'Australia, Nueva Zelanda, Fiji' },
-  { region: 'Norteamérica', countries: 'Estados Unidos, Canadá, Alaska' },
-  { region: 'Caribe', countries: 'Jamaica, República Dominicana, Bahamas' },
-  { region: 'Centroamérica', countries: 'Costa Rica, Panamá, Guatemala' },
-  { region: 'Sudamérica', countries: 'Perú, Argentina, Brasil' },
-  { region: 'Islas del Índico', countries: 'Maldivas, Seychelles, Mauricio' },
-  { region: 'Islas del Mediterráneo', countries: 'Malta, Chipre, Cerdeña' }
-];
+import { base44 } from '@/api/base44Client';
 
 const STAGES = [
   { value: 'nuevo', label: 'Nuevo' },
@@ -59,7 +38,28 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
   
   const [destinationSearch, setDestinationSearch] = useState('');
   const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
+  const [countries, setCountries] = useState([]);
+  const [loadingCountries, setLoadingCountries] = useState(true);
   const destinationInputRef = useRef(null);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      if (open) {
+        try {
+          setLoadingCountries(true);
+          const response = await base44.functions.invoke('getCountries', {});
+          setCountries(response.data.countries || []);
+        } catch (error) {
+          console.error('Error loading countries:', error);
+          setCountries([]);
+        } finally {
+          setLoadingCountries(false);
+        }
+      }
+    };
+    
+    fetchCountries();
+  }, [open]);
 
   useEffect(() => {
     if (trip) {
@@ -122,15 +122,16 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
     });
   };
 
-  const filteredDestinations = DESTINATIONS.filter(dest =>
-    dest.region.toLowerCase().includes(destinationSearch.toLowerCase()) ||
-    dest.countries.toLowerCase().includes(destinationSearch.toLowerCase())
+  const filteredCountries = countries.filter(country =>
+    country.name.toLowerCase().includes(destinationSearch.toLowerCase()) ||
+    country.region.toLowerCase().includes(destinationSearch.toLowerCase()) ||
+    country.subregion.toLowerCase().includes(destinationSearch.toLowerCase())
   );
 
-  const handleDestinationSelect = (region) => {
+  const handleCountrySelect = (countryName) => {
     let currentDests = formData.destination ? formData.destination.split(', ').filter(d => d) : [];
-    if (!currentDests.includes(region)) {
-      currentDests.push(region);
+    if (!currentDests.includes(countryName)) {
+      currentDests.push(countryName);
       setFormData({ ...formData, destination: currentDests.join(', ') });
     }
     setDestinationSearch('');
@@ -148,8 +149,8 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
     setTimeout(() => {
       setShowDestinationDropdown(false);
       // Don't accept free text - clear if not valid
-      const validRegion = DESTINATIONS.find(d => d.region.toLowerCase() === destinationSearch.toLowerCase());
-      if (destinationSearch && !validRegion) {
+      const validCountry = countries.find(c => c.name.toLowerCase() === destinationSearch.toLowerCase());
+      if (destinationSearch && !validCountry) {
         setDestinationSearch('');
       }
     }, 200);
@@ -227,18 +228,18 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
           </div>
 
           <div className="space-y-2">
-            <Label>Destino <span className="text-red-500">*</span></Label>
+            <Label>Países <span className="text-red-500">*</span></Label>
             
-            {/* Selected destinations */}
+            {/* Selected countries */}
             {formData.destination && (
               <div className="flex flex-wrap gap-1 mb-2">
-                {formData.destination.split(', ').map((destName) => (
-                  <Badge key={destName} variant="secondary" className="text-xs">
-                    {destName}
+                {formData.destination.split(', ').map((countryName) => (
+                  <Badge key={countryName} variant="secondary" className="text-xs">
+                    {countryName}
                     <X
                       className="w-3 h-3 ml-1 cursor-pointer"
                       onClick={() => {
-                        const newDests = formData.destination.split(', ').filter(d => d !== destName);
+                        const newDests = formData.destination.split(', ').filter(d => d !== countryName);
                         setFormData({ ...formData, destination: newDests.join(', ') });
                       }}
                     />
@@ -255,37 +256,44 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
                 onChange={handleDestinationInputChange}
                 onFocus={() => setShowDestinationDropdown(true)}
                 onBlur={handleDestinationInputBlur}
-                placeholder="Escribe para buscar destino..."
+                placeholder="Escribe para buscar país..."
                 className="rounded-xl pr-8"
+                disabled={loadingCountries}
               />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              {loadingCountries ? (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-stone-400" />
+              ) : (
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              )}
               
               {/* Dropdown */}
-              {showDestinationDropdown && (
+              {showDestinationDropdown && !loadingCountries && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
-                  {filteredDestinations.length > 0 ? (
+                  {filteredCountries.length > 0 ? (
                     <div className="p-2">
-                      {filteredDestinations.map((dest) => {
-                        const isSelected = formData.destination?.split(', ').includes(dest.region);
+                      {filteredCountries.map((country) => {
+                        const isSelected = formData.destination?.split(', ').includes(country.name);
                         return (
                           <div
-                            key={dest.region}
-                            onClick={() => handleDestinationSelect(dest.region)}
+                            key={country.code}
+                            onClick={() => handleCountrySelect(country.name)}
                             className={`px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                               isSelected 
                                 ? 'bg-emerald-50 text-emerald-700' 
                                 : 'hover:bg-stone-50'
                             }`}
                           >
-                            <div className="font-medium text-sm">{dest.region}</div>
-                            <div className="text-xs text-stone-500 mt-0.5">{dest.countries}</div>
+                            <div className="font-medium text-sm">{country.name}</div>
+                            <div className="text-xs text-stone-500 mt-0.5">
+                              {country.subregion || country.region}
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   ) : (
                     <div className="p-4 text-sm text-stone-500 text-center">
-                      No se encontraron destinos
+                      No se encontraron países
                     </div>
                   )}
                 </div>
