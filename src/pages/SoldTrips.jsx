@@ -298,8 +298,8 @@ export default function SoldTrips() {
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5" />
                                 <span>
-                                  {format(new Date(trip.start_date), 'd MMM yyyy', { locale: es })}
-                                  {trip.end_date && ` - ${format(new Date(trip.end_date), 'd MMM', { locale: es })}`}
+                                  {format(new Date(`${trip.start_date}T12:00:00`), 'd MMM yyyy', { locale: es })}
+                                  {trip.end_date && ` - ${format(new Date(`${trip.end_date}T12:00:00`), 'd MMM', { locale: es })}`}
                                 </span>
                               </div>
                               {trip.travelers && (
