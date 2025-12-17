@@ -42,6 +42,8 @@ export const createRectangle = (canvas: fabric.Canvas) => {
         fill: '#667eea',
         stroke: '#ffffff',
         strokeWidth: 2,
+        strokeUniform: true,
+        paintFirst: 'fill',
         selectable: true,
         evented: true,
         hasControls: true,
@@ -63,6 +65,8 @@ export const createCircle = (canvas: fabric.Canvas) => {
         fill: '#51cf66',
         stroke: '#ffffff',
         strokeWidth: 2,
+        strokeUniform: true,
+        paintFirst: 'fill',
         selectable: true,
         evented: true,
         hasControls: true,
@@ -85,6 +89,8 @@ export const createTriangle = (canvas: fabric.Canvas) => {
         fill: '#ff6b6b',
         stroke: '#ffffff',
         strokeWidth: 2,
+        strokeUniform: true,
+        paintFirst: 'fill',
         selectable: true,
         evented: true,
         hasControls: true,
@@ -102,6 +108,7 @@ export const createLine = (canvas: fabric.Canvas) => {
     const line = new fabric.Line([100, 100, 500, 100], {
         stroke: '#ffffff',
         strokeWidth: 4,
+        strokeUniform: true,
         selectable: true,
         evented: true,
         hasControls: true,
@@ -139,6 +146,7 @@ export const createRing = (canvas: fabric.Canvas, options?: {
         fill: 'transparent', // ALWAYS transparent - this is the key
         stroke: ringColor, // The ring color
         strokeWidth: thickness, // The thickness of the ring
+        strokeUniform: true,
         selectable: true,
         evented: true,
         hasControls: true,

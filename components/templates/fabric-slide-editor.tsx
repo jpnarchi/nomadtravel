@@ -504,7 +504,63 @@ export function FabricSlideEditor({
 
     const handleUpdateStrokeWidth = (width: number) => {
         if (!selectedObject || !fabricCanvasRef.current) return
-        selectedObject.set({ strokeWidth: width })
+
+        // Get the current stroke width to calculate the difference
+        const currentStrokeWidth = (selectedObject as any).strokeWidth || 0
+        const strokeDiff = width - currentStrokeWidth
+
+        // Store the center point before modifying
+        const centerPoint = selectedObject.getCenterPoint()
+
+        // Set strokeUniform to ensure stroke scales properly
+        selectedObject.set({
+            strokeWidth: width,
+            strokeUniform: true,
+            paintFirst: 'fill' // Paint fill first, then stroke on top
+        })
+
+        // For shapes (not lines, text, or images), adjust dimensions to make border expand outward
+        if (selectedObject.type === 'rect' ||
+            selectedObject.type === 'circle' ||
+            selectedObject.type === 'triangle' ||
+            selectedObject.type === 'ellipse' ||
+            selectedObject.type === 'polygon') {
+
+            const currentScaleX = selectedObject.scaleX || 1
+            const currentScaleY = selectedObject.scaleY || 1
+
+            // Calculate dimension adjustments based on object type
+            if (selectedObject.type === 'circle') {
+                const circle = selectedObject as fabric.Circle
+                const currentRadius = circle.radius || 0
+                // Increase radius to compensate for inward stroke
+                const newRadius = currentRadius + (strokeDiff / 2)
+                circle.set({ radius: Math.max(1, newRadius) })
+            } else if (selectedObject.type === 'rect') {
+                const rect = selectedObject as fabric.Rect
+                const currentWidth = rect.width || 0
+                const currentHeight = rect.height || 0
+                // Increase dimensions to compensate for inward stroke
+                rect.set({
+                    width: Math.max(1, currentWidth + strokeDiff),
+                    height: Math.max(1, currentHeight + strokeDiff)
+                })
+            } else if (selectedObject.type === 'triangle') {
+                const triangle = selectedObject as fabric.Triangle
+                const currentWidth = triangle.width || 0
+                const currentHeight = triangle.height || 0
+                // Increase dimensions to compensate for inward stroke
+                triangle.set({
+                    width: Math.max(1, currentWidth + strokeDiff),
+                    height: Math.max(1, currentHeight + strokeDiff)
+                })
+            }
+
+            // Restore center point to keep object in the same position
+            selectedObject.setPositionByOrigin(centerPoint, 'center', 'center')
+            selectedObject.setCoords()
+        }
+
         fabricCanvasRef.current.renderAll()
         saveCanvas()
     }
