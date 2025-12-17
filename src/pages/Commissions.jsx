@@ -178,10 +178,12 @@ export default function Commissions() {
     activeTab === 'pendientes' ? !s.commission_paid : s.commission_paid
   );
 
-  // Calculate agent's 50% share
-  const totalCommissions = allFilteredServices.reduce((sum, s) => sum + ((s.commission || 0) * 0.5), 0);
-  const paidCommissions = allFilteredServices.filter(s => s.commission_paid).reduce((sum, s) => sum + ((s.commission || 0) * 0.5), 0);
-  const pendingCommissions = totalCommissions - paidCommissions;
+  // Calculate commissions
+  const totalCommissionsFull = allFilteredServices.reduce((sum, s) => sum + (s.commission || 0), 0); // 100% comisiones totales
+  const agentCommissionRate = 0.5; // 50% para el agente
+  const agentCommissionTotal = totalCommissionsFull * agentCommissionRate; // Comisión a pagar al agente
+  const paidCommissions = allFilteredServices.filter(s => s.commission_paid).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
+  const pendingCommissions = agentCommissionTotal - paidCommissions;
 
   const getServiceName = (service) => {
     switch (service.service_type) {
@@ -226,18 +228,26 @@ export default function Commissions() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Total Agente</p>
-          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${totalCommissions.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">Comisiones Totales</p>
+          <p className="text-xl font-bold text-stone-700">${totalCommissionsFull.toLocaleString()}</p>
+          <p className="text-xs text-stone-400 mt-1">100%</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagadas Agente</p>
+          <p className="text-xs text-stone-400">Comisión a Pagar al Agente</p>
+          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${agentCommissionTotal.toLocaleString()}</p>
+          <p className="text-xs text-stone-400 mt-1">{agentCommissionRate * 100}% del total</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Comisión Pagada</p>
           <p className="text-xl font-bold text-green-600">${paidCommissions.toLocaleString()}</p>
+          <p className="text-xs text-stone-400 mt-1">Ya cobrado</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pendientes Agente</p>
+          <p className="text-xs text-stone-400">Pendiente de Cobro</p>
           <p className="text-xl font-bold text-orange-500">${pendingCommissions.toLocaleString()}</p>
+          <p className="text-xs text-stone-400 mt-1">Por cobrar</p>
         </div>
       </div>
 
@@ -359,7 +369,7 @@ export default function Commissions() {
                     </td>
                     <td className="p-3 text-right">
                       <span className={`font-semibold ${service.commission_paid ? 'text-green-600' : 'text-stone-800'}`}>
-                        ${((service.commission || 0) * 0.5).toLocaleString()}
+                        ${(service.commission || 0).toLocaleString()}
                       </span>
                     </td>
                     <td className="p-3 text-center">
