@@ -17,10 +17,12 @@ import { parseLocalDate } from '@/components/utils/dateHelpers';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Dashboard() {
   const { viewMode } = useContext(ViewModeContext);
   const [user, setUser] = useState(null);
+  const [selectedTrip, setSelectedTrip] = useState('all');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -211,6 +213,39 @@ export default function Dashboard() {
   const readyCount = myFinishedTripsWithNetCommissions.filter(t => t.status === 'ready').length;
   const reviewCount = myFinishedTripsWithNetCommissions.filter(t => t.status === 'review').length;
 
+  // Account Balance Panel (similar to admin but filtered by user)
+  const confirmedClientPayments = allClientPayments.filter(p => p.confirmed === true);
+  const confirmedSupplierPayments = allSupplierPayments.filter(p => p.confirmed === true && p.method !== 'tarjeta_cliente');
+
+  let filteredClientPaymentsForBalance = confirmedClientPayments;
+  let filteredSupplierPaymentsForBalance = confirmedSupplierPayments;
+  let selectedTripData = null;
+
+  if (selectedTrip !== 'all') {
+    filteredClientPaymentsForBalance = confirmedClientPayments.filter(p => p.sold_trip_id === selectedTrip);
+    filteredSupplierPaymentsForBalance = confirmedSupplierPayments.filter(p => p.sold_trip_id === selectedTrip);
+    selectedTripData = soldTrips.find(t => t.id === selectedTrip);
+  } else {
+    // Filter by user's trips only
+    const userTripIds = soldTrips.map(t => t.id);
+    filteredClientPaymentsForBalance = confirmedClientPayments.filter(p => userTripIds.includes(p.sold_trip_id));
+    filteredSupplierPaymentsForBalance = confirmedSupplierPayments.filter(p => userTripIds.includes(p.sold_trip_id));
+  }
+
+  const totalIncome = filteredClientPaymentsForBalance.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalExpenses = filteredSupplierPaymentsForBalance.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const accountBalance = totalIncome - totalExpenses;
+
+  const tripsForSelector = soldTrips
+    .filter(t => t.client_name)
+    .map(t => ({
+      id: t.id,
+      label: `${t.client_name} - ${t.destination}`,
+      client: t.client_name,
+      destination: t.destination
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
   const isLoading = tripsLoading || soldLoading;
 
   if (isLoading) {
@@ -255,6 +290,132 @@ export default function Dashboard() {
           subtitle="Totales"
           icon={Users}
         />
+      </div>
+
+      {/* Account Balance Panel */}
+      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-2xl p-6 text-white">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-4">
+              <DollarSign className="w-8 h-8" />
+              <h2 className="text-xl font-semibold opacity-90">Mi Saldo en Cuenta</h2>
+            </div>
+            <div className="mb-6">
+              <p className="text-5xl lg:text-6xl font-bold mb-2">
+                ${accountBalance.toLocaleString()}
+              </p>
+              <p className="text-emerald-100 text-sm">
+                {selectedTrip === 'all' 
+                  ? 'Balance total de mis clientes' 
+                  : selectedTripData 
+                    ? `Balance de ${selectedTripData.client_name} - ${selectedTripData.destination}`
+                    : 'Balance del viaje seleccionado'
+                }
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                <p className="text-emerald-100 text-sm mb-1">Total Cobrado</p>
+                <p className="text-2xl font-bold">${totalIncome.toLocaleString()}</p>
+                <p className="text-xs text-emerald-100 mt-1">{filteredClientPaymentsForBalance.length} pagos confirmados</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                <p className="text-emerald-100 text-sm mb-1">Total Pagado</p>
+                <p className="text-2xl font-bold">${totalExpenses.toLocaleString()}</p>
+                <p className="text-xs text-emerald-100 mt-1">{filteredSupplierPaymentsForBalance.length} pagos confirmados</p>
+              </div>
+            </div>
+          </div>
+          <div className="lg:w-80">
+            <label className="block text-sm font-medium text-emerald-100 mb-2">
+              Filtrar por Viaje
+            </label>
+            <Select value={selectedTrip} onValueChange={setSelectedTrip}>
+              <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-white h-12 rounded-xl">
+                <SelectValue placeholder="Todos mis viajes" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[400px]">
+                <SelectItem value="all">Todos mis viajes</SelectItem>
+                {tripsForSelector.map(trip => (
+                  <SelectItem key={trip.id} value={trip.id}>
+                    {trip.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedTrip !== 'all' && (
+              <p className="text-xs text-emerald-100 mt-2">
+                Solo mostrando pagos confirmados de este viaje
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Payment Details - When trip is selected */}
+        {selectedTrip !== 'all' && (
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Client Payments */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Pagos del Cliente
+              </h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {filteredClientPaymentsForBalance.length > 0 ? (
+                  filteredClientPaymentsForBalance.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
+                    <div key={payment.id} className="bg-white/20 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
+                          <p className="text-emerald-100 text-xs mt-1">
+                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                          </p>
+                          <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>
+                        </div>
+                        {payment.notes && (
+                          <p className="text-emerald-100 text-xs max-w-[150px]">{payment.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
+                )}
+              </div>
+            </div>
+
+            {/* Supplier Payments */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Pagos a Proveedores
+              </h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {filteredSupplierPaymentsForBalance.length > 0 ? (
+                  filteredSupplierPaymentsForBalance.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
+                    <div key={payment.id} className="bg-white/20 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
+                          <p className="text-emerald-100 text-xs mt-1">
+                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                          </p>
+                          <p className="text-emerald-200 text-xs">{payment.supplier}</p>
+                          <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>
+                        </div>
+                        {payment.notes && (
+                          <p className="text-emerald-100 text-xs max-w-[150px]">{payment.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Negative Balance Alert */}

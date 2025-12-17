@@ -329,6 +329,72 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+
+        {/* Payment Details - When trip is selected */}
+        {selectedTrip !== 'all' && (
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Client Payments */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Pagos del Cliente
+              </h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {filteredClientPayments.length > 0 ? (
+                  filteredClientPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
+                    <div key={payment.id} className="bg-white/20 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
+                          <p className="text-emerald-100 text-xs mt-1">
+                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                          </p>
+                          <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>
+                        </div>
+                        {payment.notes && (
+                          <p className="text-emerald-100 text-xs max-w-[150px]">{payment.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
+                )}
+              </div>
+            </div>
+
+            {/* Supplier Payments */}
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Pagos a Proveedores
+              </h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {filteredSupplierPayments.length > 0 ? (
+                  filteredSupplierPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
+                    <div key={payment.id} className="bg-white/20 rounded-lg p-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
+                          <p className="text-emerald-100 text-xs mt-1">
+                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                          </p>
+                          <p className="text-emerald-200 text-xs">{payment.supplier}</p>
+                          <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>
+                        </div>
+                        {payment.notes && (
+                          <p className="text-emerald-100 text-xs max-w-[150px]">{payment.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Negative Balance Alert */}
