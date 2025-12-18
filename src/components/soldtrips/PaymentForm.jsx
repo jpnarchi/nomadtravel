@@ -80,6 +80,7 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
       const paymentData = {
         ...formData,
         amount_usd_fixed,
+        amount: amount_usd_fixed, // backward compatibility
         sold_trip_id: soldTripId
       };
       
