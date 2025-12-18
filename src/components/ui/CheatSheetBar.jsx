@@ -4,30 +4,42 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Hotel, Building2, Compass, Plane, Car, Train, DollarSign, BookOpen } from 'lucide-react';
 
 const CHEAT_SHEETS = [
-  { id: 'hoteles', label: 'Hoteles', icon: Hotel, color: 'bg-blue-500 hover:bg-blue-600' },
-  { id: 'dmc', label: 'DMC', icon: Building2, color: 'bg-indigo-500 hover:bg-indigo-600' },
-  { id: 'tours', label: 'Tours', icon: Compass, color: 'bg-emerald-500 hover:bg-emerald-600' },
-  { id: 'aviones', label: 'Aviones', icon: Plane, color: 'bg-purple-500 hover:bg-purple-600' },
-  { id: 'traslados', label: 'Traslados', icon: Car, color: 'bg-amber-500 hover:bg-amber-600' },
-  { id: 'trenes', label: 'Trenes', icon: Train, color: 'bg-pink-500 hover:bg-pink-600' },
-  { id: 'comisiones', label: 'Comisiones', icon: DollarSign, color: 'bg-green-500 hover:bg-green-600' }
+  { id: 'hoteles', label: 'Hoteles', icon: Hotel },
+  { id: 'dmc', label: 'DMC', icon: Building2 },
+  { id: 'tours', label: 'Tours', icon: Compass },
+  { id: 'aviones', label: 'Aviones', icon: Plane },
+  { id: 'traslados', label: 'Traslados', icon: Car },
+  { id: 'trenes', label: 'Trenes', icon: Train },
+  { id: 'comisiones', label: 'Comisiones', icon: DollarSign }
 ];
 
 export default function CheatSheetBar() {
   const [openModal, setOpenModal] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   const currentSheet = CHEAT_SHEETS.find(s => s.id === openModal);
 
   return (
     <>
+      {/* Hover Detection Zone */}
+      <div 
+        className="fixed top-0 left-0 right-0 h-12 z-40 pointer-events-auto"
+        onMouseEnter={() => setIsVisible(true)}
+      />
+
       {/* Floating Cheat Sheet Bar */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-        <div className="bg-white shadow-2xl rounded-2xl border border-stone-200 p-2 flex items-center gap-2">
+      <div 
+        className={`fixed top-0 left-1/2 transform -translate-x-1/2 z-50 transition-transform duration-300 ${
+          isVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+        onMouseLeave={() => setIsVisible(false)}
+      >
+        <div className="bg-stone-100 shadow-lg border-b border-stone-200 px-4 py-2 flex items-center gap-2 rounded-b-2xl">
           <div className="flex items-center gap-1 px-2">
-            <BookOpen className="w-4 h-4" style={{ color: '#2E442A' }} />
+            <BookOpen className="w-4 h-4 text-stone-600" />
             <span className="text-xs font-semibold text-stone-700">Guías Rápidas</span>
           </div>
-          <div className="h-6 w-px bg-stone-200" />
+          <div className="h-6 w-px bg-stone-300" />
           {CHEAT_SHEETS.map((sheet) => {
             const Icon = sheet.icon;
             return (
@@ -35,7 +47,7 @@ export default function CheatSheetBar() {
                 key={sheet.id}
                 size="sm"
                 onClick={() => setOpenModal(sheet.id)}
-                className={`${sheet.color} text-white h-8 px-3 rounded-lg text-xs font-medium shadow-sm`}
+                className="bg-stone-200 hover:bg-stone-300 text-stone-700 h-8 px-3 rounded-lg text-xs font-medium border border-stone-300"
               >
                 <Icon className="w-3.5 h-3.5 mr-1" />
                 {sheet.label}
