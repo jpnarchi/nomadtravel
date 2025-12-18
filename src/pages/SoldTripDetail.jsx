@@ -1017,22 +1017,27 @@ export default function SoldTripDetail() {
         {/* Client Payments Tab */}
         <TabsContent value="client-payments">
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
-            <div className="p-5 border-b border-stone-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-stone-800">Pagos del Cliente</h3>
-                <p className="text-sm text-stone-500 mt-1">
-                  Total cobrado: <span className="font-semibold text-green-600">${totalClientPaid.toLocaleString()}</span> de ${totalServices.toLocaleString()}
-                </p>
+            <div className="p-5 border-b border-stone-100">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="font-semibold text-stone-800">Pagos del Cliente</h3>
+                  <p className="text-sm text-stone-500 mt-1">
+                    Total cobrado: <span className="font-semibold text-green-600">${totalClientPaid.toLocaleString()}</span> de ${totalServices.toLocaleString()}
+                  </p>
+                </div>
+                <Button 
+                  size="sm"
+                  onClick={() => setClientPaymentOpen(true)}
+                  className="rounded-xl text-white"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Registrar Pago
+                </Button>
               </div>
-              <Button 
-                size="sm"
-                onClick={() => setClientPaymentOpen(true)}
-                className="rounded-xl text-white"
-                style={{ backgroundColor: '#2E442A' }}
-              >
-                <Plus className="w-4 h-4 mr-1" /> Registrar Pago
-              </Button>
-            </div>
+              <p className="text-xs text-stone-500 leading-relaxed mt-2">
+                Aquí se registran todos los pagos del cliente. Si el pago es en MXN, captura el tipo de cambio del día. Si es en USD, ingrésalo directamente en dólares.
+              </p>
+              </div>
 
             {clientPayments.length === 0 ? (
               <EmptyState
@@ -1116,22 +1121,27 @@ export default function SoldTripDetail() {
         {/* Supplier Payments Tab */}
         <TabsContent value="supplier-payments">
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
-            <div className="p-5 border-b border-stone-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-stone-800">Pagos a Proveedores</h3>
-                <p className="text-sm text-stone-500 mt-1">
-                  Total pagado: <span className="font-semibold text-amber-600">${totalSupplierPaid.toLocaleString()}</span>
-                </p>
+            <div className="p-5 border-b border-stone-100">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="font-semibold text-stone-800">Pagos a Proveedores</h3>
+                  <p className="text-sm text-stone-500 mt-1">
+                    Total pagado: <span className="font-semibold text-amber-600">${totalSupplierPaid.toLocaleString()}</span>
+                  </p>
+                </div>
+                <Button 
+                  size="sm"
+                  onClick={() => setSupplierPaymentOpen(true)}
+                  className="rounded-xl text-white"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Registrar Pago
+                </Button>
               </div>
-              <Button 
-                size="sm"
-                onClick={() => setSupplierPaymentOpen(true)}
-                className="rounded-xl text-white"
-                style={{ backgroundColor: '#2E442A' }}
-              >
-                <Plus className="w-4 h-4 mr-1" /> Registrar Pago
-              </Button>
-            </div>
+              <p className="text-xs text-stone-500 leading-relaxed mt-2">
+                Aquí se registran los pagos realizados a proveedores. Indica si el pago fue bruto o neto para llevar un control correcto de costos y comisiones.
+              </p>
+              </div>
 
             {supplierPayments.length === 0 ? (
               <EmptyState
