@@ -28,7 +28,9 @@ const SUPPLIER_PAYMENT_METHODS = [
 export default function PaymentForm({ open, onClose, payment, soldTripId, type, onSave, isLoading }) {
   const [formData, setFormData] = useState({
     date: '',
-    amount: '',
+    currency: 'USD',
+    amount_original: '',
+    fx_rate: '',
     method: 'transferencia',
     notes: '',
     supplier: ''
@@ -38,7 +40,9 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
     if (payment) {
       setFormData({
         date: payment.date || '',
-        amount: payment.amount || '',
+        currency: payment.currency || 'USD',
+        amount_original: payment.amount_original || payment.amount || '',
+        fx_rate: payment.fx_rate || '',
         method: payment.method || 'transferencia',
         notes: payment.notes || '',
         supplier: payment.supplier || ''
@@ -46,7 +50,9 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
     } else {
       setFormData({
         date: new Date().toISOString().split('T')[0],
-        amount: '',
+        currency: 'USD',
+        amount_original: '',
+        fx_rate: '',
         method: 'transferencia',
         notes: '',
         supplier: ''
@@ -56,7 +62,32 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ ...formData, sold_trip_id: soldTripId });
+    
+    if (type === 'client') {
+      // Calculate amount_usd_fixed
+      let amount_usd_fixed;
+      if (formData.currency === 'USD') {
+        amount_usd_fixed = formData.amount_original;
+      } else {
+        // MXN
+        if (!formData.fx_rate || formData.fx_rate <= 0) {
+          toast.error('Debes ingresar un tipo de cambio válido para pagos en MXN');
+          return;
+        }
+        amount_usd_fixed = formData.amount_original / formData.fx_rate;
+      }
+      
+      const paymentData = {
+        ...formData,
+        amount_usd_fixed,
+        sold_trip_id: soldTripId
+      };
+      
+      onSave(paymentData);
+    } else {
+      // Supplier payment (unchanged)
+      onSave({ ...formData, sold_trip_id: soldTripId });
+    }
   };
 
   const isSupplier = type === 'supplier';
@@ -84,28 +115,62 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
             </div>
           )}
 
+          <div className="space-y-2">
+            <Label>Fecha *</Label>
+            <Input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              required
+              className="rounded-xl"
+            />
+          </div>
+
+          {!isSupplier && (
+            <div className="space-y-2">
+              <Label>Moneda *</Label>
+              <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v })}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD (Dólares)</SelectItem>
+                  <SelectItem value="MXN">MXN (Pesos Mexicanos)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Fecha *</Label>
-              <Input
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
-                className="rounded-xl"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Monto *</Label>
+              <Label>Monto {!isSupplier && `(${formData.currency})`} *</Label>
               <Input
                 type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || '' })}
+                step="0.01"
+                value={formData.amount_original}
+                onChange={(e) => setFormData({ ...formData, amount_original: parseFloat(e.target.value) || '' })}
                 required
                 className="rounded-xl"
                 placeholder="0.00"
               />
             </div>
+            {!isSupplier && formData.currency === 'MXN' && (
+              <div className="space-y-2">
+                <Label>Tipo de Cambio *</Label>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  value={formData.fx_rate}
+                  onChange={(e) => setFormData({ ...formData, fx_rate: parseFloat(e.target.value) || '' })}
+                  required
+                  className="rounded-xl"
+                  placeholder="17.35"
+                />
+                {formData.amount_original && formData.fx_rate && (
+                  <p className="text-xs text-stone-500 mt-1">
+                    = ${(formData.amount_original / formData.fx_rate).toFixed(2)} USD
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

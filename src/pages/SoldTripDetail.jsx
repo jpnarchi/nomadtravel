@@ -511,7 +511,10 @@ export default function SoldTripDetail() {
 
   const totalServices = services.reduce((sum, s) => sum + (s.total_price || 0), 0);
   const totalCommissions = services.reduce((sum, s) => sum + (s.commission || 0), 0);
-  const totalClientPaid = clientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalClientPaid = clientPayments.reduce((sum, p) => {
+    // Use amount_usd_fixed if available, otherwise fallback to amount for backward compatibility
+    return sum + (p.amount_usd_fixed || p.amount || 0);
+  }, 0);
   const totalSupplierPaid = supplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const clientBalance = totalServices - totalClientPaid;
   const paymentProgress = totalServices > 0 ? Math.round((totalClientPaid / totalServices) * 100) : 0;
@@ -1041,51 +1044,70 @@ export default function SoldTripDetail() {
               />
             ) : (
               <div className="divide-y divide-stone-100">
-                {clientPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).map((payment, index) => (
-                  <motion.div 
-                    key={payment.id} 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="p-4 hover:bg-stone-50 transition-colors flex items-center gap-4"
-                  >
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-green-50">
-                      <DollarSign className="w-6 h-6 text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-lg text-green-600">
-                        +${(payment.amount || 0).toLocaleString()}
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-stone-500">
-                        <span>{format(parseLocalDate(payment.date), 'd MMMM yyyy', { locale: es })}</span>
-                        <span>•</span>
-                        <Badge variant="outline" className="text-xs capitalize">{payment.method}</Badge>
+                {clientPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).map((payment, index) => {
+                  const currency = payment.currency || 'USD';
+                  const amountOriginal = payment.amount_original || payment.amount || 0;
+                  const amountUSD = payment.amount_usd_fixed || payment.amount || 0;
+                  const fxRate = payment.fx_rate;
+
+                  return (
+                    <motion.div 
+                      key={payment.id} 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="p-4 hover:bg-stone-50 transition-colors flex items-center gap-4"
+                    >
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-green-50">
+                        <DollarSign className="w-6 h-6 text-green-600" />
                       </div>
-                      {payment.notes && <p className="text-xs text-stone-400 mt-1">{payment.notes}</p>}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-stone-400 hover:text-blue-600"
-                        onClick={() => {
-                          setEditingClientPayment(payment);
-                          setClientPaymentOpen(true);
-                        }}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-stone-400 hover:text-red-500"
-                        onClick={() => setDeleteConfirm({ type: 'client', item: payment, sold_trip_id: payment.sold_trip_id })}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-bold text-lg text-green-600">
+                            +${amountUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                          </p>
+                          {currency === 'MXN' && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              MXN
+                            </Badge>
+                          )}
+                        </div>
+                        {currency === 'MXN' && (
+                          <p className="text-sm text-stone-600 mb-1">
+                            ${amountOriginal.toLocaleString()} MXN {fxRate && `(TC ${fxRate.toFixed(4)})`}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-stone-500">
+                          <span>{format(parseLocalDate(payment.date), 'd MMMM yyyy', { locale: es })}</span>
+                          <span>•</span>
+                          <Badge variant="outline" className="text-xs capitalize">{payment.method}</Badge>
+                        </div>
+                        {payment.notes && <p className="text-xs text-stone-400 mt-1">{payment.notes}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-stone-400 hover:text-blue-600"
+                          onClick={() => {
+                            setEditingClientPayment(payment);
+                            setClientPaymentOpen(true);
+                          }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-stone-400 hover:text-red-500"
+                          onClick={() => setDeleteConfirm({ type: 'client', item: payment, sold_trip_id: payment.sold_trip_id })}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>
