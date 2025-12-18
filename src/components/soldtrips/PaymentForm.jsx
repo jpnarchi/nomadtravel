@@ -64,24 +64,41 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
     e.preventDefault();
     
     if (type === 'client') {
+      // Validar monto
+      const amount = parseFloat(formData.amount_original);
+      if (!amount || amount <= 0) {
+        toast.error('Debes ingresar un monto válido');
+        return;
+      }
+
       // Calculate amount_usd_fixed
       let amount_usd_fixed;
+      let fx_rate = null;
+      
       if (formData.currency === 'USD') {
-        amount_usd_fixed = formData.amount_original;
+        amount_usd_fixed = amount;
+        fx_rate = null; // No aplica para USD
       } else {
         // MXN
-        if (!formData.fx_rate || formData.fx_rate <= 0) {
+        const rate = parseFloat(formData.fx_rate);
+        if (!rate || rate <= 0) {
           toast.error('Debes ingresar un tipo de cambio válido para pagos en MXN');
           return;
         }
-        amount_usd_fixed = formData.amount_original / formData.fx_rate;
+        fx_rate = rate;
+        amount_usd_fixed = amount / rate;
       }
       
       const paymentData = {
-        ...formData,
-        amount_usd_fixed,
+        sold_trip_id: soldTripId,
+        date: formData.date,
+        currency: formData.currency,
+        amount_original: amount,
+        fx_rate: fx_rate,
+        amount_usd_fixed: amount_usd_fixed,
         amount: amount_usd_fixed, // backward compatibility
-        sold_trip_id: soldTripId
+        method: formData.method,
+        notes: formData.notes
       };
       
       onSave(paymentData);
@@ -146,8 +163,9 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
               <Input
                 type="number"
                 step="0.01"
+                min="0.01"
                 value={formData.amount_original}
-                onChange={(e) => setFormData({ ...formData, amount_original: parseFloat(e.target.value) || '' })}
+                onChange={(e) => setFormData({ ...formData, amount_original: e.target.value })}
                 required
                 className="rounded-xl"
                 placeholder="0.00"
@@ -155,19 +173,20 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
             </div>
             {!isSupplier && formData.currency === 'MXN' && (
               <div className="space-y-2">
-                <Label>Tipo de Cambio *</Label>
+                <Label>Tipo de Cambio (USD/MXN) *</Label>
                 <Input
                   type="number"
                   step="0.0001"
+                  min="0.0001"
                   value={formData.fx_rate}
-                  onChange={(e) => setFormData({ ...formData, fx_rate: parseFloat(e.target.value) || '' })}
+                  onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
                   required
                   className="rounded-xl"
-                  placeholder="17.35"
+                  placeholder="20.50"
                 />
-                {formData.amount_original && formData.fx_rate && (
-                  <p className="text-xs text-stone-500 mt-1">
-                    = ${(formData.amount_original / formData.fx_rate).toFixed(2)} USD
+                {formData.amount_original && formData.fx_rate && parseFloat(formData.amount_original) > 0 && parseFloat(formData.fx_rate) > 0 && (
+                  <p className="text-xs text-green-600 font-medium mt-1">
+                    = ${(parseFloat(formData.amount_original) / parseFloat(formData.fx_rate)).toFixed(2)} USD
                   </p>
                 )}
               </div>
