@@ -161,9 +161,9 @@ export default function InternalClientPayments() {
   const pendingPayments = filteredPayments.filter(p => !p.confirmed);
   const confirmedPayments = filteredPayments.filter(p => p.confirmed);
 
-  // Calculate totals
-  const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const totalConfirmed = confirmedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  // Calculate totals - use amount_usd_fixed primarily, fallback to amount for backward compatibility
+  const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
+  const totalConfirmed = confirmedPayments.reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
 
   const handleToggleConfirmed = (payment, isConfirmed) => {
     updatePaymentMutation.mutate({ id: payment.id, data: { confirmed: isConfirmed } });
@@ -304,15 +304,58 @@ export default function InternalClientPayments() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Monto *</Label>
+              <Label>Moneda *</Label>
+              <Select
+                value={editFormData.currency || 'USD'}
+                onValueChange={(value) => setEditFormData({ ...editFormData, currency: value })}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="MXN">MXN</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Monto en {editFormData.currency || 'USD'} *</Label>
               <Input
                 type="number"
                 step="0.01"
-                value={editFormData.amount || ''}
-                onChange={(e) => setEditFormData({ ...editFormData, amount: parseFloat(e.target.value) })}
+                value={editFormData.amount_original || editFormData.amount || ''}
+                onChange={(e) => setEditFormData({ ...editFormData, amount_original: parseFloat(e.target.value) })}
                 className="rounded-xl"
               />
             </div>
+            {editFormData.currency === 'MXN' && (
+              <div className="space-y-2">
+                <Label>Tipo de Cambio (USD/MXN) *</Label>
+                <Input
+                  type="number"
+                  step="0.0001"
+                  value={editFormData.fx_rate || ''}
+                  onChange={(e) => {
+                    const rate = parseFloat(e.target.value);
+                    const amountOriginal = editFormData.amount_original || 0;
+                    const amountUSD = amountOriginal / rate;
+                    setEditFormData({ 
+                      ...editFormData, 
+                      fx_rate: rate,
+                      amount_usd_fixed: amountUSD,
+                      amount: amountUSD // backward compatibility
+                    });
+                  }}
+                  className="rounded-xl"
+                  placeholder="Ej: 20.50"
+                />
+                {editFormData.fx_rate && editFormData.amount_original && (
+                  <p className="text-xs text-stone-500">
+                    ≈ ${(editFormData.amount_original / editFormData.fx_rate).toFixed(2)} USD
+                  </p>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Método de Pago *</Label>
               <Select
@@ -344,7 +387,16 @@ export default function InternalClientPayments() {
               Cancelar
             </Button>
             <Button
-              onClick={() => updatePaymentMutation.mutate({ id: editingPayment.id, data: editFormData })}
+              onClick={() => {
+                const dataToSave = { ...editFormData };
+                // If USD, set amount_usd_fixed = amount_original
+                if (dataToSave.currency === 'USD') {
+                  dataToSave.amount_usd_fixed = dataToSave.amount_original;
+                  dataToSave.amount = dataToSave.amount_original;
+                  dataToSave.fx_rate = null;
+                }
+                updatePaymentMutation.mutate({ id: editingPayment.id, data: dataToSave });
+              }}
               disabled={updatePaymentMutation.isPending}
               className="rounded-xl text-white"
               style={{ backgroundColor: '#2E442A' }}
@@ -362,7 +414,7 @@ export default function InternalClientPayments() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar pago?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Se eliminará el pago de <strong>${deleteConfirm?.amount?.toLocaleString()}</strong> del cliente <strong>{deleteConfirm?.client_name}</strong>.
+              Esta acción no se puede deshacer. Se eliminará el pago de <strong>${(deleteConfirm?.amount_usd_fixed || deleteConfirm?.amount || 0).toLocaleString()}</strong> del cliente <strong>{deleteConfirm?.client_name}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -437,8 +489,14 @@ export default function InternalClientPayments() {
                   </td>
                   <td className="p-3 text-right">
                     <span className="font-semibold text-green-600">
-                      ${(payment.amount || 0).toLocaleString()}
+                      ${(payment.amount_usd_fixed || payment.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
+                    {payment.currency === 'MXN' && payment.amount_original && (
+                      <div className="text-xs text-blue-600 mt-0.5">
+                        ${payment.amount_original.toLocaleString()} MXN
+                        {payment.fx_rate && ` (TC ${payment.fx_rate.toFixed(4)})`}
+                      </div>
+                    )}
                   </td>
                   <td className="p-3 text-center">
                     <Select 
@@ -464,7 +522,11 @@ export default function InternalClientPayments() {
                           setEditingPayment(payment);
                           setEditFormData({
                             date: payment.date,
+                            currency: payment.currency || 'USD',
+                            amount_original: payment.amount_original || payment.amount,
                             amount: payment.amount,
+                            amount_usd_fixed: payment.amount_usd_fixed,
+                            fx_rate: payment.fx_rate,
                             method: payment.method,
                             notes: payment.notes || ''
                           });
