@@ -754,16 +754,21 @@ export default function SoldTripDetail() {
         {/* Services Tab */}
         <TabsContent value="services">
           <div className="bg-white rounded-2xl shadow-sm border border-stone-100">
-            <div className="p-5 border-b border-stone-100 flex items-center justify-between">
-              <h3 className="font-semibold text-stone-800">Servicios del Viaje</h3>
-              <Button 
-                size="sm"
-                onClick={() => { setEditingService(null); setServiceFormOpen(true); }}
-                className="rounded-xl text-white"
-                style={{ backgroundColor: '#2E442A' }}
-              >
-                <Plus className="w-4 h-4 mr-1" /> Agregar Servicio
-              </Button>
+            <div className="p-5 border-b border-stone-100">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-stone-800">Servicios del Viaje</h3>
+                <Button 
+                  size="sm"
+                  onClick={() => { setEditingService(null); setServiceFormOpen(true); }}
+                  className="rounded-xl text-white"
+                  style={{ backgroundColor: '#2E442A' }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Agregar Servicio
+                </Button>
+              </div>
+              <p className="text-xs text-stone-500 leading-relaxed">
+                Aquí se agregan todos los servicios del viaje tal como se le venderán al cliente, en precio bruto. Incluye la comisión de cada servicio y la fecha estimada en la que se espera recibir esa comisión. Si el pago es neto, la comisión se libera al terminar el viaje. Si es por Montecito, la comisión se paga aproximadamente 3 meses después de que finaliza el viaje.
+              </p>
             </div>
 
             {services.length === 0 ? (
