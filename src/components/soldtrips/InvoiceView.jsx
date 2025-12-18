@@ -72,7 +72,7 @@ const PAYMENT_METHOD_LABELS = {
 export default function InvoiceView({ open, onClose, soldTrip, services, clientPayments = [] }) {
   if (!soldTrip) return null;
 
-  const totalPaid = clientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalPaid = clientPayments.reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
   const total = services.reduce((sum, s) => sum + (s.total_price || 0), 0);
   const balance = total - totalPaid;
 
@@ -360,19 +360,34 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
                     </tr>
                   </thead>
                   <tbody>
-                    {clientPayments.sort((a, b) => parseDateOnlyLocal(a.date) - parseDateOnlyLocal(b.date)).map((payment, index) => (
-                      <tr key={index} className="border-b border-stone-100 last:border-0">
-                        <td className="py-2 text-stone-700">
-                          {format(parseDateOnlyLocal(payment.date), 'd MMM yyyy', { locale: es })}
-                        </td>
-                        <td className="py-2 text-stone-700">
-                          {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
-                        </td>
-                        <td className="py-2 text-right font-semibold text-green-600">
-                          ${(payment.amount || 0).toLocaleString()} USD
-                        </td>
-                      </tr>
-                    ))}
+                    {clientPayments.sort((a, b) => parseDateOnlyLocal(a.date) - parseDateOnlyLocal(b.date)).map((payment, index) => {
+                      const currency = payment.currency || 'USD';
+                      const amountOriginal = payment.amount_original || payment.amount || 0;
+                      const amountUSD = payment.amount_usd_fixed || payment.amount || 0;
+                      const fxRate = payment.fx_rate;
+
+                      return (
+                        <tr key={index} className="border-b border-stone-100 last:border-0">
+                          <td className="py-2 text-stone-700">
+                            {format(parseDateOnlyLocal(payment.date), 'd MMM yyyy', { locale: es })}
+                          </td>
+                          <td className="py-2 text-stone-700">
+                            {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
+                            {currency === 'MXN' && (
+                              <div className="text-xs text-stone-500 mt-0.5">
+                                ${amountOriginal.toLocaleString()} MXN {fxRate && `(TC ${fxRate.toFixed(4)})`}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2 text-right font-semibold text-green-600">
+                            ${amountUSD.toFixed(2)} USD
+                            {currency === 'MXN' && (
+                              <div className="text-xs text-blue-600 mt-0.5">MXN</div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
