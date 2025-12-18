@@ -34,12 +34,12 @@ export default function CheatSheetBar() {
         }`}
         onMouseLeave={() => setIsVisible(false)}
       >
-        <div className="bg-stone-100 shadow-lg border-b border-stone-200 px-4 py-2 flex items-center gap-2 rounded-b-2xl">
+        <div className="bg-amber-50 shadow-lg border-b border-amber-200 px-4 py-2 flex items-center gap-2 rounded-b-2xl" style={{ backgroundColor: '#f5f1e8' }}>
           <div className="flex items-center gap-1 px-2">
-            <BookOpen className="w-4 h-4 text-stone-600" />
-            <span className="text-xs font-semibold text-stone-700">Guías Rápidas</span>
+            <BookOpen className="w-4 h-4" style={{ color: '#8B7355' }} />
+            <span className="text-xs font-semibold" style={{ color: '#6B5744' }}>Guías Rápidas</span>
           </div>
-          <div className="h-6 w-px bg-stone-300" />
+          <div className="h-6 w-px" style={{ backgroundColor: '#d4c5b0' }} />
           {CHEAT_SHEETS.map((sheet) => {
             const Icon = sheet.icon;
             return (
@@ -47,7 +47,14 @@ export default function CheatSheetBar() {
                 key={sheet.id}
                 size="sm"
                 onClick={() => setOpenModal(sheet.id)}
-                className="bg-stone-200 hover:bg-stone-300 text-stone-700 h-8 px-3 rounded-lg text-xs font-medium border border-stone-300"
+                className="h-8 px-3 rounded-lg text-xs font-medium transition-colors"
+                style={{ 
+                  backgroundColor: '#e8dcc8',
+                  color: '#6B5744',
+                  border: '1px solid #d4c5b0'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4c5b0'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e8dcc8'}
               >
                 <Icon className="w-3.5 h-3.5 mr-1" />
                 {sheet.label}
