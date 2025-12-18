@@ -25,6 +25,7 @@ import {
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
+import CheatSheetBar from '@/components/ui/CheatSheetBar';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -380,6 +381,9 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Quick Payment FAB */}
               <QuickPaymentFAB />
+
+              {/* Cheat Sheet Bar */}
+              <CheatSheetBar />
 
               {/* Payment Info Modal */}
                       <PaymentInfoModal open={paymentInfoOpen} onClose={() => setPaymentInfoOpen(false)} />
