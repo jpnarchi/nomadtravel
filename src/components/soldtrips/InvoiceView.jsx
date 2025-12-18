@@ -101,29 +101,35 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
     const imgData = canvas.toDataURL("image/png");
 
     const pdf = new jsPDF("p", "mm", "a4");
+
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Escalar imagen al ancho de la hoja
-    const imgWidth = pageWidth;
+    // Márgenes
+    const margin = 10;
+    const printableWidth = pageWidth - margin * 2;
+    const printableHeight = pageHeight - margin * 2;
+
+    // Escala para que fitee al ancho imprimible
+    const imgWidth = printableWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     let heightLeft = imgHeight;
-    let position = 0;
+    let positionY = margin;
 
     // Primera página
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+    pdf.addImage(imgData, "PNG", margin, positionY, imgWidth, imgHeight);
+    heightLeft -= printableHeight;
 
-    // Páginas adicionales
+    // Páginas siguientes (recortando la misma imagen)
     while (heightLeft > 0) {
       pdf.addPage();
-      position = heightLeft - imgHeight;
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      const offsetY = margin - (imgHeight - heightLeft);
+      pdf.addImage(imgData, "PNG", margin, offsetY, imgWidth, imgHeight);
+      heightLeft -= printableHeight;
     }
 
-    pdf.save(`Invoice_${soldTrip.client_name.replace(/\s+/g, '_')}.pdf`);
+    pdf.save(`Invoice_${soldTrip.client_name}.pdf`);
   };
 
   const renderHotelService = (service, index) => (
