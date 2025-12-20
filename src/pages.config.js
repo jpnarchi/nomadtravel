@@ -24,6 +24,7 @@ import Suppliers from './pages/Suppliers';
 import TripDetail from './pages/TripDetail';
 import TripRequestPublic from './pages/TripRequestPublic';
 import Trips from './pages/Trips';
+import DateAudit from './pages/DateAudit';
 import __Layout from './Layout.jsx';
 
 
@@ -54,6 +55,7 @@ export const PAGES = {
     "TripDetail": TripDetail,
     "TripRequestPublic": TripRequestPublic,
     "Trips": Trips,
+    "DateAudit": DateAudit,
 }
 
 export const pagesConfig = {
