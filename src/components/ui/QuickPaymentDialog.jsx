@@ -8,71 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Building2, Upload, FileText, X, Sparkles, CheckCircle, Hotel, Plane, Car, Compass, Package, Train } from 'lucide-react';
+import { Loader2, User, Building2, Upload, FileText, X, Sparkles, CheckCircle } from 'lucide-react';
 import { toast } from "sonner";
 
-const CLIENT_PAYMENT_METHODS = [
+const PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },
   { value: 'tarjeta', label: 'Tarjeta' },
-  { value: 'tarjeta_cliente', label: 'Tarjeta de Cliente' },
-  { value: 'wise', label: 'Wise' },
   { value: 'otro', label: 'Otro' }
 ];
-
-const SUPPLIER_PAYMENT_METHODS = [
-  { value: 'transferencia', label: 'Transferencia' },
-  { value: 'ms_beyond', label: 'MS Beyond' },
-  { value: 'capital_one_blue', label: 'Capital One Blue' },
-  { value: 'capital_one_green', label: 'Capital One Green' },
-  { value: 'amex', label: 'Amex' }
-];
-
-const SERVICE_ICONS = {
-  hotel: Hotel,
-  vuelo: Plane,
-  traslado: Car,
-  tour: Compass,
-  crucero: Package,
-  tren: Train,
-  dmc: Building2,
-  otro: Package
-};
-
-const SERVICE_LABELS = {
-  hotel: 'Hotel',
-  vuelo: 'Vuelo',
-  traslado: 'Traslado',
-  tour: 'Tour',
-  crucero: 'Crucero',
-  tren: 'Tren',
-  dmc: 'DMC',
-  otro: 'Otro'
-};
-
-// Helper to get service details for display
-const getServiceDetails = (service) => {
-  switch (service.service_type) {
-    case 'hotel':
-      return `${service.hotel_name || 'Hotel'} - ${service.hotel_city || ''}`;
-    case 'vuelo':
-      return `${service.airline || 'Vuelo'} ${service.flight_number || ''} - ${service.route || ''}`;
-    case 'traslado':
-      return `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
-    case 'tour':
-      return `${service.tour_name || 'Tour'} - ${service.tour_city || ''}`;
-    case 'crucero':
-      return `${service.cruise_ship || service.cruise_line || 'Crucero'}`;
-    case 'tren':
-      return `${service.train_operator || 'Tren'} ${service.train_number || ''} - ${service.train_route || ''}`;
-    case 'dmc':
-      return `${service.dmc_name || 'DMC'} - ${service.dmc_destination || ''}`;
-    case 'otro':
-      return service.other_name || service.other_description?.substring(0, 50) || 'Servicio';
-    default:
-      return 'Servicio';
-  }
-};
 
 export default function QuickPaymentDialog({ open, onClose, type }) {
   const queryClient = useQueryClient();
@@ -85,54 +29,17 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   const [formData, setFormData] = useState({
     sold_trip_id: '',
     date: new Date().toISOString().split('T')[0],
-    amount_original: '',
-    currency: 'USD',
-    fx_rate: '',
+    amount: '',
     method: 'transferencia',
-    supplier_id: '',
-    supplier_name: '',
-    trip_service_id: '',
-    client_id: '',
+    supplier: '',
     notes: '',
-    receipt_url: '',
-    payment_type: 'neto'
+    receipt_url: ''
   });
   const [uploading, setUploading] = useState(false);
 
-  const { data: user, isLoading: userLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
-
   const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
-    queryKey: ['soldTripsQuickPayment', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const filter = user.role === 'admin' 
-        ? { status: { '$in': ['pendiente', 'parcial', 'pagado', 'completado'] } }
-        : { created_by: user.email, status: { '$in': ['pendiente', 'parcial', 'pagado', 'completado'] } };
-      return await base44.entities.SoldTrip.filter(filter, '-sale_date');
-    },
-    enabled: !!user
-  });
-
-  const { data: suppliers = [], isLoading: suppliersLoading } = useQuery({
-    queryKey: ['suppliersQuickPayment'],
-    queryFn: () => base44.entities.Supplier.list('name'),
-  });
-
-  // Fetch services for the selected trip
-  const { data: tripServices = [], isLoading: servicesLoading } = useQuery({
-    queryKey: ['tripServicesQuickPayment', formData.sold_trip_id],
-    queryFn: () => base44.entities.TripService.filter({ sold_trip_id: formData.sold_trip_id }),
-    enabled: !!formData.sold_trip_id && type === 'supplier'
-  });
-
-  // Fetch clients for the selected trip
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ['clientsQuickPayment'],
-    queryFn: () => base44.entities.Client.list('first_name'),
-    enabled: type === 'client'
+    queryKey: ['soldTrips'],
+    queryFn: () => base44.entities.SoldTrip.list('-created_date')
   });
 
   useEffect(() => {
@@ -140,23 +47,17 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
       setFormData({
         sold_trip_id: '',
         date: new Date().toISOString().split('T')[0],
-        amount_original: '',
-        currency: 'USD',
-        fx_rate: '',
+        amount: '',
         method: 'transferencia',
-        supplier_id: '',
-        supplier_name: '',
-        trip_service_id: '',
-        client_id: '',
+        supplier: '',
         notes: '',
-        receipt_url: '',
-        payment_type: 'neto'
+        receipt_url: ''
       });
       setSmartFileUrls([]);
       setSmartTripId('');
       setActiveTab('manual');
     }
-  }, [open, type]);
+  }, [open]);
 
   const handleSmartFileUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -198,7 +99,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
 
       if (response.data.success) {
         toast.success(response.data.message);
-        queryClient.invalidateQueries({ queryKey: ['soldTripsQuickPayment'] });
+        queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
         queryClient.invalidateQueries({ queryKey: ['clientPayments'] });
         queryClient.invalidateQueries({ queryKey: ['supplierPayments'] });
         onClose();
@@ -229,9 +130,22 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   };
 
   const clientPaymentMutation = useMutation({
-    mutationFn: (data) => base44.entities.ClientPayment.create(data),
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['soldTripsQuickPayment'] });
+    mutationFn: async (data) => {
+      const payment = await base44.entities.ClientPayment.create(data);
+      
+      // Update sold trip totals
+      const trip = soldTrips.find(t => t.id === data.sold_trip_id);
+      if (trip) {
+        const newTotal = (trip.total_paid_by_client || 0) + data.amount;
+        await base44.entities.SoldTrip.update(trip.id, {
+          total_paid_by_client: newTotal,
+          status: newTotal >= (trip.total_price || 0) ? 'pagado' : 'parcial'
+        });
+      }
+      return payment;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       queryClient.invalidateQueries({ queryKey: ['clientPayments'] });
       toast.success('Pago de cliente registrado');
       onClose();
@@ -239,11 +153,22 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   });
 
   const supplierPaymentMutation = useMutation({
-    mutationFn: (data) => base44.entities.SupplierPayment.create(data),
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ['soldTripsQuickPayment'] });
+    mutationFn: async (data) => {
+      const payment = await base44.entities.SupplierPayment.create(data);
+      
+      // Update sold trip totals
+      const trip = soldTrips.find(t => t.id === data.sold_trip_id);
+      if (trip) {
+        const newTotal = (trip.total_paid_to_suppliers || 0) + data.amount;
+        await base44.entities.SoldTrip.update(trip.id, {
+          total_paid_to_suppliers: newTotal
+        });
+      }
+      return payment;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       queryClient.invalidateQueries({ queryKey: ['supplierPayments'] });
-      queryClient.invalidateQueries({ queryKey: ['tripServices'] });
       toast.success('Pago a proveedor registrado');
       onClose();
     }
@@ -252,85 +177,42 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    const amount = parseFloat(formData.amount_original);
-    if (!formData.sold_trip_id || !amount || amount <= 0) {
-      toast.error('Selecciona un viaje e ingresa un monto válido');
+    if (!formData.sold_trip_id || !formData.amount) {
+      toast.error('Selecciona un viaje y monto');
       return;
     }
 
+    const paymentData = {
+      sold_trip_id: formData.sold_trip_id,
+      date: formData.date,
+      amount: parseFloat(formData.amount),
+      method: formData.method,
+      notes: formData.notes,
+      receipt_url: formData.receipt_url || undefined
+    };
+
     if (type === 'client') {
-      let amount_usd_fixed;
-      let fx_rate = null;
-
-      if (formData.currency === 'USD') {
-        amount_usd_fixed = amount;
-      } else {
-        const rate = parseFloat(formData.fx_rate);
-        if (!rate || rate <= 0) {
-          toast.error('Debes ingresar un tipo de cambio válido para pagos en MXN');
-          return;
-        }
-        fx_rate = rate;
-        amount_usd_fixed = amount / rate;
-      }
-
-      const paymentData = {
-        sold_trip_id: formData.sold_trip_id,
-        date: formData.date,
-        currency: formData.currency,
-        amount_original: amount,
-        fx_rate: fx_rate,
-        amount_usd_fixed: amount_usd_fixed,
-        amount: amount_usd_fixed,
-        method: formData.method,
-        notes: formData.notes,
-        receipt_url: formData.receipt_url || undefined
-      };
       clientPaymentMutation.mutate(paymentData);
     } else {
-      if (!formData.supplier_id || !formData.supplier_name) {
-        toast.error('Selecciona un proveedor');
-        return;
-      }
-      if (!formData.trip_service_id) {
-        toast.error('Selecciona el servicio que estás pagando');
-        return;
-      }
-      
-      const paymentData = {
-        sold_trip_id: formData.sold_trip_id,
-        trip_service_id: formData.trip_service_id,
-        date: formData.date,
-        supplier_id: formData.supplier_id,
-        supplier: formData.supplier_name,
-        payment_type: formData.payment_type,
-        amount: amount,
-        method: formData.method,
-        notes: formData.notes,
-        receipt_url: formData.receipt_url || undefined
-      };
-      supplierPaymentMutation.mutate(paymentData);
+      supplierPaymentMutation.mutate({
+        ...paymentData,
+        supplier: formData.supplier
+      });
     }
   };
 
-  const isLoading = clientPaymentMutation.isPending || supplierPaymentMutation.isPending || uploading || userLoading || tripsLoading || suppliersLoading || servicesLoading || clientsLoading;
+  const isLoading = clientPaymentMutation.isPending || supplierPaymentMutation.isPending || uploading;
   const selectedTrip = soldTrips.find(t => t.id === formData.sold_trip_id);
-  const selectedService = tripServices.find(s => s.id === formData.trip_service_id);
-
-  // Filter clients that match the selected trip's client
-  const filteredClients = selectedTrip 
-    ? clients.filter(c => `${c.first_name} ${c.last_name}` === selectedTrip.client_name || c.id === selectedTrip.client_id)
-    : clients;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" style={{ color: '#2E442A' }}>
             {type === 'client' ? (
-              <><User className="w-5 h-5" /> Registrar Pago de Cliente</>
+              <><User className="w-5 h-5" /> Pago de Cliente</>
             ) : (
-              <><Building2 className="w-5 h-5" /> Registrar Pago a Proveedor</>
+              <><Building2 className="w-5 h-5" /> Pago a Proveedor</>
             )}
           </DialogTitle>
         </DialogHeader>
@@ -346,280 +228,149 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
 
           <TabsContent value="manual">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Trip Selection */}
-              <div className="space-y-2">
-                <Label>Viaje Vendido *</Label>
-                <Select 
-                  value={formData.sold_trip_id} 
-                  onValueChange={(v) => setFormData({ 
-                    ...formData, 
-                    sold_trip_id: v, 
-                    trip_service_id: '', 
-                    client_id: '' 
-                  })}
-                  disabled={tripsLoading || !user}
+          {/* Trip Selection */}
+          <div className="space-y-2">
+            <Label>Viaje Vendido *</Label>
+            <Select 
+              value={formData.sold_trip_id} 
+              onValueChange={(v) => setFormData({ ...formData, sold_trip_id: v })}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue placeholder={tripsLoading ? "Cargando..." : "Seleccionar viaje"} />
+              </SelectTrigger>
+              <SelectContent>
+                {soldTrips.map(trip => (
+                  <SelectItem key={trip.id} value={trip.id}>
+                    {trip.client_name} - {trip.destination}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedTrip && (
+              <p className="text-xs text-stone-500">
+                Total: ${selectedTrip.total_price?.toLocaleString() || 0} | 
+                Pagado: ${selectedTrip.total_paid_by_client?.toLocaleString() || 0}
+              </p>
+            )}
+          </div>
+
+          {/* Supplier (only for supplier payments) */}
+          {type === 'supplier' && (
+            <div className="space-y-2">
+              <Label>Proveedor *</Label>
+              <Input
+                value={formData.supplier}
+                onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                placeholder="Nombre del proveedor"
+                className="rounded-xl"
+                required
+              />
+            </div>
+          )}
+
+          {/* Amount and Date */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Monto *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="0.00"
+                className="rounded-xl"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha *</Label>
+              <Input
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                className="rounded-xl"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Payment Method */}
+          <div className="space-y-2">
+            <Label>Método de Pago</Label>
+            <Select 
+              value={formData.method} 
+              onValueChange={(v) => setFormData({ ...formData, method: v })}
+            >
+              <SelectTrigger className="rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map(m => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Receipt Upload */}
+          <div className="space-y-2">
+            <Label>Comprobante de Pago</Label>
+            {formData.receipt_url ? (
+              <div className="flex items-center gap-2 p-2 bg-stone-50 rounded-xl border">
+                <FileText className="w-4 h-4 text-stone-500" />
+                <a 
+                  href={formData.receipt_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline flex-1 truncate"
                 >
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder={
-                      userLoading ? "Cargando usuario..." :
-                      tripsLoading ? "Cargando viajes..." :
-                      soldTrips.length === 0 ? "No hay viajes disponibles" :
-                      "Seleccionar viaje"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {soldTrips.map(trip => (
-                      <SelectItem key={trip.id} value={trip.id}>
-                        {trip.client_name} - {trip.destination}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedTrip && (
-                  <p className="text-xs text-stone-500">
-                    Total: ${selectedTrip.total_price?.toLocaleString() || 0} | 
-                    Pagado Cliente: ${selectedTrip.total_paid_by_client?.toLocaleString() || 0}
-                    {type === 'supplier' && ` | Pagado Proveedor: $${selectedTrip.total_paid_to_suppliers?.toLocaleString() || 0}`}
-                  </p>
-                )}
-              </div>
-
-              {/* Client Selection (only for client payments) */}
-              {type === 'client' && selectedTrip && (
-                <div className="space-y-2">
-                  <Label>Cliente *</Label>
-                  <div className="p-3 bg-stone-50 rounded-xl border border-stone-200">
-                    <p className="text-sm font-medium text-stone-800">{selectedTrip.client_name}</p>
-                    <p className="text-xs text-stone-500 mt-0.5">Cliente del viaje seleccionado</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Supplier and Service Selection (only for supplier payments) */}
-              {type === 'supplier' && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Proveedor *</Label>
-                    <Select
-                      value={formData.supplier_id}
-                      onValueChange={(v) => {
-                        const selectedSupplier = suppliers.find(s => s.id === v);
-                        setFormData({ ...formData, supplier_id: v, supplier_name: selectedSupplier?.name || '' });
-                      }}
-                      disabled={suppliersLoading}
-                    >
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder={suppliersLoading ? "Cargando..." : "Seleccionar proveedor"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {suppliers.map(supplier => (
-                          <SelectItem key={supplier.id} value={supplier.id}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Service Selection */}
-                  <div className="space-y-2">
-                    <Label>Servicio a Pagar *</Label>
-                    <Select
-                      value={formData.trip_service_id}
-                      onValueChange={(v) => setFormData({ ...formData, trip_service_id: v })}
-                      disabled={!formData.sold_trip_id || servicesLoading || tripServices.length === 0}
-                    >
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue placeholder={
-                          !formData.sold_trip_id ? "Primero selecciona un viaje" :
-                          servicesLoading ? "Cargando servicios..." :
-                          tripServices.length === 0 ? "Sin servicios en este viaje" :
-                          "Seleccionar servicio"
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tripServices.map(service => {
-                          const Icon = SERVICE_ICONS[service.service_type] || Package;
-                          const details = getServiceDetails(service);
-                          return (
-                            <SelectItem key={service.id} value={service.id}>
-                              <div className="flex items-center gap-2">
-                                <Icon className="w-4 h-4" />
-                                <div>
-                                  <p className="font-medium">{SERVICE_LABELS[service.service_type]}</p>
-                                  <p className="text-xs text-stone-500">{details}</p>
-                                </div>
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                    {selectedService && (
-                      <p className="text-xs text-stone-500">
-                        Total servicio: ${selectedService.total_price?.toLocaleString() || 0} | 
-                        Ya pagado: ${selectedService.amount_paid_to_supplier?.toLocaleString() || 0}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Tipo de Pago</Label>
-                    <Select 
-                      value={formData.payment_type} 
-                      onValueChange={(v) => setFormData({ ...formData, payment_type: v })}
-                    >
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="neto">Neto</SelectItem>
-                        <SelectItem value="bruto">Bruto</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-
-              {/* Amount and Date */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Monto {type === 'client' && `(${formData.currency})`} *</Label>
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={formData.amount_original}
-                    onChange={(e) => setFormData({ ...formData, amount_original: e.target.value })}
-                    placeholder="0.00"
-                    className="rounded-xl"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha *</Label>
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="rounded-xl"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Currency and FX Rate for Client Payments */}
-              {type === 'client' && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Moneda *</Label>
-                    <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v, fx_rate: '' })}>
-                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD (Dólares)</SelectItem>
-                        <SelectItem value="MXN">MXN (Pesos Mexicanos)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {formData.currency === 'MXN' && (
-                    <div className="space-y-2">
-                      <Label>Tipo de Cambio (USD/MXN) *</Label>
-                      <Input
-                        type="number"
-                        step="0.0001"
-                        min="0.0001"
-                        value={formData.fx_rate}
-                        onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
-                        required
-                        className="rounded-xl"
-                        placeholder="20.50"
-                      />
-                      {parseFloat(formData.amount_original) > 0 && parseFloat(formData.fx_rate) > 0 && (
-                        <p className="text-xs text-green-600 font-medium mt-1">
-                          = ${(parseFloat(formData.amount_original) / parseFloat(formData.fx_rate)).toFixed(2)} USD
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Payment Method */}
-              <div className="space-y-2">
-                <Label>Método de Pago *</Label>
-                <Select 
-                  value={formData.method} 
-                  onValueChange={(v) => setFormData({ ...formData, method: v })}
+                  Ver comprobante
+                </a>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setFormData({ ...formData, receipt_url: '' })}
                 >
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(type === 'supplier' ? SUPPLIER_PAYMENT_METHODS : CLIENT_PAYMENT_METHODS).map(m => (
-                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
-
-              {/* Receipt Upload */}
-              <div className="space-y-2">
-                <Label>Comprobante de Pago</Label>
-                {formData.receipt_url ? (
-                  <div className="flex items-center gap-2 p-2 bg-stone-50 rounded-xl border">
-                    <FileText className="w-4 h-4 text-stone-500" />
-                    <a 
-                      href={formData.receipt_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline flex-1 truncate"
-                    >
-                      Ver comprobante
-                    </a>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => setFormData({ ...formData, receipt_url: '' })}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={handleFileUpload}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      disabled={uploading}
-                    />
-                    <div className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-stone-200 rounded-xl hover:border-stone-300 transition-colors">
-                      {uploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
-                      ) : (
-                        <Upload className="w-4 h-4 text-stone-400" />
-                      )}
-                      <span className="text-sm text-stone-500">
-                        {uploading ? 'Subiendo...' : 'Subir PDF o imagen'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label>Notas</Label>
-                <Textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Notas adicionales..."
-                  rows={2}
-                  className="rounded-xl resize-none"
+            ) : (
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={uploading}
                 />
+                <div className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-stone-200 rounded-xl hover:border-stone-300 transition-colors">
+                  {uploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
+                  ) : (
+                    <Upload className="w-4 h-4 text-stone-400" />
+                  )}
+                  <span className="text-sm text-stone-500">
+                    {uploading ? 'Subiendo...' : 'Subir PDF o imagen'}
+                  </span>
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label>Notas</Label>
+            <Textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Notas adicionales..."
+              rows={2}
+              className="rounded-xl resize-none"
+            />
+          </div>
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-2">
@@ -659,15 +410,9 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                 <Select 
                   value={smartTripId} 
                   onValueChange={setSmartTripId}
-                  disabled={tripsLoading || !user}
                 >
                   <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder={
-                      userLoading ? "Cargando usuario..." :
-                      tripsLoading ? "Cargando viajes..." :
-                      soldTrips.length === 0 ? "No hay viajes disponibles" :
-                      "Seleccionar viaje"
-                    } />
+                    <SelectValue placeholder={tripsLoading ? "Cargando..." : "Seleccionar viaje"} />
                   </SelectTrigger>
                   <SelectContent>
                     {soldTrips.map(trip => (
