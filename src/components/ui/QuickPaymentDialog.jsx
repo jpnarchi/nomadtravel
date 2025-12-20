@@ -36,10 +36,18 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     fx_rate: '',
     method: 'transferencia',
     supplier: '',
+    trip_service_id: '',
     notes: '',
     receipt_url: ''
   });
   const [uploading, setUploading] = useState(false);
+
+  // Fetch services for the selected trip (for supplier payments)
+  const { data: tripServices = [] } = useQuery({
+    queryKey: ['tripServices', formData.sold_trip_id],
+    queryFn: () => base44.entities.TripService.filter({ sold_trip_id: formData.sold_trip_id }),
+    enabled: !!formData.sold_trip_id && type === 'supplier'
+  });
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -90,6 +98,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         fx_rate: '',
         method: 'transferencia',
         supplier: '',
+        trip_service_id: '',
         notes: '',
         receipt_url: ''
       });
@@ -266,14 +275,22 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
       clientPaymentMutation.mutate(paymentData);
     } else {
       // Supplier payment
+      if (!formData.trip_service_id) {
+        toast.error('Selecciona un servicio');
+        return;
+      }
+
+      const selectedService = tripServices.find(s => s.id === formData.trip_service_id);
+      
       const paymentData = {
         sold_trip_id: formData.sold_trip_id,
+        trip_service_id: formData.trip_service_id,
         date: formData.date,
         amount: parseFloat(formData.amount_original),
         method: formData.method,
         notes: formData.notes,
         receipt_url: formData.receipt_url || undefined,
-        supplier: formData.supplier
+        supplier: formData.supplier || 'Proveedor'
       };
       supplierPaymentMutation.mutate(paymentData);
     }
@@ -348,17 +365,47 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
             )}
           </div>
 
-          {/* Supplier (only for supplier payments) */}
-          {type === 'supplier' && (
+          {/* Service Selection (only for supplier payments) */}
+          {type === 'supplier' && formData.sold_trip_id && (
             <div className="space-y-2">
-              <Label>Proveedor *</Label>
-              <Input
-                value={formData.supplier}
-                onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                placeholder="Nombre del proveedor"
-                className="rounded-xl"
-                required
-              />
+              <Label>Servicio *</Label>
+              <Select 
+                value={formData.trip_service_id} 
+                onValueChange={(v) => {
+                  const service = tripServices.find(s => s.id === v);
+                  setFormData({ 
+                    ...formData, 
+                    trip_service_id: v,
+                    supplier: service?.hotel_name || service?.airline || service?.cruise_ship || service?.train_operator || service?.dmc_name || service?.tour_name || service?.other_name || 'Proveedor'
+                  });
+                }}
+              >
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue placeholder={tripServices.length === 0 ? "Selecciona un viaje primero" : "Seleccionar servicio"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {tripServices.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-stone-500">
+                      Este viaje no tiene servicios registrados
+                    </div>
+                  ) : (
+                    tripServices.map(service => {
+                      const serviceName = service.hotel_name || service.airline || service.cruise_ship || service.train_operator || service.dmc_name || service.tour_name || service.other_name || 'Servicio';
+                      const serviceType = service.service_type;
+                      return (
+                        <SelectItem key={service.id} value={service.id}>
+                          [{serviceType}] {serviceName} - ${service.total_price?.toLocaleString() || 0}
+                        </SelectItem>
+                      );
+                    })
+                  )}
+                </SelectContent>
+              </Select>
+              {formData.trip_service_id && (
+                <p className="text-xs text-stone-500">
+                  Proveedor: {formData.supplier}
+                </p>
+              )}
             </div>
           )}
 
