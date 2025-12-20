@@ -31,7 +31,9 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   const [formData, setFormData] = useState({
     sold_trip_id: '',
     date: new Date().toISOString().split('T')[0],
-    amount: '',
+    currency: 'USD',
+    amount_original: '',
+    fx_rate: '',
     method: 'transferencia',
     supplier: '',
     notes: '',
@@ -83,7 +85,9 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
       setFormData({
         sold_trip_id: '',
         date: new Date().toISOString().split('T')[0],
-        amount: '',
+        currency: 'USD',
+        amount_original: '',
+        fx_rate: '',
         method: 'transferencia',
         supplier: '',
         notes: '',
@@ -215,27 +219,63 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!formData.sold_trip_id || !formData.amount) {
+    if (!formData.sold_trip_id || !formData.amount_original) {
       toast.error('Selecciona un viaje y monto');
       return;
     }
 
-    const paymentData = {
-      sold_trip_id: formData.sold_trip_id,
-      date: formData.date,
-      amount: parseFloat(formData.amount),
-      method: formData.method,
-      notes: formData.notes,
-      receipt_url: formData.receipt_url || undefined
-    };
-
     if (type === 'client') {
+      // Validar monto
+      const amount = parseFloat(formData.amount_original);
+      if (!amount || amount <= 0) {
+        toast.error('Debes ingresar un monto válido');
+        return;
+      }
+
+      // Calculate amount_usd_fixed
+      let amount_usd_fixed;
+      let fx_rate = null;
+      
+      if (formData.currency === 'USD') {
+        amount_usd_fixed = amount;
+        fx_rate = null;
+      } else {
+        // MXN
+        const rate = parseFloat(formData.fx_rate);
+        if (!rate || rate <= 0) {
+          toast.error('Debes ingresar un tipo de cambio válido para pagos en MXN');
+          return;
+        }
+        fx_rate = rate;
+        amount_usd_fixed = amount / rate;
+      }
+      
+      const paymentData = {
+        sold_trip_id: formData.sold_trip_id,
+        date: formData.date,
+        currency: formData.currency,
+        amount_original: amount,
+        fx_rate: fx_rate,
+        amount_usd_fixed: amount_usd_fixed,
+        amount: amount_usd_fixed,
+        method: formData.method,
+        notes: formData.notes,
+        receipt_url: formData.receipt_url || undefined
+      };
+
       clientPaymentMutation.mutate(paymentData);
     } else {
-      supplierPaymentMutation.mutate({
-        ...paymentData,
+      // Supplier payment
+      const paymentData = {
+        sold_trip_id: formData.sold_trip_id,
+        date: formData.date,
+        amount: parseFloat(formData.amount_original),
+        method: formData.method,
+        notes: formData.notes,
+        receipt_url: formData.receipt_url || undefined,
         supplier: formData.supplier
-      });
+      };
+      supplierPaymentMutation.mutate(paymentData);
     }
   };
 
@@ -322,16 +362,32 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
             </div>
           )}
 
+          {/* Currency selector (only for client payments) */}
+          {type === 'client' && (
+            <div className="space-y-2">
+              <Label>Moneda del Pago *</Label>
+              <Select value={formData.currency} onValueChange={(v) => setFormData({ ...formData, currency: v, fx_rate: '' })}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD (Dólares)</SelectItem>
+                  <SelectItem value="MXN">MXN (Pesos Mexicanos)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Amount and Date */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Monto *</Label>
+              <Label>Monto ({type === 'client' ? formData.currency : 'USD'}) *</Label>
               <Input
                 type="number"
-                min="0"
+                min="0.01"
                 step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                value={formData.amount_original}
+                onChange={(e) => setFormData({ ...formData, amount_original: e.target.value })}
                 placeholder="0.00"
                 className="rounded-xl"
                 required
@@ -348,6 +404,28 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
               />
             </div>
           </div>
+
+          {/* Exchange Rate (only for MXN client payments) */}
+          {type === 'client' && formData.currency === 'MXN' && (
+            <div className="space-y-2">
+              <Label>Tipo de Cambio (USD/MXN) *</Label>
+              <Input
+                type="number"
+                min="0.0001"
+                step="0.0001"
+                value={formData.fx_rate}
+                onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
+                placeholder="20.50"
+                className="rounded-xl"
+                required
+              />
+              {formData.amount_original && formData.fx_rate && parseFloat(formData.amount_original) > 0 && parseFloat(formData.fx_rate) > 0 && (
+                <p className="text-xs text-green-600 font-medium">
+                  = ${(parseFloat(formData.amount_original) / parseFloat(formData.fx_rate)).toFixed(2)} USD
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Payment Method */}
           <div className="space-y-2">
