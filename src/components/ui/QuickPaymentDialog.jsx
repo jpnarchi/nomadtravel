@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Building2, Upload, FileText, X, Sparkles, CheckCircle } from 'lucide-react';
+import { Loader2, User, Building2, Upload, FileText, X, Sparkles, CheckCircle, Hotel, Plane, Car, Compass, Package, Train } from 'lucide-react';
 import { toast } from "sonner";
 
 const CLIENT_PAYMENT_METHODS = [
@@ -28,6 +28,52 @@ const SUPPLIER_PAYMENT_METHODS = [
   { value: 'amex', label: 'Amex' }
 ];
 
+const SERVICE_ICONS = {
+  hotel: Hotel,
+  vuelo: Plane,
+  traslado: Car,
+  tour: Compass,
+  crucero: Package,
+  tren: Train,
+  dmc: Building2,
+  otro: Package
+};
+
+const SERVICE_LABELS = {
+  hotel: 'Hotel',
+  vuelo: 'Vuelo',
+  traslado: 'Traslado',
+  tour: 'Tour',
+  crucero: 'Crucero',
+  tren: 'Tren',
+  dmc: 'DMC',
+  otro: 'Otro'
+};
+
+// Helper to get service details for display
+const getServiceDetails = (service) => {
+  switch (service.service_type) {
+    case 'hotel':
+      return `${service.hotel_name || 'Hotel'} - ${service.hotel_city || ''}`;
+    case 'vuelo':
+      return `${service.airline || 'Vuelo'} ${service.flight_number || ''} - ${service.route || ''}`;
+    case 'traslado':
+      return `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
+    case 'tour':
+      return `${service.tour_name || 'Tour'} - ${service.tour_city || ''}`;
+    case 'crucero':
+      return `${service.cruise_ship || service.cruise_line || 'Crucero'}`;
+    case 'tren':
+      return `${service.train_operator || 'Tren'} ${service.train_number || ''} - ${service.train_route || ''}`;
+    case 'dmc':
+      return `${service.dmc_name || 'DMC'} - ${service.dmc_destination || ''}`;
+    case 'otro':
+      return service.other_name || service.other_description?.substring(0, 50) || 'Servicio';
+    default:
+      return 'Servicio';
+  }
+};
+
 export default function QuickPaymentDialog({ open, onClose, type }) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('manual');
@@ -45,6 +91,8 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     method: 'transferencia',
     supplier_id: '',
     supplier_name: '',
+    trip_service_id: '',
+    client_id: '',
     notes: '',
     receipt_url: '',
     payment_type: 'neto'
@@ -73,6 +121,20 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     queryFn: () => base44.entities.Supplier.list('name'),
   });
 
+  // Fetch services for the selected trip
+  const { data: tripServices = [], isLoading: servicesLoading } = useQuery({
+    queryKey: ['tripServicesQuickPayment', formData.sold_trip_id],
+    queryFn: () => base44.entities.TripService.filter({ sold_trip_id: formData.sold_trip_id }),
+    enabled: !!formData.sold_trip_id && type === 'supplier'
+  });
+
+  // Fetch clients for the selected trip
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
+    queryKey: ['clientsQuickPayment'],
+    queryFn: () => base44.entities.Client.list('first_name'),
+    enabled: type === 'client'
+  });
+
   useEffect(() => {
     if (open) {
       setFormData({
@@ -84,6 +146,8 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         method: 'transferencia',
         supplier_id: '',
         supplier_name: '',
+        trip_service_id: '',
+        client_id: '',
         notes: '',
         receipt_url: '',
         payment_type: 'neto'
@@ -179,6 +243,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ['soldTripsQuickPayment'] });
       queryClient.invalidateQueries({ queryKey: ['supplierPayments'] });
+      queryClient.invalidateQueries({ queryKey: ['tripServices'] });
       toast.success('Pago a proveedor registrado');
       onClose();
     }
@@ -227,9 +292,14 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         toast.error('Selecciona un proveedor');
         return;
       }
+      if (!formData.trip_service_id) {
+        toast.error('Selecciona el servicio que estás pagando');
+        return;
+      }
       
       const paymentData = {
         sold_trip_id: formData.sold_trip_id,
+        trip_service_id: formData.trip_service_id,
         date: formData.date,
         supplier_id: formData.supplier_id,
         supplier: formData.supplier_name,
@@ -243,12 +313,18 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     }
   };
 
-  const isLoading = clientPaymentMutation.isPending || supplierPaymentMutation.isPending || uploading || userLoading || tripsLoading || suppliersLoading;
+  const isLoading = clientPaymentMutation.isPending || supplierPaymentMutation.isPending || uploading || userLoading || tripsLoading || suppliersLoading || servicesLoading || clientsLoading;
   const selectedTrip = soldTrips.find(t => t.id === formData.sold_trip_id);
+  const selectedService = tripServices.find(s => s.id === formData.trip_service_id);
+
+  // Filter clients that match the selected trip's client
+  const filteredClients = selectedTrip 
+    ? clients.filter(c => `${c.first_name} ${c.last_name}` === selectedTrip.client_name || c.id === selectedTrip.client_id)
+    : clients;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" style={{ color: '#2E442A' }}>
             {type === 'client' ? (
@@ -275,7 +351,12 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                 <Label>Viaje Vendido *</Label>
                 <Select 
                   value={formData.sold_trip_id} 
-                  onValueChange={(v) => setFormData({ ...formData, sold_trip_id: v })}
+                  onValueChange={(v) => setFormData({ 
+                    ...formData, 
+                    sold_trip_id: v, 
+                    trip_service_id: '', 
+                    client_id: '' 
+                  })}
                   disabled={tripsLoading || !user}
                 >
                   <SelectTrigger className="rounded-xl">
@@ -303,7 +384,18 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                 )}
               </div>
 
-              {/* Supplier Selection (only for supplier payments) */}
+              {/* Client Selection (only for client payments) */}
+              {type === 'client' && selectedTrip && (
+                <div className="space-y-2">
+                  <Label>Cliente *</Label>
+                  <div className="p-3 bg-stone-50 rounded-xl border border-stone-200">
+                    <p className="text-sm font-medium text-stone-800">{selectedTrip.client_name}</p>
+                    <p className="text-xs text-stone-500 mt-0.5">Cliente del viaje seleccionado</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Supplier and Service Selection (only for supplier payments) */}
               {type === 'supplier' && (
                 <>
                   <div className="space-y-2">
@@ -327,6 +419,48 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Service Selection */}
+                  <div className="space-y-2">
+                    <Label>Servicio a Pagar *</Label>
+                    <Select
+                      value={formData.trip_service_id}
+                      onValueChange={(v) => setFormData({ ...formData, trip_service_id: v })}
+                      disabled={!formData.sold_trip_id || servicesLoading || tripServices.length === 0}
+                    >
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue placeholder={
+                          !formData.sold_trip_id ? "Primero selecciona un viaje" :
+                          servicesLoading ? "Cargando servicios..." :
+                          tripServices.length === 0 ? "Sin servicios en este viaje" :
+                          "Seleccionar servicio"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tripServices.map(service => {
+                          const Icon = SERVICE_ICONS[service.service_type] || Package;
+                          const details = getServiceDetails(service);
+                          return (
+                            <SelectItem key={service.id} value={service.id}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="w-4 h-4" />
+                                <div>
+                                  <p className="font-medium">{SERVICE_LABELS[service.service_type]}</p>
+                                  <p className="text-xs text-stone-500">{details}</p>
+                                </div>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {selectedService && (
+                      <p className="text-xs text-stone-500">
+                        Total servicio: ${selectedService.total_price?.toLocaleString() || 0} | 
+                        Ya pagado: ${selectedService.amount_paid_to_supplier?.toLocaleString() || 0}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
