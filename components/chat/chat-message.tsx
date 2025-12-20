@@ -75,6 +75,12 @@ export function ChatMessage({
         "Almost done..."
     ];
 
+    const moveSlideMessages = [
+        "Moving slide...",
+        "Renumbering...",
+        "Done!"
+    ];
+
     const insertSlideMessages = [
         "Inserting slide...",
         "Renumbering slides...",
@@ -123,6 +129,7 @@ export function ChatMessage({
     const currentReadMessage = useProgressiveMessage(readMessages, 1000, isLoading, true);
     const currentManageFileMessage = useProgressiveMessage(manageFileMessages, 1200, isLoading, true);
     const currentDuplicateSlideMessage = useProgressiveMessage(duplicateSlideMessages, 1500, isLoading, true);
+    const currentMoveSlideMessage = useProgressiveMessage(moveSlideMessages, 1000, isLoading, true);
     const currentInsertSlideMessage = useProgressiveMessage(insertSlideMessages, 1200, isLoading, true);
     const currentGenerateCodebaseMessage = useProgressiveMessage(generateCodebaseMessages, 1500, isLoading, true);
     const currentPreviewMessage = useProgressiveMessage(previewMessages, 1200, isLoading, true);
@@ -585,6 +592,35 @@ export function ChatMessage({
                                     <ToolMessage
                                         icon={<File className="size-4" />}
                                         message={currentDuplicateSlideMessage}
+                                        isLoading={true}
+                                    />
+                                </div>
+                            )
+                        }
+                    }
+
+                    if (part.type === "tool-moveSlide") {
+                        if (part.output && part.state && part.state === 'output-available') {
+                            const response = part.output as any;
+                            const message = response.message as string;
+                            const fromPosition = response.fromPosition as number;
+                            const toPosition = response.toPosition as number;
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={message || `Slide ${fromPosition} moved to position ${toPosition}`}
+                                        isLoading={false}
+                                    />
+                                </div>
+                            )
+                        }
+                        if (isLoading) {
+                            return (
+                                <div key={index}>
+                                    <ToolMessage
+                                        icon={<File className="size-4" />}
+                                        message={currentMoveSlideMessage}
                                         isLoading={true}
                                     />
                                 </div>

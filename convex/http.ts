@@ -307,17 +307,23 @@ Be extremely concise. 1 sentence max per response exlpaining what your doing.  N
   - Never say "presentation complete" without generating images first
 - Color contrast: When changing slide or text colors, ALWAYS ensure text color contrasts with background (never same/similar colors). Light backgrounds need dark text, dark backgrounds need light text
 - After ANY image operation: ALWAYS call showPreview immediately
-- After duplicateSlide: MANDATORY workflow:
-  1. readFile the new slide with textOnly: true
-  2. updateSlideTexts to change ALL texts (make content unique and relevant to the new slide purpose)
-  3. If slide has images, use replaceImagePlaceholder to generate NEW images (prevents duplicate images)
-  4. showPreview
+- duplicateSlide is FULLY AUTOMATIC: It automatically generates new texts AND images based on contentDescription. Just call duplicateSlide → showPreview (no manual updates needed)
+- **Slide Positioning Rules:**
+  - "before slide X" → position = X's current position (inserts at X's position, pushes X forward)
+  - "after slide X" → position = X's current position + 1
+  - "at the end" → position = total slides + 1
+  - NEVER delete existing slides when user says "before" or "after" - only insert
+  - Example: 5 slides total, "add 2 before slide 5" → insert at position 5, then position 5 again
+- **Slide Reordering Rules:**
+  - When user says "put/move slide X to/in position Y" → use moveSlide (fromPosition: X, toPosition: Y)
+  - When user says "swap slides" or "change order" → use moveSlide
+  - NEVER use duplicateSlide + deleteSlide to reorder - always use moveSlide
 - Read slides before updating them
 - Wait for each tool to complete
 
 ## Tools (by purpose)
 Content: generateInitialCodebase, readFile (use textOnly: true by default), updateSlideTexts, updateSlideDesign
-Structure: duplicateSlide (preferred), insertSlideAtPosition, deleteSlide, manageFile
+Structure: duplicateSlide (for new slides), moveSlide (for reordering), insertSlideAtPosition, deleteSlide, manageFile
 Data: webSearch, readAttachment, showPreview
 Images: replaceImagePlaceholder (unified tool for ALL image placeholder operations)
 
@@ -326,9 +332,9 @@ Images: replaceImagePlaceholder (unified tool for ALL image placeholder operatio
 **replaceImagePlaceholder** - Unified tool for generating and replacing ALL image placeholders
 Use when:
 - ⚠️ MANDATORY: During initial setup (ALWAYS scan and generate images for ALL placeholders)
-- After duplicateSlide (inherited images need new content)
 - User says "change/replace/update/add the image/photo/picture"
 - Slide has placeholders that need content (groups OR image objects)
+- NOTE: duplicateSlide now handles images automatically - no need to call this after duplicating
 How: Auto-detects placeholder type (group or image), generates image with AI, converts/replaces appropriately
 Follow with: showPreview (mandatory)
 IMPORTANT: Never complete a presentation creation without using this tool for ALL placeholders
@@ -353,12 +359,28 @@ IMPORTANT: Never complete a presentation creation without using this tool for AL
 7. Final showPreview (only after ALL images are generated)
 
 **Adding New Slides (when user requests):**
-- duplicateSlide with contentDescription
-- **IMMEDIATELY after duplicateSlide:**
-  - readFile with textOnly: true on the new slide
-  - updateSlideTexts to change ALL texts (make unique content based on contentDescription)
-  - replaceImagePlaceholder to generate NEW images for all placeholders
-  - showPreview
+- duplicateSlide with detailed contentDescription (automatically generates unique texts + images)
+- showPreview (duplicateSlide is fully automatic - no manual updates needed)
+- **Position calculation (CRITICAL - follow exactly):**
+  1. First, readFile to identify which slide is which (find "thank you slide", "conclusion", etc.)
+  2. Calculate position based on the instruction:
+     - "before slide X" → position = X (inserts at X, pushes X to X+1)
+     - "after slide X" → position = X + 1
+  3. For multiple slides with same position instruction, insert at the SAME position repeatedly
+
+- **Real examples:**
+  - "add slide before the thank you slide" → readFile to find thank you is slide 5 → position = 5
+  - "add 2 slides before thank you slide (slide 5)" → insert position 5, then position 5 again (NOT 5 and 6)
+  - "add slide after slide 2" → position = 3
+  - "add slide at the end" → position = total slides + 1
+
+- **NEVER delete slides when adding before/after** - only insert
+
+**Reordering Slides (when user wants to change order):**
+- Use moveSlide tool (NOT duplicateSlide + delete)
+- Examples: "put slide 5 in position 2", "move slide 3 to the end", "swap slides"
+- moveSlide handles all renumbering automatically
+- showPreview after moving
 
 **Updating Existing Content:**
 - readFile slides with textOnly: true (saves tokens)
@@ -742,10 +764,10 @@ Files: ${fileNames.slice(0, 15).join(', ')}${fileNames.length > 15 ? '...' : ''}
                 },
 
                 duplicateSlide: {
-                    description: 'PREFERRED tool for adding new slides. Automatically finds and duplicates the most similar existing slide. IMPORTANT: After using this tool, you MUST update all texts and images to make the new slide unique - never leave duplicate content.',
+                    description: 'INTELLIGENT tool for adding new slides. Automatically finds the most similar template, duplicates it, generates NEW unique content (texts + images) based on your description. All content is AI-generated and unique - no manual updates needed.',
                     inputSchema: z.object({
-                        position: z.number().min(1).describe('Position where to insert the new slide (1 = first slide, 2 = second slide, etc.)'),
-                        contentDescription: z.string().describe('Detailed description of what content the new slide should have. Be specific about the topic, purpose, and any key elements needed. This will be used to select the best template slide.'),
+                        position: z.number().min(1).describe('Position where to insert the new slide (1-based index). IMPORTANT: To insert BEFORE slide X, use position = X. To insert AFTER slide X, use position = X + 1. Example: If there are 5 slides and you want to add before slide 5, use position = 5 (this will push slide 5 to position 6).'),
+                        contentDescription: z.string().describe('Detailed description of what content the new slide should have. Be specific about the topic, purpose, and key elements. This will be used to generate ALL new content automatically.'),
                         explanation: z.string().describe('Explanation in 1 to 3 words for users'),
                     }),
                     execute: async function ({ position, contentDescription, explanation }: any) {
@@ -851,6 +873,215 @@ Return the slide number (1-based) that is most similar.`,
 
                             console.log(`[DUPLICATE SLIDE] Selected ${selectedPath} for duplication. Reason: ${selection.reasoning}`);
 
+                            // ===== INTELLIGENT CONTENT GENERATION =====
+                            // Step 1: Extract text objects with their current content
+                            const textObjects = duplicatedSlide.objects
+                                ?.map((obj: any, index: number) => {
+                                    const objType = (obj.type || '').toLowerCase();
+                                    if (['text', 'i-text', 'textbox', 'itext'].includes(objType)) {
+                                        return {
+                                            index,
+                                            currentText: obj.text || '',
+                                            fontSize: obj.fontSize || 20,
+                                        };
+                                    }
+                                    return null;
+                                })
+                                .filter((t: any) => t !== null) || [];
+
+                            // Step 2: Use AI to generate NEW text content based on contentDescription
+                            if (textObjects.length > 0) {
+                                console.log(`[DUPLICATE SLIDE] Generating new text content for ${textObjects.length} text objects...`);
+
+                                const { object: newTexts } = await generateObject({
+                                    model: openrouter('google/gemini-2.5-flash'),
+                                    prompt: `You are creating content for a new presentation slide.
+
+SLIDE PURPOSE:
+${contentDescription}
+
+CURRENT SLIDE STRUCTURE:
+The slide has ${textObjects.length} text elements with the following roles:
+${textObjects.map((t: any, i: number) => `${i + 1}. Text ${i + 1} (fontSize: ${t.fontSize}): "${t.currentText}"`).join('\n')}
+
+TASK:
+Generate NEW, UNIQUE content for each text element that matches the slide purpose.
+- Larger font sizes (>40) are typically titles/headers
+- Medium font sizes (20-40) are subtitles or main points
+- Smaller font sizes (<20) are body text or details
+- Keep text concise and relevant to the purpose
+- Make it professional and impactful
+
+Return an array with exactly ${textObjects.length} new text values.`,
+                                    schema: z.object({
+                                        texts: z.array(z.string()).length(textObjects.length).describe('Array of new text content for each text element')
+                                    }),
+                                    temperature: 0.8,
+                                });
+
+                                // Step 3: Apply new texts to the duplicated slide
+                                textObjects.forEach((textObj: any, i: number) => {
+                                    duplicatedSlide.objects[textObj.index].text = newTexts.texts[i];
+                                });
+
+                                console.log(`[DUPLICATE SLIDE] Updated ${textObjects.length} text elements with new content`);
+                            }
+
+                            // Step 4: Identify and generate NEW images for placeholders
+                            const imagePlaceholders = duplicatedSlide.objects
+                                ?.map((obj: any, index: number) => {
+                                    const objType = (obj.type || '').toLowerCase();
+                                    if ((objType === 'group' && obj.isImagePlaceholder === true) ||
+                                        (objType === 'image' && (obj.isImagePlaceholder === true || obj.isImageContainer === true))) {
+                                        return index;
+                                    }
+                                    return null;
+                                })
+                                .filter((idx: any) => idx !== null) || [];
+
+                            if (imagePlaceholders.length > 0) {
+                                console.log(`[DUPLICATE SLIDE] Generating ${imagePlaceholders.length} new images...`);
+
+                                // Generate images for each placeholder
+                                for (const placeholderIndex of imagePlaceholders) {
+                                    try {
+                                        const container = duplicatedSlide.objects[placeholderIndex];
+                                        const objType = (container.type || '').toLowerCase();
+
+                                        // Create prompt for image based on slide content
+                                        const imagePrompt = `Create a professional, high-quality image for a presentation slide about: ${contentDescription}. Make it visually appealing, relevant, and suitable for business/professional presentations.`;
+
+                                        console.log(`[DUPLICATE SLIDE] Generating image ${placeholderIndex + 1}/${imagePlaceholders.length}...`);
+
+                                        // Generate image with Gemini
+                                        const openrouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                                                'Content-Type': 'application/json',
+                                            },
+                                            body: JSON.stringify({
+                                                model: 'google/gemini-2.5-flash-image-preview',
+                                                messages: [{ role: 'user', content: imagePrompt }],
+                                                modalities: ['image', 'text'],
+                                                image_config: { aspect_ratio: '1:1' }
+                                            })
+                                        });
+
+                                        if (openrouterResponse.ok) {
+                                            const responseData = await openrouterResponse.json();
+                                            const imageObject = responseData.choices?.[0]?.message?.images?.[0];
+
+                                            if (imageObject) {
+                                                // Extract base64
+                                                let imageData: string;
+                                                if (typeof imageObject === 'string') {
+                                                    imageData = imageObject;
+                                                } else if (imageObject.url) {
+                                                    imageData = imageObject.url;
+                                                } else if (imageObject.image_url?.url) {
+                                                    imageData = imageObject.image_url.url;
+                                                } else {
+                                                    throw new Error('Could not extract image data');
+                                                }
+
+                                                // Convert to Uint8Array
+                                                const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+                                                const binaryString = atob(base64Data);
+                                                const uint8Array = new Uint8Array(binaryString.length);
+                                                for (let i = 0; i < binaryString.length; i++) {
+                                                    uint8Array[i] = binaryString.charCodeAt(i);
+                                                }
+
+                                                // Upload to storage
+                                                const imageUrl = await uploadFileToStorageFromHttpAction(ctx, uint8Array, 'image/png');
+
+                                                if (imageUrl) {
+                                                    // Handle based on placeholder type
+                                                    if (objType === 'group' && container.isImagePlaceholder === true) {
+                                                        // Convert group placeholder to image object
+                                                        const placeholderWidth = container.placeholderWidth || 400;
+                                                        const placeholderHeight = container.placeholderHeight || 300;
+                                                        const borderRadius = container.borderRadius || 0;
+                                                        const containerLeft = container.left || 100;
+                                                        const containerTop = container.top || 100;
+                                                        const containerAngle = container.angle || 0;
+                                                        const containerScaleX = container.scaleX || 1;
+                                                        const containerScaleY = container.scaleY || 1;
+                                                        const containerOriginX = container.originX || 'center';
+                                                        const containerOriginY = container.originY || 'center';
+
+                                                        const imgWidth = 1024;
+                                                        const imgHeight = 1024;
+                                                        const actualContainerWidth = placeholderWidth * containerScaleX;
+                                                        const actualContainerHeight = placeholderHeight * containerScaleY;
+
+                                                        const scaleX = actualContainerWidth / imgWidth;
+                                                        const scaleY = actualContainerHeight / imgHeight;
+                                                        const scale = Math.max(scaleX, scaleY);
+
+                                                        const scaledImageWidth = imgWidth * scale;
+                                                        const scaledImageHeight = imgHeight * scale;
+                                                        const cropX = (scaledImageWidth - actualContainerWidth) / (2 * scale);
+                                                        const cropY = (scaledImageHeight - actualContainerHeight) / (2 * scale);
+
+                                                        let clipPath = undefined;
+                                                        if (borderRadius > 0) {
+                                                            const clipBorderRadius = borderRadius / scale;
+                                                            clipPath = {
+                                                                type: 'rect',
+                                                                width: imgWidth - (cropX * 2),
+                                                                height: imgHeight - (cropY * 2),
+                                                                rx: clipBorderRadius,
+                                                                ry: clipBorderRadius,
+                                                                left: -(imgWidth - (cropX * 2)) / 2,
+                                                                top: -(imgHeight - (cropY * 2)) / 2,
+                                                                originX: 'left',
+                                                                originY: 'top',
+                                                            };
+                                                        }
+
+                                                        duplicatedSlide.objects[placeholderIndex] = {
+                                                            type: 'image',
+                                                            left: containerLeft,
+                                                            top: containerTop,
+                                                            angle: containerAngle,
+                                                            originX: containerOriginX,
+                                                            originY: containerOriginY,
+                                                            scaleX: scale,
+                                                            scaleY: scale,
+                                                            cropX: cropX,
+                                                            cropY: cropY,
+                                                            width: imgWidth - (cropX * 2),
+                                                            height: imgHeight - (cropY * 2),
+                                                            src: imageUrl,
+                                                            clipPath: clipPath,
+                                                            isImageContainer: true,
+                                                            borderRadius: borderRadius,
+                                                            selectable: true,
+                                                            evented: true,
+                                                            hasControls: true,
+                                                            hasBorders: true,
+                                                            crossOrigin: 'anonymous',
+                                                        };
+                                                    } else {
+                                                        // Just replace the URL for image placeholders
+                                                        duplicatedSlide.objects[placeholderIndex].src = imageUrl;
+                                                    }
+
+                                                    console.log(`[DUPLICATE SLIDE] Successfully generated image for placeholder ${placeholderIndex}`);
+                                                }
+                                            }
+                                        }
+                                    } catch (imgError) {
+                                        console.error(`[DUPLICATE SLIDE] Error generating image for placeholder ${placeholderIndex}:`, imgError);
+                                        // Continue with other images even if one fails
+                                    }
+                                }
+
+                                console.log(`[DUPLICATE SLIDE] Completed image generation for all placeholders`);
+                            }
+
                             const newSlideContent = JSON.stringify(duplicatedSlide, null, 2);
 
                             // Validate position
@@ -885,7 +1116,9 @@ Return the slide number (1-based) that is most similar.`,
                                     newSlidePath: `/slides/slide-${position}.json`,
                                     duplicatedFrom: selectedPath,
                                     reasoning: selection.reasoning,
-                                    nextSteps: 'REQUIRED: readFile → updateSlideTexts (all texts) → replaceImagePlaceholder (if images) → showPreview'
+                                    textsGenerated: textObjects.length,
+                                    imagesGenerated: imagePlaceholders.length,
+                                    fullyAutomatic: true
                                 };
                             }
 
@@ -929,7 +1162,9 @@ Return the slide number (1-based) that is most similar.`,
                                 duplicatedFrom: selectedPath,
                                 reasoning: selection.reasoning,
                                 slidesRenumbered: slidesToRenumber.length,
-                                nextSteps: 'REQUIRED: readFile → updateSlideTexts (all texts) → replaceImagePlaceholder (if images) → showPreview'
+                                textsGenerated: textObjects.length,
+                                imagesGenerated: imagePlaceholders.length,
+                                fullyAutomatic: true
                             };
 
                         } catch (error) {
@@ -937,6 +1172,114 @@ Return the slide number (1-based) that is most similar.`,
                             return {
                                 success: false,
                                 error: `Error duplicating slide: ${error instanceof Error ? error.message : 'Unknown error'}`
+                            };
+                        }
+                    },
+                },
+
+                moveSlide: {
+                    description: 'Move/reorder an existing slide to a new position. Use this when user wants to change the order of slides (e.g., "put slide 5 in position 2", "move slide 3 to position 1").',
+                    inputSchema: z.object({
+                        fromPosition: z.number().min(1).describe('Current position of the slide to move (1-based index)'),
+                        toPosition: z.number().min(1).describe('Target position where the slide should be moved (1-based index)'),
+                        explanation: z.string().describe('Explanation in 1 to 3 words for users'),
+                    }),
+                    execute: async function ({ fromPosition, toPosition, explanation }: any) {
+                        try {
+                            const currentVersion = await ctx.runQuery(api.chats.getCurrentVersion, { chatId: id });
+                            const allFiles = await ctx.runQuery(api.files.getAll, { chatId: id, version: currentVersion ?? 0 });
+
+                            // Get all existing slide paths
+                            const slidePaths = Object.keys(allFiles)
+                                .filter(path => path.startsWith('/slides/') && path.endsWith('.json'))
+                                .sort((a, b) => {
+                                    const numA = parseInt(a.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                    const numB = parseInt(b.match(/slide-(\d+)\.json$/)?.[1] || '0');
+                                    return numA - numB;
+                                });
+
+                            if (slidePaths.length === 0) {
+                                return {
+                                    success: false,
+                                    error: 'No slides found to move.'
+                                };
+                            }
+
+                            // Validate positions
+                            if (fromPosition < 1 || fromPosition > slidePaths.length) {
+                                return {
+                                    success: false,
+                                    error: `Invalid fromPosition ${fromPosition}. Must be between 1 and ${slidePaths.length}.`
+                                };
+                            }
+
+                            if (toPosition < 1 || toPosition > slidePaths.length) {
+                                return {
+                                    success: false,
+                                    error: `Invalid toPosition ${toPosition}. Must be between 1 and ${slidePaths.length}.`
+                                };
+                            }
+
+                            if (fromPosition === toPosition) {
+                                return {
+                                    success: true,
+                                    message: 'Slide is already at the target position',
+                                    slideNumber: fromPosition
+                                };
+                            }
+
+                            console.log(`[MOVE SLIDE] Moving slide from position ${fromPosition} to position ${toPosition}`);
+
+                            // Create a new array with slides in memory
+                            const slides = slidePaths.map(path => ({
+                                path,
+                                content: allFiles[path]
+                            }));
+
+                            // Extract the slide to move
+                            const slideToMove = slides[fromPosition - 1];
+
+                            // Remove the slide from its current position
+                            slides.splice(fromPosition - 1, 1);
+
+                            // Insert the slide at the new position
+                            slides.splice(toPosition - 1, 0, slideToMove);
+
+                            // Delete all existing slides
+                            for (const path of slidePaths) {
+                                await ctx.runMutation(api.files.deleteByPath, {
+                                    chatId: id,
+                                    path,
+                                    version: currentVersion ?? 0
+                                });
+                            }
+
+                            // Create all slides in their new positions
+                            for (let i = 0; i < slides.length; i++) {
+                                const newPath = `/slides/slide-${i + 1}.json`;
+                                await ctx.runMutation(api.files.create, {
+                                    chatId: id,
+                                    path: newPath,
+                                    content: slides[i].content,
+                                    version: currentVersion ?? 0
+                                });
+                            }
+
+                            console.log(`[MOVE SLIDE] Successfully moved slide from position ${fromPosition} to position ${toPosition}`);
+
+                            return {
+                                success: true,
+                                message: explanation,
+                                fromPosition: fromPosition,
+                                toPosition: toPosition,
+                                totalSlides: slides.length
+                            };
+
+                        } catch (error) {
+                            console.error(`Error moving slide:`, error);
+                            return {
+                                success: false,
+                                error: `Error moving slide: ${error instanceof Error ? error.message : 'Unknown error'}`
                             };
                         }
                     },
