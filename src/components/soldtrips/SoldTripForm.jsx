@@ -6,6 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from 'lucide-react';
 
+/**
+ * Normaliza una fecha a formato YYYY-MM-DD sin conversiones de timezone.
+ * Evita el bug del día corrido.
+ */
+function normalizeDateOnly(value) {
+  if (!value) return '';
+  // Si viene "2025-12-19" o "2025-12-19T00:00:00.000Z", tomar solo YYYY-MM-DD
+  return String(value).slice(0, 10);
+}
+
 export default function SoldTripForm({ open, onClose, soldTrip, onSave, isLoading }) {
   const [formData, setFormData] = useState({
     destination: '',
@@ -19,8 +29,8 @@ export default function SoldTripForm({ open, onClose, soldTrip, onSave, isLoadin
     if (soldTrip && open) {
       setFormData({
         destination: soldTrip.destination || '',
-        start_date: soldTrip.start_date || '',
-        end_date: soldTrip.end_date || '',
+        start_date: normalizeDateOnly(soldTrip.start_date),
+        end_date: normalizeDateOnly(soldTrip.end_date),
         travelers: soldTrip.travelers || '',
         notes: soldTrip.notes || ''
       });
