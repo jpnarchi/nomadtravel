@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Building2, Upload, FileText, X, Sparkles, CheckCircle } from 'lucide-react';
+import { Loader2, User, Building2, Upload, FileText, X, Sparkles, CheckCircle, Search } from 'lucide-react';
 import { toast } from "sonner";
 
 const PAYMENT_METHODS = [
@@ -25,6 +25,8 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   const [smartUploading, setSmartUploading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [smartTripId, setSmartTripId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [smartSearchQuery, setSmartSearchQuery] = useState('');
   
   const [formData, setFormData] = useState({
     sold_trip_id: '',
@@ -37,10 +39,44 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   });
   const [uploading, setUploading] = useState(false);
 
-  const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me()
+  });
+
+  const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips'],
     queryFn: () => base44.entities.SoldTrip.list('-created_date')
   });
+
+  // Filter trips by current user
+  const soldTrips = useMemo(() => {
+    if (!currentUser || !allSoldTrips.length) return [];
+    return allSoldTrips.filter(trip => trip.created_by === currentUser.email);
+  }, [allSoldTrips, currentUser]);
+
+  // Filter trips by search query
+  const filteredTrips = useMemo(() => {
+    if (!searchQuery) return soldTrips;
+    const query = searchQuery.toLowerCase();
+    return soldTrips.filter(trip => 
+      trip.client_name?.toLowerCase().includes(query) ||
+      trip.destination?.toLowerCase().includes(query) ||
+      trip.trip_name?.toLowerCase().includes(query) ||
+      trip.id?.toLowerCase().includes(query)
+    );
+  }, [soldTrips, searchQuery]);
+
+  const filteredSmartTrips = useMemo(() => {
+    if (!smartSearchQuery) return soldTrips;
+    const query = smartSearchQuery.toLowerCase();
+    return soldTrips.filter(trip => 
+      trip.client_name?.toLowerCase().includes(query) ||
+      trip.destination?.toLowerCase().includes(query) ||
+      trip.trip_name?.toLowerCase().includes(query) ||
+      trip.id?.toLowerCase().includes(query)
+    );
+  }, [soldTrips, smartSearchQuery]);
 
   useEffect(() => {
     if (open) {
@@ -56,6 +92,8 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
       setSmartFileUrls([]);
       setSmartTripId('');
       setActiveTab('manual');
+      setSearchQuery('');
+      setSmartSearchQuery('');
     }
   }, [open]);
 
@@ -231,6 +269,16 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
           {/* Trip Selection */}
           <div className="space-y-2">
             <Label>Viaje Vendido *</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 z-10" />
+              <Input
+                type="text"
+                placeholder="Buscar por cliente, destino o viaje..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="rounded-xl pl-10 mb-2"
+              />
+            </div>
             <Select 
               value={formData.sold_trip_id} 
               onValueChange={(v) => setFormData({ ...formData, sold_trip_id: v })}
@@ -239,11 +287,17 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                 <SelectValue placeholder={tripsLoading ? "Cargando..." : "Seleccionar viaje"} />
               </SelectTrigger>
               <SelectContent>
-                {soldTrips.map(trip => (
-                  <SelectItem key={trip.id} value={trip.id}>
-                    {trip.client_name} - {trip.destination}
-                  </SelectItem>
-                ))}
+                {filteredTrips.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-stone-500">
+                    {searchQuery ? 'No se encontraron viajes' : 'No tienes viajes vendidos'}
+                  </div>
+                ) : (
+                  filteredTrips.map(trip => (
+                    <SelectItem key={trip.id} value={trip.id}>
+                      {trip.client_name} - {trip.destination}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             {selectedTrip && (
@@ -407,6 +461,16 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
               {/* Trip Selection */}
               <div className="space-y-2">
                 <Label>Viaje Vendido *</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 z-10" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por cliente, destino o viaje..."
+                    value={smartSearchQuery}
+                    onChange={(e) => setSmartSearchQuery(e.target.value)}
+                    className="rounded-xl pl-10 mb-2"
+                  />
+                </div>
                 <Select 
                   value={smartTripId} 
                   onValueChange={setSmartTripId}
@@ -415,11 +479,17 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                     <SelectValue placeholder={tripsLoading ? "Cargando..." : "Seleccionar viaje"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {soldTrips.map(trip => (
-                      <SelectItem key={trip.id} value={trip.id}>
-                        {trip.client_name} - {trip.destination}
-                      </SelectItem>
-                    ))}
+                    {filteredSmartTrips.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-stone-500">
+                        {smartSearchQuery ? 'No se encontraron viajes' : 'No tienes viajes vendidos'}
+                      </div>
+                    ) : (
+                      filteredSmartTrips.map(trip => (
+                        <SelectItem key={trip.id} value={trip.id}>
+                          {trip.client_name} - {trip.destination}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
