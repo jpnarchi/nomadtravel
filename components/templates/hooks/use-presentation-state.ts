@@ -23,12 +23,28 @@ export function usePresentationState(initialFiles: Record<string, string>) {
         const configPath = '/presentation-config.json'
         if (initialFiles[configPath]) {
             try {
-                const config = JSON.parse(initialFiles[configPath])
-                if (config.aspectRatio) {
-                    setAspectRatio(config.aspectRatio)
+                const configContent = initialFiles[configPath]
+
+                // Validate config content
+                if (!configContent || typeof configContent !== 'string') {
+                    console.error('Invalid presentation config: content is not a string')
+                } else {
+                    const trimmedConfig = configContent.trim()
+
+                    if (trimmedConfig.length === 0) {
+                        console.error('Empty presentation config')
+                    } else if (!trimmedConfig.startsWith('{') && !trimmedConfig.startsWith('[')) {
+                        console.error('Invalid presentation config format: does not look like JSON')
+                    } else {
+                        const config = JSON.parse(trimmedConfig)
+                        if (config && typeof config === 'object' && config.aspectRatio) {
+                            setAspectRatio(config.aspectRatio)
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error parsing presentation config:', error)
+                console.error('Config content (first 100 chars):', initialFiles[configPath]?.substring(0, 100))
             }
         }
 
@@ -41,7 +57,34 @@ export function usePresentationState(initialFiles: Record<string, string>) {
             })
             .map(([path, content], index) => {
                 try {
-                    const parsed = JSON.parse(content)
+                    // Validate content before parsing
+                    if (!content || typeof content !== 'string') {
+                        console.error(`Invalid content for ${path}: content is ${typeof content}`)
+                        return null
+                    }
+
+                    // Trim whitespace
+                    const trimmedContent = content.trim()
+
+                    if (trimmedContent.length === 0) {
+                        console.error(`Empty content for ${path}`)
+                        return null
+                    }
+
+                    // Check if content looks like JSON
+                    if (!trimmedContent.startsWith('{') && !trimmedContent.startsWith('[')) {
+                        console.error(`Invalid JSON format for ${path}: content starts with '${trimmedContent.substring(0, 10)}'`)
+                        return null
+                    }
+
+                    const parsed = JSON.parse(trimmedContent)
+
+                    // Validate parsed data structure
+                    if (!parsed || typeof parsed !== 'object') {
+                        console.error(`Invalid parsed data for ${path}: expected object, got ${typeof parsed}`)
+                        return null
+                    }
+
                     return {
                         id: `slide-${Date.now()}-${index}`,
                         path,
@@ -49,6 +92,7 @@ export function usePresentationState(initialFiles: Record<string, string>) {
                     }
                 } catch (error) {
                     console.error(`Error parsing ${path}:`, error)
+                    console.error(`Content (first 100 chars): ${content?.substring(0, 100)}`)
                     return null
                 }
             })
