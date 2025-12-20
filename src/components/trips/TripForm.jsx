@@ -11,6 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { base44 } from '@/api/base44Client';
 
+/**
+ * Normaliza una fecha a formato YYYY-MM-DD sin conversiones de timezone.
+ * Evita el bug del día corrido.
+ */
+function normalizeDateOnly(value) {
+  if (!value) return '';
+  // Si viene "2025-12-19" o "2025-12-19T00:00:00.000Z", tomar solo YYYY-MM-DD
+  return String(value).slice(0, 10);
+}
+
 const STAGES = [
   { value: 'nuevo', label: 'Nuevo' },
   { value: 'cotizando', label: 'Cotizando' },
@@ -68,8 +78,8 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         client_id: trip.client_id || '',
         client_name: trip.client_name || '',
         destination: trip.destination || '',
-        start_date: trip.start_date || '',
-        end_date: trip.end_date || '',
+        start_date: normalizeDateOnly(trip.start_date),
+        end_date: normalizeDateOnly(trip.end_date),
         travelers: trip.travelers || 1,
         budget: trip.budget || '',
         mood: trip.mood || '',
