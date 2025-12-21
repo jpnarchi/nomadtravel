@@ -635,7 +635,7 @@ export const sendObjectBackward = (obj: fabric.FabricObject, canvas: fabric.Canv
  * Zoom controls - Viewport-only zoom (doesn't affect object sizes)
  * This approach matches the preview: we calculate a new canvas size based on zoom level
  */
-export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number, containerRef?: React.RefObject<HTMLDivElement>): number => {
+export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number, containerRef?: React.RefObject<HTMLDivElement | null>): number => {
     let newZoom = currentZoom * 1.2
     if (newZoom > 5) newZoom = 5
 
@@ -673,7 +673,7 @@ export const zoomIn = (canvas: fabric.Canvas, currentZoom: number, baseScale: nu
     return newZoom
 }
 
-export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number, containerRef?: React.RefObject<HTMLDivElement>): number => {
+export const zoomOut = (canvas: fabric.Canvas, currentZoom: number, baseScale: number, canvasWidth: number, canvasHeight: number, containerRef?: React.RefObject<HTMLDivElement | null>): number => {
     let newZoom = currentZoom / 1.2
     if (newZoom < baseScale * 0.5) newZoom = baseScale * 0.5 // Min 50% of base scale
 

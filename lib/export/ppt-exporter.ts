@@ -372,8 +372,8 @@ export async function exportToPPT(slides: any[], aspectRatio: AspectRatioType = 
                             const y2 = sanitizeNumber(obj.y2, 100)
 
                             // Calculate line dimensions - ensure they're not both zero
-                            let lineW = (x2 - x1) * scaleX
-                            let lineH = (y2 - y1) * scaleY
+                            const lineW = (x2 - x1) * scaleX
+                            const lineH = (y2 - y1) * scaleY
 
                             // If line is too small, skip it (degenerate line)
                             if (Math.abs(lineW) < 0.001 && Math.abs(lineH) < 0.001) {
