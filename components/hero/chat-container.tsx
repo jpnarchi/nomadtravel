@@ -290,12 +290,13 @@ export function ChatContainer() {
                                     transition: { duration: 0.3, delay: 0.1, ease: "easeInOut" }
                                 }}
                             >
+                                {isSignedIn && ( 
                                 <div className="flex justify-start px-6 lg:px-16 text-black">
                                     <SlideSelector
                                         onSlideChange={handleSlideChange}
                                         userPlan={user?.plan}
                                     />
-                                </div>
+                                </div>)}
                                 
                                 <MessageInput
                                     input={input}
