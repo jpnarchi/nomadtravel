@@ -13,9 +13,12 @@ import { PricingPopup } from "../pricing/pricing-popup";
 import { ProjectsPreviewHero } from "./projects-preview-hero"
 import { SlideSelector } from "../chat/slides-selector"
 import { Footer } from "../global/footer"
-
+import { useAuth } from "@clerk/nextjs";
+import { SuggestionButtons } from "../chat/suggestion-buttons"
+import {SectionsHero} from "@/components/ui/sections-hero-logged-out"
 
 export function ChatContainer() {
+    const { isSignedIn } = useAuth();
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
@@ -47,8 +50,26 @@ export function ChatContainer() {
     const saveFile = useMutation(api.messages.saveFile);
     const updateParts = useMutation(api.messages.updateParts);
 
+    useEffect(() => {
+        const savedDraft = localStorage.getItem('astri-dev-draft');
+        if (savedDraft) {
+            setInput(savedDraft);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isSignedIn) {
+            localStorage.setItem('astri-dev-draft', input);
+        }
+    }, [input, isSignedIn]);
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        if (!isSignedIn){
+            router.push("/sign-in")
+            return
+        }
 
         // Check if user can create more chats (server-side validation)
         if (canCreateChat && !canCreateChat.canCreate) {
@@ -122,12 +143,102 @@ export function ChatContainer() {
         }
     };
 
+    const suggestions = [
+        "Create a chemistry presentation",
+        "Create a biology presentation",
+        "Create business presentation"
+    ];
+
+    const handleSuggestionClick = async (suggestion: string) => {
+        if (!isSignedIn){
+            router.push("/sign-in")
+            return
+        }
+        // Check if user can create more chats (server-side validation)
+        if (canCreateChat && !canCreateChat.canCreate) {
+            setShowPricingPopup(true);
+            return;
+        }
+
+        setIsLoading(true);
+
+        // Notify parent that we're navigating BEFORE creating the chat
+
+
+        try {
+            const chatId = await createChat();
+
+            // create message
+            const messageId = await createMessage({
+                chatId,
+                role: "user",
+                parts: [{ type: "text", text: '' }],
+            });
+
+            const fileUrls = [];
+            let prompt = suggestion
+
+            // check if files are present
+            if (files.length > 0) {
+                for (const file of files) {
+                    const postUrl = await generateUploadUrl();
+                    const result = await fetch(postUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": file.type },
+                        body: file,
+                    });
+                    const { storageId } = await result.json();
+
+                    const { url } = await saveFile({
+                        storageId,
+                        messageId: messageId,
+                        type: file.type,
+                    });
+
+                    fileUrls.push({ url: url, type: file.type });
+                }
+
+                prompt = createPromptWithAttachments(suggestion, fileUrls);
+            }
+
+            await updateParts({
+                messageId: messageId,
+                parts: [{ type: "text", text: prompt }],
+            });
+
+            // Save templateSource to localStorage so chat page can read it
+            localStorage.setItem('templateSource', templateSource);
+            console.log('[Hero Onboarding] Saved templateSource to localStorage:', templateSource);
+
+            // Save slides count to localStorage so chat page can read it
+            localStorage.setItem('slidesCount', selectedSlides.toString());
+            console.log('[Hero Onboarding] Saved slidesCount to localStorage:', selectedSlides);
+
+            router.push(`/chat/${chatId}`);
+        } catch (error: any) {
+            console.error(error);
+
+            // Cancel navigation on error
+
+
+            // Check if it's a chat limit error
+            if (error.message && error.message.includes('Chat limit exceeded')) {
+                setShowPricingPopup(true);
+                return;
+            }
+
+            toast.error('Error creating chat');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <>
             <div className="h-screen overflow-y-auto overflow-x-hidden bg-white">
                 {/* Hero Section - Full viewport height */}
 
-                <div className="text-black flex flex-col min-h-[calc(100dvh-4rem)] w-full relative bg-gradient-to-t from-[#F4A7B6]/30  from-10% to-primary to-99%">
+                <div className="text-black flex flex-col min-h-[calc(100dvh-4rem)] w-full relative bg-gradient-to-t from-white  from-10% to-primary to-99%">
                 {/* <img
                         src="https://jtz6kmagvp.ufs.sh/f/CE5PYDsI3GDIujywkLOXp1zcDUfrCqNGaIx5LkJ9gbPMjRn6"
                         alt="Decorative left"
@@ -198,32 +309,69 @@ export function ChatContainer() {
                                     setTemplateSource={canAccessMyTemplates ? setTemplateSource : undefined}
                                     canAccessMyTemplates={canAccessMyTemplates}
                                 />
+                                <div className="hidden md:flex justify-center mr-2 text-black">
+                                    <SuggestionButtons
+                                        suggestions={suggestions}
+                                        onSuggestionClick={handleSuggestionClick}
+                                    />
+                                </div>
                             </motion.div>
                         </motion.div>
                     </AnimatePresence>
 
                     {/* Scroll Indicator */}
+                    {!isSignedIn && ( 
+                    <motion.div
+                        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
+                        initial={{ opacity: 0 }}
+                        animate={{
+                            opacity: 1,
+                            y: [0, 10, 0]
+                        }}
+                        transition={{
+                            opacity: { delay: 1, duration: 0.5 },
+                            y: {
+                                repeat: Infinity,
+                                duration: 1.5,
+                                ease: "easeInOut"
+                            }
+                        }}
+                        onClick={() => {
+                            window.scrollTo({
+                                top: window.innerHeight - 64,
+                                behavior: 'smooth'
+                            });
+                        }}
+                    >
+                        <span className="text-black text-sm font-medium">Scroll to explore</span>
+                        <svg
+                            className="w-6 h-6 text-black"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                            />
+                        </svg>
+                    </motion.div>)}
+
+                    {/* Scroll Indicator */}
 
                 </div>
 
+               {!isSignedIn && (
+                <SectionsHero/>
+               )}
                 {/* How It Works Section - Below hero, requires scroll */}
-                <div className="relative z-0  bg-gradient-to-t from-white  from-60% to-[#FBDADC] to-90%">
+                <div className="relative z-0  bg-gradient-to-t from-white  from-60% to-[#FFEFEC] to-90%">
                     {/* Imágenes decorativas - detrás de ProjectsPreviewHero */}
-
-
                     <div className="relative z-10">
                         <ProjectsPreviewHero />
                     </div>
-
-
-                    {/* Recent Presentations Panel - Only shown when user is signed in */}
-
-
-
-
-                    {/* Footer */}
-
-
                 </div>
 
                 {/* Drag Drop Overlay */}

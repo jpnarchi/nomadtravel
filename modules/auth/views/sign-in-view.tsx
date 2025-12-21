@@ -3,7 +3,7 @@ import { ParallaxScrollSecondDemo } from "../components/parallax-scroll"
 
 export const SignInView = () => {
     return (
-        <div className="h-screen w-full relative bg-gradient-to-t from-white from-50% to-[#F4A7B6] to-95%">
+        <div className="h-screen w-full relative bg-white">
             {/* Columna izquierda - Formulario de Sign In */}
             <div className="absolute left-0 top-0 w-full h-full md:w-1/2 flex items-center justify-center p-4 md:p-8 z-10 pt-10 lg:pt-30 md:ml-0">
                 <div className="w-full max-w-md space-y-4">
