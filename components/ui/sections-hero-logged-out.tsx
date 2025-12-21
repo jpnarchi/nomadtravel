@@ -25,7 +25,7 @@ export const SectionsHero = () => {
     };
 
     return (
-      <div className="max-w-7xl relative mx-auto pt-20 md:pt-60 pb-0 px-4 w-full left-0 top-0 z-50">
+      <div className="max-w-7xl relative mx-auto pt-40 md:pt-60 pb-0 px-4 w-full left-0 top-0 z-50">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 relative z-50 lg:-mt-55 -mt-35">
           {/* Texto - aparece primero en mobile, segundo en desktop */}
           <div className="flex flex-col justify-center items-start order-1 md:order-2">
