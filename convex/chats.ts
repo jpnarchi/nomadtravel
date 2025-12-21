@@ -5,7 +5,7 @@ import { getCurrentUser, getVersionLimit } from "./users";
 
 // Chat limits for different plans (monthly creation limit)
 const CHAT_LIMITS = {
-    free: 2,
+    free: 1,
     pro: 10,
     premium: 20,
     ultra: 8000,
