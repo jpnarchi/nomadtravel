@@ -8,6 +8,8 @@ import ConvexClientProvider from "@/components/providers/convex-client-provider"
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "@/components/ui/sonner";
 import { enUS } from '@clerk/localizations'
+import { MetaPixel } from "@/components/analytics/meta-pixel";
+import { ClerkAnalytics } from "@/components/analytics/clerk-analytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -132,6 +134,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <MetaPixel />
+      </head>
       <body
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${roboto.variable} ${openSans.variable} ${montserrat.variable} ${poppins.variable} ${lato.variable} ${raleway.variable} ${esbuildBold.variable} ${ppmoriMedium.variable} ${ppmoriSemiBold.variable} ${theSeasonsBold.variable} antialiased`}
@@ -148,6 +153,7 @@ export default function RootLayout({
               forcedTheme="light"
               disableTransitionOnChange
             >
+              <ClerkAnalytics />
               {children}
               <Toaster />
             </ThemeProvider>
