@@ -23,9 +23,9 @@ export const ClerkAnalytics = () => {
     }
 
     // Si el usuario está autenticado y tenemos información del usuario
-    if (isSignedIn && user) {
+    if (isSignedIn && user && user.createdAt) {
       // Detectar si es un nuevo registro o inicio de sesión
-      const createdAt = user.createdAt;
+      const createdAt = new Date(user.createdAt).getTime();
       const now = new Date().getTime();
       const userAge = now - createdAt;
 
