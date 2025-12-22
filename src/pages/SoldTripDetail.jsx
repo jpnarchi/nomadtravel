@@ -248,21 +248,61 @@ export default function SoldTripDetail() {
   });
 
   const createSupplierPaymentMutation = useMutation({
-    mutationFn: async (data) => base44.entities.SupplierPayment.create(data),
+    mutationFn: async (data) => {
+      const supplierPayment = await base44.entities.SupplierPayment.create(data);
+      
+      // Si el método es tarjeta_cliente, crear automáticamente un pago de cliente
+      if (data.method === 'tarjeta_cliente') {
+        await base44.entities.ClientPayment.create({
+          sold_trip_id: data.sold_trip_id,
+          date: data.date,
+          currency: 'USD',
+          amount_original: data.amount,
+          amount_usd_fixed: data.amount,
+          amount: data.amount,
+          method: 'tarjeta_cliente',
+          notes: `Generado automáticamente por pago a proveedor: ${data.supplier}`,
+          status: 'reportado'
+        });
+      }
+      
+      return supplierPayment;
+    },
     onSuccess: async (newPayment) => {
       await updateSoldTripAndTripServiceTotals(newPayment.sold_trip_id, queryClient);
+      queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       setSupplierPaymentOpen(false);
       setEditingSupplierPayment(null);
     }
   });
 
   const updateSupplierPaymentMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SupplierPayment.update(id, data),
+    mutationFn: async ({ id, data, oldPayment }) => {
+      const updatedPayment = await base44.entities.SupplierPayment.update(id, data);
+      
+      // Si cambió a tarjeta_cliente y antes no lo era, crear pago de cliente
+      if (data.method === 'tarjeta_cliente' && oldPayment && oldPayment.method !== 'tarjeta_cliente') {
+        await base44.entities.ClientPayment.create({
+          sold_trip_id: data.sold_trip_id,
+          date: data.date,
+          currency: 'USD',
+          amount_original: data.amount,
+          amount_usd_fixed: data.amount,
+          amount: data.amount,
+          method: 'tarjeta_cliente',
+          notes: `Generado automáticamente por pago a proveedor: ${data.supplier}`,
+          status: 'reportado'
+        });
+      }
+      
+      return updatedPayment;
+    },
     onSuccess: async (_, variables) => {
       const payment = supplierPayments.find(p => p.id === variables.id);
       if (payment?.sold_trip_id) {
         await updateSoldTripAndTripServiceTotals(payment.sold_trip_id, queryClient);
       }
+      queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       setSupplierPaymentOpen(false);
       setEditingSupplierPayment(null);
     }
@@ -1317,7 +1357,11 @@ export default function SoldTripDetail() {
         payment={editingSupplierPayment}
         onSave={(data) => {
           if (editingSupplierPayment) {
-            updateSupplierPaymentMutation.mutate({ id: editingSupplierPayment.id, data });
+            updateSupplierPaymentMutation.mutate({ 
+              id: editingSupplierPayment.id, 
+              data,
+              oldPayment: editingSupplierPayment 
+            });
           } else {
             createSupplierPaymentMutation.mutate(data);
           }
