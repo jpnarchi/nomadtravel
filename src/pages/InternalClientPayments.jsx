@@ -43,7 +43,7 @@ export default function InternalClientPayments() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('reportado');
   const [editingPayment, setEditingPayment] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [editFormData, setEditFormData] = useState({});
@@ -125,6 +125,7 @@ export default function InternalClientPayments() {
         trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje Desconocido',
         agent_name: displayAgentName,
         agent_email: agentEmail,
+        status: payment.status || (payment.confirmed ? 'confirmado' : 'reportado'),
         confirmed: payment.confirmed || false
       };
     });
@@ -157,16 +158,36 @@ export default function InternalClientPayments() {
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
-  // Split by confirmed status
-  const pendingPayments = filteredPayments.filter(p => !p.confirmed);
-  const confirmedPayments = filteredPayments.filter(p => p.confirmed);
+  // Split by status
+  const reportadoPayments = filteredPayments.filter(p => p.status === 'reportado');
+  const confirmadoPayments = filteredPayments.filter(p => p.status === 'confirmado');
+  const cambiadoUsdPayments = filteredPayments.filter(p => p.status === 'cambiado_usd');
 
-  // Calculate totals - use amount_usd_fixed primarily, fallback to amount for backward compatibility
-  const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
-  const totalConfirmed = confirmedPayments.reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
+  // Calculate totals - include both USD and MXN amounts
+  const calculateTotal = (payments) => {
+    return payments.reduce((sum, p) => {
+      const amountUSD = p.amount_usd_fixed || p.amount || 0;
+      const amountMXN = (p.currency === 'MXN' && p.amount_original) ? p.amount_original : 0;
+      return {
+        usd: sum.usd + amountUSD,
+        mxn: sum.mxn + amountMXN
+      };
+    }, { usd: 0, mxn: 0 });
+  };
 
-  const handleToggleConfirmed = (payment, isConfirmed) => {
-    updatePaymentMutation.mutate({ id: payment.id, data: { confirmed: isConfirmed } });
+  const totalReportado = calculateTotal(reportadoPayments);
+  const totalConfirmado = calculateTotal(confirmadoPayments);
+  const totalCambiadoUsd = calculateTotal(cambiadoUsdPayments);
+  const totalAll = calculateTotal(filteredPayments);
+
+  const handleUpdateStatus = (payment, newStatus) => {
+    updatePaymentMutation.mutate({ 
+      id: payment.id, 
+      data: { 
+        status: newStatus,
+        confirmed: newStatus === 'confirmado' || newStatus === 'cambiado_usd' // backward compatibility
+      } 
+    });
   };
 
   if (isLoading) {
@@ -188,23 +209,44 @@ export default function InternalClientPayments() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagos Hechos</p>
-          <p className="text-xl font-bold text-orange-600">${totalPending.toLocaleString()}</p>
-          <p className="text-xs text-stone-400">{pendingPayments.length} pagos</p>
+          <p className="text-xs text-stone-400">Pagos Reportados</p>
+          <p className="text-xl font-bold text-orange-600">
+            ${totalReportado.usd.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </p>
+          {totalReportado.mxn > 0 && (
+            <p className="text-xs text-blue-600">${totalReportado.mxn.toLocaleString()} MXN</p>
+          )}
+          <p className="text-xs text-stone-400">{reportadoPayments.length} pagos</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Pagos Confirmados</p>
-          <p className="text-xl font-bold text-green-600">${totalConfirmed.toLocaleString()}</p>
-          <p className="text-xs text-stone-400">{confirmedPayments.length} pagos</p>
+          <p className="text-xl font-bold text-green-600">
+            ${totalConfirmado.usd.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </p>
+          {totalConfirmado.mxn > 0 && (
+            <p className="text-xs text-blue-600">${totalConfirmado.mxn.toLocaleString()} MXN</p>
+          )}
+          <p className="text-xs text-stone-400">{confirmadoPayments.length} pagos</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Total Pagos (sin tarjeta cliente)</p>
-          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${(totalPending + totalConfirmed).toLocaleString()}</p>
-          <p className="text-xs text-stone-400">{enrichedPayments.length} de {clientPayments.length} pagos</p>
+          <p className="text-xs text-stone-400">Pagos Cambiados a USD</p>
+          <p className="text-xl font-bold text-purple-600">
+            ${totalCambiadoUsd.usd.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </p>
+          {totalCambiadoUsd.mxn > 0 && (
+            <p className="text-xs text-blue-600">${totalCambiadoUsd.mxn.toLocaleString()} MXN</p>
+          )}
+          <p className="text-xs text-stone-400">{cambiadoUsdPayments.length} pagos</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Agentes Activos</p>
-          <p className="text-xl font-bold text-purple-600">{uniqueAgents.length}</p>
+          <p className="text-xs text-stone-400">Total General</p>
+          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>
+            ${totalAll.usd.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+          </p>
+          {totalAll.mxn > 0 && (
+            <p className="text-xs text-blue-600">${totalAll.mxn.toLocaleString()} MXN</p>
+          )}
+          <p className="text-xs text-stone-400">{enrichedPayments.length} pagos</p>
         </div>
       </div>
 
@@ -270,20 +312,27 @@ export default function InternalClientPayments() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-stone-100 rounded-xl p-1">
-          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white">
-            <Clock className="w-4 h-4 mr-2" /> Pagos Hechos ({pendingPayments.length})
+          <TabsTrigger value="reportado" className="rounded-lg data-[state=active]:bg-white">
+            <Clock className="w-4 h-4 mr-2" /> Reportados ({reportadoPayments.length})
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="rounded-lg data-[state=active]:bg-white">
-            <CheckCircle className="w-4 h-4 mr-2" /> Pagos Confirmados ({confirmedPayments.length})
+          <TabsTrigger value="confirmado" className="rounded-lg data-[state=active]:bg-white">
+            <CheckCircle className="w-4 h-4 mr-2" /> Confirmados ({confirmadoPayments.length})
+          </TabsTrigger>
+          <TabsTrigger value="cambiado_usd" className="rounded-lg data-[state=active]:bg-white">
+            <CreditCard className="w-4 h-4 mr-2" /> Cambiados a USD ({cambiadoUsdPayments.length})
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pending" className="mt-4">
-          {renderPaymentsTable(pendingPayments, totalPending, false)}
+        <TabsContent value="reportado" className="mt-4">
+          {renderPaymentsTable(reportadoPayments, totalReportado)}
         </TabsContent>
 
-        <TabsContent value="confirmed" className="mt-4">
-          {renderPaymentsTable(confirmedPayments, totalConfirmed, true)}
+        <TabsContent value="confirmado" className="mt-4">
+          {renderPaymentsTable(confirmadoPayments, totalConfirmado)}
+        </TabsContent>
+
+        <TabsContent value="cambiado_usd" className="mt-4">
+          {renderPaymentsTable(cambiadoUsdPayments, totalCambiadoUsd)}
         </TabsContent>
       </Tabs>
 
@@ -431,13 +480,13 @@ export default function InternalClientPayments() {
     </div>
   );
 
-  function renderPaymentsTable(payments, total, isConfirmedTab) {
+  function renderPaymentsTable(payments, total) {
     if (payments.length === 0) {
       return (
         <EmptyState
           icon={CreditCard}
-          title={isConfirmedTab ? "Sin pagos confirmados" : "Sin pagos hechos"}
-          description={isConfirmedTab ? "No hay pagos confirmados aún" : "No hay pagos pendientes de confirmar"}
+          title="Sin pagos en esta categoría"
+          description="No hay pagos con este estatus"
         />
       );
     }
@@ -500,15 +549,16 @@ export default function InternalClientPayments() {
                   </td>
                   <td className="p-3 text-center">
                     <Select 
-                      value={payment.confirmed ? 'confirmed' : 'pending'} 
-                      onValueChange={(value) => handleToggleConfirmed(payment, value === 'confirmed')}
+                      value={payment.status || 'reportado'} 
+                      onValueChange={(value) => handleUpdateStatus(payment, value)}
                     >
-                      <SelectTrigger className="w-32 h-8 text-xs rounded-lg">
+                      <SelectTrigger className="w-36 h-8 text-xs rounded-lg">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Hecho</SelectItem>
-                        <SelectItem value="confirmed">Confirmado</SelectItem>
+                        <SelectItem value="reportado">Reportado</SelectItem>
+                        <SelectItem value="confirmado">Confirmado</SelectItem>
+                        <SelectItem value="cambiado_usd">Cambiado a USD</SelectItem>
                       </SelectContent>
                     </Select>
                   </td>
@@ -553,9 +603,16 @@ export default function InternalClientPayments() {
                   Total:
                 </td>
                 <td className="p-3 text-right">
-                  <span className="text-lg font-bold text-green-600">
-                    ${total.toLocaleString()}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    <span className="text-lg font-bold text-green-600">
+                      ${total.usd.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                    {total.mxn > 0 && (
+                      <span className="text-sm font-semibold text-blue-600">
+                        ${total.mxn.toLocaleString()} MXN
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td colSpan="2"></td>
               </tr>
