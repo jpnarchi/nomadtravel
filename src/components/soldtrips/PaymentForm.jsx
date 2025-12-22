@@ -9,12 +9,17 @@ import { Loader2 } from 'lucide-react';
 import { toast } from "sonner";
 
 const CLIENT_PAYMENT_METHODS = [
-  { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },
-  { value: 'tarjeta', label: 'Tarjeta' },
-  { value: 'tarjeta_cliente', label: 'Tarjeta de Cliente' },
-  { value: 'wise', label: 'Wise' },
-  { value: 'otro', label: 'Otro' }
+  { value: 'efectivo', label: 'Efectivo' },
+  { value: 'link_pago', label: 'Link de Pago' },
+  { value: 'tarjeta_cliente', label: 'Pagado Directo con Tarjeta de Cliente' }
+];
+
+const BANK_OPTIONS = [
+  { value: 'bbva_mxn', label: 'BBVA MXN' },
+  { value: 'bbva_usd', label: 'BBVA USD' },
+  { value: 'base', label: 'BASE' },
+  { value: 'wise', label: 'WISE' }
 ];
 
 const SUPPLIER_PAYMENT_METHODS = [
@@ -32,6 +37,7 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
     amount_original: '',
     fx_rate: '',
     method: 'transferencia',
+    bank: '',
     notes: '',
     supplier: ''
   });
@@ -44,6 +50,7 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
         amount_original: payment.amount_original || payment.amount || '',
         fx_rate: payment.fx_rate || '',
         method: payment.method || 'transferencia',
+        bank: payment.bank || '',
         notes: payment.notes || '',
         supplier: payment.supplier || ''
       });
@@ -54,6 +61,7 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
         amount_original: '',
         fx_rate: '',
         method: 'transferencia',
+        bank: '',
         notes: '',
         supplier: ''
       });
@@ -98,6 +106,7 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
         amount_usd_fixed: amount_usd_fixed,
         amount: amount_usd_fixed, // backward compatibility
         method: formData.method,
+        bank: formData.bank || undefined,
         notes: formData.notes
       };
       
@@ -193,16 +202,32 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Método de Pago *</Label>
-            <Select value={formData.method} onValueChange={(v) => setFormData({ ...formData, method: v })}>
-              <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {(isSupplier ? SUPPLIER_PAYMENT_METHODS : CLIENT_PAYMENT_METHODS).map(m => (
-                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Método de Pago *</Label>
+              <Select value={formData.method} onValueChange={(v) => setFormData({ ...formData, method: v })}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(isSupplier ? SUPPLIER_PAYMENT_METHODS : CLIENT_PAYMENT_METHODS).map(m => (
+                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {!isSupplier && (
+              <div className="space-y-2">
+                <Label>Banco</Label>
+                <Select value={formData.bank} onValueChange={(v) => setFormData({ ...formData, bank: v })}>
+                  <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar banco" /></SelectTrigger>
+                  <SelectContent>
+                    {BANK_OPTIONS.map(b => (
+                      <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
