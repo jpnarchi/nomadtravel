@@ -29,9 +29,9 @@ import AgentCommissionInvoice from '@/components/commissions/AgentCommissionInvo
 import { updateSoldTripTotalsFromServices } from '@/components/utils/soldTripRecalculations';
 
 const STATUS_CONFIG = {
-  reportado: { label: 'Reportado', color: 'bg-yellow-100 text-yellow-700' },
-  confirmado: { label: 'Confirmado', color: 'bg-blue-100 text-blue-700' },
-  cambiado_usd: { label: 'Cambiado a USD', color: 'bg-green-100 text-green-700' }
+  pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
+  recibida: { label: 'Recibida', color: 'bg-blue-100 text-blue-700' },
+  pagada_agente: { label: 'Pagada al Agente', color: 'bg-green-100 text-green-700' }
 };
 
 const IATA_LABELS = {
@@ -104,8 +104,7 @@ export default function InternalCommissions() {
           estimated_amount: s.commission || 0,
           estimated_payment_date: s.commission_payment_date || null,
           iata_used: s.booked_by === 'montecito' ? 'montecito' : 'nomad',
-          currency: 'USD',
-          status: s.commission_paid ? (s.paid_to_agent ? 'cambiado_usd' : 'confirmado') : 'reportado',
+          status: s.commission_paid ? 'recibida' : 'pendiente',
           paid_to_agent: s.paid_to_agent || false,
           received_date: s.commission_paid ? s.commission_payment_date : null,
           received_amount: s.commission_paid ? s.commission : null,
@@ -243,7 +242,7 @@ export default function InternalCommissions() {
     } else {
       updateMutation.mutate({ 
         id: commission.id, 
-        data: { status: isPaid ? 'cambiado_usd' : 'confirmado' } 
+        data: { status: isPaid ? 'pagada_agente' : 'recibida' } 
       });
     }
   };
@@ -292,8 +291,8 @@ export default function InternalCommissions() {
   const handleUpdateStatus = async (commission, newStatus) => {
     if (commission.source === 'tripService') {
       const updateData = { 
-        commission_paid: newStatus !== 'reportado',
-        paid_to_agent: newStatus === 'cambiado_usd'
+        commission_paid: newStatus !== 'pendiente',
+        paid_to_agent: newStatus === 'pagada_agente'
       };
       await updateTripServiceMutation.mutateAsync({ 
         id: commission.service_id, 
@@ -346,7 +345,7 @@ export default function InternalCommissions() {
     if (commission.source === 'tripService') {
       return commission.paid_to_agent || false;
     }
-    return commission.status === 'cambiado_usd';
+    return commission.status === 'pagada_agente';
   };
 
   // Filter commissions
@@ -387,38 +386,25 @@ export default function InternalCommissions() {
 
   // Calculate totals for an agent
   const calculateAgentTotals = (agentCommissions) => {
-    const reported = agentCommissions.filter(c => c.status === 'reportado');
-    const confirmed = agentCommissions.filter(c => c.status === 'confirmado' || c.status === 'cambiado_usd');
+    const pending = agentCommissions.filter(c => c.status === 'pendiente');
+    const received = agentCommissions.filter(c => c.status === 'recibida' || c.status === 'pagada_agente');
     
     return {
-      reportedCount: reported.length,
-      reportedAmountUSD: reported.filter(c => c.currency === 'USD').reduce((sum, c) => sum + (c.estimated_amount || 0), 0),
-      reportedAmountMXN: reported.filter(c => c.currency === 'MXN').reduce((sum, c) => sum + (c.estimated_amount || 0), 0),
-      confirmedCount: confirmed.length,
-      confirmedAmountUSD: confirmed.filter(c => c.currency === 'USD').reduce((sum, c) => sum + (c.received_amount || 0), 0),
-      confirmedAmountMXN: confirmed.filter(c => c.currency === 'MXN').reduce((sum, c) => sum + (c.received_amount || 0), 0),
-      totalAgentCommission: confirmed.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
-      totalNomadCommission: confirmed.reduce((sum, c) => sum + (c.nomad_commission || 0), 0)
+      pendingCount: pending.length,
+      pendingAmount: pending.reduce((sum, c) => sum + (c.estimated_amount || 0), 0),
+      receivedCount: received.length,
+      receivedAmount: received.reduce((sum, c) => sum + (c.received_amount || 0), 0),
+      totalAgentCommission: received.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
+      totalNomadCommission: received.reduce((sum, c) => sum + (c.nomad_commission || 0), 0)
     };
   };
 
   // Global stats
-  const reportedCommissions = filteredCommissions.filter(c => c.status === 'reportado');
-  const confirmedCommissions = filteredCommissions.filter(c => c.status === 'confirmado');
-  const changedCommissions = filteredCommissions.filter(c => c.status === 'cambiado_usd');
-  
   const globalStats = {
-    reportedCount: reportedCommissions.length,
-    reportedAmountUSD: reportedCommissions.filter(c => c.currency === 'USD').reduce((sum, c) => sum + (c.estimated_amount || 0), 0),
-    reportedAmountMXN: reportedCommissions.filter(c => c.currency === 'MXN').reduce((sum, c) => sum + (c.estimated_amount || 0), 0),
-    confirmedCount: confirmedCommissions.length,
-    confirmedAmountUSD: confirmedCommissions.filter(c => c.currency === 'USD').reduce((sum, c) => sum + (c.agent_commission || 0), 0),
-    confirmedAmountMXN: confirmedCommissions.filter(c => c.currency === 'MXN').reduce((sum, c) => sum + (c.agent_commission || 0), 0),
-    changedCount: changedCommissions.length,
-    changedAmountUSD: changedCommissions.filter(c => c.currency === 'USD').reduce((sum, c) => sum + (c.agent_commission || 0), 0),
-    changedAmountMXN: changedCommissions.filter(c => c.currency === 'MXN').reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     pendingCount: pendingCommissions.length,
+    pendingAmount: pendingCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     paidCount: paidCommissions.length,
+    paidAmount: paidCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     totalAgentCommission: filteredCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     totalNomadCommission: filteredCommissions.reduce((sum, c) => sum + (c.nomad_commission || 0), 0)
   };
@@ -521,30 +507,27 @@ export default function InternalCommissions() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="reportado">Reportado</SelectItem>
-                          <SelectItem value="confirmado">Confirmado</SelectItem>
-                          <SelectItem value="cambiado_usd">Cambiado a USD</SelectItem>
+                          <SelectItem value="pendiente">Pendiente</SelectItem>
+                          <SelectItem value="recibida">Recibida</SelectItem>
+                          <SelectItem value="pagada_agente">Pagada al Agente</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>
                     <td className="p-3 text-right">
-                      <div className="flex items-center gap-1 justify-end">
-                        <Input
-                          type="number"
-                          defaultValue={commission.estimated_amount || 0}
-                          onBlur={(e) => {
-                            const newValue = parseFloat(e.target.value) || 0;
-                            if (newValue !== commission.estimated_amount) {
-                              handleUpdateCommissionAmount(commission, newValue);
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') e.target.blur();
-                          }}
-                          className="w-20 text-right font-semibold rounded-lg h-8 text-stone-800"
-                        />
-                        <span className="text-xs font-medium text-stone-500">{commission.currency || 'USD'}</span>
-                      </div>
+                      <Input
+                        type="number"
+                        defaultValue={commission.estimated_amount || 0}
+                        onBlur={(e) => {
+                          const newValue = parseFloat(e.target.value) || 0;
+                          if (newValue !== commission.estimated_amount) {
+                            handleUpdateCommissionAmount(commission, newValue);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') e.target.blur();
+                        }}
+                        className="w-24 text-right font-semibold rounded-lg h-8 text-stone-800"
+                      />
                     </td>
                     <td className="p-3 text-right font-medium" style={{ color: '#2E442A' }}>
                       ${(commission.agent_commission || 0).toLocaleString()}
@@ -613,24 +596,16 @@ export default function InternalCommissions() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagos Reportados</p>
-          <p className="text-lg font-bold text-yellow-600">${globalStats.reportedAmountUSD.toLocaleString()} USD</p>
-          <p className="text-sm font-semibold text-yellow-500">${globalStats.reportedAmountMXN.toLocaleString()} MXN</p>
-          <p className="text-xs text-stone-400 mt-1">{globalStats.reportedCount} comisiones</p>
+          <p className="text-xs text-stone-400">Por Pagar a Agentes</p>
+          <p className="text-xl font-bold text-orange-600">${globalStats.pendingAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.pendingCount} comisiones</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagos Confirmados</p>
-          <p className="text-lg font-bold text-blue-600">${globalStats.confirmedAmountUSD.toLocaleString()} USD</p>
-          <p className="text-sm font-semibold text-blue-500">${globalStats.confirmedAmountMXN.toLocaleString()} MXN</p>
-          <p className="text-xs text-stone-400 mt-1">{globalStats.confirmedCount} comisiones</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagos Cambiados a USD</p>
-          <p className="text-lg font-bold text-green-600">${globalStats.changedAmountUSD.toLocaleString()} USD</p>
-          <p className="text-sm font-semibold text-green-500">${globalStats.changedAmountMXN.toLocaleString()} MXN</p>
-          <p className="text-xs text-stone-400 mt-1">{globalStats.changedCount} comisiones</p>
+          <p className="text-xs text-stone-400">Pagadas a Agentes</p>
+          <p className="text-xl font-bold text-green-600">${globalStats.paidAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.paidCount} comisiones</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Total Agentes</p>

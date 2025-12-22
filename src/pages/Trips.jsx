@@ -111,54 +111,47 @@ export default function Trips() {
   });
 
   const handleSave = async (data) => {
-    // Asegurar que las fechas se envían como YYYY-MM-DD sin conversión
-    const payload = {
-      ...data,
-      start_date: data.start_date || null,
-      end_date: data.end_date || null
-    };
-
     if (editingTrip) {
       // Check if moving to "vendido" stage
-      if (payload.stage === 'vendido' && editingTrip.stage !== 'vendido') {
+      if (data.stage === 'vendido' && editingTrip.stage !== 'vendido') {
         // Create sold trip record
         await createSoldTripMutation.mutateAsync({
           trip_id: editingTrip.id,
-          client_id: payload.client_id,
-          client_name: payload.client_name,
-          destination: payload.destination,
-          start_date: payload.start_date,
-          end_date: payload.end_date,
-          travelers: payload.travelers,
-          total_price: payload.budget || 0,
+          client_id: data.client_id,
+          client_name: data.client_name,
+          destination: data.destination,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          travelers: data.travelers,
+          total_price: data.budget || 0,
           total_commission: 0,
           total_paid_by_client: 0,
           total_paid_to_suppliers: 0,
           status: 'pendiente'
         });
       }
-      updateMutation.mutate({ id: editingTrip.id, data: payload });
+      updateMutation.mutate({ id: editingTrip.id, data });
     } else {
       // Check if creating with "vendido" stage
-      if (payload.stage === 'vendido') {
-        const trip = await createMutation.mutateAsync(payload);
+      if (data.stage === 'vendido') {
+        const trip = await createMutation.mutateAsync(data);
         // Create sold trip record immediately
         await createSoldTripMutation.mutateAsync({
           trip_id: trip.id,
-          client_id: payload.client_id,
-          client_name: payload.client_name,
-          destination: payload.destination,
-          start_date: payload.start_date,
-          end_date: payload.end_date,
-          travelers: payload.travelers,
-          total_price: payload.budget || 0,
+          client_id: data.client_id,
+          client_name: data.client_name,
+          destination: data.destination,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          travelers: data.travelers,
+          total_price: data.budget || 0,
           total_commission: 0,
           total_paid_by_client: 0,
           total_paid_to_suppliers: 0,
           status: 'pendiente'
         });
       } else {
-        createMutation.mutate(payload);
+        createMutation.mutate(data);
       }
     }
   };
@@ -169,7 +162,7 @@ export default function Trips() {
       const nextStage = STAGE_ORDER[currentIndex + 1];
       
       if (nextStage === 'vendido') {
-        // Create sold trip record - fechas se pasan tal cual, sin conversión
+        // Create sold trip record
         await createSoldTripMutation.mutateAsync({
           trip_id: trip.id,
           client_id: trip.client_id,
