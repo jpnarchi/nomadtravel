@@ -18,7 +18,7 @@ export async function updateSoldTripAndPaymentPlanTotals(soldTripId, queryClient
     const soldTrip = soldTrips[0];
     if (!soldTrip) return;
 
-    const totalPaidByClient = newClientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalPaidByClient = newClientPayments.reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
     const totalPrice = soldTrip.total_price || 0;
 
     // Actualizar el estado del SoldTrip
