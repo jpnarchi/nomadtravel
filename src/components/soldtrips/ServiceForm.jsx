@@ -34,6 +34,11 @@ const BOOKED_BY = [
   { value: 'iata_nomad', label: 'Nomad' }
 ];
 
+const PAYMENT_TYPE = [
+  { value: 'bruto', label: 'Bruto' },
+  { value: 'neto', label: 'Neto' }
+];
+
 const FLIGHT_CONSOLIDATORS = {
   montecito: [{ value: 'ytc', label: 'YTC' }],
   iata_nomad: [
@@ -1428,7 +1433,26 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Tipo de Pago</Label>
+                <Select 
+                  value={formData.payment_type || 'bruto'} 
+                  onValueChange={(v) => updateField('payment_type', v)}
+                >
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_TYPE.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {formData.payment_type === 'neto' && (
+                  <div className="mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                      ℹ️ En pagos netos, la comisión siempre pertenece a Nomad, aunque se haya usado el IATA de Montecito.
+                    </p>
+                  </div>
+                )}
+              </div>
               <div className="space-y-2">
                 <Label>Comisión (USD)</Label>
                 <Input
@@ -1500,6 +1524,13 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                       ))}
                     </SelectContent>
                   </Select>
+                  {formData.flight_consolidator === 'ytc' && formData.passengers && (
+                    <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs text-blue-800 font-medium">
+                        💡 Recuerda agregar <span className="font-bold">USD ${(formData.passengers * 5).toFixed(2)}</span> ({formData.passengers} pasajero{formData.passengers > 1 ? 's' : ''} × $5) por fee de YTC.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
               {formData.service_type === 'crucero' && (

@@ -266,6 +266,32 @@ export default function Commissions() {
         </Button>
       </div>
 
+      {/* Instructions Box */}
+      <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
+        <h3 className="font-bold text-stone-800 mb-3 flex items-center gap-2">
+          <span className="text-blue-600">ℹ️</span> Cómo Funcionan las Comisiones
+        </h3>
+        <div className="space-y-3 text-sm text-stone-700">
+          <div className="bg-white rounded-lg p-3">
+            <p className="font-semibold text-green-700 mb-1">✓ Comisiones Netas:</p>
+            <p>Se pagan a la agencia en cuanto termina el viaje.</p>
+          </div>
+          <div className="bg-white rounded-lg p-3">
+            <p className="font-semibold text-amber-700 mb-1">⏱ Comisiones Brutas:</p>
+            <p>Normalmente tardan <span className="font-bold">2 a 3 meses</span> en ser pagadas por el proveedor después de finalizado el viaje.</p>
+          </div>
+          <div className="bg-white rounded-lg p-3 border-l-4 border-blue-500">
+            <p className="font-semibold text-blue-700 mb-1">📋 Proceso de Facturación:</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Usa el <span className="font-semibold">check mark</span> para seleccionar comisiones</li>
+              <li>Haz clic en <span className="font-semibold">"Generar Factura"</span> para crear tu factura</li>
+              <li>Entrega la factura a <span className="font-semibold">Administración Nomad</span></li>
+              <li>Administración se encarga de pagar la comisión al agente</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
@@ -320,7 +346,7 @@ export default function Commissions() {
             Pendientes ({allFilteredServices.filter(s => !s.commission_paid).length})
           </TabsTrigger>
           <TabsTrigger value="pagadas">
-            Pagadas ({allFilteredServices.filter(s => s.commission_paid).length})
+            Pagadas a agente ({allFilteredServices.filter(s => s.commission_paid).length})
           </TabsTrigger>
         </TabsList>
 
@@ -343,13 +369,14 @@ export default function Commissions() {
                     }}
                   />
                 </th>
-                <th className="text-left p-3 font-semibold text-stone-600 w-24">Pagada</th>
+                <th className="text-left p-3 font-semibold text-stone-600 w-24">Pagada a agente</th>
+                <th className="text-left p-3 font-semibold text-stone-600 w-32">Pagado a agencia</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Cliente</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Servicio</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Tipo</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Bookeado por</th>
                 <th className="text-left p-3 font-semibold text-stone-600">Reservado por</th>
-                <th className="text-left p-3 font-semibold text-stone-600 w-32">Fecha Pago</th>
+                <th className="text-left p-3 font-semibold text-stone-600 w-32">Fecha Estimada Pago</th>
                 <th className="text-right p-3 font-semibold text-stone-600 w-32">Comisión</th>
                 <th className="text-center p-3 font-semibold text-stone-600 w-24">Acciones</th>
               </tr>
@@ -389,6 +416,36 @@ export default function Commissions() {
                       </SelectContent>
                     </Select>
                   </td>
+                  <td className="p-3">
+                    <div className="space-y-1">
+                      <Select
+                        value={service.paid_to_agency ? 'yes' : 'no'}
+                        onValueChange={(value) => {
+                          const newValue = value === 'yes';
+                          updateServiceMutation.mutate({
+                            id: service.id,
+                            data: { 
+                              paid_to_agency: newValue,
+                              paid_to_agency_date: newValue ? (service.paid_to_agency_date || new Date().toISOString().split('T')[0]) : null
+                            }
+                          });
+                        }}
+                      >
+                        <SelectTrigger className={`h-8 w-20 text-xs ${service.paid_to_agency ? 'bg-green-50 text-green-700 border-green-200' : 'bg-stone-50'}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="no">No</SelectItem>
+                          <SelectItem value="yes">Sí</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {service.paid_to_agency && service.paid_to_agency_date && (
+                        <p className="text-xs text-green-600 font-medium">
+                          {format(new Date(service.paid_to_agency_date), 'd MMM yy', { locale: es })}
+                        </p>
+                      )}
+                    </div>
+                  </td>
                     <td className="p-3">
                       <span className="font-medium text-stone-800">{trip?.client_name || '-'}</span>
                     </td>
@@ -419,14 +476,21 @@ export default function Commissions() {
                           className="h-8 text-xs"
                         />
                       ) : (
-                        <span 
-                          className={`text-stone-500 ${canEdit ? 'cursor-pointer hover:text-blue-600' : 'cursor-not-allowed opacity-60'}`}
-                          onClick={() => canEdit && startEditing(service)}
-                        >
-                          {service.commission_payment_date 
-                            ? format(new Date(service.commission_payment_date), 'd MMM yy', { locale: es })
-                            : '-'}
-                        </span>
+                        <div className="space-y-1">
+                          <span 
+                            className={`text-stone-500 block ${canEdit ? 'cursor-pointer hover:text-blue-600' : 'cursor-not-allowed opacity-60'}`}
+                            onClick={() => canEdit && startEditing(service)}
+                          >
+                            {service.commission_payment_date 
+                              ? format(new Date(service.commission_payment_date), 'd MMM yy', { locale: es })
+                              : '-'}
+                          </span>
+                          {service.commission_payment_date && service.payment_type === 'bruto' && (
+                            <p className="text-xs text-amber-600">
+                              (~2-3 meses)
+                            </p>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="p-3 text-right">
