@@ -30,7 +30,7 @@ import { updateSoldTripTotalsFromServices } from '@/components/utils/soldTripRec
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700' },
-  recibida: { label: 'Recibida', color: 'bg-blue-100 text-blue-700' },
+  pagado_a_agencia_interno: { label: 'Pagado a agencia (interno)', color: 'bg-blue-100 text-blue-700' },
   pagada_agente: { label: 'Pagada al Agente', color: 'bg-green-100 text-green-700' }
 };
 
@@ -93,6 +93,14 @@ export default function InternalCommissions() {
         const agentEmail = trip?.created_by || '';
         const agent = users.find(u => u.email === agentEmail);
         
+        // Determine status based on commission payment stages
+        let status = 'pendiente';
+        if (s.paid_to_agent) {
+          status = 'pagada_agente';
+        } else if (s.commission_paid) {
+          status = 'pagado_a_agencia_interno';
+        }
+        
         return {
           id: `service_${s.id}`,
           service_id: s.id,
@@ -104,7 +112,7 @@ export default function InternalCommissions() {
           estimated_amount: s.commission || 0,
           estimated_payment_date: s.commission_payment_date || null,
           iata_used: s.booked_by === 'montecito' ? 'montecito' : 'nomad',
-          status: s.commission_paid ? 'recibida' : 'pendiente',
+          status: status,
           paid_to_agent: s.paid_to_agent || false,
           received_date: s.commission_paid ? s.commission_payment_date : null,
           received_amount: s.commission_paid ? s.commission : null,
@@ -299,7 +307,7 @@ export default function InternalCommissions() {
   const handleUpdateStatus = async (commission, newStatus) => {
     if (commission.source === 'tripService') {
       const updateData = { 
-        commission_paid: newStatus !== 'pendiente',
+        commission_paid: newStatus === 'pagado_a_agencia_interno' || newStatus === 'pagada_agente',
         paid_to_agent: newStatus === 'pagada_agente'
       };
       await updateTripServiceMutation.mutateAsync({ 
@@ -378,9 +386,10 @@ export default function InternalCommissions() {
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
-  // Split into pending and paid
-  const pendingCommissions = filteredCommissions.filter(c => !isPaidToAgent(c));
-  const paidCommissions = filteredCommissions.filter(c => isPaidToAgent(c));
+  // Split into pending, validated, and paid
+  const pendingCommissions = filteredCommissions.filter(c => c.status === 'pendiente');
+  const validatedCommissions = filteredCommissions.filter(c => c.status === 'pagado_a_agencia_interno');
+  const paidCommissions = filteredCommissions.filter(c => c.status === 'pagada_agente');
 
   // Group by agent for current tab
   const getCommissionsByAgent = (list) => {
@@ -411,6 +420,8 @@ export default function InternalCommissions() {
   const globalStats = {
     pendingCount: pendingCommissions.length,
     pendingAmount: pendingCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
+    validatedCount: validatedCommissions.length,
+    validatedAmount: validatedCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     paidCount: paidCommissions.length,
     paidAmount: paidCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
     totalAgentCommission: filteredCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
@@ -420,11 +431,18 @@ export default function InternalCommissions() {
   // Render commissions table
   const renderCommissionsTable = (commissionsByAgent, tabType) => {
     if (Object.keys(commissionsByAgent).length === 0) {
+      const emptyMessages = {
+        pending: { title: "Sin comisiones pendientes", description: "No hay comisiones pendientes" },
+        validated: { title: "Sin comisiones validadas", description: "No hay comisiones marcadas como pagado a agencia" },
+        paid: { title: "Sin comisiones pagadas", description: "No hay comisiones pagadas a agentes aún" }
+      };
+      const msg = emptyMessages[tabType] || emptyMessages.pending;
+      
       return (
         <EmptyState
           icon={DollarSign}
-          title={tabType === 'pending' ? "Sin comisiones pendientes" : "Sin comisiones pagadas"}
-          description={tabType === 'pending' ? "No hay comisiones por pagar a agentes" : "No hay comisiones pagadas aún"}
+          title={msg.title}
+          description={msg.description}
           actionLabel="Nueva Comisión"
           onAction={() => setFormOpen(true)}
         />
@@ -463,7 +481,7 @@ export default function InternalCommissions() {
             <table className="w-full text-sm">
               <thead className="bg-stone-50/50">
                 <tr>
-                  {tabType === 'pending' && (
+                  {(tabType === 'pending' || tabType === 'validated') && (
                     <th className="text-center p-3 font-medium text-stone-600 w-10">
                       <Checkbox
                         checked={agentCommissions.every(c => selectedCommissions.find(s => s.id === c.id))}
@@ -484,7 +502,7 @@ export default function InternalCommissions() {
               <tbody className="divide-y divide-stone-100">
                 {agentCommissions.map(commission => (
                   <tr key={commission.id} className="hover:bg-stone-50">
-                    {tabType === 'pending' && (
+                    {(tabType === 'pending' || tabType === 'validated') && (
                       <td className="p-3 text-center">
                         <Checkbox
                           checked={!!selectedCommissions.find(c => c.id === commission.id)}
@@ -516,7 +534,7 @@ export default function InternalCommissions() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pendiente">Pendiente</SelectItem>
-                          <SelectItem value="recibida">Recibida</SelectItem>
+                          <SelectItem value="pagado_a_agencia_interno">Pagado a agencia (interno)</SelectItem>
                           <SelectItem value="pagada_agente">Pagada al Agente</SelectItem>
                         </SelectContent>
                       </Select>
@@ -604,11 +622,16 @@ export default function InternalCommissions() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Por Pagar a Agentes</p>
+          <p className="text-xs text-stone-400">Pendientes</p>
           <p className="text-xl font-bold text-orange-600">${globalStats.pendingAmount.toLocaleString()}</p>
           <p className="text-xs text-stone-400">{globalStats.pendingCount} comisiones</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Pagado a agencia</p>
+          <p className="text-xl font-bold text-blue-600">${globalStats.validatedAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.validatedCount} comisiones</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Pagadas a Agentes</p>
@@ -677,12 +700,15 @@ export default function InternalCommissions() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-stone-100 rounded-xl p-1">
+        <TabsList className="bg-stone-100 rounded-xl p-1 grid grid-cols-3">
           <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white">
-            <Clock className="w-4 h-4 mr-2" /> Por Pagar ({pendingCommissions.length})
+            <Clock className="w-4 h-4 mr-2" /> Pendientes ({pendingCommissions.length})
+          </TabsTrigger>
+          <TabsTrigger value="validated" className="rounded-lg data-[state=active]:bg-white">
+            <DollarSign className="w-4 h-4 mr-2" /> Pagado a agencia ({validatedCommissions.length})
           </TabsTrigger>
           <TabsTrigger value="paid" className="rounded-lg data-[state=active]:bg-white">
-            <CheckCircle className="w-4 h-4 mr-2" /> Pagadas ({paidCommissions.length})
+            <CheckCircle className="w-4 h-4 mr-2" /> Pagadas a agente ({paidCommissions.length})
           </TabsTrigger>
         </TabsList>
 
@@ -704,6 +730,26 @@ export default function InternalCommissions() {
             </div>
           )}
           {renderCommissionsTable(getCommissionsByAgent(pendingCommissions), 'pending')}
+        </TabsContent>
+
+        {/* Validated Commissions (Pagado a agencia interno) */}
+        <TabsContent value="validated" className="mt-4 space-y-4">
+          {selectedCommissions.length > 0 && (
+            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <span className="font-semibold">{selectedCommissions.length}</span> comisiones seleccionadas 
+                (Total: <span className="font-semibold">${selectedCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0).toLocaleString()}</span>)
+              </p>
+              <Button 
+                onClick={handleGenerateInvoice}
+                className="text-white rounded-xl"
+                style={{ backgroundColor: '#2E442A' }}
+              >
+                Generar Invoice
+              </Button>
+            </div>
+          )}
+          {renderCommissionsTable(getCommissionsByAgent(validatedCommissions), 'validated')}
         </TabsContent>
 
         {/* Paid Commissions */}
