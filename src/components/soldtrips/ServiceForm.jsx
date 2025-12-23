@@ -100,7 +100,12 @@ const HOTEL_CHAINS = [
   { value: 'auberge', label: 'Auberge Resorts Collection' },
   { value: 'slh', label: 'SLH – Small Luxury Hotels of the World' },
   { value: 'design_hotels', label: 'Design Hotels' },
-  { value: 'lhw', label: 'The Leading Hotels of the World (LHW)' }
+  { value: 'lhw', label: 'The Leading Hotels of the World (LHW)' },
+  { value: 'preferred_hotels', label: 'Preferred Hotels' },
+  { value: 'rocco_forte', label: 'Rocco Forte' },
+  { value: 'dorchester', label: 'Dorchester Collection' },
+  { value: 'mandarin_oriental', label: 'Mandarin Oriental' },
+  { value: 'otro', label: 'Otro' }
 ];
 
 const CRUISE_LINES = [
@@ -178,7 +183,8 @@ const HOTEL_BRANDS = {
     { value: 'curio', label: 'Curio Collection' },
     { value: 'tapestry', label: 'Tapestry Collection' },
     { value: 'hilton_hotels', label: 'Hilton Hotels & Resorts' },
-    { value: 'doubletree', label: 'DoubleTree' }
+    { value: 'doubletree', label: 'DoubleTree' },
+    { value: 'otro', label: 'Otro' }
   ],
   marriott: [
     { value: 'ritz_carlton', label: 'Ritz-Carlton' },
@@ -190,7 +196,8 @@ const HOTEL_BRANDS = {
     { value: 'autograph', label: 'Autograph Collection' },
     { value: 'westin', label: 'Westin' },
     { value: 'sheraton', label: 'Sheraton' },
-    { value: 'delta', label: 'Delta' }
+    { value: 'delta', label: 'Delta' },
+    { value: 'otro', label: 'Otro' }
   ],
   hyatt: [
     { value: 'park_hyatt', label: 'Park Hyatt' },
@@ -199,7 +206,8 @@ const HOTEL_BRANDS = {
     { value: 'andaz', label: 'Andaz' },
     { value: 'thompson', label: 'Thompson Hotels' },
     { value: 'alila', label: 'Alila' },
-    { value: 'unbound', label: 'Unbound Collection' }
+    { value: 'unbound', label: 'Unbound Collection' },
+    { value: 'otro', label: 'Otro' }
   ],
   ihg: [
     { value: 'intercontinental', label: 'InterContinental' },
@@ -207,7 +215,8 @@ const HOTEL_BRANDS = {
     { value: 'regent', label: 'Regent' },
     { value: 'kimpton', label: 'Kimpton' },
     { value: 'vignette', label: 'Vignette Collection' },
-    { value: 'hotel_indigo', label: 'Hotel Indigo' }
+    { value: 'hotel_indigo', label: 'Hotel Indigo' },
+    { value: 'otro', label: 'Otro' }
   ],
   accor: [
     { value: 'fairmont', label: 'Fairmont' },
@@ -216,38 +225,63 @@ const HOTEL_BRANDS = {
     { value: 'mgallery', label: 'MGallery' },
     { value: 'mondrian', label: 'Mondrian' },
     { value: 'ennismore', label: 'Ennismore Collection' },
-    { value: 'banyan_tree', label: 'Banyan Tree' }
+    { value: 'banyan_tree', label: 'Banyan Tree' },
+    { value: 'otro', label: 'Otro' }
   ],
   kerzner: [
     { value: 'one_and_only', label: 'One&Only' },
     { value: 'siro', label: 'SIRO' },
-    { value: 'atlantis', label: 'Atlantis' }
+    { value: 'atlantis', label: 'Atlantis' },
+    { value: 'otro', label: 'Otro' }
   ],
   four_seasons: [
-    { value: 'four_seasons', label: 'Four Seasons' }
+    { value: 'four_seasons', label: 'Four Seasons' },
+    { value: 'otro', label: 'Otro' }
   ],
   rosewood: [
     { value: 'rosewood_hotels', label: 'Rosewood Hotels' },
     { value: 'khos', label: 'KHOS' },
-    { value: 'new_world', label: 'New World Hotels' }
+    { value: 'new_world', label: 'New World Hotels' },
+    { value: 'otro', label: 'Otro' }
   ],
   aman: [
-    { value: 'aman_resorts', label: 'Aman Resorts' }
+    { value: 'aman_resorts', label: 'Aman Resorts' },
+    { value: 'otro', label: 'Otro' }
   ],
   belmond: [
-    { value: 'belmond_hotels', label: 'Belmond Hotels & Trains' }
+    { value: 'belmond_hotels', label: 'Belmond Hotels & Trains' },
+    { value: 'otro', label: 'Otro' }
   ],
   auberge: [
-    { value: 'auberge', label: 'Auberge' }
+    { value: 'auberge', label: 'Auberge' },
+    { value: 'otro', label: 'Otro' }
   ],
   slh: [
-    { value: 'slh', label: 'SLH' }
+    { value: 'slh', label: 'SLH' },
+    { value: 'otro', label: 'Otro' }
   ],
   design_hotels: [
-    { value: 'design_hotels', label: 'Design Hotels' }
+    { value: 'design_hotels', label: 'Design Hotels' },
+    { value: 'otro', label: 'Otro' }
   ],
   lhw: [
-    { value: 'lhw', label: 'LHW' }
+    { value: 'lhw', label: 'LHW' },
+    { value: 'otro', label: 'Otro' }
+  ],
+  preferred_hotels: [
+    { value: 'otro', label: 'Otro' }
+  ],
+  rocco_forte: [
+    { value: 'otro', label: 'Otro' }
+  ],
+  dorchester: [
+    { value: 'otro', label: 'Otro' }
+  ],
+  mandarin_oriental: [
+    { value: 'otro', label: 'Otro' }
+  ],
+  otro: [
+    { value: 'otro', label: 'Otro' }
   ]
 };
 
@@ -380,25 +414,114 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Cadena Hotelera</Label>
-          <Select value={formData.hotel_chain || ''} onValueChange={handleChainChange}>
-            <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar cadena" /></SelectTrigger>
-            <SelectContent>
-              {HOTEL_CHAINS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Popover open={hotelChainOpen} onOpenChange={setHotelChainOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={hotelChainOpen}
+                className="w-full justify-between rounded-xl font-normal"
+              >
+                {HOTEL_CHAINS.find(c => c.value === formData.hotel_chain)?.label || "Seleccionar cadena"}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Buscar cadena..." />
+                <CommandList>
+                  <CommandEmpty>No se encontró.</CommandEmpty>
+                  <CommandGroup className="max-h-[200px] overflow-y-auto">
+                    {HOTEL_CHAINS.map((chain) => (
+                      <CommandItem
+                        key={chain.value}
+                        value={chain.label}
+                        onSelect={() => {
+                          handleChainChange(chain.value);
+                          if (chain.value !== 'otro') {
+                            updateField('hotel_chain_other', '');
+                          }
+                          setHotelChainOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            formData.hotel_chain === chain.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {chain.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {formData.hotel_chain === 'otro' && (
+            <Input
+              value={formData.hotel_chain_other || ''}
+              onChange={(e) => updateField('hotel_chain_other', e.target.value)}
+              className="rounded-xl mt-2"
+              placeholder="Especificar cadena hotelera"
+            />
+          )}
         </div>
         <div className="space-y-2">
           <Label>Sub-marca / Colección</Label>
-          <Select 
-            value={formData.hotel_brand || ''} 
-            onValueChange={(v) => updateField('hotel_brand', v)}
-            disabled={!formData.hotel_chain}
-          >
-            <SelectTrigger className="rounded-xl"><SelectValue placeholder={formData.hotel_chain ? "Seleccionar sub-marca" : "Primero selecciona cadena"} /></SelectTrigger>
-            <SelectContent>
-              {availableBrands.map(b => <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Popover open={hotelBrandOpen} onOpenChange={setHotelBrandOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={hotelBrandOpen}
+                className="w-full justify-between rounded-xl font-normal"
+                disabled={!formData.hotel_chain}
+              >
+                {availableBrands.find(b => b.value === formData.hotel_brand)?.label || (formData.hotel_chain ? "Seleccionar sub-marca" : "Primero selecciona cadena")}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+              <Command>
+                <CommandInput placeholder="Buscar sub-marca..." />
+                <CommandList>
+                  <CommandEmpty>No se encontró.</CommandEmpty>
+                  <CommandGroup className="max-h-[200px] overflow-y-auto">
+                    {availableBrands.map((brand) => (
+                      <CommandItem
+                        key={brand.value}
+                        value={brand.label}
+                        onSelect={() => {
+                          updateField('hotel_brand', brand.value);
+                          if (brand.value !== 'otro') {
+                            updateField('hotel_brand_other', '');
+                          }
+                          setHotelBrandOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            formData.hotel_brand === brand.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {brand.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {formData.hotel_brand === 'otro' && (
+            <Input
+              value={formData.hotel_brand_other || ''}
+              onChange={(e) => updateField('hotel_brand_other', e.target.value)}
+              className="rounded-xl mt-2"
+              placeholder="Especificar sub-marca"
+            />
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -527,6 +650,8 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
   );
 
   const [airlineOpen, setAirlineOpen] = React.useState(false);
+  const [hotelChainOpen, setHotelChainOpen] = React.useState(false);
+  const [hotelBrandOpen, setHotelBrandOpen] = React.useState(false);
 
   const renderVueloFields = () => (
     <>
