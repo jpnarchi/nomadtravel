@@ -1446,11 +1446,9 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                   </SelectContent>
                 </Select>
                 {formData.payment_type === 'neto' && (
-                  <div className="mt-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                    <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                      ℹ️ En pagos netos, la comisión siempre pertenece a Nomad, aunque se haya usado el IATA de Montecito.
-                    </p>
-                  </div>
+                  <p className="text-xs text-amber-600 mt-1">
+                    ℹ️ Comisión neta = pertenece a Nomad
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -1525,11 +1523,9 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                     </SelectContent>
                   </Select>
                   {formData.flight_consolidator === 'ytc' && formData.passengers && (
-                    <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-xs text-blue-800 font-medium">
-                        💡 Recuerda agregar <span className="font-bold">USD ${(formData.passengers * 5).toFixed(2)}</span> ({formData.passengers} pasajero{formData.passengers > 1 ? 's' : ''} × $5) por fee de YTC.
-                      </p>
-                    </div>
+                    <p className="text-xs text-blue-600 mt-1">
+                      💡 +${(formData.passengers * 5).toFixed(2)} fee YTC ({formData.passengers}p × $5)
+                    </p>
                   )}
                 </div>
               )}
