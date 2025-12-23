@@ -1348,6 +1348,11 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 {SERVICE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
               </SelectContent>
             </Select>
+            {formData.service_type === 'vuelo' && (
+              <p className="text-xs text-stone-500 italic">
+                Comprado en YTC = $5 USD más por persona
+              </p>
+            )}
           </div>
 
           {/* Dynamic Fields */}
