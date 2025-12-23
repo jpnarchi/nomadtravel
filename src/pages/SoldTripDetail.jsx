@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -268,8 +269,14 @@ export default function SoldTripDetail() {
       
       return supplierPayment;
     },
-    onSuccess: async (newPayment) => {
+    onSuccess: async (newPayment, variables) => {
       await updateSoldTripAndTripServiceTotals(newPayment.sold_trip_id, queryClient);
+      
+      // Si se creó un pago automático de cliente, recalcular también los totales de pagos del cliente
+      if (variables.method === 'tarjeta_cliente') {
+        await updateSoldTripAndPaymentPlanTotals(newPayment.sold_trip_id, queryClient);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       setSupplierPaymentOpen(false);
       setEditingSupplierPayment(null);
@@ -301,6 +308,11 @@ export default function SoldTripDetail() {
       const payment = supplierPayments.find(p => p.id === variables.id);
       if (payment?.sold_trip_id) {
         await updateSoldTripAndTripServiceTotals(payment.sold_trip_id, queryClient);
+        
+        // Si se cambió a tarjeta_cliente, recalcular también los totales de pagos del cliente
+        if (variables.data.method === 'tarjeta_cliente' && variables.oldPayment.method !== 'tarjeta_cliente') {
+          await updateSoldTripAndPaymentPlanTotals(payment.sold_trip_id, queryClient);
+        }
       }
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       setSupplierPaymentOpen(false);
@@ -355,6 +367,12 @@ export default function SoldTripDetail() {
         await updateSoldTripAndPaymentPlanTotals(variables.sold_trip_id, queryClient);
       } else if (variables.type === 'supplier') {
         await updateSoldTripAndTripServiceTotals(variables.sold_trip_id, queryClient);
+        
+        // Si se eliminó un pago con tarjeta_cliente, recalcular también los totales de pagos del cliente
+        if (variables.payment?.method === 'tarjeta_cliente') {
+          await updateSoldTripAndPaymentPlanTotals(variables.sold_trip_id, queryClient);
+        }
+        
         queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       }
       setDeleteConfirm(null);
@@ -1282,7 +1300,42 @@ export default function SoldTripDetail() {
         {/* Payment Plan Tab */}
         {paymentPlan.length > 0 && (
           <TabsContent value="payment-plan">
-...
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6">
+              <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
+                <Clock className="w-5 h-5" style={{ color: '#2E442A' }} />
+                Plan de Pagos
+              </h3>
+              {paymentPlan.length === 0 ? (
+                <EmptyState
+                  icon={Calendar}
+                  title="Sin plan de pagos"
+                  description="No se ha definido un plan de pagos para este viaje."
+                  actionLabel="Crear Plan de Pagos" 
+                  onAction={() => setPaymentPlanOpen(true)}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {paymentPlan.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 border rounded-xl bg-stone-50 hover:bg-stone-100 transition-colors">
+                      <div>
+                        <p className="font-semibold text-stone-800">{item.description}</p>
+                        <p className="text-sm text-stone-600">Fecha de Vencimiento: {format(parseLocalDate(item.due_date), 'd MMMM yyyy', { locale: es })}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg text-emerald-600">${(item.amount || 0).toLocaleString()} USD</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingPlanItem(item)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
         )}
 
