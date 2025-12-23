@@ -457,76 +457,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Net Commissions Post-Trip Control */}
-      {myFinishedTripsWithNetCommissions.length > 0 && (
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5" style={{ color: '#2E442A' }} />
-              <h3 className="text-lg font-bold text-stone-800">Mis Viajes Terminados con Comisiones Netas</h3>
-            </div>
-            <div className="flex gap-3">
-              <Badge className="bg-green-100 text-green-700 border-0">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                {readyCount} listos
-              </Badge>
-              <Badge className="bg-orange-100 text-orange-700 border-0">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {reviewCount} en revisión
-              </Badge>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            {myFinishedTripsWithNetCommissions.map(trip => (
-              <div 
-                key={trip.id} 
-                className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-stone-800 truncate">{trip.client_name}</p>
-                    <Badge 
-                      variant="outline" 
-                      className={`text-xs ${
-                        trip.status === 'ready' 
-                          ? 'bg-green-50 text-green-700 border-green-200' 
-                          : 'bg-orange-50 text-orange-700 border-orange-200'
-                      }`}
-                    >
-                      {trip.status === 'ready' ? '✅ Listo' : '⚠️ Revisión'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-stone-500">
-                    <span>{trip.destination}</span>
-                    <span>•</span>
-                    <span>Fin: {format(parseLocalDate(trip.end_date), 'd MMM yyyy', { locale: es })}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 ml-4">
-                  <div className="text-right">
-                    <p className="text-xs text-stone-400">Saldo Cliente</p>
-                    <p className={`font-semibold text-sm ${trip.clientBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${trip.clientBalance.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-stone-400">Netas Pendientes</p>
-                    <p className="font-semibold text-sm" style={{ color: '#2E442A' }}>
-                      ${trip.netCommissionsPending.toLocaleString()}
-                    </p>
-                  </div>
-                  <Link to={`${createPageUrl('SoldTripDetail')}?id=${trip.id}`}>
-                    <Button variant="ghost" size="sm" className="h-8">
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+
 
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">

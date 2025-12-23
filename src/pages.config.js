@@ -7,7 +7,6 @@ import ClientDetail from './pages/ClientDetail';
 import Clients from './pages/Clients';
 import Commissions from './pages/Commissions';
 import Credentials from './pages/Credentials';
-import Dashboard from './pages/Dashboard';
 import DateAudit from './pages/DateAudit';
 import FamTrips from './pages/FamTrips';
 import Home from './pages/Home';
@@ -25,6 +24,7 @@ import Suppliers from './pages/Suppliers';
 import TripDetail from './pages/TripDetail';
 import TripRequestPublic from './pages/TripRequestPublic';
 import Trips from './pages/Trips';
+import Dashboard from './pages/Dashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -38,7 +38,6 @@ export const PAGES = {
     "Clients": Clients,
     "Commissions": Commissions,
     "Credentials": Credentials,
-    "Dashboard": Dashboard,
     "DateAudit": DateAudit,
     "FamTrips": FamTrips,
     "Home": Home,
@@ -56,6 +55,7 @@ export const PAGES = {
     "TripDetail": TripDetail,
     "TripRequestPublic": TripRequestPublic,
     "Trips": Trips,
+    "Dashboard": Dashboard,
 }
 
 export const pagesConfig = {
