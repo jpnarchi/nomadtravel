@@ -128,8 +128,16 @@ export default function InternalCommissions() {
         return `Traslado ${service.transfer_origin || ''} - ${service.transfer_destination || ''}`;
       case 'tour':
         return service.tour_name || 'Tour';
+      case 'crucero':
+        return service.cruise_ship || service.cruise_line || 'Crucero';
+      case 'tren':
+        return `${service.train_operator || 'Tren'} ${service.train_number || ''}`.trim();
+      case 'dmc':
+        return service.dmc_name || 'DMC';
+      case 'otro':
+        return service.other_name || service.other_description || 'Servicio';
       default:
-        return service.other_name || 'Servicio';
+        return 'Servicio';
     }
   }
 
