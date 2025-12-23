@@ -621,6 +621,77 @@ export default function InternalCommissions() {
         </Button>
       </div>
 
+      {/* Commissions Pending Agency Validation Alert */}
+      {(() => {
+        const commissionsToValidate = tripServices.filter(s => 
+          s.paid_to_agency === true && 
+          s.commission > 0 && 
+          !s.commission_paid
+        );
+        
+        if (commissionsToValidate.length === 0) return null;
+        
+        return (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5 animate-pulse" />
+              <div className="flex-1">
+                <h3 className="font-bold text-amber-900 mb-2">
+                  ⚠️ Comisiones Pendientes de Validar Pago a Agencia
+                </h3>
+                <p className="text-sm text-amber-800 mb-3">
+                  {commissionsToValidate.length} {commissionsToValidate.length === 1 ? 'comisión marcada' : 'comisiones marcadas'} como "Pagado a agencia" por el agente. Revisar y confirmar recepción del pago:
+                </p>
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {commissionsToValidate.map(service => {
+                    const trip = soldTrips.find(t => t.id === service.sold_trip_id);
+                    const agent = users.find(u => u.email === trip?.created_by);
+                    const serviceName = (() => {
+                      switch (service.service_type) {
+                        case 'hotel': return service.hotel_name || 'Hotel';
+                        case 'vuelo': return service.airline || 'Vuelo';
+                        case 'dmc': return service.dmc_name || 'DMC';
+                        case 'crucero': return service.cruise_ship || 'Crucero';
+                        case 'tour': return service.tour_name || 'Tour';
+                        case 'tren': return service.train_operator || 'Tren';
+                        default: return service.other_name || 'Servicio';
+                      }
+                    })();
+                    
+                    return (
+                      <div key={service.id} className="bg-white rounded-lg p-3 border-2 border-amber-300 hover:border-amber-400 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-stone-800">{trip?.client_name || 'Sin cliente'}</p>
+                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">
+                                {agent?.full_name || 'Sin agente'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-stone-600 mb-1">{serviceName} • {trip?.destination}</p>
+                            {service.paid_to_agency_date && (
+                              <p className="text-xs text-amber-700">
+                                Marcado: {format(new Date(service.paid_to_agency_date), 'd MMM yyyy', { locale: es })}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-amber-700">
+                              ${(service.commission || 0).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-stone-500">comisión</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
