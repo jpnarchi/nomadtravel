@@ -19,6 +19,7 @@ import {
 import TripForm from '@/components/trips/TripForm';
 import TripCard from '@/components/trips/TripCard';
 import EmptyState from '@/components/ui/EmptyState';
+import { toast } from 'sonner';
 
 const STAGES = [
   { key: 'nuevo', label: 'Nuevo', color: '#3b82f6' },
@@ -106,12 +107,20 @@ export default function Trips() {
   });
 
   const createSoldTripMutation = useMutation({
-    mutationFn: (data) => supabaseAPI.entities.SoldTrip.create({
-      ...data,
-      created_by: user?.email
-    }),
-    onSuccess: () => {
+    mutationFn: (data) => {
+      console.log('Creating SoldTrip with data:', data);
+      return supabaseAPI.entities.SoldTrip.create({
+        ...data,
+        created_by: user?.email
+      });
+    },
+    onSuccess: (data) => {
+      console.log('SoldTrip created successfully:', data);
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+    },
+    onError: (error) => {
+      console.error('Error creating SoldTrip:', error);
+      toast.error('Error al crear el viaje vendido: ' + (error.message || 'Error desconocido'));
     }
   });
 
@@ -127,12 +136,13 @@ export default function Trips() {
           destination: data.destination,
           start_date: data.start_date,
           end_date: data.end_date,
-          travelers: data.travelers,
+          num_adults: data.travelers || 0,
+          num_children: 0,
           total_price: data.budget || 0,
           total_commission: 0,
           total_paid_by_client: 0,
-          total_paid_to_suppliers: 0,
-          status: 'pendiente'
+          currency: 'USD',
+          status: 'confirmed'
         });
       }
       updateMutation.mutate({ id: editingTrip.id, data });
@@ -148,12 +158,13 @@ export default function Trips() {
           destination: data.destination,
           start_date: data.start_date,
           end_date: data.end_date,
-          travelers: data.travelers,
+          num_adults: data.travelers || 0,
+          num_children: 0,
           total_price: data.budget || 0,
           total_commission: 0,
           total_paid_by_client: 0,
-          total_paid_to_suppliers: 0,
-          status: 'pendiente'
+          currency: 'USD',
+          status: 'confirmed'
         });
       } else {
         createMutation.mutate(data);
@@ -162,29 +173,60 @@ export default function Trips() {
   };
 
   const handleMoveStage = async (trip) => {
-    const currentIndex = STAGE_ORDER.indexOf(trip.stage);
-    if (currentIndex < STAGE_ORDER.length - 1) {
-      const nextStage = STAGE_ORDER[currentIndex + 1];
-      
-      if (nextStage === 'vendido') {
-        // Create sold trip record
-        await createSoldTripMutation.mutateAsync({
-          trip_id: trip.id,
-          client_id: trip.client_id,
-          client_name: trip.client_name,
-          destination: trip.destination,
-          start_date: trip.start_date,
-          end_date: trip.end_date,
-          travelers: trip.travelers,
-          total_price: trip.budget || 0,
-          total_commission: 0,
-          total_paid_by_client: 0,
-          total_paid_to_suppliers: 0,
-          status: 'pendiente'
-        });
+    try {
+      console.log('=== handleMoveStage called ===');
+      console.log('Trip:', trip);
+      console.log('Current stage:', trip.stage);
+
+      const currentIndex = STAGE_ORDER.indexOf(trip.stage);
+      console.log('Current index:', currentIndex);
+
+      if (currentIndex < STAGE_ORDER.length - 1) {
+        const nextStage = STAGE_ORDER[currentIndex + 1];
+        const nextStageLabel = STAGES.find(s => s.key === nextStage)?.label;
+
+        console.log('Next stage:', nextStage);
+        console.log('Next stage label:', nextStageLabel);
+
+        toast.loading('Avanzando etapa...', { id: 'move-stage' });
+
+        if (nextStage === 'vendido') {
+          console.log('Creating SoldTrip record...');
+          const soldTripData = {
+            trip_id: trip.id,
+            client_id: trip.client_id,
+            client_name: trip.client_name,
+            destination: trip.destination,
+            start_date: trip.start_date,
+            end_date: trip.end_date,
+            num_adults: trip.travelers || 0,
+            num_children: 0,
+            total_price: trip.budget || 0,
+            total_commission: 0,
+            total_paid_by_client: 0,
+            currency: 'USD',
+            status: 'confirmed'
+          };
+          console.log('SoldTrip data:', soldTripData);
+
+          const soldTripResult = await createSoldTripMutation.mutateAsync(soldTripData);
+          console.log('SoldTrip created:', soldTripResult);
+        }
+
+        console.log('Updating trip stage to:', nextStage);
+        await updateMutation.mutateAsync({ id: trip.id, data: { stage: nextStage } });
+        console.log('Trip stage updated successfully');
+
+        toast.success(`Viaje movido a "${nextStageLabel}"`, { id: 'move-stage' });
+      } else {
+        console.log('Trip is already at the last stage');
       }
-      
-      updateMutation.mutate({ id: trip.id, data: { stage: nextStage } });
+    } catch (error) {
+      console.error('=== Error in handleMoveStage ===');
+      console.error('Error:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      toast.error('Error al avanzar etapa: ' + (error.message || 'Error desconocido'), { id: 'move-stage' });
     }
   };
 

@@ -28,10 +28,11 @@ export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      layout="position"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ layout: { duration: 0.2 } }}
       className="bg-white rounded-xl p-4 shadow-sm border border-stone-100 hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-start justify-between mb-3">
