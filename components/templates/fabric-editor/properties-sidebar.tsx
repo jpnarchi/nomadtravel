@@ -53,6 +53,9 @@ interface PropertiesSidebarProps {
     onUpdateStrokeColor?: (color: string) => void
     onUpdateStrokeWidth?: (width: number) => void
     onUpdateRingThickness?: (thickness: number) => void
+    onUpdateFlexboxProperty?: (property: string, value: any) => void
+    onAddTextToFlexbox?: () => void
+    onRemoveTextFromFlexbox?: () => void
 }
 
 export function PropertiesSidebar({
@@ -65,6 +68,9 @@ export function PropertiesSidebar({
     onUpdateStrokeColor,
     onUpdateStrokeWidth,
     onUpdateRingThickness,
+    onUpdateFlexboxProperty,
+    onAddTextToFlexbox,
+    onRemoveTextFromFlexbox,
 }: PropertiesSidebarProps) {
     const isTextType = selectedObject &&
         (selectedObject.type === 'text' || selectedObject.type === 'i-text' || selectedObject.type === 'textbox')
@@ -72,6 +78,7 @@ export function PropertiesSidebar({
     const isImagePlaceholder = selectedObject && (selectedObject as any).isImagePlaceholder
     const isImageContainer = selectedObject && (selectedObject as any).isImageContainer
     const isRing = selectedObject && (selectedObject as any).isRing
+    const isTextFlexbox = selectedObject && (selectedObject as any).isTextFlexbox
 
     return (
         <>
@@ -99,6 +106,7 @@ export function PropertiesSidebar({
                     <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
                         <h4 className="text-xs font-bold text-gray-800 uppercase mb-4 tracking-wider">
                             {selectedObject.type === 'i-text' || selectedObject.type === 'text' || selectedObject.type === 'textbox' ? 'Text' :
+                             isTextFlexbox ? 'Text Flexbox' :
                              isRing ? 'Ring' :
                              selectedObject.type === 'rect' ? 'Rectangle' :
                              selectedObject.type === 'circle' ? 'Circle' :
@@ -296,6 +304,152 @@ export function PropertiesSidebar({
                                                 }
                                             })()}
                                         </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Text Flexbox Properties */}
+                        {isTextFlexbox && onUpdateFlexboxProperty && (
+                            <div className="space-y-3">
+                                {/* Direction */}
+                                <div>
+                                    <Label className="text-xs text-gray-700 mb-2 block font-medium">Direction</Label>
+                                    <Select
+                                        value={(selectedObject as any).flexboxProps?.direction || 'vertical'}
+                                        onValueChange={(value) => onUpdateFlexboxProperty('direction', value)}
+                                    >
+                                        <SelectTrigger className="h-10 bg-white border-gray-200 text-gray-900 rounded-lg shadow-sm">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border-gray-200 rounded-lg shadow-lg">
+                                            <SelectItem value="vertical" className="text-gray-900 hover:bg-gray-100">Vertical</SelectItem>
+                                            <SelectItem value="horizontal" className="text-gray-900 hover:bg-gray-100">Horizontal</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Alignment */}
+                                <div>
+                                    <Label className="text-xs text-gray-700 mb-2 block font-medium">Alignment</Label>
+                                    <Select
+                                        value={(selectedObject as any).flexboxProps?.align || 'start'}
+                                        onValueChange={(value) => onUpdateFlexboxProperty('align', value)}
+                                    >
+                                        <SelectTrigger className="h-10 bg-white border-gray-200 text-gray-900 rounded-lg shadow-sm">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border-gray-200 rounded-lg shadow-lg">
+                                            <SelectItem value="start" className="text-gray-900 hover:bg-gray-100">Start</SelectItem>
+                                            <SelectItem value="center" className="text-gray-900 hover:bg-gray-100">Center</SelectItem>
+                                            <SelectItem value="end" className="text-gray-900 hover:bg-gray-100">End</SelectItem>
+                                            <SelectItem value="space-between" className="text-gray-900 hover:bg-gray-100">Space Between</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Gap */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs text-gray-700 font-medium">Gap</Label>
+                                        <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
+                                            {(selectedObject as any).flexboxProps?.gap || 10}px
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="50"
+                                        step="1"
+                                        value={(selectedObject as any).flexboxProps?.gap || 10}
+                                        onChange={(e) => onUpdateFlexboxProperty('gap', parseInt(e.target.value))}
+                                        className="w-full h-2 cursor-pointer accent-blue-500"
+                                    />
+                                </div>
+
+                                {/* Padding */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs text-gray-700 font-medium">Padding</Label>
+                                        <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
+                                            {(selectedObject as any).flexboxProps?.padding || 20}px
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        step="5"
+                                        value={(selectedObject as any).flexboxProps?.padding || 20}
+                                        onChange={(e) => onUpdateFlexboxProperty('padding', parseInt(e.target.value))}
+                                        className="w-full h-2 cursor-pointer accent-blue-500"
+                                    />
+                                </div>
+
+                                {/* Background Color */}
+                                <div>
+                                    <Label className="text-xs text-gray-700 mb-2 block font-medium">Background Color</Label>
+                                    <div className="relative w-14 h-14 rounded-full border-2 border-gray-300 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                                        <input
+                                            type="color"
+                                            value={(selectedObject as any).flexboxProps?.backgroundColor || '#f0f0f0'}
+                                            onChange={(e) => onUpdateFlexboxProperty('backgroundColor', e.target.value)}
+                                            className="circular-color-picker w-14 h-14 cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Border Radius */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-xs text-gray-700 font-medium">Border Radius</Label>
+                                        <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded-md">
+                                            {(selectedObject as any).flexboxProps?.borderRadius || 8}px
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="50"
+                                        step="1"
+                                        value={(selectedObject as any).flexboxProps?.borderRadius || 8}
+                                        onChange={(e) => onUpdateFlexboxProperty('borderRadius', parseInt(e.target.value))}
+                                        className="w-full h-2 cursor-pointer accent-blue-500"
+                                    />
+                                </div>
+
+                                {/* Text Management */}
+                                <div className="space-y-2 mt-4">
+                                    <Label className="text-xs text-gray-700 font-medium">Textos</Label>
+                                    <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                                        <p className="text-xs text-gray-600">
+                                            {(selectedObject as any)._objects?.length - 1 || 0} texto(s)
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {onAddTextToFlexbox && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={onAddTextToFlexbox}
+                                                    className="h-9 bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
+                                                >
+                                                    + Agregar
+                                                </Button>
+                                            )}
+                                            {onRemoveTextFromFlexbox && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={onRemoveTextFromFlexbox}
+                                                    className="h-9 bg-white border-gray-200 text-gray-900 hover:bg-gray-50"
+                                                >
+                                                    - Quitar
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-2">
+                                            💡 Doble clic en un texto para editarlo
+                                        </p>
                                     </div>
                                 </div>
                             </div>

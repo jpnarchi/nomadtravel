@@ -63,6 +63,15 @@ export const createFabricObjectFromJSON = async (obj: any, index: number): Promi
                 console.log(`🖼️ Restaurado imagen con container, borderRadius: ${obj.borderRadius}`)
             }
 
+            // Restore custom properties for text flexbox
+            if (obj.isTextFlexbox) {
+                ;(fabricObj as any).isTextFlexbox = true
+                ;(fabricObj as any).flexboxWidth = obj.flexboxWidth
+                ;(fabricObj as any).flexboxHeight = obj.flexboxHeight
+                ;(fabricObj as any).flexboxProps = obj.flexboxProps
+                console.log(`📐 Restaurado text flexbox con propiedades:`, obj.flexboxProps)
+            }
+
             console.log(`✅ Objeto ${index} creado: ${obj.type} en (${obj.left}, ${obj.top})`,
                 obj.lockMovementX ? '🔒 bloqueado' : '')
         }
@@ -312,10 +321,10 @@ const createImageObject = async (obj: any, index: number): Promise<fabric.Fabric
 }
 
 /**
- * Crea un grupo desde JSON (para image placeholders)
+ * Crea un grupo desde JSON (para image placeholders y text flexbox)
  */
 const createGroupObject = async (obj: any, index: number): Promise<fabric.Group | null> => {
-    console.log(`📦 Creando grupo (probablemente un contenedor de imagen)`)
+    console.log(`📦 Creando grupo (contenedor de imagen o text flexbox)`)
 
     try {
         // Use Fabric.js built-in method to recreate the group from JSON
@@ -336,10 +345,25 @@ const createGroupObject = async (obj: any, index: number): Promise<fabric.Group 
             })
         }
 
+        if (obj.isTextFlexbox) {
+            ;(group as any).isTextFlexbox = true
+            ;(group as any).flexboxWidth = obj.flexboxWidth
+            ;(group as any).flexboxHeight = obj.flexboxHeight
+            ;(group as any).flexboxProps = obj.flexboxProps
+            console.log(`📐 Propiedades custom aplicadas inmediatamente en text flexbox:`, {
+                isTextFlexbox: true,
+                flexboxWidth: obj.flexboxWidth,
+                flexboxHeight: obj.flexboxHeight,
+                flexboxProps: obj.flexboxProps
+            })
+        }
+
         console.log(`✅ Grupo ${index} creado con propiedades:`, {
             type: group.type,
             isImagePlaceholder: (group as any).isImagePlaceholder,
+            isTextFlexbox: (group as any).isTextFlexbox,
             placeholderWidth: (group as any).placeholderWidth,
+            flexboxWidth: (group as any).flexboxWidth,
             borderRadius: (group as any).borderRadius
         })
         return group
@@ -420,6 +444,14 @@ export const loadObjectsToCanvas = async (canvas: fabric.Canvas, slideData: any,
                     type: fabricObj.type,
                     isImageContainer: (fabricObj as any).isImageContainer,
                     borderRadius: (fabricObj as any).borderRadius
+                })
+            } else if ((fabricObj as any).isTextFlexbox) {
+                console.log(`✅ Objeto ${index} agregado al canvas - TEXT FLEXBOX con propiedades:`, {
+                    type: fabricObj.type,
+                    isTextFlexbox: (fabricObj as any).isTextFlexbox,
+                    flexboxWidth: (fabricObj as any).flexboxWidth,
+                    flexboxHeight: (fabricObj as any).flexboxHeight,
+                    flexboxProps: (fabricObj as any).flexboxProps
                 })
             } else {
                 console.log(`✅ Objeto ${index} agregado al canvas en orden`)

@@ -12,7 +12,8 @@ import { toast } from 'sonner'
 import {
     createText, createRectangle, createCircle, createTriangle, createRing,
     updateRingThickness, createLine, addImageToCanvas, createImagePlaceholder,
-    replaceImagePlaceholderWithImage
+    replaceImagePlaceholderWithImage, createTextFlexbox, updateFlexboxProperty,
+    addTextToFlexbox, removeTextFromFlexbox
 } from './fabric-editor/shape-factory'
 import {
     serializeCanvas, copyObjectToJSON, pasteObjectFromJSON, updateObjectProperty,
@@ -136,12 +137,24 @@ export function FabricSlideEditor({
             setSelectedPlaceholder(null)
         })
 
-        // Double click to load image into placeholder
+        // Double click to load image into placeholder or edit text
         canvas.on('mouse:dblclick', (e) => {
             const target = e.target
+
+            // Image placeholder double-click
             if (target && (target as any).isImagePlaceholder) {
                 setSelectedPlaceholder(target)
                 setShowUploadDialog(true)
+                return
+            }
+
+            // Textbox double-click - enter editing mode
+            if (target && (target.type === 'textbox' || target.type === 'i-text' || target.type === 'text')) {
+                const textbox = target as fabric.Textbox
+                textbox.set({ editable: true })
+                textbox.enterEditing()
+                textbox.selectAll()
+                canvas.renderAll()
             }
         })
 
@@ -360,6 +373,11 @@ export function FabricSlideEditor({
     const handleAddLine = () => fabricCanvasRef.current && createLine(fabricCanvasRef.current)
     const handleAddImagePlaceholder = async () => {
         if (fabricCanvasRef.current) await createImagePlaceholder(fabricCanvasRef.current)
+    }
+
+    const handleAddTextFlexbox = () => {
+        if (!fabricCanvasRef.current) return
+        createTextFlexbox(fabricCanvasRef.current)
     }
 
     // Image handlers
@@ -617,6 +635,25 @@ export function FabricSlideEditor({
         saveCanvas()
     }
 
+    const handleUpdateFlexboxProperty = (property: string, value: any) => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+        updateFlexboxProperty(fabricCanvasRef.current, selectedObject, property, value)
+        saveCanvas()
+    }
+
+    const handleAddTextToFlexbox = () => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+        addTextToFlexbox(fabricCanvasRef.current, selectedObject)
+        saveCanvas()
+    }
+
+    const handleRemoveTextFromFlexbox = () => {
+        if (!selectedObject || !fabricCanvasRef.current) return
+        removeTextFromFlexbox(fabricCanvasRef.current, selectedObject)
+        saveCanvas()
+    }
+
+
     // Layer controls
     const handleBringToFront = () => {
         if (!fabricCanvasRef.current || !selectedObject) return
@@ -751,6 +788,7 @@ export function FabricSlideEditor({
                 onFileSelect={handleFileSelect}
                 onShowUploadDialog={() => setShowUploadDialog(true)}
                 onAddImagePlaceholder={handleAddImagePlaceholder}
+                onAddTextFlexbox={handleAddTextFlexbox}
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={onToggleSidebar}
             />
@@ -783,14 +821,15 @@ export function FabricSlideEditor({
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat',
                         backgroundAttachment: 'fixed',
-                        display: 'grid',
-                        placeItems: 'center'
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                     }}
                 >
                     <canvas
                         ref={canvasRef}
                         className="shadow-2xl border-2 border-gray-400 rounded-sm"
-                        style={{ display: 'block', margin: 'auto' }}
+                        style={{ display: 'block' }}
                     />
                 </div>
             </div>
@@ -805,6 +844,9 @@ export function FabricSlideEditor({
                 onUpdateStrokeColor={handleUpdateStrokeColor}
                 onUpdateStrokeWidth={handleUpdateStrokeWidth}
                 onUpdateRingThickness={handleUpdateRingThickness}
+                onUpdateFlexboxProperty={handleUpdateFlexboxProperty}
+                onAddTextToFlexbox={handleAddTextToFlexbox}
+                onRemoveTextFromFlexbox={handleRemoveTextFromFlexbox}
             />
 
             <UploadButtonDialog

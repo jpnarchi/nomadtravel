@@ -19,6 +19,7 @@ import {
     PanelLeftOpen,
     ImagePlus,
     Donut,
+    LayoutList,
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -38,6 +39,7 @@ interface ToolsSidebarProps {
     onFileSelect: (file: File) => void
     onShowUploadDialog?: () => void
     onAddImagePlaceholder?: () => void
+    onAddTextFlexbox?: () => void
     isSidebarCollapsed?: boolean
     onToggleSidebar?: () => void
 }
@@ -52,6 +54,7 @@ export function ToolsSidebar({
     onFileSelect,
     onShowUploadDialog,
     onAddImagePlaceholder,
+    onAddTextFlexbox,
     isSidebarCollapsed,
     onToggleSidebar,
 }: ToolsSidebarProps) {
@@ -89,6 +92,18 @@ export function ToolsSidebar({
             >
                 <Type className="size-5" />
             </Button>
+
+            {onAddTextFlexbox && (
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onAddTextFlexbox}
+                    className="h-12 w-12 text-gray-900 hover:text-gray-700 hover:bg-gray-100"
+                    title="Text Flexbox"
+                >
+                    <LayoutList className="size-5" />
+                </Button>
+            )}
 
             {/* Shapes Dropdown */}
             <DropdownMenu>

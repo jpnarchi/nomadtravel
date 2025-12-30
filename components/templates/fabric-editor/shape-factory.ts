@@ -448,3 +448,209 @@ export const replaceImagePlaceholderWithImage = async (
         throw err
     }
 }
+
+/**
+ * TEXT FLEXBOX - Container for multiple text boxes
+ */
+
+export interface TextFlexboxOptions {
+    width?: number
+    height?: number
+    direction?: 'vertical' | 'horizontal'
+    align?: 'start' | 'center' | 'end' | 'space-between'
+    gap?: number
+    padding?: number
+    backgroundColor?: string
+    borderRadius?: number
+}
+
+/**
+ * Reorganiza los textos del flexbox según las propiedades
+ */
+export const layoutFlexboxTexts = (canvas: fabric.Canvas, flexboxId: string, direction: 'vertical' | 'horizontal', gap: number) => {
+    // Get all texts in this flexbox
+    const allObjects = canvas.getObjects()
+    const flexboxTexts = allObjects.filter(obj =>
+        (obj as any).isInFlexbox && (obj as any).flexboxId === flexboxId
+    ).sort((a, b) => ((a as any).flexboxIndex || 0) - ((b as any).flexboxIndex || 0))
+
+    if (flexboxTexts.length === 0) return
+
+    // Get starting position from first text
+    const firstText = flexboxTexts[0]
+    const startX = firstText.left || 100
+    const startY = firstText.top || 100
+
+    // Re-layout based on direction
+    flexboxTexts.forEach((text, index) => {
+        if (direction === 'vertical') {
+            text.set({
+                left: startX,
+                top: startY + index * ((text.height || 60) + gap)
+            })
+        } else {
+            text.set({
+                left: startX + index * ((text.width || 400) + gap),
+                top: startY
+            })
+        }
+
+        // Update stored properties
+        ;(text as any).flexboxDirection = direction
+        ;(text as any).flexboxGap = gap
+
+        text.setCoords()
+    })
+
+    canvas.renderAll()
+}
+
+/**
+ * Crea un TextFlexbox - Sistema de organización de textos independientes
+ */
+export const createTextFlexbox = (canvas: fabric.Canvas, options?: TextFlexboxOptions) => {
+    const direction = options?.direction || 'vertical'
+    const gap = options?.gap || 20
+    const startX = 100
+    const startY = 100
+
+    // Generate unique flexbox ID
+    const flexboxId = `flexbox_${Date.now()}`
+
+    // Create independent text objects
+    const texts = []
+
+    for (let i = 0; i < 3; i++) {
+        const text = new fabric.Textbox(`Texto ${i + 1}`, {
+            fontSize: 24,
+            fill: '#000000',
+            fontFamily: 'Arial',
+            width: 400,
+            editable: true,
+            left: startX,
+            top: startY + (direction === 'vertical' ? i * (60 + gap) : 0),
+            hasControls: true,
+            hasBorders: true,
+        })
+
+        // Mark as part of flexbox
+        ;(text as any).isInFlexbox = true
+        ;(text as any).flexboxId = flexboxId
+        ;(text as any).flexboxIndex = i
+        ;(text as any).flexboxDirection = direction
+        ;(text as any).flexboxGap = gap
+
+        texts.push(text)
+        canvas.add(text)
+    }
+
+    // Select all texts as a group
+    const selection = new fabric.ActiveSelection(texts, {
+        canvas: canvas,
+    })
+    canvas.setActiveObject(selection)
+    canvas.renderAll()
+
+    return texts
+}
+
+/**
+ * Actualiza las propiedades del flexbox y reorganiza los textos
+ */
+export const updateFlexboxProperty = (
+    canvas: fabric.Canvas,
+    selectedObject: fabric.FabricObject,
+    property: string,
+    value: any
+) => {
+    const flexboxId = (selectedObject as any).flexboxId
+    if (!flexboxId) return
+
+    // Get current direction and gap from selected object
+    let direction = (selectedObject as any).flexboxDirection || 'vertical'
+    let gap = (selectedObject as any).flexboxGap || 20
+
+    // Update the property
+    if (property === 'direction') {
+        direction = value
+    } else if (property === 'gap') {
+        gap = value
+    }
+
+    // Re-layout all texts in this flexbox
+    layoutFlexboxTexts(canvas, flexboxId, direction, gap)
+}
+
+/**
+ * Agrega un nuevo texto al flexbox
+ */
+export const addTextToFlexbox = (canvas: fabric.Canvas, selectedObject: fabric.FabricObject) => {
+    const flexboxId = (selectedObject as any).flexboxId
+    if (!flexboxId) return
+
+    // Get all texts in this flexbox
+    const allObjects = canvas.getObjects()
+    const flexboxTexts = allObjects.filter(obj =>
+        (obj as any).isInFlexbox && (obj as any).flexboxId === flexboxId
+    )
+
+    const direction = (selectedObject as any).flexboxDirection || 'vertical'
+    const gap = (selectedObject as any).flexboxGap || 20
+    const newIndex = flexboxTexts.length
+
+    // Create new text
+    const newText = new fabric.Textbox(`Texto ${newIndex + 1}`, {
+        fontSize: 24,
+        fill: '#000000',
+        fontFamily: 'Arial',
+        width: 400,
+        editable: true,
+        left: selectedObject.left || 100,
+        top: (selectedObject.top || 100) + 100,
+        hasControls: true,
+        hasBorders: true,
+    })
+
+    // Mark as part of flexbox
+    ;(newText as any).isInFlexbox = true
+    ;(newText as any).flexboxId = flexboxId
+    ;(newText as any).flexboxIndex = newIndex
+    ;(newText as any).flexboxDirection = direction
+    ;(newText as any).flexboxGap = gap
+
+    canvas.add(newText)
+
+    // Re-layout
+    layoutFlexboxTexts(canvas, flexboxId, direction, gap)
+
+    canvas.setActiveObject(newText)
+    canvas.renderAll()
+}
+
+/**
+ * Elimina el último texto del flexbox
+ */
+export const removeTextFromFlexbox = (canvas: fabric.Canvas, selectedObject: fabric.FabricObject) => {
+    const flexboxId = (selectedObject as any).flexboxId
+    if (!flexboxId) return
+
+    // Get all texts in this flexbox
+    const allObjects = canvas.getObjects()
+    const flexboxTexts = allObjects.filter(obj =>
+        (obj as any).isInFlexbox && (obj as any).flexboxId === flexboxId
+    ).sort((a, b) => ((a as any).flexboxIndex || 0) - ((b as any).flexboxIndex || 0))
+
+    // Don't remove if there's only one text left
+    if (flexboxTexts.length <= 1) return
+
+    // Remove last text
+    const lastText = flexboxTexts[flexboxTexts.length - 1]
+    canvas.remove(lastText)
+
+    const direction = (selectedObject as any).flexboxDirection || 'vertical'
+    const gap = (selectedObject as any).flexboxGap || 20
+
+    // Re-layout remaining texts
+    layoutFlexboxTexts(canvas, flexboxId, direction, gap)
+    canvas.renderAll()
+}
