@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
 import { useUser, useClerk } from '@clerk/clerk-react';
+import { isAdminEmail } from '@/config/adminEmails';
 
 export const ViewModeContext = createContext({ viewMode: 'admin', isActualAdmin: false });
 
@@ -80,7 +81,8 @@ export default function Layout({ children, currentPageName }) {
     fetchExchangeRate();
   }, []);
 
-  const isActualAdmin = appUser?.role === 'admin';
+  // Verificar si el correo del usuario está en la lista de administradores permitidos
+  const isActualAdmin = isAdminEmail(appUser?.email);
   const isSupervisor = appUser?.custom_role === 'supervisor';
   const isAdmin = isActualAdmin && viewMode === 'admin';
 

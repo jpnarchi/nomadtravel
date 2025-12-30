@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-react';
 import { 
   Plus, Search, Key, Eye, EyeOff, Copy, Edit2, Trash2, 
   Loader2, ExternalLink, Filter, Lock
@@ -44,21 +45,20 @@ export default function PersonalCredentials() {
   const [editingCredential, setEditingCredential] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [visiblePasswords, setVisiblePasswords] = useState({});
-  const [user, setUser] = useState(null);
 
+  const { user: clerkUser } = useUser();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-    };
-    fetchUser();
-  }, []);
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+  } : null;
 
   const { data: allCredentials = [], isLoading } = useQuery({
-    queryKey: ['personalCredentials'],
-    queryFn: () => supabaseAPI.entities.PersonalCredential.list('-created_date'),
+    queryKey: ['personalCredentials', user?.email],
+    queryFn: () => supabaseAPI.entities.PersonalCredential.list(),
     enabled: !!user
   });
 
@@ -280,7 +280,7 @@ export default function PersonalCredentials() {
           if (editingCredential) {
             updateMutation.mutate({ id: editingCredential.id, data });
           } else {
-            createMutation.mutate(data);
+            createMutation.mutate({ ...data, created_by: user?.email });
           }
         }}
         isLoading={createMutation.isPending || updateMutation.isPending}

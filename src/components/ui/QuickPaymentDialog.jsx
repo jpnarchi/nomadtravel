@@ -467,7 +467,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                 step="0.0001"
                 value={formData.fx_rate}
                 onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
-                placeholder="20.50"
+                placeholder="18.50"
                 className="rounded-xl"
                 required
               />

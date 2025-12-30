@@ -45,7 +45,7 @@ export default function Credentials() {
 
   const { data: credentials = [], isLoading } = useQuery({
     queryKey: ['credentials'],
-    queryFn: () => supabaseAPI.entities.Credential.list('-created_date')
+    queryFn: () => supabaseAPI.entities.Credential.list()
   });
 
   const createMutation = useMutation({

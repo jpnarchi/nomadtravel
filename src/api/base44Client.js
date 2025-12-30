@@ -83,7 +83,7 @@ export const base44 = isDevMode ? {
         console.log('🔧 Dev mode: InvokeLLM called', params);
         // Return mock exchange rate
         return {
-          sell_rate: 20.50,
+          sell_rate: 18.50,
           date: new Date().toISOString().split('T')[0]
         };
       }

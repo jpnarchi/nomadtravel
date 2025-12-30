@@ -24,11 +24,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const createSupabaseAPI = () => {
   // Función helper genérica para crear métodos CRUD para cualquier tabla
   const createEntityMethods = (tableName) => ({
-    // Listar todos los registros
+    // Listar todos los registros (excluye eliminados)
     list: async () => {
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
+        .eq('is_deleted', false)
         .order('created_date', { ascending: false });
 
       if (error) {
@@ -38,9 +39,14 @@ export const createSupabaseAPI = () => {
       return data || [];
     },
 
-    // Filtrar registros
+    // Filtrar registros (excluye eliminados por defecto)
     filter: async (filters = {}) => {
       let query = supabase.from(tableName).select('*');
+
+      // Excluir eliminados por defecto (a menos que se especifique is_deleted en los filtros)
+      if (!filters.hasOwnProperty('is_deleted')) {
+        query = query.eq('is_deleted', false);
+      }
 
       // Aplicar cada filtro
       Object.entries(filters).forEach(([key, value]) => {
@@ -254,6 +260,7 @@ export const createSupabaseAPI = () => {
       Supplier: createEntityMethods('suppliers'),
       Reminder: createEntityMethods('reminders'),
       Credential: createEntityMethods('credentials'),
+      PersonalCredential: createEntityMethods('personal_credentials'),
       Review: createEntityMethods('reviews'),
       Attendance: createEntityMethods('attendance'),
       FamTrip: createEntityMethods('fam_trips'),

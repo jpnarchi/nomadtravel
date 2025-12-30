@@ -397,7 +397,7 @@ export default function InternalClientPayments() {
                     });
                   }}
                   className="rounded-xl"
-                  placeholder="Ej: 20.50"
+                  placeholder="Ej: 18.50"
                 />
                 {editFormData.fx_rate && editFormData.amount_original && (
                   <p className="text-xs text-stone-500">
