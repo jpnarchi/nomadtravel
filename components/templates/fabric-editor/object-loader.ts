@@ -63,13 +63,21 @@ export const createFabricObjectFromJSON = async (obj: any, index: number): Promi
                 console.log(`🖼️ Restaurado imagen con container, borderRadius: ${obj.borderRadius}`)
             }
 
-            // Restore custom properties for text flexbox
-            if (obj.isTextFlexbox) {
-                ;(fabricObj as any).isTextFlexbox = true
-                ;(fabricObj as any).flexboxWidth = obj.flexboxWidth
-                ;(fabricObj as any).flexboxHeight = obj.flexboxHeight
+            // Restore custom properties for text flexbox background
+            if (obj.isFlexboxBackground) {
+                ;(fabricObj as any).isFlexboxBackground = true
+                ;(fabricObj as any).flexboxId = obj.flexboxId
                 ;(fabricObj as any).flexboxProps = obj.flexboxProps
-                console.log(`📐 Restaurado text flexbox con propiedades:`, obj.flexboxProps)
+                ;(fabricObj as any).containerWidth = obj.containerWidth
+                ;(fabricObj as any).containerHeight = obj.containerHeight
+                console.log(`📐 Restaurado flexbox background con id:`, obj.flexboxId)
+            }
+
+            // Restore custom properties for flexbox texts
+            if (obj.flexboxId && !obj.isFlexboxBackground) {
+                ;(fabricObj as any).flexboxId = obj.flexboxId
+                ;(fabricObj as any).flexboxIndex = obj.flexboxIndex
+                console.log(`📝 Restaurado texto de flexbox con id:`, obj.flexboxId, `index:`, obj.flexboxIndex)
             }
 
             console.log(`✅ Objeto ${index} creado: ${obj.type} en (${obj.left}, ${obj.top})`,
@@ -345,25 +353,13 @@ const createGroupObject = async (obj: any, index: number): Promise<fabric.Group 
             })
         }
 
-        if (obj.isTextFlexbox) {
-            ;(group as any).isTextFlexbox = true
-            ;(group as any).flexboxWidth = obj.flexboxWidth
-            ;(group as any).flexboxHeight = obj.flexboxHeight
-            ;(group as any).flexboxProps = obj.flexboxProps
-            console.log(`📐 Propiedades custom aplicadas inmediatamente en text flexbox:`, {
-                isTextFlexbox: true,
-                flexboxWidth: obj.flexboxWidth,
-                flexboxHeight: obj.flexboxHeight,
-                flexboxProps: obj.flexboxProps
-            })
-        }
+        // Legacy: text flexbox groups are no longer used
+        // New flexbox system uses separate background rect + text objects
 
         console.log(`✅ Grupo ${index} creado con propiedades:`, {
             type: group.type,
             isImagePlaceholder: (group as any).isImagePlaceholder,
-            isTextFlexbox: (group as any).isTextFlexbox,
             placeholderWidth: (group as any).placeholderWidth,
-            flexboxWidth: (group as any).flexboxWidth,
             borderRadius: (group as any).borderRadius
         })
         return group
@@ -445,14 +441,10 @@ export const loadObjectsToCanvas = async (canvas: fabric.Canvas, slideData: any,
                     isImageContainer: (fabricObj as any).isImageContainer,
                     borderRadius: (fabricObj as any).borderRadius
                 })
-            } else if ((fabricObj as any).isTextFlexbox) {
-                console.log(`✅ Objeto ${index} agregado al canvas - TEXT FLEXBOX con propiedades:`, {
-                    type: fabricObj.type,
-                    isTextFlexbox: (fabricObj as any).isTextFlexbox,
-                    flexboxWidth: (fabricObj as any).flexboxWidth,
-                    flexboxHeight: (fabricObj as any).flexboxHeight,
-                    flexboxProps: (fabricObj as any).flexboxProps
-                })
+            } else if ((fabricObj as any).isFlexboxBackground) {
+                console.log(`✅ Objeto ${index} agregado al canvas - FLEXBOX BACKGROUND con id:`, (fabricObj as any).flexboxId)
+            } else if ((fabricObj as any).flexboxId && !(fabricObj as any).isFlexboxBackground) {
+                console.log(`✅ Objeto ${index} agregado al canvas - TEXTO DE FLEXBOX id:`, (fabricObj as any).flexboxId, `index:`, (fabricObj as any).flexboxIndex)
             } else {
                 console.log(`✅ Objeto ${index} agregado al canvas en orden`)
             }

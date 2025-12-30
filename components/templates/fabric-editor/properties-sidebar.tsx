@@ -78,7 +78,7 @@ export function PropertiesSidebar({
     const isImagePlaceholder = selectedObject && (selectedObject as any).isImagePlaceholder
     const isImageContainer = selectedObject && (selectedObject as any).isImageContainer
     const isRing = selectedObject && (selectedObject as any).isRing
-    const isTextFlexbox = selectedObject && (selectedObject as any).isTextFlexbox
+    const isTextFlexbox = selectedObject && (selectedObject as any).isFlexboxBackground
 
     return (
         <>
@@ -423,7 +423,19 @@ export function PropertiesSidebar({
                                     <Label className="text-xs text-gray-700 font-medium">Textos</Label>
                                     <div className="bg-gray-50 p-3 rounded-lg space-y-2">
                                         <p className="text-xs text-gray-600">
-                                            {(selectedObject as any)._objects?.length - 1 || 0} texto(s)
+                                            {(() => {
+                                                const flexboxId = (selectedObject as any).flexboxId
+                                                if (!flexboxId) return 0
+
+                                                // Count texts with this flexboxId (not including the background)
+                                                const canvas = (selectedObject as any).canvas
+                                                if (!canvas) return 0
+
+                                                const allObjects = canvas.getObjects()
+                                                return allObjects.filter((obj: any) =>
+                                                    obj.flexboxId === flexboxId && !obj.isFlexboxBackground
+                                                ).length
+                                            })()} texto(s)
                                         </p>
                                         <div className="grid grid-cols-2 gap-2">
                                             {onAddTextToFlexbox && (

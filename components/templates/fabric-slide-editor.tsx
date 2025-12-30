@@ -13,7 +13,7 @@ import {
     createText, createRectangle, createCircle, createTriangle, createRing,
     updateRingThickness, createLine, addImageToCanvas, createImagePlaceholder,
     replaceImagePlaceholderWithImage, createTextFlexbox, updateFlexboxProperty,
-    addTextToFlexbox, removeTextFromFlexbox
+    addTextToFlexbox, removeTextFromFlexbox, layoutFlexbox
 } from './fabric-editor/shape-factory'
 import {
     serializeCanvas, copyObjectToJSON, pasteObjectFromJSON, updateObjectProperty,
@@ -148,7 +148,7 @@ export function FabricSlideEditor({
                 return
             }
 
-            // Textbox double-click - enter editing mode
+            // Regular textbox double-click - enter editing mode
             if (target && (target.type === 'textbox' || target.type === 'i-text' || target.type === 'text')) {
                 const textbox = target as fabric.Textbox
                 textbox.set({ editable: true })
@@ -156,6 +156,61 @@ export function FabricSlideEditor({
                 textbox.selectAll()
                 canvas.renderAll()
             }
+        })
+
+        // Track flexbox background movements to move texts with it
+        const flexboxBackgroundPositions = new Map<string, { left: number, top: number }>()
+
+        canvas.on('object:moving', (e) => {
+            const target = e.target
+            if (!target || !(target as any).isFlexboxBackground) return
+
+            const flexboxId = (target as any).flexboxId
+            if (!flexboxId) return
+
+            // Get previous position
+            const prevPos = flexboxBackgroundPositions.get(flexboxId) || { left: target.left || 0, top: target.top || 0 }
+            const deltaX = (target.left || 0) - prevPos.left
+            const deltaY = (target.top || 0) - prevPos.top
+
+            // Move all texts in this flexbox
+            const allObjects = canvas.getObjects()
+            allObjects.forEach(obj => {
+                if ((obj as any).flexboxId === flexboxId && !(obj as any).isFlexboxBackground) {
+                    obj.set({
+                        left: (obj.left || 0) + deltaX,
+                        top: (obj.top || 0) + deltaY,
+                    })
+                    obj.setCoords()
+                }
+            })
+
+            // Update stored position
+            flexboxBackgroundPositions.set(flexboxId, { left: target.left || 0, top: target.top || 0 })
+        })
+
+        // Store initial positions when starting to move
+        canvas.on('mouse:down', (e) => {
+            const target = e.target
+            if (target && (target as any).isFlexboxBackground) {
+                const flexboxId = (target as any).flexboxId
+                if (flexboxId) {
+                    flexboxBackgroundPositions.set(flexboxId, { left: target.left || 0, top: target.top || 0 })
+                }
+            }
+        })
+
+        // When text changes (typing, line breaks), reorganize the flexbox
+        canvas.on('text:changed', (e) => {
+            const target = e.target
+            if (!target || !(target as any).flexboxId || (target as any).isFlexboxBackground) return
+
+            const flexboxId = (target as any).flexboxId
+
+            // Re-layout after a short delay to allow text to finish resizing
+            setTimeout(() => {
+                layoutFlexbox(canvas, flexboxId)
+            }, 10)
         })
 
         // Auto-save on changes
