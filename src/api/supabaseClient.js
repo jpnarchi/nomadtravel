@@ -98,6 +98,13 @@ export const createSupabaseAPI = () => {
 
       if (error) {
         console.error(`Error creating ${tableName}:`, error);
+        console.error('Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        console.error('Data sent:', newData);
         throw error;
       }
       return data;

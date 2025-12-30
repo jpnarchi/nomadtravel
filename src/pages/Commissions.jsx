@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
+import { useUser } from '@clerk/clerk-react';
 import { format } from 'date-fns';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
-import { 
-  Loader2, Search, Filter, DollarSign, 
+import {
+  Loader2, Search, Filter, DollarSign,
   Check, X, Download, FileText, Trash2
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
@@ -64,10 +65,19 @@ const CRUISE_PROVIDER_LABELS = {
 
 export default function Commissions() {
   const { viewMode } = useContext(ViewModeContext);
+  const { user: clerkUser } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+    role: clerkUser.publicMetadata?.role || 'user',
+    custom_role: clerkUser.publicMetadata?.custom_role
+  } : null;
+
   const [search, setSearch] = useState('');
   const [filterBookedBy, setFilterBookedBy] = useState('all');
-  const [user, setUser] = useState(null);
-  const [userLoading, setUserLoading] = useState(true);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
   const [activeTab, setActiveTab] = useState('pendientes');
@@ -77,34 +87,20 @@ export default function Commissions() {
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      } finally {
-        setUserLoading(false);
-      }
-    };
-    fetchUser();
-  }, []);
-
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
   const { data: allServices = [], isLoading: servicesLoading } = useQuery({
     queryKey: ['allServices', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      const allTrips = isAdmin 
+      const allTrips = isAdmin
         ? await supabaseAPI.entities.SoldTrip.list()
         : await supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
       const tripIds = allTrips.map(t => t.id);
       const allSvcs = await supabaseAPI.entities.TripService.list();
       return allSvcs.filter(s => tripIds.includes(s.sold_trip_id));
     },
-    enabled: !!user && !userLoading,
+    enabled: !!user,
     refetchOnWindowFocus: true
   });
 
@@ -115,7 +111,7 @@ export default function Commissions() {
       if (isAdmin) return supabaseAPI.entities.SoldTrip.list();
       return supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
     },
-    enabled: !!user && !userLoading,
+    enabled: !!user,
     refetchOnWindowFocus: true
   });
 
@@ -238,7 +234,7 @@ export default function Commissions() {
     }
   };
 
-  const isLoading = servicesLoading || tripsLoading || userLoading;
+  const isLoading = servicesLoading || tripsLoading;
 
   if (isLoading) {
     return (

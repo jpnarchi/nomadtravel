@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
+import { useUser } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
-import { 
-  Search, MapPin, Calendar, Users, DollarSign, 
+import {
+  Search, MapPin, Calendar, Users, DollarSign,
   Eye, Loader2, CheckCircle, Filter, TrendingUp,
   AlertCircle, Clock, ArrowUpRight, Plane, Edit2, Trash2, MoreVertical
 } from 'lucide-react';
@@ -49,27 +50,25 @@ const STATUS_CONFIG = {
 
 export default function SoldTrips() {
   const { viewMode } = useContext(ViewModeContext);
+  const { user: clerkUser } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+    role: clerkUser.publicMetadata?.role || 'user',
+    custom_role: clerkUser.publicMetadata?.custom_role
+  } : null;
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('recent');
-  const [user, setUser] = useState(null);
   const [editingTrip, setEditingTrip] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [editTotal, setEditTotal] = useState('');
 
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-    fetchUser();
-  }, []);
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
