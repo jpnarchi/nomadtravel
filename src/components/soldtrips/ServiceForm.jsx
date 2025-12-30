@@ -301,10 +301,14 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
 
   useEffect(() => {
     if (service) {
-      setFormData({ 
+      // When editing, merge the base fields with metadata
+      setFormData({
         ...service,
-        local_currency: service.local_currency || 'USD',
-        local_amount: service.local_amount || 0
+        ...(service.metadata || {}),
+        // Ensure we keep the correct mappings
+        total_price: service.total_price || service.price || 0,
+        local_currency: service.local_currency || (service.metadata?.local_currency) || 'USD',
+        local_amount: service.local_amount || (service.metadata?.local_amount) || 0
       });
     } else {
       setFormData({
@@ -379,19 +383,74 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.total_price || formData.total_price <= 0) {
       alert('Por favor ingresa un precio total válido');
       return;
     }
-    
-    // Ensure all current form values are included
-    const dataToSave = {
-      ...formData,
-      sold_trip_id: soldTripId
+
+    // Generate service_name based on service type
+    let serviceName = '';
+    switch (formData.service_type) {
+      case 'hotel':
+        serviceName = formData.hotel_name || 'Hotel';
+        break;
+      case 'vuelo':
+        serviceName = `${formData.airline || 'Vuelo'} ${formData.flight_number || ''}`.trim();
+        break;
+      case 'traslado':
+        serviceName = `${formData.transfer_origin || ''} → ${formData.transfer_destination || ''}`.trim() || 'Traslado';
+        break;
+      case 'tour':
+        serviceName = formData.tour_name || 'Tour';
+        break;
+      case 'crucero':
+        serviceName = formData.cruise_ship || formData.cruise_line || 'Crucero';
+        break;
+      case 'tren':
+        serviceName = `${formData.train_operator || 'Tren'} ${formData.train_number || ''}`.trim();
+        break;
+      case 'dmc':
+        serviceName = formData.dmc_name || 'DMC';
+        break;
+      case 'otro':
+        serviceName = formData.other_name || formData.other_description?.substring(0, 50) || 'Servicio';
+        break;
+      default:
+        serviceName = 'Servicio';
+    }
+
+    // Separate fields that exist in the table vs metadata
+    const baseFields = {
+      service_type: formData.service_type,
+      service_name: serviceName,
+      sold_trip_id: soldTripId,
+      price: formData.total_price || 0,  // Map total_price to price field
+      commission: formData.commission || 0,
+      notes: formData.notes || '',
+      // These fields might also exist in the table
+      payment_date: formData.commission_payment_date || null,
+      start_date: formData.check_in || formData.flight_date || formData.tour_date || formData.cruise_departure_date || formData.train_date || formData.dmc_date || formData.other_date || null,
+      end_date: formData.check_out || formData.cruise_arrival_date || null,
     };
-    
+
+    // All other fields go into metadata
+    const metadata = { ...formData };
+    // Remove base fields from metadata to avoid duplication
+    delete metadata.service_type;
+    delete metadata.service_name;
+    delete metadata.sold_trip_id;
+    delete metadata.total_price;
+    delete metadata.commission;
+    delete metadata.notes;
+    delete metadata.commission_payment_date;
+
+    const dataToSave = {
+      ...baseFields,
+      metadata: metadata
+    };
+
     console.log('Guardando servicio:', dataToSave);
     onSave(dataToSave);
   };

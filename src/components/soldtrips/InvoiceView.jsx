@@ -2,7 +2,6 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Printer, MapPin, Hotel, Plane, Car, Compass, Package, Ship, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -314,7 +313,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
             </div>
             <div className="text-right">
               <p className="text-sm text-stone-500">Fecha</p>
-              <p className="font-medium">{format(parseLocalDate(), 'd MMMM yyyy', { locale: es })}</p>
+              <p className="font-medium">{format(new Date(), 'd MMMM yyyy', { locale: es })}</p>
             </div>
           </div>
 

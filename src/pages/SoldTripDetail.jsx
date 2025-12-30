@@ -6,6 +6,7 @@ import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useUser } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, MapPin, Calendar, Users, Plus, 
@@ -99,6 +100,7 @@ const STATUS_CONFIG = {
 export default function SoldTripDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const tripId = urlParams.get('id');
+  const { user: clerkUser } = useUser();
 
   const [serviceFormOpen, setServiceFormOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
@@ -129,7 +131,25 @@ export default function SoldTripDetail() {
 
   const { data: services = [] } = useQuery({
     queryKey: ['tripServices', tripId],
-    queryFn: () => supabaseAPI.entities.TripService.filter({ sold_trip_id: tripId }),
+    queryFn: async () => {
+      const rawServices = await supabaseAPI.entities.TripService.filter({ sold_trip_id: tripId });
+      // Merge metadata into each service object for backward compatibility
+      return rawServices.map(service => ({
+        ...service,
+        ...(service.metadata || {}),
+        // Keep the base fields to avoid overwriting them
+        id: service.id,
+        service_type: service.service_type,
+        service_name: service.service_name,
+        sold_trip_id: service.sold_trip_id,
+        total_price: service.price || 0, // Map price back to total_price for UI
+        commission: service.commission,
+        notes: service.notes,
+        created_by: service.created_by,
+        created_date: service.created_date,
+        updated_date: service.updated_date
+      }));
+    },
     enabled: !!tripId
   });
 
@@ -198,9 +218,13 @@ export default function SoldTripDetail() {
 
   // Mutations
   const createServiceMutation = useMutation({
-    mutationFn: (data) => supabaseAPI.entities.TripService.create(data),
+    mutationFn: (data) => supabaseAPI.entities.TripService.create({
+      ...data,
+      created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
+    }),
     onSuccess: async (newService) => {
       await updateSoldTripTotalsFromServices(newService.sold_trip_id, queryClient);
+      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
       setServiceFormOpen(false);
     }
   });
@@ -212,6 +236,7 @@ export default function SoldTripDetail() {
       if (updatedService?.sold_trip_id) {
         await updateSoldTripTotalsFromServices(updatedService.sold_trip_id, queryClient);
       }
+      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
       setServiceFormOpen(false);
       setEditingService(null);
     }
@@ -223,6 +248,7 @@ export default function SoldTripDetail() {
       if (variables.sold_trip_id) {
         await updateSoldTripTotalsFromServices(variables.sold_trip_id, queryClient);
       }
+      queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
       setDeleteConfirm(null);
     }
   });

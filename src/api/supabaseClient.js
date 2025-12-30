@@ -97,14 +97,14 @@ export const createSupabaseAPI = () => {
         .single();
 
       if (error) {
-        console.error(`Error creating ${tableName}:`, error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        console.error('Data sent:', newData);
+        console.error(`❌ Error creating ${tableName}:`, error);
+        console.error('📋 Full error object:', JSON.stringify(error, null, 2));
+        console.error('💬 Error message:', error.message);
+        console.error('📝 Error details:', error.details);
+        console.error('💡 Error hint:', error.hint);
+        console.error('🔢 Error code:', error.code);
+        console.error('📦 Data sent:', JSON.stringify(newData, null, 2));
+        console.error('📌 Keys sent:', Object.keys(newData));
         throw error;
       }
       return data;
