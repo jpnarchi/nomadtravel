@@ -23,17 +23,26 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 export const createSupabaseAPI = () => {
   // Función helper genérica para crear métodos CRUD para cualquier tabla
-  const createEntityMethods = (tableName) => ({
+  const createEntityMethods = (tableName, options = {}) => ({
     // Listar todos los registros (excluye eliminados)
     list: async () => {
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_date', { ascending: false });
+      let query = supabase.from(tableName).select('*');
+
+      // Solo aplicar filtro is_deleted si la tabla lo soporta
+      if (options.hasIsDeleted !== false) {
+        query = query.eq('is_deleted', false);
+      }
+
+      // Solo ordenar por created_date si la tabla tiene esa columna
+      if (options.hasCreatedDate !== false) {
+        query = query.order('created_date', { ascending: false });
+      }
+
+      const { data, error } = await query;
 
       if (error) {
-        console.error(`Error listing ${tableName}:`, error);
+        console.error(`Error listing ${tableName}:`, error.message || error);
+        console.error('Full error details:', error);
         throw error;
       }
       return data || [];
@@ -249,7 +258,7 @@ export const createSupabaseAPI = () => {
 
     // Entidades del CRM - crear métodos para cada tabla
     entities: {
-      User: createEntityMethods('users'),
+      User: createEntityMethods('users', { hasIsDeleted: false, hasCreatedDate: false }),
       Client: createEntityMethods('clients'),
       Trip: createEntityMethods('trips'),
       SoldTrip: createEntityMethods('sold_trips'),

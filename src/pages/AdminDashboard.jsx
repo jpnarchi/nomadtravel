@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 
 export default function AdminDashboard() {
   const [selectedAgent, setSelectedAgent] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState(format(parseLocalDate(), 'yyyy-MM'));
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [selectedTrip, setSelectedTrip] = useState('all');
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery({
@@ -102,14 +102,16 @@ export default function AdminDashboard() {
 
   const monthlySales = soldTrips
     .filter(trip => {
-      const created = parseLocalDate(trip.created_date?.split('T')[0]);
+      if (!trip.created_date) return false;
+      const created = parseLocalDate(trip.created_date.split('T')[0]);
       return isWithinInterval(created, { start: monthStart, end: monthEnd });
     })
     .reduce((sum, trip) => sum + (trip.total_price || 0), 0);
 
   const monthlyCommission = soldTrips
     .filter(trip => {
-      const created = parseLocalDate(trip.created_date?.split('T')[0]);
+      if (!trip.created_date) return false;
+      const created = parseLocalDate(trip.created_date.split('T')[0]);
       return isWithinInterval(created, { start: monthStart, end: monthEnd });
     })
     .reduce((sum, trip) => sum + (trip.total_commission || 0), 0);
@@ -341,7 +343,10 @@ export default function AdminDashboard() {
               </h4>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {filteredClientPayments.length > 0 ? (
-                  filteredClientPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
+                  filteredClientPayments
+                    .filter(p => p.date)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .map(payment => (
                     <div key={payment.id} className="bg-white/20 rounded-lg p-3">
                       <div className="flex justify-between items-start">
                         <div>
@@ -371,7 +376,10 @@ export default function AdminDashboard() {
               </h4>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {filteredSupplierPayments.length > 0 ? (
-                  filteredSupplierPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
+                  filteredSupplierPayments
+                    .filter(p => p.date)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .map(payment => (
                     <div key={payment.id} className="bg-white/20 rounded-lg p-3">
                       <div className="flex justify-between items-start">
                         <div>
