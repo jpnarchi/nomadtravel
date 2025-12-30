@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, X, ChevronDown } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 
 /**
  * Normaliza una fecha a formato YYYY-MM-DD sin conversiones de timezone.
@@ -57,8 +57,18 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
       if (open) {
         try {
           setLoadingCountries(true);
-          const response = await base44.functions.invoke('getCountries', {});
-          setCountries(response.data.countries || []);
+          const response = await fetch('https://restcountries.com/v3.1/all?fields=name,region,subregion,cca2');
+          const data = await response.json();
+
+          // Formatear al formato que espera el componente
+          const formattedCountries = data.map(country => ({
+            code: country.cca2,
+            name: country.name.common,
+            region: country.region || '',
+            subregion: country.subregion || ''
+          })).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+          setCountries(formattedCountries);
         } catch (error) {
           console.error('Error loading countries:', error);
           setCountries([]);
@@ -67,7 +77,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         }
       }
     };
-    
+
     fetchCountries();
   }, [open]);
 
@@ -168,7 +178,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validar campos requeridos
     if (!formData.client_id) {
       alert('Por favor selecciona un cliente');
@@ -182,8 +192,14 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
       alert('Por favor ingresa una fecha de inicio');
       return;
     }
-    
-    onSave(formData);
+
+    // Limpiar valores vacíos para evitar errores de tipo
+    const cleanedData = {
+      ...formData,
+      budget: formData.budget === '' ? null : formData.budget
+    };
+
+    onSave(cleanedData);
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,11 +146,13 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
 
     setUploading(true);
     try {
-      const uploadPromises = files.map(file => 
-        base44.integrations.Core.UploadFile({ file })
-      );
-      const results = await Promise.all(uploadPromises);
-      const urls = results.map(r => r.file_url);
+      const urls = [];
+      const folderPath = type === 'pdf' ? 'reviews/pdfs' : 'reviews/images';
+
+      for (const file of files) {
+        const { file_url } = await supabaseAPI.storage.uploadFile(file, 'documents', folderPath);
+        urls.push(file_url);
+      }
 
       if (type === 'pdf') {
         setFormData({ ...formData, pdf_files: [...formData.pdf_files, ...urls] });
@@ -159,7 +161,8 @@ export default function ReviewForm({ open, onClose, review, onSave, isLoading })
       }
       toast.success(`${files.length} archivo(s) subido(s)`);
     } catch (error) {
-      toast.error('Error al subir archivos');
+      console.error('Error uploading files:', error);
+      toast.error('Error al subir archivos. Verifica que el storage esté configurado.');
     } finally {
       setUploading(false);
     }

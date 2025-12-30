@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { 
-  ArrowLeft, Mail, Phone, Calendar, Loader2, 
+import { parseLocalDate } from '@/lib/dateUtils';
+import {
+  ArrowLeft, Mail, Phone, Calendar, Loader2,
   Plane, Plus, Send, Copy, Check, ExternalLink, Settings
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -25,35 +27,46 @@ const SOURCE_LABELS = {
 };
 
 export default function ClientDetail() {
+  const { user: clerkUser } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+    role: clerkUser.publicMetadata?.role || 'user',
+    custom_role: clerkUser.publicMetadata?.custom_role
+  } : null;
+
   const urlParams = new URLSearchParams(window.location.search);
   const clientId = urlParams.get('id');
-  
+
   const [formOpen, setFormOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
-  
+
   const queryClient = useQueryClient();
 
   const { data: client, isLoading } = useQuery({
     queryKey: ['client', clientId],
-    queryFn: () => base44.entities.Client.filter({ id: clientId }).then(res => res[0]),
+    queryFn: () => supabaseAPI.entities.Client.filter({ id: clientId }).then(res => res[0]),
     enabled: !!clientId
   });
 
   const { data: trips = [] } = useQuery({
     queryKey: ['clientTrips', clientId],
-    queryFn: () => base44.entities.Trip.filter({ client_id: clientId }),
+    queryFn: () => supabaseAPI.entities.Trip.filter({ client_id: clientId }),
     enabled: !!clientId
   });
 
   const { data: documents = [] } = useQuery({
     queryKey: ['clientDocuments', clientId],
-    queryFn: () => base44.entities.TravelDocument.filter({ client_id: clientId }),
+    queryFn: () => supabaseAPI.entities.TravelDocument.filter({ client_id: clientId }),
     enabled: !!clientId
   });
 
   const createDocMutation = useMutation({
-    mutationFn: (data) => base44.entities.TravelDocument.create(data),
+    mutationFn: (data) => supabaseAPI.entities.TravelDocument.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientDocuments', clientId] });
       toast.success('Documento guardado');
@@ -61,7 +74,7 @@ export default function ClientDetail() {
   });
 
   const updateDocMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TravelDocument.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TravelDocument.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientDocuments', clientId] });
       toast.success('Documento actualizado');
@@ -69,7 +82,7 @@ export default function ClientDetail() {
   });
 
   const deleteDocMutation = useMutation({
-    mutationFn: (id) => base44.entities.TravelDocument.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.TravelDocument.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clientDocuments', clientId] });
       toast.success('Documento eliminado');
@@ -78,10 +91,11 @@ export default function ClientDetail() {
 
   const createTripMutation = useMutation({
     mutationFn: async (tripData) => {
-      const trip = await base44.entities.Trip.create({
+      const trip = await supabaseAPI.entities.Trip.create({
         ...tripData,
         client_id: clientId,
-        client_name: `${client.first_name} ${client.last_name}`
+        client_name: `${client.first_name} ${client.last_name}`,
+        created_by: user?.email
       });
       return trip;
     },
@@ -95,7 +109,7 @@ export default function ClientDetail() {
   });
 
   const updatePreferencesMutation = useMutation({
-    mutationFn: (preferences) => base44.entities.Client.update(clientId, { preferences }),
+    mutationFn: (preferences) => supabaseAPI.entities.Client.update(clientId, { preferences }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       setPreferencesOpen(false);
@@ -104,7 +118,7 @@ export default function ClientDetail() {
   });
 
   const updateCompanionsMutation = useMutation({
-    mutationFn: (companions) => base44.entities.Client.update(clientId, { companions }),
+    mutationFn: (companions) => supabaseAPI.entities.Client.update(clientId, { companions }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client', clientId] });
       toast.success('Acompañantes actualizados');
@@ -193,7 +207,7 @@ export default function ClientDetail() {
               {client.birth_date && (
                 <div className="flex items-center gap-3 text-stone-600">
                   <Calendar className="w-4 h-4 text-stone-400" />
-                  <span>{format(new Date(client.birth_date), 'd MMMM yyyy', { locale: es })}</span>
+                  <span>{format(parseLocalDate(client.birth_date), 'd MMMM yyyy', { locale: es })}</span>
                 </div>
               )}
             </div>
@@ -320,8 +334,8 @@ export default function ClientDetail() {
                           {trip.trip_name || trip.destination}
                         </h4>
                         <p className="text-sm text-stone-500">
-                          {trip.start_date && format(new Date(trip.start_date), 'd MMM', { locale: es })}
-                          {trip.end_date && ` - ${format(new Date(trip.end_date), 'd MMM yyyy', { locale: es })}`}
+                          {trip.start_date && format(parseLocalDate(trip.start_date), 'd MMM')}
+                          {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yyyy')}`}
                         </p>
                       </div>
                       <Badge 
@@ -353,12 +367,12 @@ export default function ClientDetail() {
                       <div>
                         <p className="font-medium text-stone-700">{req.destination}</p>
                         <p className="text-stone-500 text-xs">
-                          {req.start_date && format(new Date(req.start_date), 'd MMM', { locale: es })}
-                          {req.end_date && ` - ${format(new Date(req.end_date), 'd MMM yyyy', { locale: es })}`}
+                          {req.start_date && format(parseLocalDate(req.start_date), 'd MMM', { locale: es })}
+                          {req.end_date && ` - ${format(parseLocalDate(req.end_date), 'd MMM yyyy', { locale: es })}`}
                         </p>
                       </div>
                       <span className="text-xs text-stone-400">
-                        {req.created_date && format(new Date(req.created_date), 'd MMM yyyy', { locale: es })}
+                        {req.created_date && format(parseLocalDate(req.created_date), 'd MMM yyyy', { locale: es })}
                       </span>
                     </div>
                   </div>

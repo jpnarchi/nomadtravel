@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapPin, Loader2, CheckCircle } from 'lucide-react';
 import TripRequestForm from '@/components/clients/TripRequestForm';
@@ -14,14 +14,14 @@ export default function TripRequestPublic() {
 
   const { data: client, isLoading } = useQuery({
     queryKey: ['publicClient', clientId],
-    queryFn: () => base44.entities.Client.filter({ id: clientId }).then(res => res[0]),
+    queryFn: () => supabaseAPI.entities.Client.filter({ id: clientId }).then(res => res[0]),
     enabled: !!clientId
   });
 
   const submitMutation = useMutation({
     mutationFn: async (tripData) => {
       // Create the trip
-      const trip = await base44.entities.Trip.create({
+      const trip = await supabaseAPI.entities.Trip.create({
         ...tripData,
         client_id: clientId,
         client_name: `${client.first_name} ${client.last_name}`,
@@ -30,7 +30,7 @@ export default function TripRequestPublic() {
       
       // Update client with trip request history
       const tripRequests = client.trip_requests || [];
-      await base44.entities.Client.update(clientId, {
+      await supabaseAPI.entities.Client.update(clientId, {
         trip_requests: [...tripRequests, {
           ...tripData,
           created_date: new Date().toISOString(),

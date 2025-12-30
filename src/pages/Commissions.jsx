@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   Loader2, Search, Filter, DollarSign, 
@@ -97,10 +98,10 @@ export default function Commissions() {
     queryFn: async () => {
       if (!user) return [];
       const allTrips = isAdmin 
-        ? await base44.entities.SoldTrip.list()
-        : await base44.entities.SoldTrip.filter({ created_by: user.email });
+        ? await supabaseAPI.entities.SoldTrip.list()
+        : await supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
       const tripIds = allTrips.map(t => t.id);
-      const allSvcs = await base44.entities.TripService.list();
+      const allSvcs = await supabaseAPI.entities.TripService.list();
       return allSvcs.filter(s => tripIds.includes(s.sold_trip_id));
     },
     enabled: !!user && !userLoading,
@@ -111,8 +112,8 @@ export default function Commissions() {
     queryKey: ['soldTrips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.SoldTrip.list();
-      return base44.entities.SoldTrip.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.SoldTrip.list();
+      return supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
     },
     enabled: !!user && !userLoading,
     refetchOnWindowFocus: true
@@ -122,21 +123,21 @@ export default function Commissions() {
   const services = allServices;
 
   const updateServiceMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TripService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
     }
   });
 
   const updateSoldTripMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.SoldTrip.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
     }
   });
 
   const deleteServiceMutation = useMutation({
-    mutationFn: (id) => base44.entities.TripService.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.TripService.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
@@ -441,7 +442,7 @@ export default function Commissions() {
                       </Select>
                       {service.paid_to_agency && service.paid_to_agency_date && (
                         <p className="text-xs text-green-600 font-medium">
-                          {format(new Date(service.paid_to_agency_date), 'd MMM yy', { locale: es })}
+                          {format(parseLocalDate(service.paid_to_agency_date), 'd MMM yy', { locale: es })}
                         </p>
                       )}
                     </div>
@@ -482,7 +483,7 @@ export default function Commissions() {
                             onClick={() => canEdit && startEditing(service)}
                           >
                             {service.commission_payment_date 
-                              ? format(new Date(service.commission_payment_date), 'd MMM yy', { locale: es })
+                              ? format(parseLocalDate(service.commission_payment_date), 'd MMM yy', { locale: es })
                               : '-'}
                           </span>
                           {service.commission_payment_date && service.payment_type === 'bruto' && (

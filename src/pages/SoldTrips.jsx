@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, differenceInDays, isPast } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   Search, MapPin, Calendar, Users, DollarSign, 
@@ -76,15 +77,15 @@ export default function SoldTrips() {
     queryKey: ['soldTrips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.SoldTrip.list('-created_date');
-      return base44.entities.SoldTrip.filter({ created_by: user.email }, '-created_date');
+      if (isAdmin) return supabaseAPI.entities.SoldTrip.list('-created_date');
+      return supabaseAPI.entities.SoldTrip.filter({ created_by: user.email }, '-created_date');
     },
     enabled: !!user,
     refetchOnWindowFocus: true
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.SoldTrip.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       setEditingTrip(null);
@@ -93,7 +94,7 @@ export default function SoldTrips() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.SoldTrip.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.SoldTrip.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       setDeleteConfirm(null);
@@ -298,8 +299,8 @@ export default function SoldTrips() {
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5" />
                                 <span>
-                                  {format(new Date(`${trip.start_date}T12:00:00`), 'd MMM yyyy', { locale: es })}
-                                  {trip.end_date && ` - ${format(new Date(`${trip.end_date}T12:00:00`), 'd MMM', { locale: es })}`}
+                                  {format(parseLocalDate(`${trip.start_date}T12:00:00`), 'd MMM yyyy', { locale: es })}
+                                  {trip.end_date && ` - ${format(parseLocalDate(`${trip.end_date}T12:00:00`), 'd MMM', { locale: es })}`}
                                 </span>
                               </div>
                               {trip.travelers && (

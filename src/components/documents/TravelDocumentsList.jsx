@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { format, differenceInDays } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -105,63 +106,80 @@ export default function TravelDocumentsList({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors"
+                  className="p-4 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors border border-stone-200"
                 >
-                  <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: '#2E442A15' }}
-                  >
-                    <Icon className="w-5 h-5" style={{ color: '#2E442A' }} />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-stone-800 truncate">{doc.name}</p>
-                      {expiryStatus && (
-                        <Badge className={`text-xs ${expiryStatus.color}`}>
-                          {expiryStatus.status === 'expired' ? (
-                            <AlertTriangle className="w-3 h-3 mr-1" />
-                          ) : (
-                            <Clock className="w-3 h-3 mr-1" />
-                          )}
-                          {expiryStatus.label}
-                        </Badge>
-                      )}
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: '#2E442A' }}
+                    >
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-stone-500">
-                      <span>{DOC_LABELS[doc.document_type]}</span>
-                      {doc.document_number && <span>• {doc.document_number}</span>}
-                      {doc.country && <span>• {doc.country}</span>}
-                      {doc.expiry_date && !expiryStatus && (
-                        <span>• Vence: {format(new Date(doc.expiry_date), 'd MMM yyyy', { locale: es })}</span>
-                      )}
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-1">
-                    {doc.file_url && (
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-400 hover:text-blue-600">
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
-                      </a>
-                    )}
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-stone-400 hover:text-stone-600"
-                      onClick={() => { setEditingDoc(doc); setFormOpen(true); }}
-                    >
-                      <FileText className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-stone-400 hover:text-red-500"
-                      onClick={() => setDeleteConfirm(doc)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-semibold text-stone-800">{DOC_LABELS[doc.document_type]}</h4>
+                        {expiryStatus && (
+                          <Badge variant="outline" className={`text-xs flex items-center gap-1 ${expiryStatus.color} border-0`}>
+                            {expiryStatus.status === 'expired' ? (
+                              <AlertTriangle className="w-3 h-3" />
+                            ) : (
+                              <Clock className="w-3 h-3" />
+                            )}
+                            {expiryStatus.label}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <p className="text-sm text-stone-600 mb-2">{doc.name}</p>
+
+                      <div className="space-y-1">
+                        {doc.document_number && (
+                          <div className="flex items-center gap-2 text-xs text-stone-500">
+                            <span className="font-medium">N°:</span>
+                            <span>{doc.document_number}</span>
+                          </div>
+                        )}
+                        {doc.country && (
+                          <div className="flex items-center gap-2 text-xs text-stone-500">
+                            <span className="font-medium">País:</span>
+                            <span>{doc.country}</span>
+                          </div>
+                        )}
+                        {doc.expiry_date && (
+                          <div className="flex items-center gap-2 text-xs text-stone-500">
+                            <span className="font-medium">Vencimiento:</span>
+                            <span>{format(parseLocalDate(doc.expiry_date), 'd MMM yyyy', { locale: es })}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1 flex-shrink-0">
+                      {doc.file_url && (
+                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-400 hover:text-blue-600">
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </a>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-stone-400 hover:text-stone-600"
+                        onClick={() => { setEditingDoc(doc); setFormOpen(true); }}
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-stone-400 hover:text-red-500"
+                        onClick={() => setDeleteConfirm(doc)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </motion.div>
               );

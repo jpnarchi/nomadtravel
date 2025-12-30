@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Loader2, X, Star, Sparkles, Upload, Image } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -62,7 +62,7 @@ export default function SupplierForm({ open, onClose, supplier, onSave, isLoadin
 
   useEffect(() => {
     const fetchAgencies = async () => {
-      const agencies = await base44.entities.Supplier.filter({ type: 'agencia_representante' });
+      const agencies = await supabaseAPI.entities.Supplier.filter({ type: 'agencia_representante' });
       setRepresentativeAgencies(agencies);
     };
     if (open) {
@@ -73,74 +73,46 @@ export default function SupplierForm({ open, onClose, supplier, onSave, isLoadin
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
-    
+
     setUploadingImage(true);
     try {
       const urls = [];
       for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await supabaseAPI.storage.uploadFile(file, 'documents', 'supplier-imports');
         urls.push(file_url);
       }
       setUploadedImages(prev => [...prev, ...urls]);
       toast.success('Imagen(es) subida(s)');
     } catch (error) {
-      toast.error('Error al subir imagen');
+      console.error('Error uploading images:', error);
+      toast.error('Error al subir imagen. Verifica que el storage esté configurado.');
     } finally {
       setUploadingImage(false);
     }
   };
 
   const handleSmartImportFromImages = async () => {
+    // NOTA: Smart Import con AI requiere configuración de LLM
+    // Comentado temporalmente hasta que se configure la integración
+    toast.error('Smart Import con AI aún no está disponible. Por favor, ingresa los datos manualmente.');
+    return;
+
+    /*
     if (uploadedImages.length === 0) {
       toast.error('Sube al menos una imagen');
       return;
     }
     setImporting(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extrae la información del proveedor de viajes de estas imágenes (pueden ser tarjetas de presentación, emails, capturas de pantalla, etc.) y devuélvela en formato JSON.
-
-Extrae estos campos si están disponibles:
-- name: nombre del proveedor/empresa
-- type: tipo (dmc, hotel_directo, cadena_hotelera, aerolinea, plataforma, transporte, tours, otro)
-- destinations: array de regiones donde opera (ej: ["Europa del Sur", "Europa Occidental"])
-- services: array de servicios (ej: ["Hoteles", "Tours"])
-- website: sitio web
-- internal_notes: resumen o descripción del proveedor
-- contact1_name: nombre del contacto principal
-- contact1_email: email del contacto principal
-- contact1_phone: teléfono del contacto principal
-- contact2_name: nombre del segundo contacto (si existe)
-- contact2_email: email del segundo contacto
-- contact2_phone: teléfono del segundo contacto`,
-        file_urls: uploadedImages,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            type: { type: "string" },
-            destinations: { type: "array", items: { type: "string" } },
-            services: { type: "array", items: { type: "string" } },
-            website: { type: "string" },
-            internal_notes: { type: "string" },
-            contact1_name: { type: "string" },
-            contact1_email: { type: "string" },
-            contact1_phone: { type: "string" },
-            contact2_name: { type: "string" },
-            contact2_email: { type: "string" },
-            contact2_phone: { type: "string" }
-          }
-        }
-      });
-
-      applyImportedData(result);
-      setUploadedImages([]);
+      // Aquí iría la integración con un servicio de AI/LLM
+      // Por ejemplo: OpenAI, Claude, etc.
       toast.success('Datos importados correctamente');
     } catch (error) {
       toast.error('Error al procesar las imágenes');
     } finally {
       setImporting(false);
     }
+    */
   };
 
   const applyImportedData = (result) => {
@@ -164,63 +136,33 @@ Extrae estos campos si están disponibles:
   };
 
   const handleSmartImport = async () => {
+    // NOTA: Smart Import con AI requiere configuración de LLM
+    // Comentado temporalmente hasta que se configure la integración
+    toast.error('Smart Import con AI aún no está disponible. Por favor, ingresa los datos manualmente.');
+    return;
+
+    /*
     if (!smartImportText.trim()) {
       toast.error('Pega el texto del proveedor');
       return;
     }
     setImporting(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Extrae la información del siguiente texto de un proveedor de viajes y devuélvela en formato JSON.
-        
-Texto:
-${smartImportText}
-
-Extrae estos campos si están disponibles:
-- name: nombre del proveedor/empresa
-- type: tipo (dmc, hotel_directo, cadena_hotelera, aerolinea, plataforma, transporte, tours, otro)
-- destinations: array de regiones donde opera (ej: ["Europa del Sur", "Europa Occidental"])
-- services: array de servicios (ej: ["Hoteles", "Tours"])
-- website: sitio web
-- internal_notes: resumen o descripción del proveedor
-- contact1_name: nombre del contacto principal
-- contact1_email: email del contacto principal
-- contact1_phone: teléfono del contacto principal
-- contact2_name: nombre del segundo contacto (si existe)
-- contact2_email: email del segundo contacto
-- contact2_phone: teléfono del segundo contacto`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            type: { type: "string" },
-            destinations: { type: "array", items: { type: "string" } },
-            services: { type: "array", items: { type: "string" } },
-            website: { type: "string" },
-            internal_notes: { type: "string" },
-            contact1_name: { type: "string" },
-            contact1_email: { type: "string" },
-            contact1_phone: { type: "string" },
-            contact2_name: { type: "string" },
-            contact2_email: { type: "string" },
-            contact2_phone: { type: "string" }
-          }
-        }
-      });
-
-      applyImportedData(result);
+      // Aquí iría la integración con un servicio de AI/LLM
+      // Por ejemplo: OpenAI, Claude, etc.
       toast.success('Datos importados correctamente');
     } catch (error) {
       toast.error('Error al procesar el texto');
     } finally {
       setImporting(false);
     }
+    */
   };
 
   const [formData, setFormData] = useState({
     name: '',
     type: '',
-    representative_agency_id: '',
+    representative_agency_id: 'none',
     contact1_name: '',
     contact1_phone: '',
     contact1_email: '',
@@ -251,7 +193,7 @@ Extrae estos campos si están disponibles:
       setFormData({
         name: supplier.name || '',
         type: supplier.type || '',
-        representative_agency_id: supplier.representative_agency_id || '',
+        representative_agency_id: supplier.representative_agency_id || 'none',
         contact1_name: supplier.contact1_name || '',
         contact1_phone: supplier.contact1_phone || '',
         contact1_email: supplier.contact1_email || '',
@@ -280,7 +222,7 @@ Extrae estos campos si están disponibles:
       setFormData({
         name: '',
         type: '',
-        representative_agency_id: '',
+        representative_agency_id: 'none',
         contact1_name: '',
         contact1_phone: '',
         contact1_email: '',
@@ -316,7 +258,14 @@ Extrae estos campos si están disponibles:
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+
+    // Limpiar valores vacíos en campos UUID para evitar errores
+    const cleanedData = {
+      ...formData,
+      representative_agency_id: formData.representative_agency_id === 'none' ? null : formData.representative_agency_id
+    };
+
+    onSave(cleanedData);
   };
 
   const toggleArrayItem = (field, item) => {
@@ -492,7 +441,7 @@ Extrae estos campos si están disponibles:
                 </div>
                 <div className="space-y-2">
                   <Label>Tipo de Proveedor *</Label>
-                  <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v, representative_agency_id: v === 'agencia_representante' ? '' : formData.representative_agency_id })}>
+                  <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v, representative_agency_id: v === 'agencia_representante' ? 'none' : formData.representative_agency_id })}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
                       {SUPPLIER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
@@ -513,7 +462,7 @@ Extrae estos campos si están disponibles:
                       <SelectValue placeholder="Seleccionar agencia representante (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={null}>Ninguna</SelectItem>
+                      <SelectItem value="none">Ninguna</SelectItem>
                       {representativeAgencies.map(agency => (
                         <SelectItem key={agency.id} value={agency.id}>{agency.name}</SelectItem>
                       ))}

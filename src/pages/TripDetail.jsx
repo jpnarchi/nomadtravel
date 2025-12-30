@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   ArrowLeft, MapPin, Calendar, Users, DollarSign, 
@@ -34,23 +35,23 @@ export default function TripDetail() {
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', tripId],
-    queryFn: () => base44.entities.Trip.filter({ id: tripId }).then(res => res[0]),
+    queryFn: () => supabaseAPI.entities.Trip.filter({ id: tripId }).then(res => res[0]),
     enabled: !!tripId
   });
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
+    queryFn: () => supabaseAPI.entities.Client.list()
   });
 
   const { data: documents = [] } = useQuery({
     queryKey: ['tripDocuments', tripId],
-    queryFn: () => base44.entities.TravelDocument.filter({ trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.TravelDocument.filter({ trip_id: tripId }),
     enabled: !!tripId
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Trip.update(tripId, data),
+    mutationFn: (data) => supabaseAPI.entities.Trip.update(tripId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trip', tripId] });
       setFormOpen(false);
@@ -59,7 +60,7 @@ export default function TripDetail() {
   });
 
   const createDocMutation = useMutation({
-    mutationFn: (data) => base44.entities.TravelDocument.create(data),
+    mutationFn: (data) => supabaseAPI.entities.TravelDocument.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
       toast.success('Documento guardado');
@@ -67,7 +68,7 @@ export default function TripDetail() {
   });
 
   const updateDocMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TravelDocument.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TravelDocument.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
       toast.success('Documento actualizado');
@@ -75,7 +76,7 @@ export default function TripDetail() {
   });
 
   const deleteDocMutation = useMutation({
-    mutationFn: (id) => base44.entities.TravelDocument.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.TravelDocument.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
       toast.success('Documento eliminado');
@@ -152,8 +153,8 @@ export default function TripDetail() {
                 <div>
                   <p className="text-xs text-stone-400">Fechas</p>
                   <p className="text-stone-800">
-                    {trip.start_date && format(new Date(trip.start_date), 'd MMM', { locale: es })}
-                    {trip.end_date && ` - ${format(new Date(trip.end_date), 'd MMM yyyy', { locale: es })}`}
+                    {trip.start_date && format(parseLocalDate(trip.start_date), 'd MMM', { locale: es })}
+                    {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yyyy', { locale: es })}`}
                   </p>
                 </div>
               </div>

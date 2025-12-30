@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Loader2, Plane } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useUser } from '@clerk/clerk-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,24 +33,22 @@ const STAGE_ORDER = ['nuevo', 'cotizando', 'propuesta_enviada', 'aceptado', 'ven
 
 export default function Trips() {
   const { viewMode } = useContext(ViewModeContext);
+  const { user: clerkUser } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+    role: clerkUser.publicMetadata?.role || 'user',
+    custom_role: clerkUser.publicMetadata?.custom_role
+  } : null;
+
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-    fetchUser();
-  }, []);
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
@@ -57,8 +56,8 @@ export default function Trips() {
     queryKey: ['trips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.Trip.list('-created_date');
-      return base44.entities.Trip.filter({ created_by: user.email }, '-created_date');
+      if (isAdmin) return supabaseAPI.entities.Trip.list('-created_date');
+      return supabaseAPI.entities.Trip.filter({ created_by: user.email }, '-created_date');
     },
     enabled: !!user,
     retry: 1,
@@ -69,8 +68,8 @@ export default function Trips() {
     queryKey: ['clients', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.Client.list();
-      return base44.entities.Client.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.Client.list();
+      return supabaseAPI.entities.Client.filter({ created_by: user.email });
     },
     enabled: !!user,
     retry: 1,
@@ -78,7 +77,10 @@ export default function Trips() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Trip.create(data),
+    mutationFn: (data) => supabaseAPI.entities.Trip.create({
+      ...data,
+      created_by: user?.email
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       setFormOpen(false);
@@ -86,7 +88,7 @@ export default function Trips() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Trip.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.Trip.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
@@ -96,7 +98,7 @@ export default function Trips() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Trip.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.Trip.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       setDeleteConfirm(null);
@@ -104,7 +106,10 @@ export default function Trips() {
   });
 
   const createSoldTripMutation = useMutation({
-    mutationFn: (data) => base44.entities.SoldTrip.create(data),
+    mutationFn: (data) => supabaseAPI.entities.SoldTrip.create({
+      ...data,
+      created_by: user?.email
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
     }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Plus, Calendar, MapPin, DollarSign, Loader2, Edit2, Trash2, Users, ExternalLink, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -29,11 +30,11 @@ export default function IndustryFairs() {
 
   const { data: fairs = [], isLoading } = useQuery({
     queryKey: ['industryFairs'],
-    queryFn: () => base44.entities.IndustryFair.list('-start_date')
+    queryFn: () => supabaseAPI.entities.IndustryFair.list('-start_date')
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.IndustryFair.create(data),
+    mutationFn: (data) => supabaseAPI.entities.IndustryFair.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['industryFairs'] });
       setFormOpen(false);
@@ -42,7 +43,7 @@ export default function IndustryFairs() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.IndustryFair.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.IndustryFair.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['industryFairs'] });
       setFormOpen(false);
@@ -52,7 +53,7 @@ export default function IndustryFairs() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.IndustryFair.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.IndustryFair.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['industryFairs'] });
       setDeleteConfirm(null);
@@ -142,8 +143,8 @@ export default function IndustryFairs() {
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          {format(new Date(fair.start_date), 'd MMM', { locale: es })}
-                          {fair.end_date && ` - ${format(new Date(fair.end_date), 'd MMM yyyy', { locale: es })}`}
+                          {format(parseLocalDate(fair.start_date), 'd MMM', { locale: es })}
+                          {fair.end_date && ` - ${format(parseLocalDate(fair.end_date), 'd MMM yyyy', { locale: es })}`}
                         </span>
                       </div>
                       {fair.location && (

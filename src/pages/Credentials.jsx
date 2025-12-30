@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, Search, Key, Eye, EyeOff, Copy, Edit2, Trash2, 
@@ -45,11 +45,11 @@ export default function Credentials() {
 
   const { data: credentials = [], isLoading } = useQuery({
     queryKey: ['credentials'],
-    queryFn: () => base44.entities.Credential.list('-created_date')
+    queryFn: () => supabaseAPI.entities.Credential.list('-created_date')
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Credential.create(data),
+    mutationFn: (data) => supabaseAPI.entities.Credential.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['credentials'] });
       setFormOpen(false);
@@ -58,7 +58,7 @@ export default function Credentials() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Credential.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.Credential.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['credentials'] });
       setFormOpen(false);
@@ -68,7 +68,7 @@ export default function Credentials() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Credential.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.Credential.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['credentials'] });
       setDeleteConfirm(null);

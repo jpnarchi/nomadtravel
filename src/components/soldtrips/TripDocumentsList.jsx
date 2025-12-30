@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileText, Upload, Trash2, Loader2, Download, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { toast } from 'sonner';
 
 const DOC_TYPES = {
@@ -102,7 +103,7 @@ export default function TripDocumentsList({ documents = [], soldTripId, onCreate
                       {docTypeInfo.label}
                     </p>
                     <p className="text-xs text-stone-400 mt-1">
-                      {format(new Date(doc.created_date), 'd MMM yyyy', { locale: es })}
+                      {format(parseLocalDate(doc.created_date), 'd MMM yyyy', { locale: es })}
                     </p>
                     {doc.notes && (
                       <p className="text-xs text-stone-500 mt-1 italic">"{doc.notes}"</p>

@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useContext } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
+import { useUser } from '@clerk/clerk-react';
 import { format, getMonth, getYear, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -47,6 +48,19 @@ const SEASONS = [
 
 export default function Statistics() {
   const { viewMode } = useContext(ViewModeContext);
+  const { user: clerkUser, isLoaded } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+    role: clerkUser.publicMetadata?.role || 'user',
+    custom_role: clerkUser.publicMetadata?.custom_role
+  } : null;
+
+  const userLoading = !isLoaded;
+
   const [filters, setFilters] = useState({
     year: new Date().getFullYear().toString(),
     saleMonth: 'all',
@@ -59,22 +73,6 @@ export default function Statistics() {
     tripType: 'all',
     agent: 'all'
   });
-  const [user, setUser] = useState(null);
-  const [userLoading, setUserLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      } finally {
-        setUserLoading(false);
-      }
-    };
-    fetchUser();
-  }, []);
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
@@ -82,8 +80,8 @@ export default function Statistics() {
     queryKey: ['soldTrips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.SoldTrip.list();
-      return base44.entities.SoldTrip.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.SoldTrip.list();
+      return supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
     },
     enabled: !!user && !userLoading
   });
@@ -93,10 +91,10 @@ export default function Statistics() {
     queryFn: async () => {
       if (!user) return [];
       const trips = isAdmin 
-        ? await base44.entities.SoldTrip.list()
-        : await base44.entities.SoldTrip.filter({ created_by: user.email });
+        ? await supabaseAPI.entities.SoldTrip.list()
+        : await supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
       const tripIds = trips.map(t => t.id);
-      const allSvcs = await base44.entities.TripService.list();
+      const allSvcs = await supabaseAPI.entities.TripService.list();
       return allSvcs.filter(s => tripIds.includes(s.sold_trip_id));
     },
     enabled: !!user && !userLoading
@@ -106,8 +104,8 @@ export default function Statistics() {
     queryKey: ['clients', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.Client.list();
-      return base44.entities.Client.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.Client.list();
+      return supabaseAPI.entities.Client.filter({ created_by: user.email });
     },
     enabled: !!user && !userLoading
   });
@@ -116,15 +114,15 @@ export default function Statistics() {
     queryKey: ['trips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.Trip.list();
-      return base44.entities.Trip.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.Trip.list();
+      return supabaseAPI.entities.Trip.filter({ created_by: user.email });
     },
     enabled: !!user && !userLoading
   });
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => supabaseAPI.entities.User.list(),
     enabled: !!user && isAdmin && !userLoading
   });
 

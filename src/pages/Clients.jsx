@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
+import { useUser } from '@clerk/clerk-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { 
-  Plus, Search, Edit2, Trash2, Mail, Phone, 
+import { parseLocalDate } from '@/lib/dateUtils';
+import {
+  Plus, Search, Edit2, Trash2, Mail, Phone,
   Calendar, Loader2, Users, Eye
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -28,25 +30,23 @@ import EmptyState from '@/components/ui/EmptyState';
 
 export default function Clients() {
   const { viewMode } = useContext(ViewModeContext);
+  const { user: clerkUser } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+    role: clerkUser.publicMetadata?.role || 'user',
+    custom_role: clerkUser.publicMetadata?.custom_role
+  } : null;
+
   const [search, setSearch] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-    fetchUser();
-  }, []);
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
@@ -55,16 +55,16 @@ export default function Clients() {
     queryFn: async () => {
       if (!user) return [];
       if (isAdmin) {
-        return base44.entities.Client.list('-created_date');
+        return supabaseAPI.entities.Client.list();
       } else {
-        return base44.entities.Client.filter({ created_by: user.email }, '-created_date');
+        return supabaseAPI.entities.Client.filter({ created_by: user.email });
       }
     },
     enabled: !!user
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Client.create(data),
+    mutationFn: (data) => supabaseAPI.entities.Client.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setFormOpen(false);
@@ -72,7 +72,7 @@ export default function Clients() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Client.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.Client.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setFormOpen(false);
@@ -81,7 +81,7 @@ export default function Clients() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Client.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.Client.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setDeleteConfirm(null);
@@ -92,7 +92,7 @@ export default function Clients() {
     if (editingClient) {
       updateMutation.mutate({ id: editingClient.id, data });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate({ ...data, created_by: user?.email });
     }
   };
 
@@ -194,7 +194,7 @@ export default function Clients() {
                     </td>
                     <td className="p-4">
                       <span className="text-stone-600 text-xs">
-                        {client.birth_date ? format(new Date(client.birth_date), 'd MMM yyyy', { locale: es }) : '-'}
+                        {client.birth_date ? format(parseLocalDate(client.birth_date), 'd MMM yyyy', { locale: es }) : '-'}
                       </span>
                     </td>
                     <td className="p-4 text-right">

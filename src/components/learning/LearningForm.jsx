@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Upload, X, FileText, Image, Link as LinkIcon } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { toast } from "sonner";
 
 const CATEGORIES = [
@@ -90,11 +90,13 @@ export default function LearningForm({ open, onClose, material, onSave, isLoadin
     setUploading(true);
     try {
       const uploadedUrls = [];
+      const folderPath = type === 'pdf' ? 'learning-materials/pdfs' : 'learning-materials/images';
+
       for (const file of files) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const { file_url } = await supabaseAPI.storage.uploadFile(file, 'documents', folderPath);
         uploadedUrls.push(file_url);
       }
-      
+
       if (type === 'pdf') {
         setFormData(prev => ({ ...prev, pdf_files: [...prev.pdf_files, ...uploadedUrls] }));
       } else {
@@ -102,7 +104,8 @@ export default function LearningForm({ open, onClose, material, onSave, isLoadin
       }
       toast.success('Archivos subidos');
     } catch (error) {
-      toast.error('Error al subir archivos');
+      console.error('Error uploading files:', error);
+      toast.error('Error al subir archivos. Verifica que el storage esté configurado.');
     } finally {
       setUploading(false);
     }

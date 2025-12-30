@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -120,7 +120,7 @@ export default function SoldTripDetail() {
   const { data: soldTrip, isLoading: tripLoading } = useQuery({
     queryKey: ['soldTrip', tripId],
     queryFn: async () => {
-      const trips = await base44.entities.SoldTrip.filter({ id: tripId });
+      const trips = await supabaseAPI.entities.SoldTrip.filter({ id: tripId });
       return trips[0];
     },
     enabled: !!tripId,
@@ -129,43 +129,43 @@ export default function SoldTripDetail() {
 
   const { data: services = [] } = useQuery({
     queryKey: ['tripServices', tripId],
-    queryFn: () => base44.entities.TripService.filter({ sold_trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.TripService.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
   const { data: clientPayments = [] } = useQuery({
     queryKey: ['clientPayments', tripId],
-    queryFn: () => base44.entities.ClientPayment.filter({ sold_trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.ClientPayment.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
   const { data: supplierPayments = [] } = useQuery({
     queryKey: ['supplierPayments', tripId],
-    queryFn: () => base44.entities.SupplierPayment.filter({ sold_trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.SupplierPayment.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
   const { data: paymentPlan = [] } = useQuery({
     queryKey: ['paymentPlan', tripId],
-    queryFn: () => base44.entities.ClientPaymentPlan.filter({ sold_trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.ClientPaymentPlan.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
   const { data: tripNotes = [] } = useQuery({
     queryKey: ['tripNotes', tripId],
-    queryFn: () => base44.entities.TripNote.filter({ sold_trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.TripNote.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
   const { data: tripDocuments = [] } = useQuery({
     queryKey: ['tripDocuments', tripId],
-    queryFn: () => base44.entities.TripDocumentFile.filter({ sold_trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.TripDocumentFile.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
   const { data: tripReminders = [] } = useQuery({
     queryKey: ['tripReminders', tripId],
-    queryFn: () => base44.entities.TripReminder.filter({ sold_trip_id: tripId }),
+    queryFn: () => supabaseAPI.entities.TripReminder.filter({ sold_trip_id: tripId }),
     enabled: !!tripId
   });
 
@@ -198,7 +198,7 @@ export default function SoldTripDetail() {
 
   // Mutations
   const createServiceMutation = useMutation({
-    mutationFn: (data) => base44.entities.TripService.create(data),
+    mutationFn: (data) => supabaseAPI.entities.TripService.create(data),
     onSuccess: async (newService) => {
       await updateSoldTripTotalsFromServices(newService.sold_trip_id, queryClient);
       setServiceFormOpen(false);
@@ -206,7 +206,7 @@ export default function SoldTripDetail() {
   });
 
   const updateServiceMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TripService.update(id, data),
     onSuccess: async (_, variables) => {
       const updatedService = services.find(s => s.id === variables.id);
       if (updatedService?.sold_trip_id) {
@@ -218,7 +218,7 @@ export default function SoldTripDetail() {
   });
 
   const deleteServiceMutation = useMutation({
-    mutationFn: ({ id, sold_trip_id }) => base44.entities.TripService.delete(id),
+    mutationFn: ({ id, sold_trip_id }) => supabaseAPI.entities.TripService.delete(id),
     onSuccess: async (_, variables) => {
       if (variables.sold_trip_id) {
         await updateSoldTripTotalsFromServices(variables.sold_trip_id, queryClient);
@@ -228,7 +228,7 @@ export default function SoldTripDetail() {
   });
 
   const updateClientPaymentMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ClientPayment.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.ClientPayment.update(id, data),
     onSuccess: async (_, variables) => {
       const payment = clientPayments.find(p => p.id === variables.id);
       if (payment?.sold_trip_id) {
@@ -240,7 +240,7 @@ export default function SoldTripDetail() {
   });
 
   const createClientPaymentMutation = useMutation({
-    mutationFn: async (data) => base44.entities.ClientPayment.create(data),
+    mutationFn: async (data) => supabaseAPI.entities.ClientPayment.create(data),
     onSuccess: async (newPayment) => {
       await updateSoldTripAndPaymentPlanTotals(newPayment.sold_trip_id, queryClient);
       setClientPaymentOpen(false);
@@ -250,11 +250,11 @@ export default function SoldTripDetail() {
 
   const createSupplierPaymentMutation = useMutation({
     mutationFn: async (data) => {
-      const supplierPayment = await base44.entities.SupplierPayment.create(data);
+      const supplierPayment = await supabaseAPI.entities.SupplierPayment.create(data);
       
       // Si el método es tarjeta_cliente, crear automáticamente un pago de cliente
       if (data.method === 'tarjeta_cliente') {
-        await base44.entities.ClientPayment.create({
+        await supabaseAPI.entities.ClientPayment.create({
           sold_trip_id: data.sold_trip_id,
           date: data.date,
           currency: 'USD',
@@ -285,11 +285,11 @@ export default function SoldTripDetail() {
 
   const updateSupplierPaymentMutation = useMutation({
     mutationFn: async ({ id, data, oldPayment }) => {
-      const updatedPayment = await base44.entities.SupplierPayment.update(id, data);
+      const updatedPayment = await supabaseAPI.entities.SupplierPayment.update(id, data);
       
       // Si cambió a tarjeta_cliente y antes no lo era, crear pago de cliente
       if (data.method === 'tarjeta_cliente' && oldPayment && oldPayment.method !== 'tarjeta_cliente') {
-        await base44.entities.ClientPayment.create({
+        await supabaseAPI.entities.ClientPayment.create({
           sold_trip_id: data.sold_trip_id,
           date: data.date,
           currency: 'USD',
@@ -322,7 +322,7 @@ export default function SoldTripDetail() {
 
   const createPaymentPlanMutation = useMutation({
     mutationFn: async (payments) => {
-      return await base44.entities.ClientPaymentPlan.bulkCreate(payments);
+      return await supabaseAPI.entities.ClientPaymentPlan.bulkCreate(payments);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
@@ -331,7 +331,7 @@ export default function SoldTripDetail() {
   });
 
   const updatePaymentPlanItemMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ClientPaymentPlan.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.ClientPaymentPlan.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['paymentPlan', tripId] });
       setEditingPlanItem(null);
@@ -341,12 +341,12 @@ export default function SoldTripDetail() {
   const deletePaymentMutation = useMutation({
     mutationFn: async ({ type, id, sold_trip_id, payment }) => {
       if (type === 'client') {
-        return await base44.entities.ClientPayment.delete(id);
+        return await supabaseAPI.entities.ClientPayment.delete(id);
       } else {
         // Si es pago a proveedor con tarjeta_cliente, eliminar también el pago de cliente asociado
         if (payment && payment.method === 'tarjeta_cliente') {
           // Buscar el pago de cliente generado automáticamente
-          const allClientPayments = await base44.entities.ClientPayment.filter({ sold_trip_id });
+          const allClientPayments = await supabaseAPI.entities.ClientPayment.filter({ sold_trip_id });
           const autoGeneratedPayment = allClientPayments.find(cp => 
             cp.method === 'tarjeta_cliente' &&
             cp.date === payment.date &&
@@ -355,11 +355,11 @@ export default function SoldTripDetail() {
           );
           
           if (autoGeneratedPayment) {
-            await base44.entities.ClientPayment.delete(autoGeneratedPayment.id);
+            await supabaseAPI.entities.ClientPayment.delete(autoGeneratedPayment.id);
           }
         }
         
-        return await base44.entities.SupplierPayment.delete(id);
+        return await supabaseAPI.entities.SupplierPayment.delete(id);
       }
     },
     onSuccess: async (_, variables) => {
@@ -380,7 +380,7 @@ export default function SoldTripDetail() {
   });
 
   const updateTripMutation = useMutation({
-    mutationFn: (data) => base44.entities.SoldTrip.update(tripId, data),
+    mutationFn: (data) => supabaseAPI.entities.SoldTrip.update(tripId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
@@ -390,21 +390,21 @@ export default function SoldTripDetail() {
 
   // Trip Notes Mutations
   const createNoteMutation = useMutation({
-    mutationFn: (data) => base44.entities.TripNote.create({ ...data, sold_trip_id: tripId }),
+    mutationFn: (data) => supabaseAPI.entities.TripNote.create({ ...data, sold_trip_id: tripId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripNotes', tripId] });
     }
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TripNote.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TripNote.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripNotes', tripId] });
     }
   });
 
   const deleteNoteMutation = useMutation({
-    mutationFn: (id) => base44.entities.TripNote.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.TripNote.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripNotes', tripId] });
     }
@@ -412,14 +412,14 @@ export default function SoldTripDetail() {
 
   // Trip Documents Mutations
   const createDocumentMutation = useMutation({
-    mutationFn: (data) => base44.entities.TripDocumentFile.create(data),
+    mutationFn: (data) => supabaseAPI.entities.TripDocumentFile.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
     }
   });
 
   const deleteDocumentMutation = useMutation({
-    mutationFn: (id) => base44.entities.TripDocumentFile.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.TripDocumentFile.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
     }
@@ -429,7 +429,7 @@ export default function SoldTripDetail() {
   const createRemindersMutation = useMutation({
     mutationFn: (reminders) => {
       const remindersWithTripId = reminders.map(r => ({ ...r, sold_trip_id: tripId }));
-      return base44.entities.TripReminder.bulkCreate(remindersWithTripId);
+      return supabaseAPI.entities.TripReminder.bulkCreate(remindersWithTripId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripReminders', tripId] });
@@ -437,7 +437,7 @@ export default function SoldTripDetail() {
   });
 
   const updateReminderMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TripReminder.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TripReminder.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripReminders', tripId] });
     }
@@ -448,8 +448,8 @@ export default function SoldTripDetail() {
 
     try {
       const [allServices, allSupplierPayments] = await Promise.all([
-        base44.entities.TripService.filter({ sold_trip_id: tripId }),
-        base44.entities.SupplierPayment.filter({ sold_trip_id: tripId })
+        supabaseAPI.entities.TripService.filter({ sold_trip_id: tripId }),
+        supabaseAPI.entities.SupplierPayment.filter({ sold_trip_id: tripId })
       ]);
 
       for (const service of allServices) {
@@ -457,7 +457,7 @@ export default function SoldTripDetail() {
         const totalPaidForService = servicePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
         if (service.amount_paid_to_supplier !== totalPaidForService) {
-          await base44.entities.TripService.update(service.id, {
+          await supabaseAPI.entities.TripService.update(service.id, {
             amount_paid_to_supplier: totalPaidForService
           });
         }
@@ -472,9 +472,9 @@ export default function SoldTripDetail() {
 
     try {
       const [newServices, newClientPayments, newSupplierPayments] = await Promise.all([
-        base44.entities.TripService.filter({ sold_trip_id: tripId }),
-        base44.entities.ClientPayment.filter({ sold_trip_id: tripId }),
-        base44.entities.SupplierPayment.filter({ sold_trip_id: tripId })
+        supabaseAPI.entities.TripService.filter({ sold_trip_id: tripId }),
+        supabaseAPI.entities.ClientPayment.filter({ sold_trip_id: tripId }),
+        supabaseAPI.entities.SupplierPayment.filter({ sold_trip_id: tripId })
       ]);
 
       const totalPrice = newServices.reduce((sum, s) => sum + (s.total_price || 0), 0);
@@ -490,7 +490,7 @@ export default function SoldTripDetail() {
         newStatus = 'parcial';
       }
 
-      await base44.entities.SoldTrip.update(tripId, {
+      await supabaseAPI.entities.SoldTrip.update(tripId, {
         total_price: totalPrice,
         total_commission: totalCommission,
         total_paid_by_client: totalPaidByClient,

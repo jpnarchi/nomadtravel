@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { differenceInMonths, differenceInWeeks, differenceInDays, differenceInHours, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Bell, CheckCircle, Loader2, MapPin } from 'lucide-react';
@@ -46,20 +46,20 @@ export default function ActiveReminders({ userEmail, isAdmin }) {
     queryKey: ['soldTrips', userEmail, isAdmin],
     queryFn: async () => {
       if (!userEmail) return [];
-      if (isAdmin) return base44.entities.SoldTrip.list();
-      return base44.entities.SoldTrip.filter({ created_by: userEmail });
+      if (isAdmin) return supabaseAPI.entities.SoldTrip.list();
+      return supabaseAPI.entities.SoldTrip.filter({ created_by: userEmail });
     },
     enabled: !!userEmail
   });
 
   const { data: allReminders = [], isLoading: remindersLoading } = useQuery({
     queryKey: ['allReminders'],
-    queryFn: () => base44.entities.TripReminder.list(),
+    queryFn: () => supabaseAPI.entities.TripReminder.list(),
     enabled: true
   });
 
   const updateReminderMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TripReminder.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TripReminder.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allReminders'] });
     }

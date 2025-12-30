@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -78,7 +79,7 @@ export default function SupplierDetail() {
   const { data: supplier, isLoading } = useQuery({
     queryKey: ['supplier', supplierId],
     queryFn: async () => {
-      const results = await base44.entities.Supplier.filter({ id: supplierId });
+      const results = await supabaseAPI.entities.Supplier.filter({ id: supplierId });
       return results[0];
     },
     enabled: !!supplierId
@@ -86,19 +87,19 @@ export default function SupplierDetail() {
 
   const { data: contacts = [] } = useQuery({
     queryKey: ['supplierContacts', supplierId],
-    queryFn: () => base44.entities.SupplierContact.filter({ supplier_id: supplierId }),
+    queryFn: () => supabaseAPI.entities.SupplierContact.filter({ supplier_id: supplierId }),
     enabled: !!supplierId
   });
 
   const { data: documents = [] } = useQuery({
     queryKey: ['supplierDocuments', supplierId],
-    queryFn: () => base44.entities.SupplierDocument.filter({ supplier_id: supplierId }),
+    queryFn: () => supabaseAPI.entities.SupplierDocument.filter({ supplier_id: supplierId }),
     enabled: !!supplierId
   });
 
   // Mutations
   const updateSupplierMutation = useMutation({
-    mutationFn: (data) => base44.entities.Supplier.update(supplierId, data),
+    mutationFn: (data) => supabaseAPI.entities.Supplier.update(supplierId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplier', supplierId] });
       setEditFormOpen(false);
@@ -106,7 +107,7 @@ export default function SupplierDetail() {
   });
 
   const createContactMutation = useMutation({
-    mutationFn: (data) => base44.entities.SupplierContact.create({ ...data, supplier_id: supplierId }),
+    mutationFn: (data) => supabaseAPI.entities.SupplierContact.create({ ...data, supplier_id: supplierId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplierContacts', supplierId] });
       setContactFormOpen(false);
@@ -114,7 +115,7 @@ export default function SupplierDetail() {
   });
 
   const updateContactMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SupplierContact.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.SupplierContact.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplierContacts', supplierId] });
       setContactFormOpen(false);
@@ -123,7 +124,7 @@ export default function SupplierDetail() {
   });
 
   const deleteContactMutation = useMutation({
-    mutationFn: (id) => base44.entities.SupplierContact.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.SupplierContact.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplierContacts', supplierId] });
       setDeleteConfirm(null);
@@ -131,7 +132,7 @@ export default function SupplierDetail() {
   });
 
   const createDocumentMutation = useMutation({
-    mutationFn: (data) => base44.entities.SupplierDocument.create({ ...data, supplier_id: supplierId }),
+    mutationFn: (data) => supabaseAPI.entities.SupplierDocument.create({ ...data, supplier_id: supplierId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplierDocuments', supplierId] });
       setDocumentFormOpen(false);
@@ -139,7 +140,7 @@ export default function SupplierDetail() {
   });
 
   const updateDocumentMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SupplierDocument.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.SupplierDocument.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplierDocuments', supplierId] });
       setDocumentFormOpen(false);
@@ -148,7 +149,7 @@ export default function SupplierDetail() {
   });
 
   const deleteDocumentMutation = useMutation({
-    mutationFn: (id) => base44.entities.SupplierDocument.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.SupplierDocument.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplierDocuments', supplierId] });
       setDeleteConfirm(null);
@@ -459,7 +460,7 @@ export default function SupplierDetail() {
             {supplier.last_used && (
               <div>
                 <h4 className="font-semibold text-stone-800 mb-1">Última vez usado</h4>
-                <p className="text-sm text-stone-600">{format(new Date(supplier.last_used), 'd MMMM yyyy', { locale: es })}</p>
+                <p className="text-sm text-stone-600">{format(parseLocalDate(supplier.last_used), 'd MMMM yyyy', { locale: es })}</p>
               </div>
             )}
           </div>

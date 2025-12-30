@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   Loader2, Search, DollarSign, Plus, 
@@ -56,22 +57,22 @@ export default function InternalCommissions() {
 
   const { data: internalCommissions = [], isLoading: loadingInternal } = useQuery({
     queryKey: ['internalCommissions'],
-    queryFn: () => base44.entities.InternalCommission.list('-created_date')
+    queryFn: () => supabaseAPI.entities.InternalCommission.list('-created_date')
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => supabaseAPI.entities.User.list()
   });
 
   const { data: soldTrips = [], isLoading: loadingTrips } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+    queryFn: () => supabaseAPI.entities.SoldTrip.list()
   });
 
   const { data: tripServices = [], isLoading: loadingServices } = useQuery({
     queryKey: ['tripServices'],
-    queryFn: () => base44.entities.TripService.list()
+    queryFn: () => supabaseAPI.entities.TripService.list()
   });
 
   const isLoading = loadingInternal || loadingTrips || loadingServices;
@@ -160,7 +161,7 @@ export default function InternalCommissions() {
   }
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.InternalCommission.create(data),
+    mutationFn: (data) => supabaseAPI.entities.InternalCommission.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['internalCommissions'] });
       setFormOpen(false);
@@ -168,7 +169,7 @@ export default function InternalCommissions() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.InternalCommission.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.InternalCommission.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['internalCommissions'] });
       setFormOpen(false);
@@ -177,7 +178,7 @@ export default function InternalCommissions() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.InternalCommission.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.InternalCommission.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['internalCommissions'] });
       setDeleteConfirm(null);
@@ -185,7 +186,7 @@ export default function InternalCommissions() {
   });
 
   const updateTripServiceMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.TripService.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.TripService.update(id, data),
     onSuccess: async (_, variables) => {
       const service = tripServices.find(s => s.id === variables.id);
       if (service?.sold_trip_id) {
@@ -197,7 +198,7 @@ export default function InternalCommissions() {
   });
 
   const updateSoldTripMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SoldTrip.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.SoldTrip.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
     }
@@ -205,7 +206,7 @@ export default function InternalCommissions() {
 
   const deleteTripServiceMutation = useMutation({
     mutationFn: async ({ serviceId, sold_trip_id }) => {
-      await base44.entities.TripService.delete(serviceId);
+      await supabaseAPI.entities.TripService.delete(serviceId);
       return sold_trip_id;
     },
     onSuccess: async (sold_trip_id) => {
@@ -229,7 +230,7 @@ export default function InternalCommissions() {
       });
       
       // Recalculate total commission for the sold trip
-      const tripServices = await base44.entities.TripService.filter({ sold_trip_id: commission.sold_trip_id });
+      const tripServices = await supabaseAPI.entities.TripService.filter({ sold_trip_id: commission.sold_trip_id });
       const totalCommission = tripServices.reduce((sum, s) => {
         if (s.id === commission.service_id) return sum + newAmount;
         return sum + (s.commission || 0);
@@ -514,7 +515,7 @@ export default function InternalCommissions() {
                       <span className="font-medium text-stone-800">{commission.sold_trip_name || '-'}</span>
                       {commission.estimated_payment_date && (
                         <p className="text-xs text-stone-400">
-                          Pago est: {format(new Date(commission.estimated_payment_date), 'd MMM yy', { locale: es })}
+                          Pago est: {format(parseLocalDate(commission.estimated_payment_date), 'd MMM yy', { locale: es })}
                         </p>
                       )}
                     </td>
@@ -671,7 +672,7 @@ export default function InternalCommissions() {
                             <p className="text-sm text-stone-600 mb-1">{serviceName} • {trip?.destination}</p>
                             {service.paid_to_agency_date && (
                               <p className="text-xs text-amber-700">
-                                Marcado: {format(new Date(service.paid_to_agency_date), 'd MMM yyyy', { locale: es })}
+                                Marcado: {format(parseLocalDate(service.paid_to_agency_date), 'd MMM yyyy', { locale: es })}
                               </p>
                             )}
                           </div>

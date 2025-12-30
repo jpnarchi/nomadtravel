@@ -1,5 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   Clock, XCircle, Send, FileText, MessageSquare,
@@ -201,8 +202,8 @@ export default function PendingTripsStats({ trips }) {
                     <td className="p-3">
                       <div className="flex items-center gap-2 text-stone-600 text-xs">
                         <Calendar className="w-3 h-3" />
-                        {trip.start_date ? format(new Date(trip.start_date), 'd MMM', { locale: es }) : '-'}
-                        {trip.end_date && ` - ${format(new Date(trip.end_date), 'd MMM yy', { locale: es })}`}
+                        {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM', { locale: es }) : '-'}
+                        {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yy', { locale: es })}`}
                       </div>
                     </td>
                     <td className="p-3 text-center">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -30,12 +30,12 @@ export default function AdminSoldTrips() {
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => supabaseAPI.entities.User.list()
   });
 
   const { data: allSoldTrips = [], isLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list(),
+    queryFn: () => supabaseAPI.entities.SoldTrip.list(),
     refetchOnWindowFocus: true
   });
 
@@ -43,7 +43,7 @@ export default function AdminSoldTrips() {
 
   const updateSoldTripAgent = useMutation({
     mutationFn: ({ tripId, newAgentEmail }) => 
-      base44.entities.SoldTrip.update(tripId, { created_by: newAgentEmail }),
+      supabaseAPI.entities.SoldTrip.update(tripId, { created_by: newAgentEmail }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       toast.success('Viaje reasignado');

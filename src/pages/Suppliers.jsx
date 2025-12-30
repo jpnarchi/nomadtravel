@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -50,11 +50,11 @@ export default function Suppliers() {
 
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: () => base44.entities.Supplier.list('-created_date')
+    queryFn: () => supabaseAPI.entities.Supplier.list('-created_date')
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Supplier.create(data),
+    mutationFn: (data) => supabaseAPI.entities.Supplier.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       setFormOpen(false);
@@ -62,7 +62,7 @@ export default function Suppliers() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Supplier.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.Supplier.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       setFormOpen(false);
@@ -71,7 +71,7 @@ export default function Suppliers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Supplier.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.Supplier.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
       setDeleteConfirm(null);

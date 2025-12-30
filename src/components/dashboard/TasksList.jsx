@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isPast, isToday } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { CheckCircle2, Circle, Plus, Trash2, ClipboardList } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,7 @@ export default function TasksList({ tasks, onToggle, onDelete, onCreate }) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-stone-700 truncate">{task.title}</p>
                 <p className={`text-xs mt-0.5 ${getPriorityColor(task.due_date)}`}>
-                  {format(new Date(task.due_date), 'd MMM yyyy', { locale: es })}
+                  {format(parseLocalDate(task.due_date), 'd MMM yyyy', { locale: es })}
                 </p>
               </div>
               <button

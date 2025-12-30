@@ -100,7 +100,7 @@ export default function QuickPaymentFAB() {
         supplier={null}
         onSave={async (data) => {
           const { base44 } = await import('@/api/base44Client');
-          await base44.entities.Supplier.create(data);
+          await supabaseAPI.entities.Supplier.create(data);
           setSmartImportOpen(false);
         }}
         isLoading={false}

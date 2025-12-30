@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Plus, Calendar, MapPin, Users, Loader2, Edit2, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -43,12 +44,12 @@ export default function Attendance() {
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['attendance'],
-    queryFn: () => base44.entities.Attendance.list('-event_date')
+    queryFn: () => supabaseAPI.entities.Attendance.list('-event_date')
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => supabaseAPI.entities.User.list()
   });
 
   // Calculate stats
@@ -75,7 +76,7 @@ export default function Attendance() {
   }).sort((a, b) => b.percentage - a.percentage);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Attendance.create(data),
+    mutationFn: (data) => supabaseAPI.entities.Attendance.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
       setFormOpen(false);
@@ -84,7 +85,7 @@ export default function Attendance() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Attendance.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.Attendance.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
       setFormOpen(false);
@@ -94,7 +95,7 @@ export default function Attendance() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Attendance.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.Attendance.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['attendance'] });
       setDeleteConfirm(null);
@@ -186,7 +187,7 @@ export default function Attendance() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-stone-500">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{format(new Date(event.event_date), 'd MMMM yyyy', { locale: es })}</span>
+                        <span>{format(parseLocalDate(event.event_date), 'd MMMM yyyy', { locale: es })}</span>
                         {event.event_time && <span>• {event.event_time}</span>}
                       </div>
                       {event.location && (

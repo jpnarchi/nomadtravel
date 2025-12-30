@@ -1,5 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +73,7 @@ export default function ReviewDetail({ review, open, onClose }) {
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="w-4 h-4 text-stone-400" />
                 <span className="text-stone-700">
-                  {format(new Date(review.experience_date), 'd MMMM yyyy', { locale: es })}
+                  {format(parseLocalDate(review.experience_date), 'd MMMM yyyy', { locale: es })}
                 </span>
               </div>
             )}

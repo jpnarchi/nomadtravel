@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -17,12 +17,12 @@ export default function AdminClients() {
 
   const { data: allUsers = [], isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => supabaseAPI.entities.User.list()
   });
 
   const { data: allClients = [], isLoading: clientsLoading, error: clientsError } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
+    queryFn: () => supabaseAPI.entities.Client.list()
   });
 
   // Create users map by email for O(1) lookups

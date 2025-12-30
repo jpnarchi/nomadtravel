@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Plus, Calendar, MapPin, Building2, Loader2, Edit2, Trash2, CheckCircle, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -30,11 +31,11 @@ export default function FamTrips() {
 
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ['famTrips'],
-    queryFn: () => base44.entities.FamTrip.list('-start_date')
+    queryFn: () => supabaseAPI.entities.FamTrip.list('-start_date')
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.FamTrip.create(data),
+    mutationFn: (data) => supabaseAPI.entities.FamTrip.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['famTrips'] });
       setFormOpen(false);
@@ -43,7 +44,7 @@ export default function FamTrips() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.FamTrip.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.FamTrip.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['famTrips'] });
       setFormOpen(false);
@@ -53,7 +54,7 @@ export default function FamTrips() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.FamTrip.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.FamTrip.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['famTrips'] });
       setDeleteConfirm(null);
@@ -66,7 +67,7 @@ export default function FamTrips() {
       const trip = trips.find(t => t.id === tripId);
       const updatedAgents = [...trip.assigned_agents];
       updatedAgents[agentIndex] = { ...updatedAgents[agentIndex], review_submitted: value };
-      return base44.entities.FamTrip.update(tripId, { assigned_agents: updatedAgents });
+      return supabaseAPI.entities.FamTrip.update(tripId, { assigned_agents: updatedAgents });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['famTrips'] });
@@ -137,8 +138,8 @@ export default function FamTrips() {
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          {format(new Date(trip.start_date), 'd MMM', { locale: es })}
-                          {trip.end_date && ` - ${format(new Date(trip.end_date), 'd MMM yyyy', { locale: es })}`}
+                          {format(parseLocalDate(trip.start_date), 'd MMM', { locale: es })}
+                          {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yyyy', { locale: es })}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Upload, Sparkles, FileText, CheckCircle } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { toast } from "sonner";
 
 export default function SupplierPaymentForm({ open, onClose, soldTripId, services, payment, onSave, isLoading }) {

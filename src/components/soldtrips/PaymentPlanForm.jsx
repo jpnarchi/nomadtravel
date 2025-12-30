@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
 import { toast } from "sonner";
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 
 export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount, soldTrip, onSave, isLoading }) {
   const [clientEmail, setClientEmail] = useState(null);
@@ -29,7 +29,7 @@ export default function PaymentPlanForm({ open, onClose, soldTripId, totalAmount
       if (open && soldTrip?.client_id) {
         setCheckingEmail(true);
         try {
-          const clients = await base44.entities.Client.filter({ id: soldTrip.client_id });
+          const clients = await supabaseAPI.entities.Client.filter({ id: soldTrip.client_id });
           const client = clients[0];
           setClientEmail(client?.email || null);
         } catch (error) {

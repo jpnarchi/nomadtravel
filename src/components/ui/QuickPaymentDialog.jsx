@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI, supabase } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -45,18 +45,23 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   // Fetch services for the selected trip (for supplier payments)
   const { data: tripServices = [] } = useQuery({
     queryKey: ['tripServices', formData.sold_trip_id],
-    queryFn: () => base44.entities.TripService.filter({ sold_trip_id: formData.sold_trip_id }),
+    queryFn: () => supabaseAPI.entities.TripService.filter({ sold_trip_id: formData.sold_trip_id }),
     enabled: !!formData.sold_trip_id && type === 'supplier'
   });
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me()
+    queryFn: async () => {
+      const user = await supabaseAPI.auth.getCurrentUser();
+      // Obtener el perfil completo del usuario
+      const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
+      return profile || user;
+    }
   });
 
   const { data: allSoldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list('-created_date')
+    queryFn: () => supabaseAPI.entities.SoldTrip.list('-created_date')
   });
 
   // Filter trips by current user
@@ -182,13 +187,13 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
 
   const clientPaymentMutation = useMutation({
     mutationFn: async (data) => {
-      const payment = await base44.entities.ClientPayment.create(data);
+      const payment = await supabaseAPI.entities.ClientPayment.create(data);
       
       // Update sold trip totals
       const trip = soldTrips.find(t => t.id === data.sold_trip_id);
       if (trip) {
         const newTotal = (trip.total_paid_by_client || 0) + data.amount;
-        await base44.entities.SoldTrip.update(trip.id, {
+        await supabaseAPI.entities.SoldTrip.update(trip.id, {
           total_paid_by_client: newTotal,
           status: newTotal >= (trip.total_price || 0) ? 'pagado' : 'parcial'
         });
@@ -205,13 +210,13 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
 
   const supplierPaymentMutation = useMutation({
     mutationFn: async (data) => {
-      const payment = await base44.entities.SupplierPayment.create(data);
+      const payment = await supabaseAPI.entities.SupplierPayment.create(data);
       
       // Update sold trip totals
       const trip = soldTrips.find(t => t.id === data.sold_trip_id);
       if (trip) {
         const newTotal = (trip.total_paid_to_suppliers || 0) + data.amount;
-        await base44.entities.SoldTrip.update(trip.id, {
+        await supabaseAPI.entities.SoldTrip.update(trip.id, {
           total_paid_to_suppliers: newTotal
         });
       }

@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Loader2 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 
 export default function FamTripForm({ open, onClose, trip, onSave, isLoading }) {
@@ -25,7 +25,7 @@ export default function FamTripForm({ open, onClose, trip, onSave, isLoading }) 
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => supabaseAPI.entities.User.list(),
     enabled: open
   });
 

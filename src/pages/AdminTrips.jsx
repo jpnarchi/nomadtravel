@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import EmptyState from '@/components/ui/EmptyState';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 
 const STAGE_CONFIG = {
@@ -31,19 +32,19 @@ export default function AdminTrips() {
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => supabaseAPI.entities.User.list()
   });
 
   const { data: allTrips = [], isLoading } = useQuery({
     queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list()
+    queryFn: () => supabaseAPI.entities.Trip.list()
   });
 
   const agents = allUsers.filter(u => u.role === 'user' || u.role === 'admin' || u.custom_role === 'supervisor');
 
   const updateTripAgent = useMutation({
     mutationFn: ({ tripId, newAgentEmail }) => 
-      base44.entities.Trip.update(tripId, { created_by: newAgentEmail }),
+      supabaseAPI.entities.Trip.update(tripId, { created_by: newAgentEmail }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
       toast.success('Viaje reasignado');
@@ -144,7 +145,7 @@ export default function AdminTrips() {
                     </td>
                     <td className="p-3 text-stone-600">{trip.destination}</td>
                     <td className="p-3 text-stone-600">
-                      {trip.start_date ? format(new Date(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
+                      {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
                     </td>
                     <td className="p-3 text-stone-600">
                       {trip.budget ? `$${trip.budget.toLocaleString()}` : '-'}

@@ -10,9 +10,9 @@ export async function updateSoldTripAndPaymentPlanTotals(soldTripId, queryClient
   try {
     // Obtener los datos más recientes
     const [soldTrips, newClientPayments, paymentPlan] = await Promise.all([
-      base44.entities.SoldTrip.filter({ id: soldTripId }),
-      base44.entities.ClientPayment.filter({ sold_trip_id: soldTripId }),
-      base44.entities.ClientPaymentPlan.filter({ sold_trip_id: soldTripId })
+      supabaseAPI.entities.SoldTrip.filter({ id: soldTripId }),
+      supabaseAPI.entities.ClientPayment.filter({ sold_trip_id: soldTripId }),
+      supabaseAPI.entities.ClientPaymentPlan.filter({ sold_trip_id: soldTripId })
     ]);
 
     const soldTrip = soldTrips[0];
@@ -30,7 +30,7 @@ export async function updateSoldTripAndPaymentPlanTotals(soldTripId, queryClient
     }
 
     // Actualizar la entidad SoldTrip
-    await base44.entities.SoldTrip.update(soldTripId, {
+    await supabaseAPI.entities.SoldTrip.update(soldTripId, {
       total_paid_by_client: totalPaidByClient,
       status: newStatus
     });
@@ -53,7 +53,7 @@ export async function updateSoldTripAndPaymentPlanTotals(soldTripId, queryClient
 
         const newPlanStatus = amountPaidForThisItem >= amountDue ? 'pagado' : (amountPaidForThisItem > 0 ? 'parcial' : 'pendiente');
 
-        await base44.entities.ClientPaymentPlan.update(planItem.id, { 
+        await supabaseAPI.entities.ClientPaymentPlan.update(planItem.id, { 
           amount_paid: amountPaidForThisItem, 
           status: newPlanStatus 
         });
@@ -84,8 +84,8 @@ export async function updateSoldTripAndTripServiceTotals(soldTripId, queryClient
   try {
     // Obtener los datos más recientes
     const [newServices, newSupplierPayments] = await Promise.all([
-      base44.entities.TripService.filter({ sold_trip_id: soldTripId }),
-      base44.entities.SupplierPayment.filter({ sold_trip_id: soldTripId })
+      supabaseAPI.entities.TripService.filter({ sold_trip_id: soldTripId }),
+      supabaseAPI.entities.SupplierPayment.filter({ sold_trip_id: soldTripId })
     ]);
 
     const totalPrice = newServices.reduce((sum, s) => sum + (s.total_price || 0), 0);
@@ -93,7 +93,7 @@ export async function updateSoldTripAndTripServiceTotals(soldTripId, queryClient
     const totalPaidToSuppliers = newSupplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
     // Actualizar la entidad SoldTrip
-    await base44.entities.SoldTrip.update(soldTripId, {
+    await supabaseAPI.entities.SoldTrip.update(soldTripId, {
       total_price: totalPrice,
       total_commission: totalCommission,
       total_paid_to_suppliers: totalPaidToSuppliers,
@@ -105,7 +105,7 @@ export async function updateSoldTripAndTripServiceTotals(soldTripId, queryClient
       const totalPaidForService = servicePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       if (service.amount_paid_to_supplier !== totalPaidForService) {
-        await base44.entities.TripService.update(service.id, {
+        await supabaseAPI.entities.TripService.update(service.id, {
           amount_paid_to_supplier: totalPaidForService
         });
       }
@@ -133,11 +133,11 @@ export async function updateSoldTripTotalsFromServices(soldTripId, queryClient) 
   if (!soldTripId) return;
 
   try {
-    const services = await base44.entities.TripService.filter({ sold_trip_id: soldTripId });
+    const services = await supabaseAPI.entities.TripService.filter({ sold_trip_id: soldTripId });
     const totalPrice = services.reduce((sum, s) => sum + (s.total_price || 0), 0);
     const totalCommission = services.reduce((sum, s) => sum + (s.commission || 0), 0);
 
-    await base44.entities.SoldTrip.update(soldTripId, {
+    await supabaseAPI.entities.SoldTrip.update(soldTripId, {
       total_price: totalPrice,
       total_commission: totalCommission,
     });

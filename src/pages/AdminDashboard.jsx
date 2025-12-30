@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, isWithinInterval, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -15,27 +15,27 @@ import { Button } from "@/components/ui/button";
 
 export default function AdminDashboard() {
   const [selectedAgent, setSelectedAgent] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [selectedMonth, setSelectedMonth] = useState(format(parseLocalDate(), 'yyyy-MM'));
   const [selectedTrip, setSelectedTrip] = useState('all');
 
   const { data: allUsers = [], isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => supabaseAPI.entities.User.list()
   });
 
   const { data: rawTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['trips'],
-    queryFn: () => base44.entities.Trip.list()
+    queryFn: () => supabaseAPI.entities.Trip.list()
   });
 
   const { data: rawSoldTrips = [], isLoading: soldLoading } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+    queryFn: () => supabaseAPI.entities.SoldTrip.list()
   });
 
   const { data: rawClients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => base44.entities.Client.list()
+    queryFn: () => supabaseAPI.entities.Client.list()
   });
 
   // Filter out deleted records
@@ -45,17 +45,17 @@ export default function AdminDashboard() {
 
   const { data: allClientPayments = [] } = useQuery({
     queryKey: ['clientPayments'],
-    queryFn: () => base44.entities.ClientPayment.list()
+    queryFn: () => supabaseAPI.entities.ClientPayment.list()
   });
 
   const { data: allSupplierPayments = [] } = useQuery({
     queryKey: ['supplierPayments'],
-    queryFn: () => base44.entities.SupplierPayment.list()
+    queryFn: () => supabaseAPI.entities.SupplierPayment.list()
   });
 
   const { data: allServices = [] } = useQuery({
     queryKey: ['allServices'],
-    queryFn: () => base44.entities.TripService.list()
+    queryFn: () => supabaseAPI.entities.TripService.list()
   });
 
   // Calculate account balance (confirmed payments only)

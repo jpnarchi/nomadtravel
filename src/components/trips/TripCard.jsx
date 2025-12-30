@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Users, DollarSign, Edit2, Trash2, ArrowRight, XCircle, Eye } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
-    return format(new Date(dateStr), 'd MMM yyyy', { locale: es });
+    return format(parseLocalDate(dateStr), 'd MMM yyyy', { locale: es });
   };
 
   return (

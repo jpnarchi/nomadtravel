@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, isWithinInterval, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -18,24 +18,23 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUser } from '@clerk/clerk-react';
 
 export default function Dashboard() {
   const { viewMode } = useContext(ViewModeContext);
-  const [user, setUser] = useState(null);
+  const { user: clerkUser } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.username,
+    role: clerkUser.publicMetadata?.role || 'user',
+    custom_role: clerkUser.publicMetadata?.custom_role
+  } : null;
+
   const [selectedTrip, setSelectedTrip] = useState('all');
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const currentUser = await base44.auth.me();
-        setUser(currentUser);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    };
-    fetchUser();
-  }, []);
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
 
@@ -43,8 +42,8 @@ export default function Dashboard() {
     queryKey: ['trips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.Trip.list();
-      return base44.entities.Trip.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.Trip.list();
+      return supabaseAPI.entities.Trip.filter({ created_by: user.email });
     },
     enabled: !!user
   });
@@ -53,8 +52,8 @@ export default function Dashboard() {
     queryKey: ['soldTrips', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.SoldTrip.list();
-      return base44.entities.SoldTrip.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.SoldTrip.list();
+      return supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
     },
     enabled: !!user
   });
@@ -63,8 +62,8 @@ export default function Dashboard() {
     queryKey: ['clients', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.Client.list();
-      return base44.entities.Client.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.Client.list();
+      return supabaseAPI.entities.Client.filter({ created_by: user.email });
     },
     enabled: !!user
   });
@@ -78,8 +77,8 @@ export default function Dashboard() {
     queryKey: ['tasks', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      if (isAdmin) return base44.entities.Task.list();
-      return base44.entities.Task.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.Task.list();
+      return supabaseAPI.entities.Task.filter({ created_by: user.email });
     },
     enabled: !!user
   });
@@ -89,7 +88,7 @@ export default function Dashboard() {
     queryKey: ['services', soldTripIds],
     queryFn: async () => {
       if (soldTripIds.length === 0) return [];
-      return base44.entities.TripService.list();
+      return supabaseAPI.entities.TripService.list();
     },
     enabled: soldTripIds.length > 0
   });
@@ -101,28 +100,28 @@ export default function Dashboard() {
 
   const { data: allClientPayments = [] } = useQuery({
     queryKey: ['clientPayments'],
-    queryFn: () => base44.entities.ClientPayment.list(),
+    queryFn: () => supabaseAPI.entities.ClientPayment.list(),
     enabled: !!user
   });
 
   const { data: allSupplierPayments = [] } = useQuery({
     queryKey: ['supplierPayments'],
-    queryFn: () => base44.entities.SupplierPayment.list(),
+    queryFn: () => supabaseAPI.entities.SupplierPayment.list(),
     enabled: !!user
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create(data),
+    mutationFn: (data) => supabaseAPI.entities.Task.create(data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] })
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.Task.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] })
   });
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.Task.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] })
   });
 
@@ -293,7 +292,7 @@ export default function Dashboard() {
       </div>
 
       {/* Account Balance Panel */}
-      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl shadow-2xl p-6 text-white">
+      <div className="bg-gradient-to-br from-[#2D4629] to-teal-600 rounded-3xl shadow-2xl p-6 text-white">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">

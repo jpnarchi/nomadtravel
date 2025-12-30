@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   Loader2, Search, CreditCard, Calendar, ArrowUpDown, Users, Clock, CheckCircle, Edit2, Trash2
@@ -52,23 +53,23 @@ export default function InternalClientPayments() {
 
   const { data: clientPayments = [], isLoading: loadingPayments } = useQuery({
     queryKey: ['allClientPayments'],
-    queryFn: () => base44.entities.ClientPayment.list('-date')
+    queryFn: () => supabaseAPI.entities.ClientPayment.list('-date')
   });
 
   const { data: soldTrips = [], isLoading: loadingTrips } = useQuery({
     queryKey: ['soldTrips'],
-    queryFn: () => base44.entities.SoldTrip.list()
+    queryFn: () => supabaseAPI.entities.SoldTrip.list()
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => supabaseAPI.entities.User.list()
   });
 
   const isLoading = loadingPayments || loadingTrips;
 
   const updatePaymentMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ClientPayment.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.ClientPayment.update(id, data),
     onSuccess: async (_, variables) => {
       // Obtener el pago actualizado para recalcular
       const payment = clientPayments.find(p => p.id === variables.id);
@@ -82,7 +83,7 @@ export default function InternalClientPayments() {
   });
 
   const deletePaymentMutation = useMutation({
-    mutationFn: ({ id, sold_trip_id }) => base44.entities.ClientPayment.delete(id),
+    mutationFn: ({ id, sold_trip_id }) => supabaseAPI.entities.ClientPayment.delete(id),
     onSuccess: async (_, variables) => {
       if (variables.sold_trip_id) {
         await updateSoldTripAndPaymentPlanTotals(variables.sold_trip_id, queryClient);
@@ -513,7 +514,7 @@ export default function InternalClientPayments() {
                   <td className="p-3">
                     <span className="font-medium text-stone-800">
                       {payment.date 
-                        ? format(new Date(payment.date), 'd MMM yyyy', { locale: es })
+                        ? format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })
                         : '-'}
                     </span>
                   </td>

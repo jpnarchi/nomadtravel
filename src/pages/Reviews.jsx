@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -98,18 +98,18 @@ export default function Reviews() {
   // Reviews queries
   const { data: reviews = [], isLoading: reviewsLoading } = useQuery({
     queryKey: ['reviews'],
-    queryFn: () => base44.entities.Review.list('-created_date')
+    queryFn: () => supabaseAPI.entities.Review.list('-created_date')
   });
 
   // Learning queries
   const { data: learningMaterials = [], isLoading: learningLoading } = useQuery({
     queryKey: ['learningMaterials'],
-    queryFn: () => base44.entities.LearningMaterial.list('-created_date')
+    queryFn: () => supabaseAPI.entities.LearningMaterial.list('-created_date')
   });
 
   // Reviews mutations
   const createReviewMutation = useMutation({
-    mutationFn: (data) => base44.entities.Review.create(data),
+    mutationFn: (data) => supabaseAPI.entities.Review.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
       setFormOpen(false);
@@ -117,7 +117,7 @@ export default function Reviews() {
   });
 
   const updateReviewMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Review.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.Review.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
       setFormOpen(false);
@@ -126,7 +126,7 @@ export default function Reviews() {
   });
 
   const deleteReviewMutation = useMutation({
-    mutationFn: (id) => base44.entities.Review.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.Review.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
       setDeleteConfirm(null);
@@ -135,7 +135,7 @@ export default function Reviews() {
 
   // Learning mutations
   const createLearningMutation = useMutation({
-    mutationFn: (data) => base44.entities.LearningMaterial.create(data),
+    mutationFn: (data) => supabaseAPI.entities.LearningMaterial.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['learningMaterials'] });
       setLearningFormOpen(false);
@@ -143,7 +143,7 @@ export default function Reviews() {
   });
 
   const updateLearningMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.LearningMaterial.update(id, data),
+    mutationFn: ({ id, data }) => supabaseAPI.entities.LearningMaterial.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['learningMaterials'] });
       setLearningFormOpen(false);
@@ -152,7 +152,7 @@ export default function Reviews() {
   });
 
   const deleteLearningMutation = useMutation({
-    mutationFn: (id) => base44.entities.LearningMaterial.delete(id),
+    mutationFn: (id) => supabaseAPI.entities.LearningMaterial.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['learningMaterials'] });
       setDeleteLearningConfirm(null);
