@@ -9,11 +9,21 @@ import { es } from 'date-fns/locale';
 import { parseLocalDate } from '@/lib/dateUtils';
 import {
   ArrowLeft, Mail, Phone, Calendar, Loader2,
-  Plane, Plus, Send, Copy, Check, ExternalLink, Settings
+  Plane, Plus, Send, Copy, Check, ExternalLink, Settings, Trash2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import TripForm from '@/components/trips/TripForm';
 import TravelDocumentsList from '@/components/documents/TravelDocumentsList';
 import ClientPreferencesForm from '@/components/clients/ClientPreferencesForm';
@@ -44,6 +54,7 @@ export default function ClientDetail() {
   const [formOpen, setFormOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [tripToDelete, setTripToDelete] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -107,6 +118,26 @@ export default function ClientDetail() {
       toast.success('Viaje creado exitosamente');
     }
   });
+
+  const deleteTripMutation = useMutation({
+    mutationFn: (tripId) => supabaseAPI.entities.Trip.delete(tripId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['client', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['clientTrips', clientId] });
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      setTripToDelete(null);
+      toast.success('Viaje eliminado');
+    },
+    onError: () => {
+      toast.error('Error al eliminar el viaje');
+    }
+  });
+
+  const handleDeleteTrip = () => {
+    if (tripToDelete) {
+      deleteTripMutation.mutate(tripToDelete.id);
+    }
+  };
 
   const updatePreferencesMutation = useMutation({
     mutationFn: (preferences) => supabaseAPI.entities.Client.update(clientId, { preferences }),
@@ -329,7 +360,7 @@ export default function ClientDetail() {
                 {trips.map(trip => (
                   <div key={trip.id} className="p-4 hover:bg-stone-50 transition-colors">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <h4 className="font-medium text-stone-800">
                           {trip.trip_name || trip.destination}
                         </h4>
@@ -338,12 +369,22 @@ export default function ClientDetail() {
                           {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yyyy')}`}
                         </p>
                       </div>
-                      <Badge 
-                        variant="outline"
-                        className="capitalize"
-                      >
-                        {trip.stage?.replace('_', ' ')}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="capitalize"
+                        >
+                          {trip.stage?.replace('_', ' ')}
+                        </Badge>
+                        <Button
+                          onClick={() => setTripToDelete(trip)}
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                     {trip.mood && (
                       <p className="text-xs text-stone-400 mt-1">{trip.mood}</p>
@@ -403,6 +444,38 @@ export default function ClientDetail() {
         onSave={(preferences) => updatePreferencesMutation.mutate(preferences)}
         isLoading={updatePreferencesMutation.isPending}
       />
+
+      {/* Delete Trip Dialog */}
+      <AlertDialog open={!!tripToDelete} onOpenChange={() => setTripToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar viaje?</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que quieres eliminar el viaje "{tripToDelete?.trip_name || tripToDelete?.destination}"?
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTripMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTrip}
+              disabled={deleteTripMutation.isPending}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deleteTripMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                'Eliminar'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
