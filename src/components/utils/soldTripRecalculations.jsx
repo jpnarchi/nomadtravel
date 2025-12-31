@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { supabaseAPI } from "@/api/supabaseClient";
 
 /**
  * Recalcula todos los totales para un SoldTrip y actualiza los ítems de ClientPaymentPlan.

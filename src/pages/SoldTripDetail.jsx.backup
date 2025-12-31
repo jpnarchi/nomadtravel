@@ -266,7 +266,10 @@ export default function SoldTripDetail() {
   });
 
   const createClientPaymentMutation = useMutation({
-    mutationFn: async (data) => supabaseAPI.entities.ClientPayment.create(data),
+    mutationFn: async (data) => supabaseAPI.entities.ClientPayment.create({
+      ...data,
+      created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
+    }),
     onSuccess: async (newPayment) => {
       await updateSoldTripAndPaymentPlanTotals(newPayment.sold_trip_id, queryClient);
       setClientPaymentOpen(false);
@@ -276,8 +279,11 @@ export default function SoldTripDetail() {
 
   const createSupplierPaymentMutation = useMutation({
     mutationFn: async (data) => {
-      const supplierPayment = await supabaseAPI.entities.SupplierPayment.create(data);
-      
+      const supplierPayment = await supabaseAPI.entities.SupplierPayment.create({
+        ...data,
+        created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
+      });
+
       // Si el método es tarjeta_cliente, crear automáticamente un pago de cliente
       if (data.method === 'tarjeta_cliente') {
         await supabaseAPI.entities.ClientPayment.create({
@@ -289,10 +295,11 @@ export default function SoldTripDetail() {
           amount: data.amount,
           method: 'tarjeta_cliente',
           notes: `Generado automáticamente por pago a proveedor: ${data.supplier}`,
-          status: 'reportado'
+          status: 'reportado',
+          created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
         });
       }
-      
+
       return supplierPayment;
     },
     onSuccess: async (newPayment, variables) => {
@@ -312,7 +319,7 @@ export default function SoldTripDetail() {
   const updateSupplierPaymentMutation = useMutation({
     mutationFn: async ({ id, data, oldPayment }) => {
       const updatedPayment = await supabaseAPI.entities.SupplierPayment.update(id, data);
-      
+
       // Si cambió a tarjeta_cliente y antes no lo era, crear pago de cliente
       if (data.method === 'tarjeta_cliente' && oldPayment && oldPayment.method !== 'tarjeta_cliente') {
         await supabaseAPI.entities.ClientPayment.create({
@@ -324,10 +331,11 @@ export default function SoldTripDetail() {
           amount: data.amount,
           method: 'tarjeta_cliente',
           notes: `Generado automáticamente por pago a proveedor: ${data.supplier}`,
-          status: 'reportado'
+          status: 'reportado',
+          created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
         });
       }
-      
+
       return updatedPayment;
     },
     onSuccess: async (_, variables) => {

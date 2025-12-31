@@ -110,6 +110,21 @@ export const createSupabaseAPI = () => {
       return data;
     },
 
+    // Crear múltiples registros
+    bulkCreate: async (dataArray) => {
+      const { data, error } = await supabase
+        .from(tableName)
+        .insert(dataArray)
+        .select();
+
+      if (error) {
+        console.error(`❌ Error bulk creating ${tableName}:`, error);
+        console.error('📦 Data sent:', JSON.stringify(dataArray, null, 2));
+        throw error;
+      }
+      return data;
+    },
+
     // Actualizar un registro existente
     update: async (id, updates) => {
       const { data, error } = await supabase
@@ -272,6 +287,7 @@ export const createSupabaseAPI = () => {
       Task: createEntityMethods('tasks'),
       TripService: createEntityMethods('trip_services'),
       ClientPayment: createEntityMethods('client_payments'),
+      ClientPaymentPlan: createEntityMethods('client_payment_plan'),
       SupplierPayment: createEntityMethods('supplier_payments'),
       Supplier: createEntityMethods('suppliers'),
       Reminder: createEntityMethods('reminders'),
@@ -283,7 +299,10 @@ export const createSupabaseAPI = () => {
       IndustryFair: createEntityMethods('industry_fairs'),
       Commission: createEntityMethods('commissions'),
       TravelDocument: createEntityMethods('travel_documents'),
-      LearningMaterial: createEntityMethods('learning_materials')
+      LearningMaterial: createEntityMethods('learning_materials'),
+      TripNote: createEntityMethods('trip_notes'),
+      TripDocumentFile: createEntityMethods('trip_document_files'),
+      TripReminder: createEntityMethods('trip_reminders')
     }
   };
 };
