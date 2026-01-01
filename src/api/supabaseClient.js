@@ -25,7 +25,7 @@ export const createSupabaseAPI = () => {
   // Función helper genérica para crear métodos CRUD para cualquier tabla
   const createEntityMethods = (tableName, options = {}) => ({
     // Listar todos los registros (excluye eliminados)
-    list: async () => {
+    list: async (orderBy = null) => {
       let query = supabase.from(tableName).select('*');
 
       // Solo aplicar filtro is_deleted si la tabla lo soporta
@@ -33,8 +33,14 @@ export const createSupabaseAPI = () => {
         query = query.eq('is_deleted', false);
       }
 
-      // Solo ordenar por created_date si la tabla tiene esa columna
-      if (options.hasCreatedDate !== false) {
+      // Ordenamiento personalizado o por defecto
+      if (orderBy) {
+        // Si orderBy empieza con '-', ordenar descendente
+        const isDescending = orderBy.startsWith('-');
+        const field = isDescending ? orderBy.substring(1) : orderBy;
+        query = query.order(field, { ascending: !isDescending });
+      } else if (options.hasCreatedDate !== false) {
+        // Solo ordenar por created_date si la tabla tiene esa columna y no se especificó otro orden
         query = query.order('created_date', { ascending: false });
       }
 
@@ -52,8 +58,8 @@ export const createSupabaseAPI = () => {
     filter: async (filters = {}) => {
       let query = supabase.from(tableName).select('*');
 
-      // Excluir eliminados por defecto (a menos que se especifique is_deleted en los filtros)
-      if (!filters.hasOwnProperty('is_deleted')) {
+      // Excluir eliminados por defecto solo si la tabla soporta is_deleted
+      if (options.hasIsDeleted !== false && !filters.hasOwnProperty('is_deleted')) {
         query = query.eq('is_deleted', false);
       }
 
@@ -62,7 +68,10 @@ export const createSupabaseAPI = () => {
         query = query.eq(key, value);
       });
 
-      query = query.order('created_date', { ascending: false });
+      // Solo ordenar por created_date si la tabla lo soporta
+      if (options.hasCreatedDate !== false) {
+        query = query.order('created_date', { ascending: false });
+      }
 
       const { data, error } = await query;
 
@@ -141,8 +150,23 @@ export const createSupabaseAPI = () => {
       return data;
     },
 
-    // Eliminar un registro (soft delete - marca como eliminado)
+    // Eliminar un registro (soft delete - marca como eliminado, o hard delete si no soporta is_deleted)
     delete: async (id) => {
+      // Si la tabla no soporta is_deleted, hacer hard delete
+      if (options.hasIsDeleted === false) {
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error(`Error deleting ${tableName}:`, error);
+          throw error;
+        }
+        return { success: true };
+      }
+
+      // Soft delete (marca como eliminado)
       const { data, error } = await supabase
         .from(tableName)
         .update({
@@ -284,12 +308,14 @@ export const createSupabaseAPI = () => {
       Client: createEntityMethods('clients'),
       Trip: createEntityMethods('trips'),
       SoldTrip: createEntityMethods('sold_trips'),
-      Task: createEntityMethods('tasks'),
-      TripService: createEntityMethods('trip_services'),
-      ClientPayment: createEntityMethods('client_payments'),
-      ClientPaymentPlan: createEntityMethods('client_payment_plan'),
-      SupplierPayment: createEntityMethods('supplier_payments'),
+      Task: createEntityMethods('tasks', { hasIsDeleted: false }),
+      TripService: createEntityMethods('trip_services', { hasIsDeleted: false }),
+      ClientPayment: createEntityMethods('client_payments', { hasIsDeleted: false }),
+      ClientPaymentPlan: createEntityMethods('client_payment_plan'), // SÍ tiene is_deleted
+      SupplierPayment: createEntityMethods('supplier_payments', { hasIsDeleted: false }),
       Supplier: createEntityMethods('suppliers'),
+      SupplierContact: createEntityMethods('supplier_contacts'),
+      SupplierDocument: createEntityMethods('supplier_documents'),
       Reminder: createEntityMethods('reminders'),
       Credential: createEntityMethods('credentials'),
       PersonalCredential: createEntityMethods('personal_credentials'),
