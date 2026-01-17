@@ -313,6 +313,7 @@ export const createSupabaseAPI = () => {
       ClientPayment: createEntityMethods('client_payments', { hasIsDeleted: false }),
       ClientPaymentPlan: createEntityMethods('client_payment_plan'), // SÍ tiene is_deleted
       SupplierPayment: createEntityMethods('supplier_payments', { hasIsDeleted: false }),
+      GroupMember: createEntityMethods('group_members', { hasIsDeleted: false }),
       Supplier: createEntityMethods('suppliers'),
       SupplierContact: createEntityMethods('supplier_contacts'),
       SupplierDocument: createEntityMethods('supplier_documents'),

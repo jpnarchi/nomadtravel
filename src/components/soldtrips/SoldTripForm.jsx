@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from 'lucide-react';
 
 export default function SoldTripForm({ open, onClose, soldTrip, onSave, isLoading }) {
@@ -12,6 +14,8 @@ export default function SoldTripForm({ open, onClose, soldTrip, onSave, isLoadin
     start_date: '',
     end_date: '',
     travelers: '',
+    is_group_trip: false,
+    group_split_method: 'equal',
     notes: ''
   });
 
@@ -22,6 +26,8 @@ export default function SoldTripForm({ open, onClose, soldTrip, onSave, isLoadin
         start_date: soldTrip.start_date || '',
         end_date: soldTrip.end_date || '',
         travelers: soldTrip.travelers || '',
+        is_group_trip: soldTrip.is_group_trip || false,
+        group_split_method: soldTrip.group_split_method || 'equal',
         notes: soldTrip.notes || ''
       });
     }
@@ -90,6 +96,41 @@ export default function SoldTripForm({ open, onClose, soldTrip, onSave, isLoadin
               className="rounded-xl"
               placeholder="Ej: 2 o 2 adultos + 1 niño"
             />
+          </div>
+
+          <div className="space-y-3 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="group_trip"
+                checked={formData.is_group_trip}
+                onCheckedChange={(checked) => setFormData({...formData, is_group_trip: checked})}
+              />
+              <label htmlFor="group_trip" className="text-sm font-medium cursor-pointer">
+                Este es un viaje grupal
+              </label>
+            </div>
+
+            {formData.is_group_trip && (
+              <div className="space-y-2 mt-3">
+                <Label>Método de división de costos</Label>
+                <Select
+                  value={formData.group_split_method}
+                  onValueChange={(value) => setFormData({...formData, group_split_method: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="equal">Igual entre todos</SelectItem>
+                    <SelectItem value="percentage">Por porcentaje</SelectItem>
+                    <SelectItem value="fixed">Montos fijos</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-purple-700">
+                  Podrás agregar los miembros del grupo en la pestaña "Miembros"
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

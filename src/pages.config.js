@@ -9,6 +9,7 @@ import Commissions from './pages/Commissions';
 import Credentials from './pages/Credentials';
 import Dashboard from './pages/Dashboard';
 import DateAudit from './pages/DateAudit';
+import DescargarDatos from './pages/DescargarDatos';
 import FamTrips from './pages/FamTrips';
 import Home from './pages/Home';
 import IndustryFairs from './pages/IndustryFairs';
@@ -40,6 +41,7 @@ export const PAGES = {
     "Credentials": Credentials,
     "Dashboard": Dashboard,
     "DateAudit": DateAudit,
+    "DescargarDatos": DescargarDatos,
     "FamTrips": FamTrips,
     "Home": Home,
     "IndustryFairs": IndustryFairs,
