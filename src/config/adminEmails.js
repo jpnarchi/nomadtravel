@@ -3,8 +3,11 @@
  * Solo los usuarios con estos correos podrán acceder a las funcionalidades de administrador
  */
 export const ADMIN_EMAILS = [
-  'Maria.salinas@nomadtravel.mx',
-  "narchijuanpablo@gmail.com"
+  'maria.salinas@nomadtravel.mx',
+  'andrea.lozano@nomadtravel.mx',
+  'frida.noetzel@nomadtravel.mx',
+  'priscila.trevino@nomadtravel.mx',
+  'narchijuanpablo@gmail.com'
 ];
 
 /**

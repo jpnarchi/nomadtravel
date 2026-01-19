@@ -19,6 +19,28 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const CSV_DIR = '/Users/jpnarchi/Desktop/Nueva carpeta con elementos';
+const ERROR_LOG_FILE = path.join(process.cwd(), 'import-errors.txt');
+
+// Limpiar archivo de errores al inicio
+if (fs.existsSync(ERROR_LOG_FILE)) {
+  fs.unlinkSync(ERROR_LOG_FILE);
+}
+
+// Función para guardar errores en archivo
+function logError(tableName: string, recordId: string, errorMessage: string, data: any) {
+  const errorEntry = `
+${'='.repeat(80)}
+TABLA: ${tableName}
+ID: ${recordId}
+ERROR: ${errorMessage}
+TIMESTAMP: ${new Date().toISOString()}
+${'='.repeat(80)}
+DATOS:
+${JSON.stringify(data, null, 2)}
+
+`;
+  fs.appendFileSync(ERROR_LOG_FILE, errorEntry, 'utf-8');
+}
 
 // Funciones de utilidad
 function parseCSV(filePath: string): any[] {
@@ -125,6 +147,7 @@ async function importClients() {
 
     if (error) {
       console.error(`❌ Error importando cliente ${record.id}:`, error.message);
+      logError('clients', record.id, error.message, client);
       errors++;
     } else {
       imported++;
@@ -185,6 +208,7 @@ async function importTrips() {
 
     if (error) {
       console.error(`❌ Error importando viaje ${record.id}:`, error.message);
+      logError('trips', record.id, error.message, trip);
       errors++;
     } else {
       imported++;
@@ -239,6 +263,7 @@ async function importSoldTrips() {
 
     if (error) {
       console.error(`❌ Error importando viaje vendido ${record.id}:`, error.message);
+      logError('sold_trips', record.id, error.message, soldTrip);
       errors++;
     } else {
       imported++;
@@ -386,6 +411,7 @@ async function importTripServices() {
 
     if (error) {
       console.error(`❌ Error importando servicio ${record.id}:`, error.message);
+      logError('trip_services', record.id, error.message, service);
       errors++;
     } else {
       imported++;
@@ -436,6 +462,7 @@ async function importClientPayments() {
 
     if (error) {
       console.error(`❌ Error importando pago de cliente ${record.id}:`, error.message);
+      logError('client_payments', record.id, error.message, payment);
       errors++;
     } else {
       imported++;
@@ -483,6 +510,7 @@ async function importSupplierPayments() {
 
     if (error) {
       console.error(`❌ Error importando pago a proveedor ${record.id}:`, error.message);
+      logError('supplier_payments', record.id, error.message, payment);
       errors++;
     } else {
       imported++;
@@ -549,6 +577,7 @@ async function importSuppliers() {
 
     if (error) {
       console.error(`❌ Error importando proveedor ${record.id}:`, error.message);
+      logError('suppliers', record.id, error.message, supplier);
       errors++;
     } else {
       imported++;
@@ -597,6 +626,7 @@ async function importTasks() {
 
     if (error) {
       console.error(`❌ Error importando tarea ${record.id}:`, error.message);
+      logError('tasks', record.id, error.message, task);
       errors++;
     } else {
       imported++;
@@ -639,6 +669,7 @@ async function importTripReminders() {
 
     if (error) {
       console.error(`❌ Error importando recordatorio ${record.id}:`, error.message);
+      logError('reminders', record.id, error.message, reminder);
       errors++;
     } else {
       imported++;
@@ -684,6 +715,7 @@ async function importClientPaymentPlans() {
 
     if (error) {
       console.error(`❌ Error importando plan de pago ${record.id}:`, error.message);
+      logError('client_payment_plans', record.id, error.message, plan);
       errors++;
     } else {
       imported++;
@@ -724,6 +756,7 @@ async function importTripNotes() {
 
     if (error) {
       console.error(`❌ Error importando nota ${record.id}:`, error.message);
+      logError('trip_notes', record.id, error.message, note);
       errors++;
     } else {
       imported++;
@@ -765,6 +798,7 @@ async function importTripDocumentFiles() {
 
     if (error) {
       console.error(`❌ Error importando documento ${record.id}:`, error.message);
+      logError('trip_document_files', record.id, error.message, doc);
       errors++;
     } else {
       imported++;
@@ -810,6 +844,7 @@ async function importTravelDocuments() {
 
     if (error) {
       console.error(`❌ Error importando documento de viaje ${record.id}:`, error.message);
+      logError('travel_documents', record.id, error.message, doc);
       errors++;
     } else {
       imported++;
@@ -843,6 +878,11 @@ async function main() {
     await importTravelDocuments();  // 13. Documentos de viaje
 
     console.log('\n✅ Importación completada exitosamente!');
+
+    // Verificar si hubo errores y mostrar ubicación del archivo
+    if (fs.existsSync(ERROR_LOG_FILE)) {
+      console.log(`\n📄 Los registros con errores se guardaron en: ${ERROR_LOG_FILE}`);
+    }
   } catch (error) {
     console.error('\n❌ Error durante la importación:', error);
     process.exit(1);
