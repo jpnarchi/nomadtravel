@@ -277,6 +277,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         amount_usd_fixed: amount_usd_fixed,
         amount: amount_usd_fixed,
         method: formData.method,
+        status: 'reportado', // Default status for new payments
         notes: formData.notes,
         receipt_url: formData.receipt_url || undefined
       };

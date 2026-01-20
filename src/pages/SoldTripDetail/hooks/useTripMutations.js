@@ -48,6 +48,7 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
   const createClientPaymentMutation = useMutation({
     mutationFn: async (data) => supabaseAPI.entities.ClientPayment.create({
       ...data,
+      status: data.status || 'reportado', // Default status for new payments
       created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
     }),
     onSuccess: async (newPayment) => {

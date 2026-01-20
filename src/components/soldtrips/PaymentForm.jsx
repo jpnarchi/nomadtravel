@@ -39,7 +39,8 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
     method: 'transferencia',
     bank: '',
     notes: '',
-    supplier: ''
+    supplier: '',
+    status: 'reportado'
   });
 
   useEffect(() => {
@@ -52,7 +53,8 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
         method: payment.method || 'transferencia',
         bank: payment.bank || '',
         notes: payment.notes || '',
-        supplier: payment.supplier || ''
+        supplier: payment.supplier || '',
+        status: payment.status || 'reportado'
       });
     } else {
       setFormData({
@@ -63,7 +65,8 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
         method: 'transferencia',
         bank: '',
         notes: '',
-        supplier: ''
+        supplier: '',
+        status: 'reportado'
       });
     }
   }, [payment, open]);
@@ -106,10 +109,11 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
         amount_usd_fixed: amount_usd_fixed,
         amount: amount_usd_fixed, // backward compatibility
         method: formData.method,
+        status: formData.status || 'reportado', // Preserve existing status or default to reportado
         bank: formData.bank || undefined,
         notes: formData.notes
       };
-      
+
       onSave(paymentData);
     } else {
       // Supplier payment (unchanged)
