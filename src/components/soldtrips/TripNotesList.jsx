@@ -6,26 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, Plus, Trash2, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TripNotesList({ notes = [], onCreate, onUpdate, onDelete, isLoading }) {
   const [newNote, setNewNote] = useState('');
-  const [isUrgent, setIsUrgent] = useState(false);
 
   const handleCreate = () => {
     if (!newNote.trim()) return;
     onCreate({
-      content: newNote,
-      is_urgent: isUrgent
+      content: newNote
     });
     setNewNote('');
-    setIsUrgent(false);
   };
 
   const sortedNotes = [...notes].sort((a, b) => {
-    if (a.is_urgent && !b.is_urgent) return -1;
-    if (!a.is_urgent && b.is_urgent) return 1;
     return new Date(b.created_date) - new Date(a.created_date);
   });
 
@@ -40,18 +35,7 @@ export default function TripNotesList({ notes = [], onCreate, onUpdate, onDelete
           className="rounded-xl resize-none"
           rows={3}
         />
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="urgent"
-              checked={isUrgent}
-              onCheckedChange={setIsUrgent}
-            />
-            <label htmlFor="urgent" className="text-sm text-stone-600 cursor-pointer flex items-center gap-1">
-              <AlertCircle className="w-4 h-4 text-red-500" />
-              Marcar como urgente (aparecerá en tareas)
-            </label>
-          </div>
+        <div className="flex justify-end">
           <Button
             onClick={handleCreate}
             disabled={!newNote.trim() || isLoading}
@@ -74,11 +58,9 @@ export default function TripNotesList({ notes = [], onCreate, onUpdate, onDelete
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: -20 }}
               className={`p-4 rounded-xl border transition-all ${
-                note.is_urgent
-                  ? 'bg-red-50 border-red-200'
-                  : note.completed
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-white border-stone-200'
+                note.completed
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-white border-stone-200'
               }`}
             >
               <div className="flex items-start gap-3">
@@ -100,12 +82,6 @@ export default function TripNotesList({ notes = [], onCreate, onUpdate, onDelete
                     {note.content}
                   </p>
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {note.is_urgent && !note.completed && (
-                      <Badge className="bg-red-500 text-white text-xs">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Urgente
-                      </Badge>
-                    )}
                     {note.completed && (
                       <Badge className="bg-green-500 text-white text-xs">
                         <CheckCircle className="w-3 h-3 mr-1" />

@@ -44,8 +44,9 @@ export default function TripDocumentsList({ documents = [], soldTripId, onCreate
 
     setUploadingFile(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
+      // Subir archivo a Supabase Storage
+      const { file_url } = await supabaseAPI.storage.uploadFile(file, 'trip-documents');
+
       await onCreate({
         sold_trip_id: soldTripId,
         document_type: formData.document_type,

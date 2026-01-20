@@ -22,7 +22,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
     amount: 0,
     payment_type: 'neto',
     method: 'transferencia',
-    trip_service_id: '',
+    trip_service_id: 'none',
     receipt_url: '',
     notes: '',
     confirmed: false
@@ -38,7 +38,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
           amount: payment.amount || 0,
           payment_type: payment.payment_type || 'neto',
           method: payment.method || 'transferencia',
-          trip_service_id: payment.trip_service_id || '',
+          trip_service_id: payment.trip_service_id || 'none',
           receipt_url: payment.receipt_url || '',
           notes: payment.notes || '',
           confirmed: payment.confirmed || false
@@ -51,7 +51,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
           amount: 0,
           payment_type: 'neto',
           method: 'transferencia',
-          trip_service_id: '',
+          trip_service_id: 'none',
           receipt_url: '',
           notes: '',
           confirmed: false
@@ -70,12 +70,13 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
     try {
       const uploadedUrls = [];
       for (const file of files) {
-        const result = await base44.integrations.Core.UploadFile({ file });
-        uploadedUrls.push(result.file_url);
+        const { file_url } = await supabaseAPI.storage.uploadFile(file, 'supplier-payments');
+        uploadedUrls.push(file_url);
       }
       setSmartFileUrls(prev => [...prev, ...uploadedUrls]);
       toast.success(`${files.length} archivo(s) subido(s)`);
     } catch (error) {
+      console.error('Error uploading files:', error);
       toast.error('Error al subir archivos');
     } finally {
       setSmartUploading(false);
@@ -115,10 +116,11 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
 
     setUploading(true);
     try {
-      const result = await base44.integrations.Core.UploadFile({ file });
-      setFormData({ ...formData, receipt_url: result.file_url });
+      const { file_url } = await supabaseAPI.storage.uploadFile(file, 'supplier-payments');
+      setFormData({ ...formData, receipt_url: file_url });
       toast.success('Comprobante subido');
     } catch (error) {
+      console.error('Error uploading file:', error);
       toast.error('Error al subir archivo');
     } finally {
       setUploading(false);
@@ -130,12 +132,13 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
     onSave({
       ...formData,
       sold_trip_id: soldTripId,
-      amount: parseFloat(formData.amount)
+      amount: parseFloat(formData.amount),
+      trip_service_id: formData.trip_service_id === 'none' || !formData.trip_service_id ? null : formData.trip_service_id
     });
   };
 
   // Get supplier name from selected service
-  const selectedService = services.find(s => s.id === formData.trip_service_id);
+  const selectedService = formData.trip_service_id !== 'none' ? services.find(s => s.id === formData.trip_service_id) : null;
   
   useEffect(() => {
     if (selectedService) {
@@ -217,7 +220,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
                 <SelectValue placeholder="Selecciona un servicio..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>Sin asociar</SelectItem>
+                <SelectItem value="none">Sin asociar</SelectItem>
                 {services.map((service) => (
                   <SelectItem key={service.id} value={service.id}>
                     {getServiceLabel(service)} - ${service.total_price.toLocaleString()}
@@ -425,7 +428,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
                   <SelectValue placeholder="Selecciona un servicio..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Sin asociar</SelectItem>
+                  <SelectItem value="none">Sin asociar</SelectItem>
                   {services.map((service) => (
                     <SelectItem key={service.id} value={service.id}>
                       {getServiceLabel(service)} - ${service.total_price.toLocaleString()}

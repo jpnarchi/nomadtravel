@@ -201,7 +201,11 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
 
   // Notes Mutations
   const createNoteMutation = useMutation({
-    mutationFn: (data) => supabaseAPI.entities.TripNote.create({ ...data, sold_trip_id: tripId }),
+    mutationFn: (data) => supabaseAPI.entities.TripNote.create({
+      ...data,
+      sold_trip_id: tripId,
+      created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripNotes', tripId] });
     }
@@ -223,7 +227,10 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
 
   // Documents Mutations
   const createDocumentMutation = useMutation({
-    mutationFn: (data) => supabaseAPI.entities.TripDocumentFile.create(data),
+    mutationFn: (data) => supabaseAPI.entities.TripDocumentFile.create({
+      ...data,
+      created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tripDocuments', tripId] });
     }
@@ -239,7 +246,11 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
   // Reminders Mutations
   const createRemindersMutation = useMutation({
     mutationFn: (reminders) => {
-      const remindersWithTripId = reminders.map(r => ({ ...r, sold_trip_id: tripId }));
+      const remindersWithTripId = reminders.map(r => ({
+        ...r,
+        sold_trip_id: tripId,
+        created_by: clerkUser?.primaryEmailAddress?.emailAddress || 'unknown'
+      }));
       return supabaseAPI.entities.TripReminder.bulkCreate(remindersWithTripId);
     },
     onSuccess: () => {

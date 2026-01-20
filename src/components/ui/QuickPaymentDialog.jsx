@@ -122,13 +122,15 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     setSmartUploading(true);
     try {
       const uploadedUrls = [];
+      const bucketName = type === 'client' ? 'client-payments' : 'supplier-payments';
       for (const file of files) {
-        const result = await base44.integrations.Core.UploadFile({ file });
-        uploadedUrls.push(result.file_url);
+        const { file_url } = await supabaseAPI.storage.uploadFile(file, bucketName);
+        uploadedUrls.push(file_url);
       }
       setSmartFileUrls(prev => [...prev, ...uploadedUrls]);
       toast.success(`${files.length} archivo(s) subido(s)`);
     } catch (error) {
+      console.error('Error uploading files:', error);
       toast.error('Error al subir archivos');
     } finally {
       setSmartUploading(false);
@@ -172,13 +174,15 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const bucketName = type === 'client' ? 'client-payments' : 'supplier-payments';
+      const { file_url } = await supabaseAPI.storage.uploadFile(file, bucketName);
       setFormData({ ...formData, receipt_url: file_url });
       toast.success('Comprobante subido');
     } catch (error) {
+      console.error('Error uploading file:', error);
       toast.error('Error al subir archivo');
     } finally {
       setUploading(false);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Building2, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Building2, Edit2, Trash2, FileText, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -101,6 +101,17 @@ export default function SupplierPaymentsTab({
 
               {/* Actions */}
               <div className="flex gap-1 md:gap-2 flex-shrink-0">
+                {payment.receipt_url && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 md:h-10 md:w-10 text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg md:rounded-xl transition-all"
+                    onClick={() => window.open(payment.receipt_url, '_blank')}
+                    title="Ver recibo/comprobante"
+                  >
+                    <FileText className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
