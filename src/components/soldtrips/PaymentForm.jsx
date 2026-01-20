@@ -191,7 +191,7 @@ export default function PaymentForm({ open, onClose, payment, soldTripId, type, 
                   onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
                   required
                   className="rounded-xl"
-                  placeholder="18.50"
+                  placeholder="17.87"
                 />
                 {formData.amount_original && formData.fx_rate && parseFloat(formData.amount_original) > 0 && parseFloat(formData.fx_rate) > 0 && (
                   <p className="text-xs text-green-600 font-medium mt-1">
