@@ -147,6 +147,8 @@ export async function updateSoldTripTotalsFromServices(soldTripId, queryClient) 
       queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
       queryClient.invalidateQueries({ queryKey: ['tripServices', soldTripId] });
       queryClient.invalidateQueries({ queryKey: ['allServices'] });
+      queryClient.invalidateQueries({ queryKey: ['clientPayments', soldTripId] });
+      queryClient.invalidateQueries({ queryKey: ['paymentPlan', soldTripId] });
     }
   } catch (error) {
     console.error('Error actualizando totales de SoldTrip desde servicios:', error);

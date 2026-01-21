@@ -20,27 +20,34 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
     onSuccess: async (newService) => {
       await updateSoldTripTotalsFromServices(newService.sold_trip_id, queryClient);
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
     }
   });
 
   const updateServiceMutation = useMutation({
     mutationFn: ({ id, data }) => supabaseAPI.entities.TripService.update(id, data),
-    onSuccess: async (_, variables) => {
-      const updatedService = services.find(s => s.id === variables.id);
-      if (updatedService?.sold_trip_id) {
-        await updateSoldTripTotalsFromServices(updatedService.sold_trip_id, queryClient);
+    onSuccess: async (updatedService, variables) => {
+      // Usar el sold_trip_id del servicio actualizado o del tripId del hook
+      const soldTripId = updatedService?.sold_trip_id || tripId || services.find(s => s.id === variables.id)?.sold_trip_id;
+
+      if (soldTripId) {
+        await updateSoldTripTotalsFromServices(soldTripId, queryClient);
       }
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
     }
   });
 
   const deleteServiceMutation = useMutation({
     mutationFn: ({ id, sold_trip_id }) => supabaseAPI.entities.TripService.delete(id),
     onSuccess: async (_, variables) => {
-      if (variables.sold_trip_id) {
-        await updateSoldTripTotalsFromServices(variables.sold_trip_id, queryClient);
+      const soldTripId = variables.sold_trip_id || tripId;
+
+      if (soldTripId) {
+        await updateSoldTripTotalsFromServices(soldTripId, queryClient);
       }
       queryClient.invalidateQueries({ queryKey: ['tripServices', tripId] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrip', tripId] });
     }
   });
 
@@ -58,10 +65,12 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
 
   const updateClientPaymentMutation = useMutation({
     mutationFn: ({ id, data }) => supabaseAPI.entities.ClientPayment.update(id, data),
-    onSuccess: async (_, variables) => {
-      const payment = clientPayments.find(p => p.id === variables.id);
-      if (payment?.sold_trip_id) {
-        await updateSoldTripAndPaymentPlanTotals(payment.sold_trip_id, queryClient);
+    onSuccess: async (updatedPayment, variables) => {
+      // Usar el sold_trip_id del pago actualizado, del tripId del hook, o buscar en el array como fallback
+      const soldTripId = updatedPayment?.sold_trip_id || tripId || clientPayments.find(p => p.id === variables.id)?.sold_trip_id;
+
+      if (soldTripId) {
+        await updateSoldTripAndPaymentPlanTotals(soldTripId, queryClient);
       }
     }
   });
