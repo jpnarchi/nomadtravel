@@ -398,9 +398,22 @@ export default function SoldTripDetail() {
         type="client"
         onSave={(data) => {
           if (editingClientPayment) {
-            mutations.updateClientPaymentMutation.mutate({ id: editingClientPayment.id, data });
+            mutations.updateClientPaymentMutation.mutate(
+              { id: editingClientPayment.id, data },
+              {
+                onSuccess: () => {
+                  setClientPaymentOpen(false);
+                  setEditingClientPayment(null);
+                }
+              }
+            );
           } else {
-            mutations.createClientPaymentMutation.mutate(data);
+            mutations.createClientPaymentMutation.mutate(data, {
+              onSuccess: () => {
+                setClientPaymentOpen(false);
+                setEditingClientPayment(null);
+              }
+            });
           }
         }}
         isLoading={mutations.createClientPaymentMutation.isPending || mutations.updateClientPaymentMutation.isPending}
