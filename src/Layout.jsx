@@ -128,35 +128,31 @@ export default function Layout({ children, currentPageName }) {
     const navigation = isAdmin ? adminNavigation : userNavigation;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-100/30 to-stone-50" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-100/30 to-stone-50" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <style>
         {`
-          @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
-          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&display=swap');
-
-          @font-face {
-            font-family: 'The Seasons';
-            src: url('/src/fonts/The-Seasons-Bold.ttf') format('truetype');
-            font-weight: bold;
-            font-style: normal;
-          }
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
           * {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
           }
 
           h1, h2, h3, h4, h5, h6, .heading-font {
-            font-family: 'The Seasons', serif;
-            letter-spacing: 0.01em;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
           }
 
           p, span, .text-body, label {
-            font-family: 'Cormorant Garamond', serif;
-            letter-spacing: 0.015em;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            letter-spacing: -0.01em;
           }
 
           button {
-            font-family: 'Montserrat', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-weight: 500;
           }
 
           :root {
