@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import IndustryFairForm from '@/components/control/IndustryFairForm';
 import { toast } from 'sonner';
+import { useUser } from '@clerk/clerk-react';
 
 export default function IndustryFairs() {
   const [formOpen, setFormOpen] = useState(false);
@@ -27,6 +28,14 @@ export default function IndustryFairs() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const queryClient = useQueryClient();
+  const { user: clerkUser } = useUser();
+
+  // Convert Clerk user to app user format
+  const user = clerkUser ? {
+    id: clerkUser.id,
+    email: clerkUser.primaryEmailAddress?.emailAddress,
+    full_name: clerkUser.fullName || clerkUser.firstName || clerkUser.primaryEmailAddress?.emailAddress
+  } : null;
 
   const { data: fairs = [], isLoading } = useQuery({
     queryKey: ['industryFairs'],
@@ -34,7 +43,10 @@ export default function IndustryFairs() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => supabaseAPI.entities.IndustryFair.create(data),
+    mutationFn: (data) => supabaseAPI.entities.IndustryFair.create({
+      ...data,
+      created_by: user?.id
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['industryFairs'] });
       setFormOpen(false);
@@ -129,14 +141,19 @@ export default function IndustryFairs() {
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-stone-800">{fair.name}</h3>
                       {fair.website && (
-                        <a 
-                          href={fair.website} 
-                          target="_blank" 
+                        <a
+                          href={fair.website}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-stone-400 hover:text-stone-600"
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
+                      )}
+                      {fair.created_by === user?.id && (
+                        <Badge variant="outline" className="text-xs" style={{ color: '#2E442A' }}>
+                          Mi Feria
+                        </Badge>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-stone-500 mb-3">
@@ -174,24 +191,26 @@ export default function IndustryFairs() {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => { setEditingFair(fair); setFormOpen(true); }}
-                      className="rounded-xl"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteConfirm(fair)}
-                      className="rounded-xl text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {fair.created_by === user?.id && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => { setEditingFair(fair); setFormOpen(true); }}
+                        className="rounded-xl"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteConfirm(fair)}
+                        className="rounded-xl text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Description */}

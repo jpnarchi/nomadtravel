@@ -99,7 +99,7 @@ export default function Layout({ children, currentPageName }) {
       { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
       { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
       { name: 'Contraseñas', page: 'Credentials', icon: Key },
-      { name: 'Descargar Datos', page: 'DescargarDatos', icon: Database },
+      // { name: 'Descargar Datos', page: 'DescargarDatos', icon: Database },
       { name: '--- Control Interno ---', divider: true },
       { name: 'Asistencia', page: 'Attendance', icon: Users },
       { name: 'FAM Trips', page: 'FamTrips', icon: Plane },
