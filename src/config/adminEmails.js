@@ -6,6 +6,7 @@ export const ADMIN_EMAILS = [
   'maria.salinas@nomadtravel.mx',
   'andrea.lozano@nomadtravel.mx',
   'frida.noetzel@nomadtravel.mx',
+  'saga.escobedo@gmail.com',
   'priscila.trevino@nomadtravel.mx',
   'narchijuanpablo@gmail.com'
 ];
