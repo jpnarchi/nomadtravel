@@ -90,7 +90,9 @@ export default function FinancialSummary({ metrics }) {
 
             <p className="text-xl md:text-2xl font-bold text-white tracking-tight">
               {typeof card.value === 'number' && card.value !== paymentProgress
-                ? `$${card.value.toLocaleString()}`
+                ? card.value < 0
+                  ? `-$${Math.abs(card.value).toLocaleString()}`
+                  : `$${card.value.toLocaleString()}`
                 : card.value}
             </p>
 

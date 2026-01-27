@@ -323,13 +323,63 @@ export const createSupabaseAPI = () => {
       Review: createEntityMethods('reviews'),
       Attendance: createEntityMethods('attendance'),
       FamTrip: createEntityMethods('fam_trips'),
-      IndustryFair: createEntityMethods('industry_fairs'),
+      IndustryFair: {
+        ...createEntityMethods('industry_fairs'),
+        // Override list to ensure JSON fields are properly handled
+        list: async (orderBy = null) => {
+          let query = supabase.from('industry_fairs').select('*');
+          query = query.eq('is_deleted', false);
+
+          if (orderBy) {
+            const isDescending = orderBy.startsWith('-');
+            const field = isDescending ? orderBy.substring(1) : orderBy;
+            query = query.order(field, { ascending: !isDescending });
+          } else {
+            query = query.order('created_date', { ascending: false });
+          }
+
+          const { data, error } = await query;
+
+          if (error) {
+            console.error(`Error listing industry_fairs:`, error);
+            throw error;
+          }
+
+          // Ensure JSON fields are properly parsed
+          return (data || []).map(fair => ({
+            ...fair,
+            includes: typeof fair.includes === 'string' ? JSON.parse(fair.includes) : (fair.includes || {}),
+            assigned_agents: typeof fair.assigned_agents === 'string' ? JSON.parse(fair.assigned_agents) : (fair.assigned_agents || [])
+          }));
+        },
+        // Override get to ensure JSON fields are properly handled
+        get: async (id) => {
+          const { data, error } = await supabase
+            .from('industry_fairs')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (error) {
+            console.error(`Error getting industry_fairs:`, error);
+            throw error;
+          }
+
+          // Ensure JSON fields are properly parsed
+          return {
+            ...data,
+            includes: typeof data.includes === 'string' ? JSON.parse(data.includes) : (data.includes || {}),
+            assigned_agents: typeof data.assigned_agents === 'string' ? JSON.parse(data.assigned_agents) : (data.assigned_agents || [])
+          };
+        }
+      },
       Commission: createEntityMethods('commissions'),
       TravelDocument: createEntityMethods('travel_documents'),
       LearningMaterial: createEntityMethods('learning_materials'),
       TripNote: createEntityMethods('trip_notes'),
       TripDocumentFile: createEntityMethods('trip_document_files'),
-      TripReminder: createEntityMethods('trip_reminders')
+      TripReminder: createEntityMethods('trip_reminders'),
+      ErrorReport: createEntityMethods('error_reports', { hasIsDeleted: false })
     }
   };
 };

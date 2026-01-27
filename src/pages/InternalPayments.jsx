@@ -147,16 +147,22 @@ export default function InternalPayments() {
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
-  // Split by confirmed status
-  const pendingPayments = filteredPayments.filter(p => !p.confirmed);
-  const confirmedPayments = filteredPayments.filter(p => p.confirmed);
+  // Split by status (pending, confirmed, paid)
+  const pendingPayments = filteredPayments.filter(p => !p.confirmed && !p.paid);
+  const confirmedPayments = filteredPayments.filter(p => p.confirmed && !p.paid);
+  const paidPayments = filteredPayments.filter(p => p.paid);
 
   // Calculate totals
   const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const totalConfirmed = confirmedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalPaid = paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-  const handleToggleConfirmed = (payment, isConfirmed) => {
-    updatePaymentMutation.mutate({ id: payment.id, data: { confirmed: isConfirmed } });
+  const handleStatusChange = (payment, status) => {
+    const updates = {
+      confirmed: status === 'confirmed' || status === 'paid',
+      paid: status === 'paid'
+    };
+    updatePaymentMutation.mutate({ id: payment.id, data: updates });
   };
 
   if (isLoading) {
@@ -176,7 +182,7 @@ export default function InternalPayments() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Pagos Hechos</p>
           <p className="text-xl font-bold text-orange-600">${totalPending.toLocaleString()}</p>
@@ -184,12 +190,17 @@ export default function InternalPayments() {
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Pagos Confirmados</p>
-          <p className="text-xl font-bold text-green-600">${totalConfirmed.toLocaleString()}</p>
+          <p className="text-xl font-bold text-blue-600">${totalConfirmed.toLocaleString()}</p>
           <p className="text-xs text-stone-400">{confirmedPayments.length} pagos</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Pagado</p>
+          <p className="text-xl font-bold text-green-600">${totalPaid.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{paidPayments.length} pagos</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Total Pagos</p>
-          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${(totalPending + totalConfirmed).toLocaleString()}</p>
+          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${(totalPending + totalConfirmed + totalPaid).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
           <p className="text-xs text-stone-400">Agentes Activos</p>
@@ -265,14 +276,21 @@ export default function InternalPayments() {
           <TabsTrigger value="confirmed" className="rounded-lg data-[state=active]:bg-white">
             <CheckCircle className="w-4 h-4 mr-2" /> Pagos Confirmados ({confirmedPayments.length})
           </TabsTrigger>
+          <TabsTrigger value="paid" className="rounded-lg data-[state=active]:bg-white">
+            <CheckCircle className="w-4 h-4 mr-2" /> Pagado ({paidPayments.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="mt-4">
-          {renderPaymentsTable(pendingPayments, totalPending, false)}
+          {renderPaymentsTable(pendingPayments, totalPending, 'pending')}
         </TabsContent>
 
         <TabsContent value="confirmed" className="mt-4">
-          {renderPaymentsTable(confirmedPayments, totalConfirmed, true)}
+          {renderPaymentsTable(confirmedPayments, totalConfirmed, 'confirmed')}
+        </TabsContent>
+
+        <TabsContent value="paid" className="mt-4">
+          {renderPaymentsTable(paidPayments, totalPaid, 'paid')}
         </TabsContent>
       </Tabs>
 
@@ -393,13 +411,19 @@ export default function InternalPayments() {
     </div>
   );
 
-  function renderPaymentsTable(payments, total, isConfirmedTab) {
+  function renderPaymentsTable(payments, total, tabType) {
     if (payments.length === 0) {
+      const emptyMessages = {
+        pending: { title: "Sin pagos hechos", description: "No hay pagos pendientes de confirmar" },
+        confirmed: { title: "Sin pagos confirmados", description: "No hay pagos confirmados aún" },
+        paid: { title: "Sin pagos pagados", description: "No hay pagos pagados aún" }
+      };
+      const message = emptyMessages[tabType] || emptyMessages.pending;
       return (
         <EmptyState
           icon={CreditCard}
-          title={isConfirmedTab ? "Sin pagos confirmados" : "Sin pagos hechos"}
-          description={isConfirmedTab ? "No hay pagos confirmados aún" : "No hay pagos pendientes de confirmar"}
+          title={message.title}
+          description={message.description}
         />
       );
     }
@@ -455,9 +479,9 @@ export default function InternalPayments() {
                     </span>
                   </td>
                   <td className="p-3 text-center">
-                    <Select 
-                      value={payment.confirmed ? 'confirmed' : 'pending'} 
-                      onValueChange={(value) => handleToggleConfirmed(payment, value === 'confirmed')}
+                    <Select
+                      value={payment.paid ? 'paid' : (payment.confirmed ? 'confirmed' : 'pending')}
+                      onValueChange={(value) => handleStatusChange(payment, value)}
                     >
                       <SelectTrigger className="w-32 h-8 text-xs rounded-lg">
                         <SelectValue />
@@ -465,6 +489,7 @@ export default function InternalPayments() {
                       <SelectContent>
                         <SelectItem value="pending">Hecho</SelectItem>
                         <SelectItem value="confirmed">Confirmado</SelectItem>
+                        <SelectItem value="paid">Pagado</SelectItem>
                       </SelectContent>
                     </Select>
                   </td>

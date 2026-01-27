@@ -291,6 +291,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
                   <SelectItem value="capital_one_blue">Capital One Blue</SelectItem>
                   <SelectItem value="capital_one_green">Capital One Green</SelectItem>
                   <SelectItem value="amex">American Express</SelectItem>
+                  <SelectItem value="amex_verde">American Express Verde</SelectItem>
                   <SelectItem value="tarjeta_cliente">Tarjeta de Cliente</SelectItem>
                 </SelectContent>
               </Select>
@@ -496,6 +497,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
                     <SelectItem value="capital_one_blue">Capital One Blue</SelectItem>
                     <SelectItem value="capital_one_green">Capital One Green</SelectItem>
                     <SelectItem value="amex">American Express</SelectItem>
+                    <SelectItem value="amex_verde">American Express Verde</SelectItem>
                     <SelectItem value="tarjeta_cliente">Tarjeta de Cliente</SelectItem>
                   </SelectContent>
                 </Select>

@@ -10,6 +10,7 @@ import Credentials from './pages/Credentials';
 import Dashboard from './pages/Dashboard';
 import DateAudit from './pages/DateAudit';
 import DescargarDatos from './pages/DescargarDatos';
+import ErrorReports from './pages/ErrorReports';
 import FamTrips from './pages/FamTrips';
 import Home from './pages/Home';
 import IndustryFairs from './pages/IndustryFairs';
@@ -42,6 +43,7 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "DateAudit": DateAudit,
     "DescargarDatos": DescargarDatos,
+    "ErrorReports": ErrorReports,
     "FamTrips": FamTrips,
     "Home": Home,
     "IndustryFairs": IndustryFairs,

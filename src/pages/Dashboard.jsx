@@ -5,7 +5,7 @@ import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, isWithinInterval, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DollarSign, Plane, Users, TrendingUp, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react';
+import { DollarSign, Plane, Users, TrendingUp, Loader2, AlertCircle, CheckCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { ViewModeContext } from '@/Layout';
 import StatsCard from '@/components/ui/StatsCard';
 import FunnelChart from '@/components/dashboard/FunnelChart';
@@ -34,6 +34,7 @@ export default function Dashboard() {
   } : null;
 
   const [selectedTrip, setSelectedTrip] = useState('all');
+  const [showPendingCollection, setShowPendingCollection] = useState(false);
   const queryClient = useQueryClient();
 
   const isAdmin = user?.role === 'admin' && viewMode === 'admin';
@@ -150,14 +151,15 @@ export default function Dashboard() {
     const clientPayments = allClientPayments
       .filter(p => p.sold_trip_id === trip.id)
       .reduce((sum, p) => sum + (p.amount || 0), 0);
-    
+
     const supplierPayments = allSupplierPayments
       .filter(p => p.sold_trip_id === trip.id)
       .reduce((sum, p) => sum + (p.amount || 0), 0);
-    
-    const balance = clientPayments - supplierPayments;
-    
-    if (balance < 0) {
+
+    // Balance = total_price - clientPayments (same as "Por Cobrar")
+    const balance = (trip.total_price || 0) - clientPayments;
+
+    if (balance > 0) {
       return {
         ...trip,
         balance,
@@ -417,18 +419,32 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Negative Balance Alert */}
+      {/* Pending Collection Alert */}
       {myClientsWithNegativeBalance.length > 0 && (
-        <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-bold text-red-900 mb-2">
-                🚨 Clientes con Saldo Negativo
-              </h3>
-              <p className="text-sm text-red-800 mb-3">
-                {myClientsWithNegativeBalance.length} {myClientsWithNegativeBalance.length === 1 ? 'viaje tiene' : 'viajes tienen'} gastos mayores a los pagos recibidos:
-              </p>
+        <div className="bg-red-50 border-2 border-red-200 rounded-2xl overflow-hidden">
+          <button
+            onClick={() => setShowPendingCollection(!showPendingCollection)}
+            className="w-full p-4 flex items-center justify-between hover:bg-red-100 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+              <div className="text-left">
+                <h3 className="font-bold text-red-900">
+                  💰 Clientes con Saldo Por Cobrar
+                </h3>
+                <p className="text-sm text-red-800">
+                  {myClientsWithNegativeBalance.length} {myClientsWithNegativeBalance.length === 1 ? 'viaje tiene' : 'viajes tienen'} pagos pendientes de cobro
+                </p>
+              </div>
+            </div>
+            {showPendingCollection ? (
+              <ChevronUp className="w-5 h-5 text-red-600 flex-shrink-0" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-red-600 flex-shrink-0" />
+            )}
+          </button>
+          {showPendingCollection && (
+            <div className="p-4 pt-0">
               <div className="space-y-2">
                 {myClientsWithNegativeBalance.map(trip => (
                   <div key={trip.id} className="bg-white rounded-lg p-3 border border-red-200">
@@ -437,22 +453,22 @@ export default function Dashboard() {
                         <p className="font-semibold text-stone-800">{trip.client_name || 'Sin cliente'}</p>
                         <p className="text-sm text-stone-600">{trip.destination}</p>
                         <div className="flex gap-3 mt-2 text-xs">
+                          <span className="text-blue-600">Total: ${(trip.total_price || 0).toLocaleString()}</span>
                           <span className="text-green-600">Recibido: ${trip.clientPayments.toLocaleString()}</span>
-                          <span className="text-red-600">Pagado: ${trip.supplierPayments.toLocaleString()}</span>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-red-600">
-                          ${Math.abs(trip.balance).toLocaleString()}
+                          ${trip.balance.toLocaleString()}
                         </p>
-                        <p className="text-xs text-stone-500">saldo negativo</p>
+                        <p className="text-xs text-stone-500">por cobrar</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

@@ -29,11 +29,12 @@ import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
 import CheatSheetBar from '@/components/ui/CheatSheetBar';
+import ErrorReportButton from '@/components/ui/ErrorReportButton';
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useClerk, UserButton } from '@clerk/clerk-react';
 import { isAdminEmail } from '@/config/adminEmails';
 
 export const ViewModeContext = createContext({ viewMode: 'admin', isActualAdmin: false });
@@ -271,7 +272,7 @@ export default function Layout({ children, currentPageName }) {
         "fixed top-0 left-0 z-50 h-full sidebar-shadow transform transition-all duration-300 ease-out",
         "lg:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        sidebarCollapsed ? "lg:w-16" : "lg:w-80",
+        sidebarCollapsed ? "lg:w-20" : "lg:w-80",
         "w-80"
       )}
       style={{
@@ -285,7 +286,7 @@ export default function Layout({ children, currentPageName }) {
             className={cn(
               "hidden lg:flex items-center justify-center transition-all duration-300 group",
               sidebarCollapsed
-                ? "mx-auto mt-4 mb-3 w-10 h-10 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 hover:border-stone-300 shadow-sm"
+                ? "mx-auto mt-4 mb-4 w-12 h-12 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 hover:border-stone-300 shadow-sm"
                 : "absolute right-6 top-6 z-50 w-10 h-10 rounded-xl luxury-glow hover:shadow-2xl hover:scale-105 active:scale-95 luxury-border"
             )}
             style={!sidebarCollapsed ? {
@@ -299,7 +300,7 @@ export default function Layout({ children, currentPageName }) {
               </>
             )}
             {sidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4 text-stone-500 group-hover:text-stone-700 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-stone-500 group-hover:text-stone-700 transition-colors" />
             ) : (
               <ChevronLeft className="w-5 h-5 text-white relative z-10 drop-shadow-sm" />
             )}
@@ -308,10 +309,18 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo & User */}
           <div className={cn(
             "transition-all duration-300",
-            sidebarCollapsed ? "lg:hidden" : "p-7 border-b border-stone-100/80"
+            sidebarCollapsed ? "lg:py-4 lg:px-4 lg:border-b lg:border-stone-100/80" : "p-7 border-b border-stone-100/80"
           )}>
-            {/* Collapsed State - Empty */}
-            {!sidebarCollapsed && (
+            {sidebarCollapsed ? (
+              <div className="hidden lg:flex justify-center">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md relative overflow-hidden"
+                     style={{ background: 'linear-gradient(135deg, var(--nomad-green) 0%, var(--nomad-green-medium) 100%)' }}>
+                  <span className="text-2xl font-bold text-white relative z-10">N</span>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/30"></div>
+                  <div className="absolute inset-0 luxury-shimmer"></div>
+                </div>
+              </div>
+            ) : (
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-black">
                   Nomad Travel
@@ -405,18 +414,18 @@ export default function Layout({ children, currentPageName }) {
                           )}
           </div>
 
+          {/* Spacer when collapsed */}
+          {sidebarCollapsed && (
+            <div className="hidden lg:block flex-1"></div>
+          )}
+
           {/* Navigation */}
           <nav className={cn(
             "flex-1 overflow-y-auto scrollbar-thin",
-            sidebarCollapsed ? "lg:px-2 lg:py-2 lg:space-y-2" : "p-5 space-y-1.5"
+            sidebarCollapsed ? "lg:hidden" : "p-5 space-y-1.5"
           )}>
             {navigation.map((item, idx) => {
                 if (item.divider) {
-                  if (sidebarCollapsed) {
-                    return (
-                      <div key={idx} className="hidden lg:block my-2 mx-1 border-t border-stone-200/60" />
-                    );
-                  }
                   return (
                     <div key={idx} className="px-3 py-3 mt-2">
                       <p className="text-sm font-bold text-stone-400 tracking-wide">{item.name}</p>
@@ -430,33 +439,17 @@ export default function Layout({ children, currentPageName }) {
                     to={createPageUrl(item.page)}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 transition-all duration-200 group relative overflow-hidden",
-                      sidebarCollapsed ? "lg:justify-center lg:w-12 lg:h-12 lg:mx-auto lg:rounded-lg" : "rounded-xl px-4 py-3.5",
+                      "flex items-center gap-3 transition-all duration-200 group relative overflow-hidden rounded-xl px-4 py-3.5",
                       isActive
-                        ? sidebarCollapsed
-                          ? "lg:bg-stone-100 lg:border-2 lg:border-stone-900 text-stone-900"
-                          : "bg-stone-100 border-l-4 border-stone-900 text-stone-900"
-                        : sidebarCollapsed
-                          ? "lg:bg-white lg:border lg:border-stone-200 lg:hover:bg-stone-50 lg:hover:border-stone-300 lg:shadow-sm text-stone-600"
-                          : "text-stone-600 hover:bg-gradient-to-r hover:from-stone-100/60 hover:to-stone-200/40"
+                        ? "bg-stone-100 border-l-4 border-stone-900 text-stone-900"
+                        : "text-stone-600 hover:bg-gradient-to-r hover:from-stone-100/60 hover:to-stone-200/40"
                     )}
-                    title={sidebarCollapsed ? item.name : ''}
                   >
                     <item.icon className={cn(
-                      "transition-all duration-200 relative z-10",
-                      sidebarCollapsed ? "lg:w-5 lg:h-5" : "w-5 h-5 group-hover:scale-110",
-                      isActive
-                        ? "text-stone-900"
-                        : sidebarCollapsed
-                          ? "lg:text-stone-600 lg:group-hover:text-stone-800"
-                          : "text-stone-500 group-hover:text-stone-700"
+                      "w-5 h-5 transition-all duration-200 relative z-10 group-hover:scale-110",
+                      isActive ? "text-stone-900" : "text-stone-500 group-hover:text-stone-700"
                     )} />
-                    {!sidebarCollapsed && (
-                      <span className="font-semibold text-base relative z-10">{item.name}</span>
-                    )}
-                    {sidebarCollapsed && (
-                      <span className="lg:hidden font-semibold text-base relative z-10">{item.name}</span>
-                    )}
+                    <span className="font-semibold text-base relative z-10">{item.name}</span>
                   </Link>
                 );
               })}
@@ -465,36 +458,36 @@ export default function Layout({ children, currentPageName }) {
           {/* Footer - User Info */}
           <div className={cn(
             "border-t border-stone-100/80",
-            sidebarCollapsed ? "lg:p-2" : "p-5"
+            sidebarCollapsed ? "lg:p-4" : "p-5"
           )}>
             {sidebarCollapsed ? (
               <div className="hidden lg:flex justify-center">
-                <div className="w-12 h-12 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 hover:border-stone-300 shadow-sm flex items-center justify-center transition-all duration-200 group">
-                  <Users className="w-5 h-5 text-stone-600 group-hover:text-stone-800 transition-colors" />
-                </div>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox: "w-12 h-12",
+                      userButtonPopoverCard: "shadow-lg",
+                      userButtonPopoverActionButton__signOut: "text-red-600 hover:text-red-700 hover:bg-red-50/80"
+                    }
+                  }}
+                />
               </div>
             ) : (
               <div className="elegant-card rounded-2xl p-4 shadow-sm luxury-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center relative overflow-hidden shadow-md"
-                         style={{ background: 'linear-gradient(135deg, var(--nomad-green) 0%, var(--nomad-green-medium) 100%)' }}>
-                      <Users className="w-5 h-5 text-white relative z-10" />
-                      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/30"></div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-base font-semibold text-stone-800 truncate">{appUser?.full_name || 'Usuario'}</p>
-                      <p className="text-sm text-stone-600 truncate">{appUser?.email}</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        userButtonAvatarBox: "w-10 h-10",
+                        userButtonPopoverCard: "shadow-lg",
+                        userButtonPopoverActionButton__signOut: "text-red-600 hover:text-red-700 hover:bg-red-50/80"
+                      }
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base font-semibold text-stone-800 truncate">{appUser?.full_name || 'Usuario'}</p>
+                    <p className="text-sm text-stone-600 truncate">{appUser?.email}</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => signOut()}
-                    className="flex-shrink-0 h-8 px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50/80 rounded-lg transition-all duration-200"
-                  >
-                    Salir
-                  </Button>
                 </div>
               </div>
             )}
@@ -505,7 +498,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <main className={cn(
         "pt-16 lg:pt-0 min-h-screen transition-all duration-300",
-        sidebarCollapsed ? "lg:pl-16" : "lg:pl-80"
+        sidebarCollapsed ? "lg:pl-20" : "lg:pl-80"
       )}>
         <div className="p-4 lg:p-8">
           <ViewModeContext.Provider value={{ viewMode: isActualAdmin ? viewMode : 'user', isActualAdmin }}>
@@ -515,7 +508,10 @@ export default function Layout({ children, currentPageName }) {
       </main>
 
       {/* Quick Payment FAB */}
-              {/* <QuickPaymentFAB /> */}
+              <QuickPaymentFAB />
+
+              {/* Error Report Button */}
+              <ErrorReportButton />
 
               {/* Cheat Sheet Bar */}
               {/* <CheatSheetBar /> */}

@@ -221,21 +221,23 @@ export default function IndustryFairs() {
                   </div>
                 )}
 
-                {/* Assigned Agents */}
-                {fair.assigned_agents && fair.assigned_agents.length > 0 && (
-                  <div className="border-t border-stone-100 pt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Users className="w-4 h-4 text-stone-500" />
-                      <p className="text-xs font-semibold text-stone-500">AGENTES QUE VAN ({fair.assigned_agents.length}/4)</p>
-                    </div>
+                {/* Assigned Agents - Always show */}
+                <div className="border-t border-stone-100 pt-4 mt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-4 h-4 text-stone-500" />
+                    <p className="text-xs font-semibold text-stone-500">
+                      AGENTES QUE VAN ({fair.assigned_agents?.length || 0}/4)
+                    </p>
+                  </div>
+                  {fair.assigned_agents && fair.assigned_agents.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2">
                       {fair.assigned_agents.map((agent, idx) => (
                         <div key={idx} className="flex items-center gap-2 p-2 bg-stone-50 rounded-lg">
-                          <div 
+                          <div
                             className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
                             style={{ backgroundColor: '#2E442A' }}
                           >
-                            {agent.agent_name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            {agent.agent_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-stone-700 truncate">{agent.agent_name}</p>
@@ -244,8 +246,10 @@ export default function IndustryFairs() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-stone-400 italic">No hay agentes asignados todavía</p>
+                  )}
+                </div>
 
                 {fair.notes && (
                   <div className="mt-4 pt-4 border-t border-stone-100">

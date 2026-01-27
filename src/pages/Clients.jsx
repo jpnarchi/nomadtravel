@@ -89,10 +89,16 @@ export default function Clients() {
   });
 
   const handleSave = (data) => {
+    // Convert empty strings to null for date fields
+    const cleanedData = {
+      ...data,
+      birth_date: data.birth_date || null
+    };
+
     if (editingClient) {
-      updateMutation.mutate({ id: editingClient.id, data });
+      updateMutation.mutate({ id: editingClient.id, data: cleanedData });
     } else {
-      createMutation.mutate({ ...data, created_by: user?.email });
+      createMutation.mutate({ ...cleanedData, created_by: user?.email });
     }
   };
 

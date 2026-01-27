@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Loader2, Plus } from 'lucide-react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 
@@ -31,7 +31,10 @@ export default function IndustryFairForm({ open, onClose, fair, onSave, isLoadin
     notes: ''
   });
 
-  const { data: users = [] } = useQuery({
+  const [newAgentName, setNewAgentName] = useState('');
+  const [newAgentEmail, setNewAgentEmail] = useState('');
+
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['users'],
     queryFn: () => supabaseAPI.entities.User.list(),
     enabled: open
@@ -79,6 +82,10 @@ export default function IndustryFairForm({ open, onClose, fair, onSave, isLoadin
         notes: ''
       });
     }
+
+    // Reset manual agent inputs
+    setNewAgentName('');
+    setNewAgentEmail('');
   }, [fair, open]);
 
   const addAgent = (user) => {
@@ -89,12 +96,45 @@ export default function IndustryFairForm({ open, onClose, fair, onSave, isLoadin
       setFormData({
         ...formData,
         assigned_agents: [...formData.assigned_agents, {
-          agent_name: user.full_name,
+          agent_name: user.full_name || user.email,
           agent_email: user.email
         }]
       });
     }
   };
+
+  const addManualAgent = () => {
+    if (!newAgentName.trim() || !newAgentEmail.trim()) {
+      alert('Por favor ingresa nombre y email');
+      return;
+    }
+
+    if (formData.assigned_agents.length >= 4) {
+      alert('Máximo 4 agentes');
+      return;
+    }
+
+    if (formData.assigned_agents.find(a => a.agent_email === newAgentEmail)) {
+      alert('Este email ya fue agregado');
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      assigned_agents: [...formData.assigned_agents, {
+        agent_name: newAgentName.trim(),
+        agent_email: newAgentEmail.trim()
+      }]
+    });
+
+    setNewAgentName('');
+    setNewAgentEmail('');
+  };
+
+  // Filter out already assigned users
+  const availableUsers = users.filter(
+    user => !formData.assigned_agents.find(a => a.agent_email === user.email)
+  );
 
   const removeAgent = (index) => {
     const newAgents = [...formData.assigned_agents];
@@ -264,23 +304,67 @@ export default function IndustryFairForm({ open, onClose, fair, onSave, isLoadin
           {/* Assigned Agents */}
           <div>
             <Label className="mb-2 block">Agentes Asignados (máx 4)</Label>
+
             {formData.assigned_agents.length < 4 && (
-              <div className="mb-3">
-                <Select onValueChange={(value) => {
-                  const user = users.find(u => u.email === value);
-                  if (user) addAgent(user);
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Agregar agente..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map(user => (
-                      <SelectItem key={user.id} value={user.email}>
-                        {user.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="mb-3 space-y-3">
+                {/* Manual agent input - Always show */}
+                <div className="bg-stone-50 p-4 rounded-xl border border-stone-200">
+                  <p className="text-xs font-semibold text-stone-600 mb-3">Agregar Agente</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Input
+                      placeholder="Nombre completo"
+                      value={newAgentName}
+                      onChange={(e) => setNewAgentName(e.target.value)}
+                      className="text-sm"
+                    />
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={newAgentEmail}
+                      onChange={(e) => setNewAgentEmail(e.target.value)}
+                      className="text-sm"
+                    />
+                    <Button
+                      type="button"
+                      onClick={addManualAgent}
+                      className="w-full text-white text-sm"
+                      style={{ backgroundColor: '#2E442A' }}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Agregar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Selector de usuarios - Only if there are users in DB */}
+                {!usersLoading && !usersError && availableUsers.length > 0 && (
+                  <div>
+                    <p className="text-xs text-stone-500 mb-2">O selecciona un usuario:</p>
+                    <Select
+                      value=""
+                      onValueChange={(value) => {
+                        const user = users.find(u => u.email === value);
+                        if (user) addAgent(user);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar usuario..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableUsers.map(user => (
+                          <SelectItem key={user.id} value={user.email}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{user.full_name || user.email}</span>
+                              {user.full_name && (
+                                <span className="text-xs text-stone-400">{user.email}</span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             )}
 
