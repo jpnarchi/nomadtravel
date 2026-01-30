@@ -42,6 +42,34 @@ export default function AdminTrips() {
 
   const agents = allUsers.filter(u => u.role === 'user' || u.role === 'admin' || u.custom_role === 'supervisor');
 
+  // Debug logging
+  React.useEffect(() => {
+    if (allUsers.length > 0 && allTrips.length > 0) {
+      console.log('=== DEBUG INFO ===');
+      console.log('Total users:', allUsers.length);
+      console.log('Total agents:', agents.length);
+      console.log('Sample user emails:', allUsers.slice(0, 3).map(u => u.email));
+      console.log('Sample trip created_by:', allTrips.slice(0, 3).map(t => ({
+        client: t.client_name,
+        created_by: t.created_by,
+        type: typeof t.created_by
+      })));
+
+      // Check if any match is found
+      const sampleTrip = allTrips[0];
+      if (sampleTrip) {
+        const normalizedCreatedBy = sampleTrip.created_by?.trim()?.toLowerCase();
+        const matchedAgent = allUsers.find(u => u.email?.trim()?.toLowerCase() === normalizedCreatedBy);
+        console.log('Sample match test:', {
+          trip_created_by: sampleTrip.created_by,
+          trip_created_by_normalized: normalizedCreatedBy,
+          matched_agent: matchedAgent ? matchedAgent.full_name : 'NOT FOUND',
+          all_user_emails_normalized: allUsers.map(u => u.email?.trim()?.toLowerCase())
+        });
+      }
+    }
+  }, [allUsers, allTrips, agents]);
+
   const updateTripAgent = useMutation({
     mutationFn: ({ tripId, newAgentEmail }) => 
       supabaseAPI.entities.Trip.update(tripId, { created_by: newAgentEmail }),
@@ -136,7 +164,9 @@ export default function AdminTrips() {
             </thead>
             <tbody className="divide-y divide-stone-100">
               {filteredTrips.map((trip) => {
-                const agent = allUsers.find(u => u.email === trip.created_by);
+                // Normalize emails for comparison (trim and lowercase)
+                const normalizedCreatedBy = trip.created_by?.trim()?.toLowerCase();
+                const agent = allUsers.find(u => u.email?.trim()?.toLowerCase() === normalizedCreatedBy);
                 const stageConfig = STAGE_CONFIG[trip.stage];
                 return (
                   <tr key={trip.id} className="hover:bg-stone-50 transition-colors">
@@ -155,17 +185,19 @@ export default function AdminTrips() {
                     </td>
                     <td className="p-3">
                       <Select
-                        value={trip.created_by || ''}
-                        onValueChange={(value) => updateTripAgent.mutate({ 
-                          tripId: trip.id, 
-                          newAgentEmail: value || null 
+                        value={trip.created_by || 'unassigned'}
+                        onValueChange={(value) => updateTripAgent.mutate({
+                          tripId: trip.id,
+                          newAgentEmail: value === 'unassigned' ? null : value
                         })}
                       >
                         <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Sin asignar" />
+                          <SelectValue placeholder="Sin asignar">
+                            {agent?.full_name || 'Sin asignar'}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value={null}>Sin asignar</SelectItem>
+                          <SelectItem value="unassigned">Sin asignar</SelectItem>
                           {agents.map(agentOption => (
                             <SelectItem key={agentOption.email} value={agentOption.email}>
                               {agentOption.full_name}

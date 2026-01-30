@@ -624,22 +624,39 @@ export default function InternalCommissions() {
 
       {/* Commissions Pending Agency Validation Alert */}
       {(() => {
-        const commissionsToValidate = tripServices.filter(s => 
-          s.paid_to_agency === true && 
-          s.commission > 0 && 
+        const commissionsToValidate = tripServices.filter(s =>
+          s.paid_to_agency === true &&
+          s.commission > 0 &&
           !s.commission_paid
         );
-        
+
         if (commissionsToValidate.length === 0) return null;
-        
+
+        const handleConfirmPayment = async (service) => {
+          await updateTripServiceMutation.mutateAsync({
+            id: service.id,
+            data: { commission_paid: true }
+          });
+        };
+
         return (
           <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5 animate-pulse" />
               <div className="flex-1">
-                <h3 className="font-bold text-amber-900 mb-2">
-                  ⚠️ Comisiones Pendientes de Validar Pago a Agencia
-                </h3>
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-bold text-amber-900">
+                    ⚠️ Comisiones Pendientes de Validar Pago a Agencia
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveTab('validated')}
+                    className="ml-4 border-amber-400 text-amber-700 hover:bg-amber-100 rounded-lg"
+                  >
+                    Ver Pagado a agencia
+                  </Button>
+                </div>
                 <p className="text-sm text-amber-800 mb-3">
                   {commissionsToValidate.length} {commissionsToValidate.length === 1 ? 'comisión marcada' : 'comisiones marcadas'} como "Pagado a agencia" por el agente. Revisar y confirmar recepción del pago:
                 </p>
@@ -658,10 +675,10 @@ export default function InternalCommissions() {
                         default: return service.other_name || 'Servicio';
                       }
                     })();
-                    
+
                     return (
                       <div key={service.id} className="bg-white rounded-lg p-3 border-2 border-amber-300 hover:border-amber-400 transition-colors">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-semibold text-stone-800">{trip?.client_name || 'Sin cliente'}</p>
@@ -676,11 +693,25 @@ export default function InternalCommissions() {
                               </p>
                             )}
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-amber-700">
-                              ${(service.commission || 0).toLocaleString()}
-                            </p>
-                            <p className="text-xs text-stone-500">comisión</p>
+                          <div className="text-right flex items-center gap-3">
+                            <div>
+                              <p className="text-lg font-bold text-amber-700">
+                                ${(service.commission || 0).toLocaleString()}
+                              </p>
+                              <p className="text-xs text-stone-500">comisión</p>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleConfirmPayment(service)}
+                              disabled={updateTripServiceMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white rounded-lg"
+                            >
+                              {updateTripServiceMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                'Confirmar Pago'
+                              )}
+                            </Button>
                           </div>
                         </div>
                       </div>

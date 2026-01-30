@@ -25,18 +25,49 @@ export default function AdminClients() {
     queryFn: () => supabaseAPI.entities.Client.list()
   });
 
-  // Create users map by email for O(1) lookups
+  // Create users map by email for O(1) lookups (normalized)
   const usersByEmail = useMemo(() => {
     return allUsers.reduce((map, user) => {
-      map[user.email] = user;
+      if (user.email) {
+        const normalizedEmail = user.email.trim().toLowerCase();
+        map[normalizedEmail] = user;
+      }
       return map;
     }, {});
   }, [allUsers]);
 
-  const agents = useMemo(() => 
-    allUsers.filter(u => u.role === 'user'),
+  const agents = useMemo(() =>
+    allUsers.filter(u => u.role === 'user' || u.role === 'admin' || u.custom_role === 'supervisor'),
     [allUsers]
   );
+
+  // Debug logging
+  React.useEffect(() => {
+    if (allUsers.length > 0 && allClients.length > 0) {
+      console.log('=== DEBUG INFO (Clients) ===');
+      console.log('Total users:', allUsers.length);
+      console.log('Total agents:', agents.length);
+      console.log('Sample user emails:', allUsers.slice(0, 3).map(u => u.email));
+      console.log('Sample client created_by:', allClients.slice(0, 3).map(c => ({
+        name: c.first_name + ' ' + c.last_name,
+        created_by: c.created_by,
+        type: typeof c.created_by
+      })));
+
+      // Check usersByEmail map
+      const sampleClient = allClients[0];
+      if (sampleClient) {
+        const normalizedCreatedBy = sampleClient.created_by?.trim()?.toLowerCase();
+        const matchedAgent = usersByEmail[normalizedCreatedBy];
+        console.log('Sample match test:', {
+          client_created_by: sampleClient.created_by,
+          client_created_by_normalized: normalizedCreatedBy,
+          matched_agent: matchedAgent ? matchedAgent.full_name : 'NOT FOUND',
+          usersByEmail_keys: Object.keys(usersByEmail)
+        });
+      }
+    }
+  }, [allUsers, allClients, agents, usersByEmail]);
 
   // Memoize filtered clients
   const filteredClients = useMemo(() => {
@@ -129,7 +160,9 @@ export default function AdminClients() {
             </thead>
             <tbody className="divide-y divide-stone-100">
               {filteredClients.map((client) => {
-                const agent = usersByEmail[client.created_by];
+                // Normalize email for lookup
+                const normalizedCreatedBy = client.created_by?.trim()?.toLowerCase();
+                const agent = usersByEmail[normalizedCreatedBy];
                 const clientFullName = `${client.first_name} ${client.last_name}`;
                 return (
                   <tr key={client.id} className="hover:bg-stone-50 transition-colors">
