@@ -58,21 +58,23 @@ export default function InternalCommissionForm({ open, onClose, commission, user
   }, [commission, open]);
 
   const handleUserChange = (email) => {
-    const user = users.find(u => u.email === email);
-    setFormData({
-      ...formData,
+    if (!email) return;
+    const user = users?.find(u => u.email === email);
+    setFormData(prev => ({
+      ...prev,
       agent_email: email,
       agent_name: user?.full_name || email
-    });
+    }));
   };
 
   const handleTripChange = (tripId) => {
-    const trip = soldTrips.find(t => t.id === tripId);
-    setFormData({
-      ...formData,
+    if (!tripId) return;
+    const trip = soldTrips?.find(t => String(t.id) === String(tripId));
+    setFormData(prev => ({
+      ...prev,
       sold_trip_id: tripId,
       sold_trip_name: trip ? `${trip.client_name} - ${trip.destination}` : ''
-    });
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -116,11 +118,11 @@ export default function InternalCommissionForm({ open, onClose, commission, user
                 <SelectValue placeholder="Seleccionar agente" />
               </SelectTrigger>
               <SelectContent>
-                {users.map(user => (
+                {users?.map(user => (
                   <SelectItem key={user.id} value={user.email}>
                     {user.full_name || user.email}
                   </SelectItem>
-                ))}
+                )) || []}
               </SelectContent>
             </Select>
           </div>
@@ -128,16 +130,16 @@ export default function InternalCommissionForm({ open, onClose, commission, user
           {/* Trip */}
           <div className="space-y-2">
             <Label>Viaje Vendido *</Label>
-            <Select value={formData.sold_trip_id} onValueChange={handleTripChange}>
+            <Select value={String(formData.sold_trip_id || '')} onValueChange={handleTripChange}>
               <SelectTrigger className="rounded-xl">
                 <SelectValue placeholder="Seleccionar viaje" />
               </SelectTrigger>
               <SelectContent>
-                {soldTrips.map(trip => (
-                  <SelectItem key={trip.id} value={trip.id}>
+                {soldTrips?.map(trip => (
+                  <SelectItem key={trip.id} value={String(trip.id)}>
                     {trip.client_name} - {trip.destination}
                   </SelectItem>
-                ))}
+                )) || []}
               </SelectContent>
             </Select>
           </div>

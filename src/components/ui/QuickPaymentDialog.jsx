@@ -64,11 +64,10 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
     queryFn: () => supabaseAPI.entities.SoldTrip.list('-created_date')
   });
 
-  // Filter trips by current user
+  // Show all sold trips (not just current user's trips)
   const soldTrips = useMemo(() => {
-    if (!currentUser || !allSoldTrips.length) return [];
-    return allSoldTrips.filter(trip => trip.created_by === currentUser.email);
-  }, [allSoldTrips, currentUser]);
+    return allSoldTrips || [];
+  }, [allSoldTrips]);
 
   // Filter trips by search query
   const filteredTrips = useMemo(() => {
@@ -191,22 +190,12 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
 
   const clientPaymentMutation = useMutation({
     mutationFn: async (data) => {
-      const payment = await supabaseAPI.entities.ClientPayment.create(data);
-      
-      // Update sold trip totals
-      const trip = soldTrips.find(t => t.id === data.sold_trip_id);
-      if (trip) {
-        const newTotal = (trip.total_paid_by_client || 0) + data.amount;
-        await supabaseAPI.entities.SoldTrip.update(trip.id, {
-          total_paid_by_client: newTotal,
-          status: newTotal >= (trip.total_price || 0) ? 'pagado' : 'parcial'
-        });
-      }
-      return payment;
+      return await supabaseAPI.entities.ClientPayment.create(data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
-      queryClient.invalidateQueries({ queryKey: ['clientPayments'] });
+    onSuccess: async (newPayment) => {
+      // Import the recalculation function
+      const { updateSoldTripAndPaymentPlanTotals } = await import('@/components/utils/soldTripRecalculations');
+      await updateSoldTripAndPaymentPlanTotals(newPayment.sold_trip_id, queryClient);
       toast.success('Pago de cliente registrado');
       onClose();
     }
@@ -214,21 +203,12 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
 
   const supplierPaymentMutation = useMutation({
     mutationFn: async (data) => {
-      const payment = await supabaseAPI.entities.SupplierPayment.create(data);
-      
-      // Update sold trip totals
-      const trip = soldTrips.find(t => t.id === data.sold_trip_id);
-      if (trip) {
-        const newTotal = (trip.total_paid_to_suppliers || 0) + data.amount;
-        await supabaseAPI.entities.SoldTrip.update(trip.id, {
-          total_paid_to_suppliers: newTotal
-        });
-      }
-      return payment;
+      return await supabaseAPI.entities.SupplierPayment.create(data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
-      queryClient.invalidateQueries({ queryKey: ['supplierPayments'] });
+    onSuccess: async (newPayment) => {
+      // Import the recalculation function
+      const { updateSoldTripAndTripServiceTotals } = await import('@/components/utils/soldTripRecalculations');
+      await updateSoldTripAndTripServiceTotals(newPayment.sold_trip_id, queryClient);
       toast.success('Pago a proveedor registrado');
       onClose();
     }

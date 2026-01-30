@@ -22,24 +22,18 @@ export default function ServicesTab({
   return (
     <div className="bg-white rounded-xl md:rounded-2xl shadow-md border border-stone-100">
       {/* Header */}
-      <div className="p-4 md:p-6 border-b border-stone-100 bg-gradient-to-r from-stone-50 to-white">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
-          <h3 className="text-base md:text-lg font-bold text-stone-900">Servicios del Viaje</h3>
+      <div className="p-3 border-b border-stone-100 bg-gradient-to-r from-stone-50 to-white">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <h3 className="text-sm md:text-base font-bold text-stone-900">Servicios del Viaje</h3>
           <Button
             size="sm"
             onClick={onAddService}
-            className="rounded-xl text-white shadow-md hover:shadow-lg transition-all w-full md:w-auto"
+            className="rounded-lg text-white text-xs h-8 w-full md:w-auto"
             style={{ backgroundColor: '#2E442A' }}
           >
-            <Plus className="w-4 h-4 mr-1.5" /> Agregar Servicio
+            <Plus className="w-3 h-3 mr-1" /> Agregar Servicio
           </Button>
         </div>
-        <p className="text-xs text-stone-600 leading-relaxed">
-          Aquí se agregan todos los servicios del viaje tal como se le venderán al cliente, en precio bruto.
-          Incluye la comisión de cada servicio y la fecha estimada en la que se espera recibir esa comisión.
-          Si el pago es neto, la comisión se libera al terminar el viaje. Si es por Montecito, la comisión se paga
-          aproximadamente 3 meses después de que finaliza el viaje.
-        </p>
       </div>
 
       {/* Content */}
@@ -52,26 +46,26 @@ export default function ServicesTab({
           onAction={onAddService}
         />
       ) : (
-        <div className="p-6 space-y-8">
+        <div className="p-4 space-y-6">
           {Object.entries(servicesByType).map(([type, typeServices]) => {
             const Icon = SERVICE_ICONS[type] || Package;
             const colors = SERVICE_COLORS[type] || SERVICE_COLORS.otro;
 
             return (
-              <div key={type} className="space-y-3">
+              <div key={type} className="space-y-2">
                 {/* Type Header */}
-                <div className="flex items-center gap-3 pb-2">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colors.bg} shadow-sm`}>
-                    <Icon className={`w-5 h-5 ${colors.text}`} />
+                <div className="flex items-center gap-2 pb-1">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.bg}`}>
+                    <Icon className={`w-4 h-4 ${colors.text}`} />
                   </div>
-                  <h4 className="font-bold text-stone-900 text-base">{SERVICE_LABELS[type]}s</h4>
-                  <Badge className={`${colors.bg} ${colors.text} border-0 text-xs px-2 py-1 font-medium`}>
+                  <h4 className="font-bold text-stone-900 text-sm">{SERVICE_LABELS[type]}s</h4>
+                  <Badge className={`${colors.bg} ${colors.text} border-0 text-xs px-1.5 py-0.5 font-medium`}>
                     {typeServices.length}
                   </Badge>
                 </div>
 
                 {/* Services List */}
-                <div className="space-y-3">
+                <div className="space-y-1.5">
                   <AnimatePresence>
                     {typeServices.map((service) => (
                       <ServiceCard
@@ -94,17 +88,17 @@ export default function ServicesTab({
 
       {/* Summary */}
       {services.length > 0 && (
-        <div className="p-6 bg-gradient-to-r from-stone-50 to-white border-t border-stone-100">
-          <div className="flex justify-end gap-12">
+        <div className="p-3 bg-gradient-to-r from-stone-50 to-white border-t border-stone-100">
+          <div className="flex justify-end gap-8">
             <div className="text-right">
-              <p className="text-xs text-stone-500 mb-1">Total Servicios</p>
-              <p className="text-2xl font-bold" style={{ color: '#2E442A' }}>
+              <p className="text-xs text-stone-500 mb-0.5">Total Servicios</p>
+              <p className="text-lg font-bold" style={{ color: '#2E442A' }}>
                 ${totalServices.toLocaleString()}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-stone-500 mb-1">Total Comisiones</p>
-              <p className="text-2xl font-bold text-emerald-600">
+              <p className="text-xs text-stone-500 mb-0.5">Total Comisiones</p>
+              <p className="text-lg font-bold text-emerald-600">
                 ${totalCommissions.toLocaleString()}
               </p>
             </div>

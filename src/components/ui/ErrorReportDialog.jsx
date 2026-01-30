@@ -120,6 +120,7 @@ export default function ErrorReportDialog({ open, onClose }) {
         description: screenshotUrl
           ? "Tu reporte de error ha sido enviado exitosamente"
           : "Tu reporte ha sido enviado (sin captura de pantalla)",
+        duration: 3000,
       });
 
       // Limpiar formulario
