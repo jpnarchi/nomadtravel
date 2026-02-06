@@ -3,7 +3,7 @@ import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
 import { AnimatePresence } from 'framer-motion';
-import { Plus, Loader2, Plane } from 'lucide-react';
+import { Plus, Loader2, Plane, Share2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useUser } from '@clerk/clerk-react';
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import TripForm from '@/components/trips/TripForm';
 import TripCard from '@/components/trips/TripCard';
+import ShareTripFormModal from '@/components/trips/ShareTripFormModal';
 import EmptyState from '@/components/ui/EmptyState';
 import { toast } from 'sonner';
 
@@ -48,6 +49,7 @@ export default function Trips() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [shareFormOpen, setShareFormOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -246,14 +248,24 @@ export default function Trips() {
           <h1 className="text-2xl lg:text-3xl font-bold text-stone-800">Viajes</h1>
           <p className="text-stone-500 mt-1">{trips.length} viajes en proceso</p>
         </div>
-        <Button 
-          onClick={() => { setEditingTrip(null); setFormOpen(true); }}
-          className="text-white rounded-xl"
-          style={{ backgroundColor: '#2E442A' }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Viaje
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={() => setShareFormOpen(true)}
+            variant="outline"
+            className="rounded-xl"
+          >
+            <Share2 className="w-4 h-4 mr-2" />
+            Compartir formulario<span className='font-bold'>BETA</span>
+          </Button>
+          <Button
+            onClick={() => { setEditingTrip(null); setFormOpen(true); }}
+            className="text-white rounded-xl"
+            style={{ backgroundColor: '#2E442A' }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Viaje
+          </Button>
+        </div>
       </div>
 
       {trips.length === 0 ? (
@@ -322,6 +334,12 @@ export default function Trips() {
         clients={clients}
         onSave={handleSave}
         isLoading={createMutation.isPending || updateMutation.isPending}
+      />
+
+      {/* Share Form Modal */}
+      <ShareTripFormModal
+        open={shareFormOpen}
+        onClose={() => setShareFormOpen(false)}
       />
 
       {/* Delete Confirmation */}

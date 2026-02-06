@@ -145,8 +145,10 @@ export default function AdminDashboard() {
     // Excluyendo los servicios marcados como "pagado" (pagados directamente al proveedor)
     const tripServices = allServices.filter(s => s.sold_trip_id === trip.id);
     const totalServicesToPay = tripServices.reduce((sum, s) => {
-      if (s.reservation_status === 'pagado') return sum;
-      return sum + (s.total_price || 0);
+      // Check reservation_status in both direct field and metadata
+      const reservationStatus = s.reservation_status || s.metadata?.reservation_status;
+      if (reservationStatus === 'pagado') return sum;
+      return sum + (s.total_price || s.price || 0);
     }, 0);
 
     // Balance = totalServicesToPay - clientPayments (same as "Por Cobrar")

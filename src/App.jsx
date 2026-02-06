@@ -10,6 +10,7 @@ import PageNotFound from './lib/PageNotFound';
 import Login from '@/components/Login';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
 import AdminRoute from '@/components/AdminRoute';
+import ClientTripForm from '@/pages/ClientTripForm';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -79,16 +80,26 @@ function App() {
   return (
     <QueryClientProvider client={queryClientInstance}>
       <Router>
-        <header>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-        </header>
-        <NavigationTracker />
-        <AuthenticatedApp />
+        <Routes>
+          {/* Public routes - no authentication required */}
+          <Route path="/public/trip-form/:token" element={<ClientTripForm />} />
+
+          {/* All other routes - authentication required */}
+          <Route path="*" element={
+            <>
+              <header>
+                <SignedIn>
+                  <UserButton />
+                </SignedIn>
+              </header>
+              <NavigationTracker />
+              <AuthenticatedApp />
+            </>
+          } />
+        </Routes>
+        <Toaster />
+        <VisualEditAgent />
       </Router>
-      <Toaster />
-      <VisualEditAgent />
     </QueryClientProvider>
   )
 }

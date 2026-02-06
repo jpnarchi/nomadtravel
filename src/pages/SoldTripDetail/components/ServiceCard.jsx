@@ -54,13 +54,13 @@ export default function ServiceCard({
           <div className="flex items-center gap-2 mb-0.5">
             <h4 className="font-bold text-sm text-stone-900 truncate">{details.title}</h4>
             <Select
-              value={service.reservation_status || 'reservado'}
+              value={service.reservation_status || service.metadata?.reservation_status || 'reservado'}
               onValueChange={(value) => onUpdateStatus(service.id, value)}
             >
               <SelectTrigger className={`h-5 w-auto text-xs rounded border-0 px-1.5 font-medium ${
-                service.reservation_status === 'pagado'
+                (service.reservation_status || service.metadata?.reservation_status) === 'pagado'
                   ? 'bg-green-100 text-green-700'
-                  : service.reservation_status === 'cancelado'
+                  : (service.reservation_status || service.metadata?.reservation_status) === 'cancelado'
                     ? 'bg-red-100 text-red-700'
                     : 'bg-yellow-100 text-yellow-700'
               }`}>

@@ -16,8 +16,10 @@ export function useTripMetrics(soldTrip, services, clientPayments, supplierPayme
     // Calcular el total de servicios que el cliente debe pagar
     // Excluyendo los servicios marcados como "pagado" (pagados directamente al proveedor)
     const totalServicesToPay = services.reduce((sum, s) => {
-      if (s.reservation_status === 'pagado') return sum;
-      return sum + (s.total_price || 0);
+      // Check reservation_status in both direct field and metadata
+      const reservationStatus = s.reservation_status || s.metadata?.reservation_status;
+      if (reservationStatus === 'pagado') return sum;
+      return sum + (s.total_price || s.price || 0);
     }, 0);
 
     const clientBalance = totalServicesToPay - totalClientPaid;
@@ -29,14 +31,19 @@ export function useTripMetrics(soldTrip, services, clientPayments, supplierPayme
     // Pending payment alerts
     const today = new Date();
     const pendingPaymentAlerts = services.filter(service => {
-      if (!service.payment_due_date) return false;
-      if (service.reservation_status === 'pagado') return false;
+      const paymentDueDate = service.payment_due_date || service.metadata?.payment_due_date;
+      if (!paymentDueDate) return false;
 
-      const dueDate = parseLocalDate(service.payment_due_date);
+      // Check reservation_status in both direct field and metadata
+      const reservationStatus = service.reservation_status || service.metadata?.reservation_status;
+      if (reservationStatus === 'pagado') return false;
+
+      const dueDate = parseLocalDate(paymentDueDate);
       const daysUntilDue = differenceInDays(dueDate, today);
       return daysUntilDue <= 30;
     }).map(service => {
-      const dueDate = parseLocalDate(service.payment_due_date);
+      const paymentDueDate = service.payment_due_date || service.metadata?.payment_due_date;
+      const dueDate = parseLocalDate(paymentDueDate);
       const daysUntilDue = differenceInDays(dueDate, today);
       const isOverdue = daysUntilDue < 0;
       return { ...service, daysUntilDue, isOverdue };

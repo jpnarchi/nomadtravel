@@ -131,7 +131,19 @@ export default function SoldTripDetail() {
   };
 
   const handleUpdateServiceStatus = (serviceId, status) => {
-    mutations.updateServiceMutation.mutate({ id: serviceId, data: { reservation_status: status } });
+    // Update in both direct field and metadata to ensure compatibility
+    const service = services.find(s => s.id === serviceId);
+    const updatedMetadata = {
+      ...(service?.metadata || {}),
+      reservation_status: status
+    };
+    mutations.updateServiceMutation.mutate({
+      id: serviceId,
+      data: {
+        reservation_status: status,
+        metadata: updatedMetadata
+      }
+    });
   };
 
   const handleEditClientPayment = (payment) => {
