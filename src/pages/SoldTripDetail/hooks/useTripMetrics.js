@@ -12,7 +12,15 @@ export function useTripMetrics(soldTrip, services, clientPayments, supplierPayme
       return sum + (p.amount_usd_fixed || p.amount || 0);
     }, 0);
     const totalSupplierPaid = supplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-    const clientBalance = totalServices - totalClientPaid;
+
+    // Calcular el total de servicios que el cliente debe pagar
+    // Excluyendo los servicios marcados como "pagado" (pagados directamente al proveedor)
+    const totalServicesToPay = services.reduce((sum, s) => {
+      if (s.reservation_status === 'pagado') return sum;
+      return sum + (s.total_price || 0);
+    }, 0);
+
+    const clientBalance = totalServicesToPay - totalClientPaid;
     const paymentProgress = totalServices > 0 ? Math.round((totalClientPaid / totalServices) * 100) : 0;
 
     const daysUntilTrip = differenceInDays(parseLocalDate(soldTrip.start_date), new Date());

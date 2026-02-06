@@ -141,8 +141,16 @@ export default function AdminDashboard() {
       .filter(p => p.sold_trip_id === trip.id)
       .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Balance = total_price - clientPayments (same as "Por Cobrar")
-    const balance = (trip.total_price || 0) - clientPayments;
+    // Calcular el total de servicios que el cliente debe pagar
+    // Excluyendo los servicios marcados como "pagado" (pagados directamente al proveedor)
+    const tripServices = allServices.filter(s => s.sold_trip_id === trip.id);
+    const totalServicesToPay = tripServices.reduce((sum, s) => {
+      if (s.reservation_status === 'pagado') return sum;
+      return sum + (s.total_price || 0);
+    }, 0);
+
+    // Balance = totalServicesToPay - clientPayments (same as "Por Cobrar")
+    const balance = totalServicesToPay - clientPayments;
 
     if (balance > 0) {
       const agent = allUsers.find(u => u.email === trip.created_by);
@@ -151,6 +159,7 @@ export default function AdminDashboard() {
         balance,
         clientPayments,
         supplierPayments,
+        totalServicesToPay,
         agentName: agent?.full_name || 'Sin asignar'
       };
     }

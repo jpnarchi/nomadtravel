@@ -107,6 +107,7 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
         await updateSoldTripAndPaymentPlanTotals(newPayment.sold_trip_id, queryClient);
       }
 
+      queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
     }
   });
@@ -141,6 +142,7 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
           await updateSoldTripAndPaymentPlanTotals(payment.sold_trip_id, queryClient);
         }
       }
+      queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
       queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
     }
   });
@@ -178,6 +180,7 @@ export function useTripMutations(tripId, services, clientPayments, supplierPayme
           await updateSoldTripAndPaymentPlanTotals(variables.sold_trip_id, queryClient);
         }
 
+        queryClient.invalidateQueries({ queryKey: ['supplierPayments', tripId] });
         queryClient.invalidateQueries({ queryKey: ['clientPayments', tripId] });
       }
     }

@@ -427,13 +427,26 @@ export default function SoldTripDetail() {
         payment={editingSupplierPayment}
         onSave={(data) => {
           if (editingSupplierPayment) {
-            mutations.updateSupplierPaymentMutation.mutate({
-              id: editingSupplierPayment.id,
-              data,
-              oldPayment: editingSupplierPayment
-            });
+            mutations.updateSupplierPaymentMutation.mutate(
+              {
+                id: editingSupplierPayment.id,
+                data,
+                oldPayment: editingSupplierPayment
+              },
+              {
+                onSuccess: () => {
+                  setSupplierPaymentOpen(false);
+                  setEditingSupplierPayment(null);
+                }
+              }
+            );
           } else {
-            mutations.createSupplierPaymentMutation.mutate(data);
+            mutations.createSupplierPaymentMutation.mutate(data, {
+              onSuccess: () => {
+                setSupplierPaymentOpen(false);
+                setEditingSupplierPayment(null);
+              }
+            });
           }
         }}
         isLoading={mutations.createSupplierPaymentMutation.isPending || mutations.updateSupplierPaymentMutation.isPending}
