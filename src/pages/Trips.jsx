@@ -255,7 +255,7 @@ export default function Trips() {
             className="rounded-xl"
           >
             <Share2 className="w-4 h-4 mr-2" />
-            Compartir formulario<span className='font-bold'>BETA</span>
+            Compartir formulario <span className='font-bold'>BETA</span>
           </Button>
           <Button
             onClick={() => { setEditingTrip(null); setFormOpen(true); }}
