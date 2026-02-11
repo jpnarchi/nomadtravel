@@ -1,13 +1,12 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
-import { motion } from 'framer-motion';
 import {
   Loader2, Search, DollarSign, Plus,
-  Users, Edit2, Trash2, CheckCircle, Clock, Calendar, ArrowUpDown, AlertCircle, TrendingUp, X, Filter
+  Users, Edit2, Trash2, CheckCircle, Clock, Calendar, ArrowUpDown, AlertCircle, X, Filter
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -31,61 +30,10 @@ import EmptyState from '@/components/ui/EmptyState';
 import AgentCommissionInvoice from '@/components/commissions/AgentCommissionInvoice';
 import { updateSoldTripTotalsFromServices } from '@/components/utils/soldTripRecalculations';
 
-const STATUS_CONFIG = {
-  pendiente: { label: 'Pendiente', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  pagado_a_agencia_interno: { label: 'Pagado a agencia', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  pagada_agente: { label: 'Pagada al Agente', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
-};
-
 const IATA_LABELS = {
   montecito: 'IATA Montecito',
   nomad: 'IATA Nomad'
 };
-
-// Loading Skeleton
-const TableSkeleton = memo(() => (
-  <div className="space-y-3 p-4">
-    {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex gap-4 animate-pulse">
-        <div className="h-14 bg-stone-200 rounded-xl flex-1"></div>
-        <div className="h-14 bg-stone-200 rounded-xl w-32"></div>
-      </div>
-    ))}
-  </div>
-));
-
-TableSkeleton.displayName = 'TableSkeleton';
-
-// Modern Stats Card Component
-const StatsCard = memo(({ title, value, subtitle, icon: Icon, gradient, index }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ delay: index * 0.05, duration: 0.3, type: "spring" }}
-    whileHover={{ y: -5, scale: 1.02 }}
-  >
-    <Card className={`relative overflow-hidden group cursor-pointer bg-gradient-to-br ${gradient} p-3 md:p-4 shadow-lg hover:shadow-2xl transition-all duration-300 min-h-[90px] md:min-h-[110px]`}>
-      <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
-
-      <div className="relative z-10 h-full flex flex-col">
-        <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] md:text-xs font-bold text-white/90 uppercase tracking-wide line-clamp-1">{title}</p>
-          <motion.div
-            whileHover={{ rotate: 360 }}
-            transition={{ duration: 0.6 }}
-            className="w-7 h-7 md:w-8 md:h-8 bg-white/20 rounded-lg flex items-center justify-center shadow-lg backdrop-blur-sm flex-shrink-0"
-          >
-            <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
-          </motion.div>
-        </div>
-        <p className="text-base md:text-lg lg:text-xl font-black text-white mb-1 break-all leading-none">{value}</p>
-        {subtitle && <p className="text-[10px] md:text-xs text-white/80 font-semibold line-clamp-1 mt-auto">{subtitle}</p>}
-      </div>
-    </Card>
-  </motion.div>
-));
-
-StatsCard.displayName = 'StatsCard';
 
 export default function InternalCommissions() {
   const [search, setSearch] = useState('');
@@ -173,9 +121,9 @@ export default function InternalCommissions() {
         const agent = users.find(u => u.email === agentEmail);
 
         let status = 'pendiente';
-        if (s.paid_to_agent) {
+        if (s.commission_paid && s.paid_to_agent) {
           status = 'pagada_agente';
-        } else if (s.commission_paid) {
+        } else if (s.paid_to_agency && !s.commission_paid) {
           status = 'pagado_a_agencia_interno';
         }
 
@@ -347,10 +295,28 @@ export default function InternalCommissions() {
   // Update commission status
   const handleUpdateStatus = async (commission, newStatus) => {
     if (commission.source === 'tripService') {
-      const updateData = {
-        commission_paid: newStatus === 'pagado_a_agencia_interno' || newStatus === 'pagada_agente',
-        paid_to_agent: newStatus === 'pagada_agente'
-      };
+      let updateData = {};
+
+      if (newStatus === 'pendiente') {
+        updateData = {
+          paid_to_agency: false,
+          commission_paid: false,
+          paid_to_agent: false
+        };
+      } else if (newStatus === 'pagado_a_agencia_interno') {
+        updateData = {
+          paid_to_agency: true,
+          commission_paid: false,
+          paid_to_agent: false
+        };
+      } else if (newStatus === 'pagada_agente') {
+        updateData = {
+          paid_to_agency: true,
+          commission_paid: true,
+          paid_to_agent: true
+        };
+      }
+
       await updateTripServiceMutation.mutateAsync({
         id: commission.service_id,
         data: updateData
@@ -515,25 +481,25 @@ export default function InternalCommissions() {
     return Object.entries(commissionsByAgent).map(([agent, agentCommissions]) => {
       const totals = calculateAgentTotals(agentCommissions);
       return (
-        <div key={agent} className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow border border-stone-200 overflow-hidden">
+        <div key={agent} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
           {/* Agent Header */}
-          <div className="p-4 md:p-5 bg-gradient-to-r from-stone-50 to-stone-100 border-b-2 border-stone-200">
+          <div className="p-4 bg-stone-50 border-b border-stone-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md">
-                  <Users className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
+                  <Users className="w-4 h-4" style={{ color: '#2E442A' }} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-stone-900 text-base md:text-lg">{agent}</h3>
-                  <p className="text-xs md:text-sm text-stone-500">{agentCommissions.length} comisión{agentCommissions.length !== 1 ? 'es' : ''}</p>
+                  <h3 className="font-bold text-stone-800">{agent}</h3>
+                  <p className="text-xs text-stone-500">{agentCommissions.length} comisión{agentCommissions.length !== 1 ? 'es' : ''}</p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 md:gap-3 text-sm">
-                <div className="px-3 py-1.5 bg-emerald-50 rounded-lg border border-emerald-200 shadow-sm">
-                  <span className="text-emerald-700 font-bold">Agente: ${totals.totalAgentCommission.toLocaleString()}</span>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <div className="px-2 py-1 bg-green-50 rounded-lg border border-green-200">
+                  <span className="text-green-700 font-semibold">Agente: ${totals.totalAgentCommission.toLocaleString()}</span>
                 </div>
-                <div className="px-3 py-1.5 bg-purple-50 rounded-lg border border-purple-200 shadow-sm">
-                  <span className="text-purple-700 font-bold">Nomad: ${totals.totalNomadCommission.toLocaleString()}</span>
+                <div className="px-2 py-1 bg-purple-50 rounded-lg border border-purple-200">
+                  <span className="text-purple-700 font-semibold">Nomad: ${totals.totalNomadCommission.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -542,63 +508,60 @@ export default function InternalCommissions() {
           {/* Commissions Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gradient-to-r from-stone-50 to-white border-b border-stone-200">
+              <thead className="bg-stone-50 border-b border-stone-100">
                 <tr>
                   {(tabType === 'pending' || tabType === 'validated') && (
-                    <th className="text-center p-3 md:p-4 font-bold text-stone-700 text-xs uppercase w-10">
+                    <th className="text-center p-3 font-semibold text-stone-600 w-10">
                       <Checkbox
                         checked={agentCommissions.every(c => selectedCommissions.find(s => s.id === c.id))}
                         onCheckedChange={(checked) => handleSelectAllForAgent(agentCommissions, checked)}
                       />
                     </th>
                   )}
-                  <th className="text-left p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Viaje</th>
-                  <th className="text-left p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Proveedor</th>
-                  <th className="text-left p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">IATA</th>
-                  <th className="text-left p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Estatus</th>
-                  <th className="text-right p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Comisión</th>
-                  <th className="text-right p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Agente</th>
-                  <th className="text-right p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Nomad</th>
-                  <th className="text-center p-3 md:p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Acciones</th>
+                  <th className="text-left p-3 font-semibold text-stone-600">Viaje</th>
+                  <th className="text-left p-3 font-semibold text-stone-600">Proveedor</th>
+                  <th className="text-left p-3 font-semibold text-stone-600">IATA</th>
+                  <th className="text-left p-3 font-semibold text-stone-600">Estatus</th>
+                  <th className="text-right p-3 font-semibold text-stone-600">Comisión</th>
+                  <th className="text-right p-3 font-semibold text-stone-600">Agente</th>
+                  <th className="text-right p-3 font-semibold text-stone-600">Nomad</th>
+                  <th className="text-center p-3 font-semibold text-stone-600">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {agentCommissions.map((commission, idx) => (
-                  <motion.tr
+                {agentCommissions.map((commission) => (
+                  <tr
                     key={commission.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.02, duration: 0.2 }}
-                    className="hover:bg-gradient-to-r hover:from-stone-50 hover:to-transparent transition-all group"
+                    className="hover:bg-stone-50 transition-colors"
                   >
                     {(tabType === 'pending' || tabType === 'validated') && (
-                      <td className="p-3 md:p-4 text-center">
+                      <td className="p-3 text-center">
                         <Checkbox
                           checked={!!selectedCommissions.find(c => c.id === commission.id)}
                           onCheckedChange={() => handleToggleSelection(commission)}
                         />
                       </td>
                     )}
-                    <td className="p-3 md:p-4">
-                      <span className="font-semibold text-stone-900">{commission.sold_trip_name || '-'}</span>
+                    <td className="p-3">
+                      <span className="font-medium text-stone-800">{commission.sold_trip_name || '-'}</span>
                       {commission.estimated_payment_date && (
                         <p className="text-xs text-stone-500 mt-0.5">
                           Pago est: {format(parseLocalDate(commission.estimated_payment_date), 'd MMM yy', { locale: es })}
                         </p>
                       )}
                     </td>
-                    <td className="p-3 md:p-4 text-stone-700">{commission.service_provider || '-'}</td>
-                    <td className="p-3 md:p-4">
-                      <Badge variant="outline" className="text-xs font-medium bg-blue-50 text-blue-700 border-blue-200">
+                    <td className="p-3 text-stone-700">{commission.service_provider || '-'}</td>
+                    <td className="p-3">
+                      <Badge variant="outline" className="text-xs">
                         {IATA_LABELS[commission.iata_used] || commission.iata_used}
                       </Badge>
                     </td>
-                    <td className="p-3 md:p-4">
+                    <td className="p-3">
                       <Select
                         value={commission.status}
                         onValueChange={(value) => handleUpdateStatus(commission, value)}
                       >
-                        <SelectTrigger className="w-36 h-9 text-xs rounded-lg border-2 shadow-sm font-semibold">
+                        <SelectTrigger className="w-36 h-8 text-xs rounded-lg">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -608,7 +571,7 @@ export default function InternalCommissions() {
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="p-3 md:p-4 text-right">
+                    <td className="p-3 text-right">
                       <Input
                         type="number"
                         defaultValue={commission.estimated_amount || 0}
@@ -621,22 +584,22 @@ export default function InternalCommissions() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') e.target.blur();
                         }}
-                        className="w-28 text-right font-bold rounded-lg h-9 text-stone-900 shadow-sm"
+                        className="w-28 text-right font-semibold rounded-lg h-8 text-xs"
                       />
                     </td>
-                    <td className="p-3 md:p-4 text-right font-bold text-emerald-600 text-base">
+                    <td className="p-3 text-right font-semibold text-green-600">
                       ${(commission.agent_commission || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 md:p-4 text-right font-bold text-purple-600 text-base">
+                    <td className="p-3 text-right font-semibold text-purple-600">
                       ${(commission.nomad_commission || 0).toLocaleString()}
                     </td>
-                    <td className="p-3 md:p-4">
+                    <td className="p-3">
                       <div className="flex gap-2 justify-center">
                         {commission.source === 'internal' && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-9 w-9 rounded-lg hover:bg-blue-50 hover:text-blue-600"
+                            className="h-8 w-8"
                             onClick={() => {
                               setEditingCommission(commission);
                               setFormOpen(true);
@@ -648,14 +611,14 @@ export default function InternalCommissions() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700"
+                          className="h-8 w-8 text-red-500 hover:text-red-700"
                           onClick={() => setDeleteConfirm(commission)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -667,67 +630,47 @@ export default function InternalCommissions() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="h-10 bg-stone-200 rounded-lg w-64 animate-pulse"></div>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-28 bg-stone-200 rounded-xl animate-pulse"></div>
-          ))}
-        </div>
-        <div className="bg-white rounded-xl overflow-hidden">
-          <TableSkeleton />
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#2E442A' }} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-stone-900">Comisiones Internas</h1>
-          <p className="text-sm md:text-base text-stone-500 mt-1">
+          <h1 className="text-2xl font-bold text-stone-800">Comisiones Internas</h1>
+          <p className="text-stone-500 text-sm mt-1">
             Control de comisiones por agente • {filteredCommissions.length} comisión{filteredCommissions.length !== 1 ? 'es' : ''}
             {hasActiveFilters && ' (filtradas)'}
           </p>
         </div>
         <Button
           onClick={() => { setEditingCommission(null); setFormOpen(true); }}
-          className="text-white rounded-xl shadow-md hover:shadow-lg transition-all bg-emerald-600 hover:bg-emerald-700"
+          className="text-white rounded-xl"
+          style={{ backgroundColor: '#2E442A' }}
         >
           <Plus className="w-4 h-4 mr-2" /> Nueva Comisión
         </Button>
-      </motion.div>
+      </div>
 
       {/* Commissions Pending Validation Alert */}
       {commissionsToValidate.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-4 md:p-5 shadow-lg"
-        >
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 shadow-sm">
           <div className="flex items-start gap-3">
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            >
-              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-            </motion.div>
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-bold text-amber-900 text-base md:text-lg">
-                  ⚠️ Comisiones Pendientes de Validar Pago a Agencia
+                <h3 className="font-bold text-amber-900 text-sm">
+                  Comisiones Pendientes de Validar Pago a Agencia
                 </h3>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setActiveTab('validated')}
-                  className="ml-4 border-amber-400 text-amber-700 hover:bg-amber-100 rounded-xl shadow-sm"
+                  className="ml-4 border-amber-400 text-amber-700 hover:bg-amber-100 rounded-xl"
                 >
                   Ver Pagado a agencia
                 </Button>
@@ -752,34 +695,34 @@ export default function InternalCommissions() {
                   })();
 
                   return (
-                    <div key={service.id} className="bg-white rounded-xl p-3 md:p-4 border-2 border-amber-300 hover:border-amber-400 hover:shadow-md transition-all">
+                    <div key={service.id} className="bg-white rounded-xl p-3 border border-amber-200 hover:border-amber-300 transition-colors">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <p className="font-bold text-stone-900">{trip?.client_name || 'Sin cliente'}</p>
-                            <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300 font-semibold">
+                            <p className="font-semibold text-stone-900">{trip?.client_name || 'Sin cliente'}</p>
+                            <Badge variant="outline" className="text-xs">
                               {agent?.full_name || 'Sin agente'}
                             </Badge>
                           </div>
-                          <p className="text-sm text-stone-700 mb-1">{serviceName} • {trip?.destination}</p>
+                          <p className="text-sm text-stone-700">{serviceName} • {trip?.destination}</p>
                           {service.paid_to_agency_date && (
-                            <p className="text-xs text-amber-700 font-medium">
+                            <p className="text-xs text-stone-500 mt-1">
                               Marcado: {format(parseLocalDate(service.paid_to_agency_date), 'd MMM yyyy', { locale: es })}
                             </p>
                           )}
                         </div>
                         <div className="text-right flex items-center gap-3 flex-shrink-0">
                           <div>
-                            <p className="text-lg md:text-xl font-black text-amber-700">
+                            <p className="text-lg font-bold text-green-600">
                               ${(service.commission || 0).toLocaleString()}
                             </p>
-                            <p className="text-xs text-stone-500 font-medium">comisión</p>
                           </div>
                           <Button
                             size="sm"
                             onClick={() => handleConfirmPayment(service)}
                             disabled={updateTripServiceMutation.isPending}
-                            className="bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all"
+                            className="text-white rounded-xl"
+                            style={{ backgroundColor: '#2E442A' }}
                           >
                             {updateTripServiceMutation.isPending ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -795,130 +738,96 @@ export default function InternalCommissions() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-        <StatsCard
-          title="Pendientes"
-          value={`$${globalStats.pendingAmount.toLocaleString()}`}
-          subtitle={`${globalStats.pendingCount} comisión${globalStats.pendingCount !== 1 ? 'es' : ''}`}
-          icon={Clock}
-          gradient="from-amber-500 via-orange-500 to-red-500"
-          index={0}
-        />
-        <StatsCard
-          title="Pagado a agencia"
-          value={`$${globalStats.validatedAmount.toLocaleString()}`}
-          subtitle={`${globalStats.validatedCount} comisión${globalStats.validatedCount !== 1 ? 'es' : ''}`}
-          icon={DollarSign}
-          gradient="from-blue-500 via-blue-600 to-indigo-600"
-          index={1}
-        />
-        <StatsCard
-          title="Pagadas a Agentes"
-          value={`$${globalStats.paidAmount.toLocaleString()}`}
-          subtitle={`${globalStats.paidCount} comisión${globalStats.paidCount !== 1 ? 'es' : ''}`}
-          icon={CheckCircle}
-          gradient="from-emerald-500 via-green-600 to-teal-600"
-          index={2}
-        />
-        <StatsCard
-          title="Total Agentes"
-          value={`$${globalStats.totalAgentCommission.toLocaleString()}`}
-          subtitle="Suma total"
-          icon={Users}
-          gradient="from-slate-700 via-slate-800 to-slate-900"
-          index={3}
-        />
-        <StatsCard
-          title="Total Nomad"
-          value={`$${globalStats.totalNomadCommission.toLocaleString()}`}
-          subtitle="Suma total"
-          icon={TrendingUp}
-          gradient="from-purple-500 via-purple-600 to-indigo-600"
-          index={4}
-        />
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Pendientes</p>
+          <p className="text-xl font-bold text-orange-600">${globalStats.pendingAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.pendingCount} comisión{globalStats.pendingCount !== 1 ? 'es' : ''}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Pagado a agencia</p>
+          <p className="text-xl font-bold text-blue-600">${globalStats.validatedAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.validatedCount} comisión{globalStats.validatedCount !== 1 ? 'es' : ''}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Pagadas a Agentes</p>
+          <p className="text-xl font-bold text-green-600">${globalStats.paidAmount.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">{globalStats.paidCount} comisión{globalStats.paidCount !== 1 ? 'es' : ''}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Total Agentes</p>
+          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${globalStats.totalAgentCommission.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">Suma total</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
+          <p className="text-xs text-stone-400">Total Nomad</p>
+          <p className="text-xl font-bold text-purple-600">${globalStats.totalNomadCommission.toLocaleString()}</p>
+          <p className="text-xs text-stone-400">Suma total</p>
+        </div>
       </div>
 
       {/* Filters */}
-      <Card className="p-4 md:p-5 bg-gradient-to-br from-stone-50 to-white border border-stone-200">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter className="w-4 h-4 text-stone-500" />
-          <h3 className="font-bold text-stone-900">Filtros</h3>
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="ml-auto text-xs h-7 rounded-lg"
-            >
-              <X className="w-3 h-3 mr-1" />
-              Limpiar
-            </Button>
-          )}
+      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+          <Input
+            placeholder="Buscar por agente, viaje o proveedor..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 rounded-xl"
+          />
         </div>
-        <div className="flex flex-col md:flex-row gap-2 md:gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-            <Input
-              placeholder="Buscar por agente, viaje o proveedor..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 rounded-xl"
-            />
-          </div>
-          <Select value={filterAgent} onValueChange={setFilterAgent}>
-            <SelectTrigger className="w-full md:w-48 rounded-xl">
-              <SelectValue placeholder="Todos los agentes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los agentes</SelectItem>
-              {uniqueAgents.map(agent => (
-                <SelectItem key={agent} value={agent}>{agent}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-stone-400 flex-shrink-0" />
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full md:w-40 rounded-xl"
-              placeholder="Desde"
-            />
-            <span className="text-stone-400">-</span>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-full md:w-40 rounded-xl"
-              placeholder="Hasta"
-            />
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-            className="rounded-xl w-full md:w-auto"
-          >
-            <ArrowUpDown className="w-4 h-4 mr-2" />
-            {sortOrder === 'asc' ? 'Más cercanas' : 'Más lejanas'}
-          </Button>
+        <Select value={filterAgent} onValueChange={setFilterAgent}>
+          <SelectTrigger className="w-40 rounded-xl">
+            <SelectValue placeholder="Agente" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            {uniqueAgents.map(agent => (
+              <SelectItem key={agent} value={agent}>{agent}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-stone-400" />
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-36 rounded-xl"
+          />
+          <span className="text-stone-400">-</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-36 rounded-xl"
+          />
         </div>
-      </Card>
+        <Button
+          variant="outline"
+          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+          className="rounded-xl"
+        >
+          <ArrowUpDown className="w-4 h-4 mr-2" />
+          {sortOrder === 'asc' ? 'Más cercanas' : 'Más lejanas'}
+        </Button>
+      </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-gradient-to-r from-stone-100 to-stone-50 rounded-xl p-1 grid grid-cols-3 w-full">
-          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+        <TabsList className="bg-stone-100 rounded-xl p-1">
+          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white">
             <Clock className="w-4 h-4 mr-2" /> Pendientes ({pendingCommissions.length})
           </TabsTrigger>
-          <TabsTrigger value="validated" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+          <TabsTrigger value="validated" className="rounded-lg data-[state=active]:bg-white">
             <DollarSign className="w-4 h-4 mr-2" /> Pagado a agencia ({validatedCommissions.length})
           </TabsTrigger>
-          <TabsTrigger value="paid" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md">
+          <TabsTrigger value="paid" className="rounded-lg data-[state=active]:bg-white">
             <CheckCircle className="w-4 h-4 mr-2" /> Pagadas ({paidCommissions.length})
           </TabsTrigger>
         </TabsList>
@@ -926,20 +835,21 @@ export default function InternalCommissions() {
         {/* Pending Commissions */}
         <TabsContent value="pending" className="mt-4 space-y-4">
           {selectedCommissions.length > 0 && (
-            <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 shadow-md">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-blue-900 font-semibold">
-                  <span className="font-black">{selectedCommissions.length}</span> comisión{selectedCommissions.length !== 1 ? 'es' : ''} seleccionada{selectedCommissions.length !== 1 ? 's' : ''}
-                  • Total: <span className="font-black">${selectedCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0).toLocaleString()}</span>
+                <p className="text-sm text-stone-700 font-medium">
+                  {selectedCommissions.length} comisión{selectedCommissions.length !== 1 ? 'es' : ''} seleccionada{selectedCommissions.length !== 1 ? 's' : ''}
+                  • Total: <span className="font-bold">${selectedCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0).toLocaleString()}</span>
                 </p>
                 <Button
                   onClick={handleGenerateInvoice}
-                  className="text-white rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all"
+                  className="text-white rounded-xl"
+                  style={{ backgroundColor: '#2E442A' }}
                 >
                   Generar Invoice
                 </Button>
               </div>
-            </Card>
+            </div>
           )}
           {renderCommissionsTable(getCommissionsByAgent(pendingCommissions), 'pending')}
         </TabsContent>
@@ -947,20 +857,21 @@ export default function InternalCommissions() {
         {/* Validated Commissions */}
         <TabsContent value="validated" className="mt-4 space-y-4">
           {selectedCommissions.length > 0 && (
-            <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 shadow-md">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-blue-900 font-semibold">
-                  <span className="font-black">{selectedCommissions.length}</span> comisión{selectedCommissions.length !== 1 ? 'es' : ''} seleccionada{selectedCommissions.length !== 1 ? 's' : ''}
-                  • Total: <span className="font-black">${selectedCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0).toLocaleString()}</span>
+                <p className="text-sm text-stone-700 font-medium">
+                  {selectedCommissions.length} comisión{selectedCommissions.length !== 1 ? 'es' : ''} seleccionada{selectedCommissions.length !== 1 ? 's' : ''}
+                  • Total: <span className="font-bold">${selectedCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0).toLocaleString()}</span>
                 </p>
                 <Button
                   onClick={handleGenerateInvoice}
-                  className="text-white rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all"
+                  className="text-white rounded-xl"
+                  style={{ backgroundColor: '#2E442A' }}
                 >
                   Generar Invoice
                 </Button>
               </div>
-            </Card>
+            </div>
           )}
           {renderCommissionsTable(getCommissionsByAgent(validatedCommissions), 'validated')}
         </TabsContent>
