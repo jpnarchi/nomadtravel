@@ -203,7 +203,7 @@ const ExchangeRateWidget = memo(({ collapsed, onPaymentInfoClick, onCommissionIn
       </div>
 
       {/* Botones Compactos con Dropdown Style */}
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 ">
         <button
           onClick={onPaymentInfoClick}
           className="w-full text-xs font-medium py-2 px-3 rounded-lg transition-all duration-200 text-stone-700 bg-stone-100/60 hover:bg-stone-100 active:scale-98 flex items-center justify-between group"
@@ -217,7 +217,7 @@ const ExchangeRateWidget = memo(({ collapsed, onPaymentInfoClick, onCommissionIn
           className="w-full text-xs font-medium py-2 px-3 rounded-lg transition-all duration-200 text-stone-700 bg-stone-100/60 hover:bg-stone-100 active:scale-98 flex items-center justify-between group"
         >
           <span>Info Comisiones</span>
-          <CreditCard className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-colors" />
+          <CreditCard className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-colors " />
         </button>
       </div>
     </div>
@@ -347,7 +347,7 @@ export default function Layout({ children, currentPageName }) {
   }, [sidebarOpen, handleCollapsedToggle, handleSidebarClose]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-100/30 to-stone-50" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div className="min-h-screen bg-white" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <style>
         {`
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -562,7 +562,7 @@ export default function Layout({ children, currentPageName }) {
 
             {/* Admin View Mode Switch - Compacto */}
             {isActualAdmin && !sidebarCollapsed && (
-              <div className="mt-4 p-3 rounded-xl shadow-sm relative overflow-hidden"
+              <div className="mt-4 p-3 rounded-xl shadow-sm relative overflow-hidden "
                    style={{
                      background: viewMode === 'admin'
                        ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(79, 70, 229, 0.08) 100%)'
@@ -612,9 +612,9 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Search Bar */}
           {!sidebarCollapsed && (
-            <div className="px-5 pt-4 pb-2">
+            <div className="px-5 pt-2 pb-2 ">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 " />
                 <input
                   type="text"
                   placeholder="Buscar página..."

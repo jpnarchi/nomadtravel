@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
-import { 
-  Loader2, Search, CreditCard, Calendar, ArrowUpDown, Users, Clock, CheckCircle, Edit2, Trash2
+import { motion } from 'framer-motion';
+import {
+  Loader2, Search, CreditCard, Calendar, ArrowUpDown, Users, Clock, CheckCircle, Edit2, Trash2,
+  DollarSign, TrendingUp, X, Filter
 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,6 +42,53 @@ const PAYMENT_METHOD_LABELS = {
   tarjeta: 'Tarjeta',
   otro: 'Otro'
 };
+
+// Loading Skeleton
+const TableSkeleton = memo(() => (
+  <div className="space-y-3 p-4">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="flex gap-4 animate-pulse">
+        <div className="h-14 bg-stone-200 rounded-xl flex-1"></div>
+        <div className="h-14 bg-stone-200 rounded-xl w-32"></div>
+        <div className="h-14 bg-stone-200 rounded-xl w-24"></div>
+      </div>
+    ))}
+  </div>
+));
+
+TableSkeleton.displayName = 'TableSkeleton';
+
+// Modern Stats Card Component
+const StatsCard = memo(({ title, value, subtitle, icon: Icon, gradient, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    transition={{ delay: index * 0.05, duration: 0.3, type: "spring" }}
+    whileHover={{ y: -5, scale: 1.02 }}
+  >
+    <Card className={`relative overflow-hidden group cursor-pointer bg-gradient-to-br ${gradient} p-3 md:p-4 shadow-lg hover:shadow-2xl transition-all duration-300 min-h-[90px] md:min-h-[110px]`}>
+      {/* Background decoration */}
+      <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all" />
+
+      <div className="relative z-10 h-full flex flex-col">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] md:text-xs font-bold text-white/90 uppercase tracking-wide line-clamp-1">{title}</p>
+          <motion.div
+            whileHover={{ rotate: 360 }}
+            transition={{ duration: 0.6 }}
+            className="w-7 h-7 md:w-8 md:h-8 bg-white/20 rounded-lg flex items-center justify-center shadow-lg backdrop-blur-sm flex-shrink-0"
+          >
+            <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
+          </motion.div>
+        </div>
+        <p className="text-base md:text-lg lg:text-xl font-black text-white mb-1 break-all leading-none">{value}</p>
+        {subtitle && <p className="text-[10px] md:text-xs text-white/80 font-semibold line-clamp-1 mt-auto">{subtitle}</p>}
+      </div>
+    </Card>
+  </motion.div>
+));
+
+StatsCard.displayName = 'StatsCard';
 
 export default function InternalPayments() {
   const [search, setSearch] = useState('');
@@ -80,7 +130,7 @@ export default function InternalPayments() {
       }
       await queryClient.invalidateQueries({ queryKey: ['allSupplierPayments'] });
       setEditingPayment(null);
-      toast.success('Pago actualizado');
+      toast.success('Pago actualizado correctamente');
     }
   });
 
@@ -92,70 +142,80 @@ export default function InternalPayments() {
       }
       await queryClient.invalidateQueries({ queryKey: ['allSupplierPayments'] });
       setDeleteConfirm(null);
-      toast.success('Pago eliminado');
+      toast.success('Pago eliminado correctamente');
     }
   });
 
   // Create trips map for quick lookup
-  const tripsMap = soldTrips.reduce((acc, trip) => {
+  const tripsMap = useMemo(() => soldTrips.reduce((acc, trip) => {
     acc[trip.id] = trip;
     return acc;
-  }, {});
+  }, {}), [soldTrips]);
 
   // Enrich payments with trip and agent info
-  // Exclude payments made with 'tarjeta_cliente' from internal payments view
-  const enrichedPayments = supplierPayments
-    .filter(payment => payment.method !== 'tarjeta_cliente')
-    .map(payment => {
-    const trip = tripsMap[payment.sold_trip_id];
-    const agentEmail = trip?.created_by || '';
-    const agent = users.find(u => u.email === agentEmail);
-    
-    return {
-      ...payment,
-      trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje',
-      agent_name: agent?.full_name || agentEmail || 'Sin asignar',
-      agent_email: agentEmail
-    };
-  });
+  const enrichedPayments = useMemo(() =>
+    supplierPayments
+      .filter(payment => payment.method !== 'tarjeta_cliente')
+      .map(payment => {
+        const trip = tripsMap[payment.sold_trip_id];
+        const agentEmail = trip?.created_by || '';
+        const agent = users.find(u => u.email === agentEmail);
 
-  // Get unique agents
-  const uniqueAgents = [...new Set(enrichedPayments.map(p => p.agent_name))].filter(Boolean);
+        return {
+          ...payment,
+          trip_name: trip ? `${trip.client_name} - ${trip.destination}` : 'Viaje',
+          agent_name: agent?.full_name || agentEmail || 'Sin asignar',
+          agent_email: agentEmail
+        };
+      }),
+    [supplierPayments, tripsMap, users]
+  );
 
-  // Get unique payment methods
-  const uniqueMethods = [...new Set(supplierPayments.map(p => p.method))].filter(Boolean);
+  // Get unique agents and methods
+  const uniqueAgents = useMemo(() =>
+    [...new Set(enrichedPayments.map(p => p.agent_name))].filter(Boolean),
+    [enrichedPayments]
+  );
+
+  const uniqueMethods = useMemo(() =>
+    [...new Set(supplierPayments.map(p => p.method))].filter(Boolean),
+    [supplierPayments]
+  );
 
   // Filter and sort payments
-  const filteredPayments = enrichedPayments
-    .filter(p => {
-      const matchesSearch = 
-        (p.supplier || '').toLowerCase().includes(search.toLowerCase()) ||
-        (p.trip_name || '').toLowerCase().includes(search.toLowerCase()) ||
-        (p.agent_name || '').toLowerCase().includes(search.toLowerCase());
-      const matchesAgent = filterAgent === 'all' || p.agent_name === filterAgent;
-      const matchesMethod = filterMethod === 'all' || p.method === filterMethod;
-      
-      const paymentDate = p.date ? new Date(p.date) : null;
-      const matchesDateFrom = !dateFrom || (paymentDate && paymentDate >= new Date(dateFrom));
-      const matchesDateTo = !dateTo || (paymentDate && paymentDate <= new Date(dateTo));
-      
-      return matchesSearch && matchesAgent && matchesMethod && matchesDateFrom && matchesDateTo;
-    })
-    .sort((a, b) => {
-      const dateA = a.date ? new Date(a.date) : new Date(0);
-      const dateB = b.date ? new Date(b.date) : new Date(0);
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
+  const filteredPayments = useMemo(() =>
+    enrichedPayments
+      .filter(p => {
+        const matchesSearch =
+          (p.supplier || '').toLowerCase().includes(search.toLowerCase()) ||
+          (p.trip_name || '').toLowerCase().includes(search.toLowerCase()) ||
+          (p.agent_name || '').toLowerCase().includes(search.toLowerCase());
+        const matchesAgent = filterAgent === 'all' || p.agent_name === filterAgent;
+        const matchesMethod = filterMethod === 'all' || p.method === filterMethod;
 
-  // Split by status (pending, confirmed, paid)
-  const pendingPayments = filteredPayments.filter(p => !p.confirmed && !p.paid);
-  const confirmedPayments = filteredPayments.filter(p => p.confirmed && !p.paid);
-  const paidPayments = filteredPayments.filter(p => p.paid);
+        const paymentDate = p.date ? new Date(p.date) : null;
+        const matchesDateFrom = !dateFrom || (paymentDate && paymentDate >= new Date(dateFrom));
+        const matchesDateTo = !dateTo || (paymentDate && paymentDate <= new Date(dateTo));
+
+        return matchesSearch && matchesAgent && matchesMethod && matchesDateFrom && matchesDateTo;
+      })
+      .sort((a, b) => {
+        const dateA = a.date ? new Date(a.date) : new Date(0);
+        const dateB = b.date ? new Date(b.date) : new Date(0);
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      }),
+    [enrichedPayments, search, filterAgent, filterMethod, dateFrom, dateTo, sortOrder]
+  );
+
+  // Split by status
+  const pendingPayments = useMemo(() => filteredPayments.filter(p => !p.confirmed && !p.paid), [filteredPayments]);
+  const confirmedPayments = useMemo(() => filteredPayments.filter(p => p.confirmed && !p.paid), [filteredPayments]);
+  const paidPayments = useMemo(() => filteredPayments.filter(p => p.paid), [filteredPayments]);
 
   // Calculate totals
-  const totalPending = pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const totalConfirmed = confirmedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const totalPaid = paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalPending = useMemo(() => pendingPayments.reduce((sum, p) => sum + (p.amount || 0), 0), [pendingPayments]);
+  const totalConfirmed = useMemo(() => confirmedPayments.reduce((sum, p) => sum + (p.amount || 0), 0), [confirmedPayments]);
+  const totalPaid = useMemo(() => paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0), [paidPayments]);
 
   const handleStatusChange = (payment, status) => {
     const updates = {
@@ -165,119 +225,179 @@ export default function InternalPayments() {
     updatePaymentMutation.mutate({ id: payment.id, data: updates });
   };
 
+  const hasActiveFilters = search || filterAgent !== 'all' || filterMethod !== 'all' || dateFrom || dateTo;
+
+  const clearFilters = () => {
+    setSearch('');
+    setFilterAgent('all');
+    setFilterMethod('all');
+    setDateFrom('');
+    setDateTo('');
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#2E442A' }} />
+      <div className="space-y-6">
+        <div className="h-10 bg-stone-200 rounded-lg w-64 animate-pulse"></div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-28 bg-stone-200 rounded-xl animate-pulse"></div>
+          ))}
+        </div>
+        <div className="bg-white rounded-xl overflow-hidden">
+          <TableSkeleton />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-stone-800">Pagos Internos</h1>
-        <p className="text-stone-500 text-sm mt-1">Registro de pagos a proveedores por todos los agentes</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="text-2xl md:text-3xl font-bold text-stone-900">Pagos Internos</h1>
+        <p className="text-sm md:text-base text-stone-500 mt-1">
+          Registro completo de pagos a proveedores • {filteredPayments.length} pago{filteredPayments.length !== 1 ? 's' : ''}
+          {hasActiveFilters && ' (filtrados)'}
+        </p>
+      </motion.div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagos Hechos</p>
-          <p className="text-xl font-bold text-orange-600">${totalPending.toLocaleString()}</p>
-          <p className="text-xs text-stone-400">{pendingPayments.length} pagos</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagos Confirmados</p>
-          <p className="text-xl font-bold text-blue-600">${totalConfirmed.toLocaleString()}</p>
-          <p className="text-xs text-stone-400">{confirmedPayments.length} pagos</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Pagado</p>
-          <p className="text-xl font-bold text-green-600">${totalPaid.toLocaleString()}</p>
-          <p className="text-xs text-stone-400">{paidPayments.length} pagos</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Total Pagos</p>
-          <p className="text-xl font-bold" style={{ color: '#2E442A' }}>${(totalPending + totalConfirmed + totalPaid).toLocaleString()}</p>
-        </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-100">
-          <p className="text-xs text-stone-400">Agentes Activos</p>
-          <p className="text-xl font-bold text-purple-600">{uniqueAgents.length}</p>
-        </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+        <StatsCard
+          title="Pagos Hechos"
+          value={`$${totalPending.toLocaleString()}`}
+          subtitle={`${pendingPayments.length} pago${pendingPayments.length !== 1 ? 's' : ''}`}
+          icon={Clock}
+          gradient="from-orange-500 via-orange-600 to-red-500"
+          index={0}
+        />
+        <StatsCard
+          title="Confirmados"
+          value={`$${totalConfirmed.toLocaleString()}`}
+          subtitle={`${confirmedPayments.length} pago${confirmedPayments.length !== 1 ? 's' : ''}`}
+          icon={CheckCircle}
+          gradient="from-blue-500 via-blue-600 to-indigo-600"
+          index={1}
+        />
+        <StatsCard
+          title="Pagado"
+          value={`$${totalPaid.toLocaleString()}`}
+          subtitle={`${paidPayments.length} pago${paidPayments.length !== 1 ? 's' : ''}`}
+          icon={CheckCircle}
+          gradient="from-emerald-500 via-green-600 to-teal-600"
+          index={2}
+        />
+        <StatsCard
+          title="Total Pagos"
+          value={`$${(totalPending + totalConfirmed + totalPaid).toLocaleString()}`}
+          subtitle="Suma total"
+          icon={DollarSign}
+          gradient="from-slate-700 via-slate-800 to-slate-900"
+          index={3}
+        />
+        <StatsCard
+          title="Agentes"
+          value={uniqueAgents.length}
+          subtitle="Agentes activos"
+          icon={Users}
+          gradient="from-purple-500 via-purple-600 to-indigo-600"
+          index={4}
+        />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-          <Input
-            placeholder="Buscar por proveedor, viaje o agente..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 rounded-xl"
-          />
+      <Card className="p-4 md:p-5 bg-gradient-to-br from-stone-50 to-white border border-stone-200">
+        <div className="flex items-center gap-2 mb-3">
+          <Filter className="w-4 h-4 text-stone-500" />
+          <h3 className="font-bold text-stone-900">Filtros</h3>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="ml-auto text-xs h-7 rounded-lg"
+            >
+              <X className="w-3 h-3 mr-1" />
+              Limpiar
+            </Button>
+          )}
         </div>
-        <Select value={filterAgent} onValueChange={setFilterAgent}>
-          <SelectTrigger className="w-40 rounded-xl">
-            <SelectValue placeholder="Agente" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {uniqueAgents.map(agent => (
-              <SelectItem key={agent} value={agent}>{agent}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterMethod} onValueChange={setFilterMethod}>
-          <SelectTrigger className="w-44 rounded-xl">
-            <SelectValue placeholder="Método" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {uniqueMethods.map(method => (
-              <SelectItem key={method} value={method}>{PAYMENT_METHOD_LABELS[method] || method}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-stone-400" />
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="w-36 rounded-xl"
-          />
-          <span className="text-stone-400">-</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="w-36 rounded-xl"
-          />
+        <div className="flex flex-col md:flex-row gap-2 md:gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+            <Input
+              placeholder="Buscar por proveedor, viaje o agente..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 rounded-xl"
+            />
+          </div>
+          <Select value={filterAgent} onValueChange={setFilterAgent}>
+            <SelectTrigger className="w-full md:w-48 rounded-xl">
+              <SelectValue placeholder="Todos los agentes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los agentes</SelectItem>
+              {uniqueAgents.map(agent => (
+                <SelectItem key={agent} value={agent}>{agent}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterMethod} onValueChange={setFilterMethod}>
+            <SelectTrigger className="w-full md:w-52 rounded-xl">
+              <SelectValue placeholder="Todos los métodos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los métodos</SelectItem>
+              {uniqueMethods.map(method => (
+                <SelectItem key={method} value={method}>{PAYMENT_METHOD_LABELS[method] || method}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-stone-400 flex-shrink-0" />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full md:w-40 rounded-xl"
+              placeholder="Desde"
+            />
+            <span className="text-stone-400">-</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full md:w-40 rounded-xl"
+              placeholder="Hasta"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            className="rounded-xl w-full md:w-auto"
+          >
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            {sortOrder === 'asc' ? 'Más antiguas' : 'Más recientes'}
+          </Button>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-          className="rounded-xl"
-        >
-          <ArrowUpDown className="w-4 h-4 mr-2" />
-          {sortOrder === 'asc' ? 'Más antiguas' : 'Más recientes'}
-        </Button>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-stone-100 rounded-xl p-1">
-          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white">
-            <Clock className="w-4 h-4 mr-2" /> Pagos Hechos ({pendingPayments.length})
+        <TabsList className="bg-gradient-to-r from-stone-100 to-stone-50 rounded-xl p-1 w-full md:w-auto">
+          <TabsTrigger value="pending" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md flex-1 md:flex-initial">
+            <Clock className="w-4 h-4 mr-2" /> Hechos ({pendingPayments.length})
           </TabsTrigger>
-          <TabsTrigger value="confirmed" className="rounded-lg data-[state=active]:bg-white">
-            <CheckCircle className="w-4 h-4 mr-2" /> Pagos Confirmados ({confirmedPayments.length})
+          <TabsTrigger value="confirmed" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md flex-1 md:flex-initial">
+            <CheckCircle className="w-4 h-4 mr-2" /> Confirmados ({confirmedPayments.length})
           </TabsTrigger>
-          <TabsTrigger value="paid" className="rounded-lg data-[state=active]:bg-white">
-            <CheckCircle className="w-4 h-4 mr-2" /> Pagado ({paidPayments.length})
+          <TabsTrigger value="paid" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-md flex-1 md:flex-initial">
+            <TrendingUp className="w-4 h-4 mr-2" /> Pagados ({paidPayments.length})
           </TabsTrigger>
         </TabsList>
 
@@ -296,7 +416,7 @@ export default function InternalPayments() {
 
       {/* Edit Payment Dialog */}
       <Dialog open={!!editingPayment} onOpenChange={() => setEditingPayment(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Editar Pago a Proveedor</DialogTitle>
           </DialogHeader>
@@ -378,11 +498,10 @@ export default function InternalPayments() {
             <Button
               onClick={() => updatePaymentMutation.mutate({ id: editingPayment.id, data: editFormData })}
               disabled={updatePaymentMutation.isPending}
-              className="rounded-xl text-white"
-              style={{ backgroundColor: '#2E442A' }}
+              className="rounded-xl text-white bg-emerald-600 hover:bg-emerald-700"
             >
               {updatePaymentMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Guardar
+              Guardar Cambios
             </Button>
           </div>
         </DialogContent>
@@ -398,12 +517,12 @@ export default function InternalPayments() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletePaymentMutation.mutate({ id: deleteConfirm.id, sold_trip_id: deleteConfirm.sold_trip_id })}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 rounded-xl"
             >
-              Eliminar
+              Eliminar Pago
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -429,61 +548,67 @@ export default function InternalPayments() {
     }
 
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow border border-stone-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 border-b border-stone-100">
+            <thead className="bg-gradient-to-r from-stone-50 to-stone-100 border-b-2 border-stone-200">
               <tr>
-                <th className="text-left p-3 font-semibold text-stone-600">Fecha</th>
-                <th className="text-left p-3 font-semibold text-stone-600">Agente</th>
-                <th className="text-left p-3 font-semibold text-stone-600">Viaje</th>
-                <th className="text-left p-3 font-semibold text-stone-600">Proveedor</th>
-                <th className="text-left p-3 font-semibold text-stone-600">Método</th>
-                <th className="text-right p-3 font-semibold text-stone-600">Monto</th>
-                <th className="text-center p-3 font-semibold text-stone-600">Estatus</th>
-                <th className="text-center p-3 font-semibold text-stone-600">Acciones</th>
+                <th className="text-left p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Fecha</th>
+                <th className="text-left p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Agente</th>
+                <th className="text-left p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Viaje</th>
+                <th className="text-left p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Proveedor</th>
+                <th className="text-left p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Método</th>
+                <th className="text-right p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Monto</th>
+                <th className="text-center p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Estatus</th>
+                <th className="text-center p-4 font-bold text-stone-700 text-xs uppercase tracking-wide">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {payments.map((payment) => (
-                <tr key={payment.id} className="hover:bg-stone-50 transition-colors">
-                  <td className="p-3">
-                    <span className="font-medium text-stone-800">
-                      {payment.date 
+              {payments.map((payment, idx) => (
+                <motion.tr
+                  key={payment.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.02, duration: 0.2 }}
+                  className="hover:bg-gradient-to-r hover:from-stone-50 hover:to-transparent transition-all group"
+                >
+                  <td className="p-4">
+                    <span className="font-semibold text-stone-800">
+                      {payment.date
                         ? format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })
                         : '-'}
                     </span>
                   </td>
-                  <td className="p-3">
+                  <td className="p-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#2E442A15' }}>
-                        <Users className="w-3.5 h-3.5" style={{ color: '#2E442A' }} />
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-emerald-100 shadow-sm">
+                        <Users className="w-4 h-4 text-emerald-600" />
                       </div>
-                      <span className="text-stone-700">{payment.agent_name}</span>
+                      <span className="text-stone-700 font-medium">{payment.agent_name}</span>
                     </div>
                   </td>
-                  <td className="p-3">
+                  <td className="p-4">
                     <span className="text-stone-700">{payment.trip_name}</span>
                   </td>
-                  <td className="p-3">
-                    <span className="font-medium text-stone-800">{payment.supplier || '-'}</span>
+                  <td className="p-4">
+                    <span className="font-semibold text-stone-800">{payment.supplier || '-'}</span>
                   </td>
-                  <td className="p-3">
-                    <Badge variant="outline" className="text-xs">
+                  <td className="p-4">
+                    <Badge variant="outline" className="text-xs font-medium bg-blue-50 text-blue-700 border-blue-200">
                       {PAYMENT_METHOD_LABELS[payment.method] || payment.method}
                     </Badge>
                   </td>
-                  <td className="p-3 text-right">
-                    <span className="font-semibold" style={{ color: '#2E442A' }}>
+                  <td className="p-4 text-right">
+                    <span className="text-base font-bold text-emerald-600">
                       ${(payment.amount || 0).toLocaleString()}
                     </span>
                   </td>
-                  <td className="p-3 text-center">
+                  <td className="p-4 text-center">
                     <Select
                       value={payment.paid ? 'paid' : (payment.confirmed ? 'confirmed' : 'pending')}
                       onValueChange={(value) => handleStatusChange(payment, value)}
                     >
-                      <SelectTrigger className="w-32 h-8 text-xs rounded-lg">
+                      <SelectTrigger className="w-36 h-9 text-xs rounded-lg border-2 shadow-sm font-semibold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -493,12 +618,12 @@ export default function InternalPayments() {
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="p-3">
+                  <td className="p-4">
                     <div className="flex gap-2 justify-center">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9 rounded-lg hover:bg-blue-50 hover:text-blue-600"
                         onClick={() => {
                           setEditingPayment(payment);
                           setEditFormData({
@@ -516,23 +641,23 @@ export default function InternalPayments() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-700"
+                        className="h-9 w-9 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-700"
                         onClick={() => setDeleteConfirm(payment)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
-            <tfoot className="bg-stone-50 border-t border-stone-200">
+            <tfoot className="bg-gradient-to-r from-emerald-50 to-teal-50 border-t-2 border-emerald-200">
               <tr>
-                <td colSpan="5" className="p-3 text-right font-semibold text-stone-600">
+                <td colSpan="5" className="p-4 text-right font-bold text-stone-700 text-sm uppercase tracking-wide">
                   Total:
                 </td>
-                <td className="p-3 text-right">
-                  <span className="text-lg font-bold" style={{ color: '#2E442A' }}>
+                <td className="p-4 text-right">
+                  <span className="text-2xl font-black text-emerald-700">
                     ${total.toLocaleString()}
                   </span>
                 </td>
