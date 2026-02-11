@@ -1,30 +1,31 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import {
-                              LayoutDashboard,
-                              Users,
-                              Plane,
-                              CheckCircle,
-                              Menu,
-                              X,
-                              MapPin,
-                              DollarSign,
-                              Loader2,
-                              Building2,
-                              BarChart3,
-                              BookOpen,
-                              Key,
-                              Wallet,
-                              Lock,
-                              Eye,
-                              ShieldCheck,
-                              Upload,
-                              CreditCard,
-                              ChevronLeft,
-                              ChevronRight,
-                              Database
-                            } from 'lucide-react';
+                          LayoutDashboard,
+                          Users,
+                          Plane,
+                          CheckCircle,
+                          Menu,
+                          X,
+                          MapPin,
+                          DollarSign,
+                          Loader2,
+                          Building2,
+                          BarChart3,
+                          BookOpen,
+                          Key,
+                          Wallet,
+                          Lock,
+                          Eye,
+                          ShieldCheck,
+                          Upload,
+                          CreditCard,
+                          ChevronLeft,
+                          ChevronRight,
+                          Database,
+                          Search
+                        } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
 import CommissionInfoModal from '@/components/ui/CommissionInfoModal';
@@ -39,28 +40,108 @@ import { isAdminEmail } from '@/config/adminEmails';
 
 export const ViewModeContext = createContext({ viewMode: 'admin', isActualAdmin: false });
 
-export default function Layout({ children, currentPageName }) {
-  const { user, isLoaded: userLoaded } = useUser();
-  const { signOut } = useClerk();
+// Cache para tipo de cambio (15 minutos)
+const EXCHANGE_RATE_CACHE_KEY = 'exchange_rate_cache';
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutos
 
-  // Convert Clerk user to app user format
-  const appUser = user ? {
-    id: user.id,
-    email: user.primaryEmailAddress?.emailAddress,
-    full_name: user.fullName || user.username,
-    role: user.publicMetadata?.role || 'user',
-    custom_role: user.publicMetadata?.custom_role
-  } : null;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+// Componente memoizado para item de navegación con tooltip
+const SidebarNavItem = memo(({ item, isActive, collapsed, onClick }) => {
+  const ItemContent = (
+    <Link
+      to={createPageUrl(item.page)}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 transition-all duration-200 group relative overflow-hidden rounded-xl px-4 py-3.5",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2",
+        collapsed ? "lg:justify-center lg:px-3" : "",
+        isActive
+          ? "bg-gradient-to-r from-stone-900 to-stone-800 text-white shadow-lg shadow-stone-900/20"
+          : "text-stone-600 hover:bg-gradient-to-r hover:from-stone-100/60 hover:to-stone-200/40 hover:shadow-sm"
+      )}
+    >
+      {/* Efecto de pulso para item activo */}
+      {isActive && (
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
+      )}
+
+      <item.icon className={cn(
+        "w-5 h-5 transition-all duration-200 relative z-10 flex-shrink-0",
+        isActive
+          ? "text-white drop-shadow-sm scale-110"
+          : "text-stone-500 group-hover:text-stone-700 group-hover:scale-110"
+      )} />
+
+      {!collapsed && (
+        <span className="font-semibold text-base relative z-10 truncate">{item.name}</span>
+      )}
+
+      {/* Indicador activo */}
+      {isActive && !collapsed && (
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-l-full shadow-lg" />
+      )}
+    </Link>
+  );
+
+  // En modo collapsed, mostrar tooltip
+  if (collapsed) {
+    return (
+      <div className="hidden lg:block group relative">
+        {ItemContent}
+        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-[100] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="bg-stone-900 text-white text-sm font-medium px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
+            {item.name}
+            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-stone-900" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return ItemContent;
+});
+
+SidebarNavItem.displayName = 'SidebarNavItem';
+
+// Componente para divider
+const NavDivider = memo(({ text, collapsed }) => {
+  if (collapsed) return null;
+
+  return (
+    <div className="px-3 py-3 mt-2">
+      <div className="flex items-center gap-2">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-stone-300 to-transparent" />
+        <p className="text-xs font-bold text-stone-400 tracking-wide uppercase">{text}</p>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-stone-300 to-transparent" />
+      </div>
+    </div>
+  );
+});
+
+NavDivider.displayName = 'NavDivider';
+
+// Componente para el widget de tipo de cambio
+const ExchangeRateWidget = memo(({ collapsed, onPaymentInfoClick, onCommissionInfoClick }) => {
   const [exchangeRate, setExchangeRate] = useState(null);
   const [rateLoading, setRateLoading] = useState(true);
-  const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
-  const [commissionInfoOpen, setCommissionInfoOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('admin');
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
+      // Verificar cache
+      try {
+        const cached = localStorage.getItem(EXCHANGE_RATE_CACHE_KEY);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < CACHE_DURATION) {
+            setExchangeRate(data);
+            setRateLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Error reading cache:', e);
+      }
+
+      // Fetch nuevo
       try {
         const result = await base44.integrations.Core.InvokeLLM({
           prompt: "¿Cuál es el tipo de cambio de VENTA de dólares USD a pesos mexicanos MXN de BBVA México hoy? Solo responde con el número del tipo de cambio de venta (el precio al que BBVA vende dólares al público), nada más.",
@@ -73,60 +154,197 @@ export default function Layout({ children, currentPageName }) {
             }
           }
         });
+
         setExchangeRate(result);
+
+        // Guardar en cache
+        try {
+          localStorage.setItem(EXCHANGE_RATE_CACHE_KEY, JSON.stringify({
+            data: result,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.error('Error saving cache:', e);
+        }
       } catch (error) {
         console.error('Error fetching exchange rate:', error);
       } finally {
         setRateLoading(false);
       }
     };
+
     fetchExchangeRate();
   }, []);
 
+  if (collapsed) return null;
+
+  return (
+    <div className="mt-4 space-y-2">
+      {/* Exchange Rate Card - Compacto */}
+      <div className="elegant-card rounded-xl p-3 shadow-sm luxury-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg flex items-center justify-center relative overflow-hidden"
+                 style={{ background: 'linear-gradient(135deg, var(--nomad-green-light) 0%, var(--nomad-green) 100%)' }}>
+              <DollarSign className="w-3.5 h-3.5 text-white relative z-10" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-medium text-stone-500">USD/MXN</span>
+              {rateLoading ? (
+                <div className="h-4 w-16 bg-stone-200/50 rounded animate-pulse" />
+              ) : exchangeRate?.sell_rate ? (
+                <span className="text-base font-bold text-stone-900">${exchangeRate.sell_rate.toFixed(2)}</span>
+              ) : (
+                <span className="text-xs text-stone-400">N/A</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botones Compactos con Dropdown Style */}
+      <div className="space-y-1.5">
+        <button
+          onClick={onPaymentInfoClick}
+          className="w-full text-xs font-medium py-2 px-3 rounded-lg transition-all duration-200 text-stone-700 bg-stone-100/60 hover:bg-stone-100 active:scale-98 flex items-center justify-between group"
+        >
+          <span>Info de Pagos</span>
+          <Wallet className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-colors" />
+        </button>
+
+        <button
+          onClick={onCommissionInfoClick}
+          className="w-full text-xs font-medium py-2 px-3 rounded-lg transition-all duration-200 text-stone-700 bg-stone-100/60 hover:bg-stone-100 active:scale-98 flex items-center justify-between group"
+        >
+          <span>Info Comisiones</span>
+          <CreditCard className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-colors" />
+        </button>
+      </div>
+    </div>
+  );
+});
+
+ExchangeRateWidget.displayName = 'ExchangeRateWidget';
+
+// Componente principal
+export default function Layout({ children, currentPageName }) {
+  const { user, isLoaded: userLoaded } = useUser();
+  const { signOut } = useClerk();
+
+  // Convert Clerk user to app user format
+  const appUser = useMemo(() => user ? {
+    id: user.id,
+    email: user.primaryEmailAddress?.emailAddress,
+    full_name: user.fullName || user.username,
+    role: user.publicMetadata?.role || 'user',
+    custom_role: user.publicMetadata?.custom_role
+  } : null, [user]);
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    // Leer del localStorage
+    try {
+      const saved = localStorage.getItem('sidebar_collapsed');
+      return saved ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+  const [paymentInfoOpen, setPaymentInfoOpen] = useState(false);
+  const [commissionInfoOpen, setCommissionInfoOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('admin');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Guardar estado de collapsed en localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('sidebar_collapsed', JSON.stringify(sidebarCollapsed));
+    } catch (e) {
+      console.error('Error saving sidebar state:', e);
+    }
+  }, [sidebarCollapsed]);
+
   // Verificar si el correo del usuario está en la lista de administradores permitidos
-  const isActualAdmin = isAdminEmail(appUser?.email);
-  const isSupervisor = appUser?.custom_role === 'supervisor';
+  const isActualAdmin = useMemo(() => isAdminEmail(appUser?.email), [appUser?.email]);
+  const isSupervisor = useMemo(() => appUser?.custom_role === 'supervisor', [appUser?.custom_role]);
   const isAdmin = isActualAdmin && viewMode === 'admin';
 
-  const adminNavigation = [
-      { name: 'Dashboard Global', page: 'AdminDashboard', icon: LayoutDashboard },
-      { name: 'Todos los Clientes', page: 'AdminClients', icon: Users },
-      { name: 'Todos los Viajes', page: 'AdminTrips', icon: Plane },
-      { name: 'Viajes Vendidos', page: 'AdminSoldTrips', icon: CheckCircle },
-      { name: 'Progreso de Agentes', page: 'Statistics', icon: BarChart3 },
-      { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet },
-      { name: 'Pagos Internos de Proveedores', page: 'InternalPayments', icon: DollarSign },
-      { name: 'Pagos Internos Clientes', page: 'InternalClientPayments', icon: CreditCard },
-      { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
-      { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
-      { name: 'Contraseñas', page: 'Credentials', icon: Key },
-      // { name: 'Descargar Datos', page: 'DescargarDatos', icon: Database },
+  const adminNavigation = useMemo(() => [
+    { name: 'Dashboard Global', page: 'AdminDashboard', icon: LayoutDashboard },
+    { name: 'Todos los Clientes', page: 'AdminClients', icon: Users },
+    { name: 'Todos los Viajes', page: 'AdminTrips', icon: Plane },
+    { name: 'Viajes Vendidos', page: 'AdminSoldTrips', icon: CheckCircle },
+    { name: 'Progreso de Agentes', page: 'Statistics', icon: BarChart3 },
+    { name: 'Comisiones Internas', page: 'InternalCommissions', icon: Wallet },
+    { name: 'Pagos Internos de Proveedores', page: 'InternalPayments', icon: DollarSign },
+    { name: 'Pagos Internos Clientes', page: 'InternalClientPayments', icon: CreditCard },
+    { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
+    { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
+    { name: 'Contraseñas', page: 'Credentials', icon: Key },
+    { name: '--- Control Interno ---', divider: true },
+    { name: 'Asistencia', page: 'Attendance', icon: Users },
+    { name: 'FAM Trips', page: 'FamTrips', icon: Plane },
+    { name: 'Ferias', page: 'IndustryFairs', icon: LayoutDashboard },
+  ], []);
+
+  const userNavigation = useMemo(() => [
+    { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
+    { name: 'Clientes', page: 'Clients', icon: Users },
+    { name: 'Viajes', page: 'Trips', icon: Plane },
+    { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
+    { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
+    { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
+    { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
+    { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
+    { name: 'Contraseñas', page: 'Credentials', icon: Key },
+    { name: 'Mis Contraseñas', page: 'PersonalCredentials', icon: Lock },
+    ...(isSupervisor ? [
       { name: '--- Control Interno ---', divider: true },
       { name: 'Asistencia', page: 'Attendance', icon: Users },
       { name: 'FAM Trips', page: 'FamTrips', icon: Plane },
       { name: 'Ferias', page: 'IndustryFairs', icon: LayoutDashboard },
-    ];
+    ] : [])
+  ], [isSupervisor]);
 
-    const userNavigation = [
-      { name: 'Dashboard', page: 'Dashboard', icon: LayoutDashboard },
-      { name: 'Clientes', page: 'Clients', icon: Users },
-      { name: 'Viajes', page: 'Trips', icon: Plane },
-      { name: 'Viajes Vendidos', page: 'SoldTrips', icon: CheckCircle },
-      { name: 'Comisiones', page: 'Commissions', icon: DollarSign },
-      { name: 'Mi Progreso', page: 'Statistics', icon: BarChart3 },
-      { name: 'Proveedores', page: 'Suppliers', icon: Building2 },
-      { name: 'Learning & Reviews', page: 'Reviews', icon: BookOpen },
-      { name: 'Contraseñas', page: 'Credentials', icon: Key },
-      { name: 'Mis Contraseñas', page: 'PersonalCredentials', icon: Lock },
-      ...(isSupervisor ? [
-        { name: '--- Control Interno ---', divider: true },
-        { name: 'Asistencia', page: 'Attendance', icon: Users },
-        { name: 'FAM Trips', page: 'FamTrips', icon: Plane },
-        { name: 'Ferias', page: 'IndustryFairs', icon: LayoutDashboard },
-      ] : [])
-    ];
+  const navigation = useMemo(() => isAdmin ? adminNavigation : userNavigation, [isAdmin, adminNavigation, userNavigation]);
 
-    const navigation = isAdmin ? adminNavigation : userNavigation;
+  // Filtrar navegación por búsqueda
+  const filteredNavigation = useMemo(() => {
+    if (!searchQuery.trim()) return navigation;
+
+    const query = searchQuery.toLowerCase();
+    return navigation.filter(item =>
+      !item.divider && item.name.toLowerCase().includes(query)
+    );
+  }, [navigation, searchQuery]);
+
+  // Callbacks memoizados
+  const handleSidebarClose = useCallback(() => setSidebarOpen(false), []);
+  const handleSidebarToggle = useCallback(() => setSidebarOpen(prev => !prev), []);
+  const handleCollapsedToggle = useCallback(() => setSidebarCollapsed(prev => !prev), []);
+  const handlePaymentInfoOpen = useCallback(() => setPaymentInfoOpen(true), []);
+  const handlePaymentInfoClose = useCallback(() => setPaymentInfoOpen(false), []);
+  const handleCommissionInfoOpen = useCallback(() => setCommissionInfoOpen(true), []);
+  const handleCommissionInfoClose = useCallback(() => setCommissionInfoOpen(false), []);
+
+  // Navegación por teclado
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl/Cmd + B para toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        handleCollapsedToggle();
+      }
+
+      // Escape para cerrar sidebar móvil
+      if (e.key === 'Escape' && sidebarOpen) {
+        handleSidebarClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarOpen, handleCollapsedToggle, handleSidebarClose]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-stone-100/30 to-stone-50" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
@@ -231,6 +449,15 @@ export default function Layout({ children, currentPageName }) {
             background-size: 200% 100%;
             animation: shimmer 3s infinite;
           }
+
+          @keyframes animate-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+
+          .animate-shimmer {
+            animation: animate-shimmer 2s infinite;
+          }
         `}
       </style>
 
@@ -250,9 +477,10 @@ export default function Layout({ children, currentPageName }) {
             </div>
           </div>
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={handleSidebarToggle}
             className="p-2.5 rounded-xl hover:bg-white/60 transition-all duration-200 active:scale-95"
             style={{ color: 'var(--nomad-green-dark)' }}
+            aria-label={sidebarOpen ? "Cerrar menú" : "Abrir menú"}
           >
             {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -261,9 +489,9 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-          onClick={() => setSidebarOpen(false)}
+          onClick={handleSidebarClose}
         />
       )}
 
@@ -282,9 +510,10 @@ export default function Layout({ children, currentPageName }) {
         <div className="flex flex-col h-full">
           {/* Toggle Button (Desktop Only) */}
           <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={handleCollapsedToggle}
             className={cn(
               "hidden lg:flex items-center justify-center transition-all duration-300 group",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2",
               sidebarCollapsed
                 ? "mx-auto mt-4 mb-4 w-12 h-12 rounded-lg bg-white border border-stone-200 hover:bg-stone-50 hover:border-stone-300 shadow-sm"
                 : "absolute right-6 top-6 z-50 w-10 h-10 rounded-xl luxury-glow hover:shadow-2xl hover:scale-105 active:scale-95 luxury-border"
@@ -292,6 +521,8 @@ export default function Layout({ children, currentPageName }) {
             style={!sidebarCollapsed ? {
               background: 'linear-gradient(135deg, var(--nomad-green) 0%, var(--nomad-green-medium) 100%)'
             } : {}}
+            aria-label={sidebarCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+            title={`${sidebarCollapsed ? 'Expandir' : 'Colapsar'} (Ctrl+B)`}
           >
             {!sidebarCollapsed && (
               <>
@@ -306,9 +537,9 @@ export default function Layout({ children, currentPageName }) {
             )}
           </button>
 
-          {/* Logo & User */}
+          {/* Logo & User - Sticky */}
           <div className={cn(
-            "transition-all duration-300",
+            "transition-all duration-300 sticky top-0 z-10 bg-white/95 backdrop-blur-sm",
             sidebarCollapsed ? "lg:py-4 lg:px-4 lg:border-b lg:border-stone-100/80" : "p-7 border-b border-stone-100/80"
           )}>
             {sidebarCollapsed ? (
@@ -329,90 +560,71 @@ export default function Layout({ children, currentPageName }) {
               </div>
             )}
 
-            {/* Admin View Mode Switch */}
-                          {isActualAdmin && !sidebarCollapsed && (
-                            <div className="mt-5 p-4 rounded-2xl shadow-sm relative overflow-hidden"
-                                 style={{
-                                   background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%)',
-                                   border: '1px solid rgba(99, 102, 241, 0.15)'
-                                 }}>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                                       style={{
-                                         background: viewMode === 'admin'
-                                           ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.25) 100%)'
-                                           : 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.25) 100%)'
-                                       }}>
-                                    {viewMode === 'admin' ? (
-                                      <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                                    ) : (
-                                      <Eye className="w-4 h-4 text-purple-600" />
-                                    )}
-                                  </div>
-                                  <span className="text-sm font-semibold text-stone-700">
-                                    {viewMode === 'admin' ? 'Vista Admin' : 'Vista Usuario'}
-                                  </span>
-                                </div>
-                                <Switch
-                                  checked={viewMode === 'admin'}
-                                  onCheckedChange={(checked) => setViewMode(checked ? 'admin' : 'user')}
-                                />
-                              </div>
-                              <p className="text-sm text-stone-600 font-medium">
-                                {viewMode === 'admin'
-                                  ? 'Viendo todos los datos'
-                                  : 'Viendo solo tus datos'}
-                              </p>
-                            </div>
-                          )}
+            {/* Admin View Mode Switch - Compacto */}
+            {isActualAdmin && !sidebarCollapsed && (
+              <div className="mt-4 p-3 rounded-xl shadow-sm relative overflow-hidden"
+                   style={{
+                     background: viewMode === 'admin'
+                       ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(79, 70, 229, 0.08) 100%)'
+                       : 'linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(147, 51, 234, 0.08) 100%)',
+                     border: viewMode === 'admin'
+                       ? '1px solid rgba(99, 102, 241, 0.15)'
+                       : '1px solid rgba(168, 85, 247, 0.15)'
+                   }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                         style={{
+                           background: viewMode === 'admin'
+                             ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.3) 100%)'
+                             : 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.3) 100%)'
+                         }}>
+                      {viewMode === 'admin' ? (
+                        <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                      ) : (
+                        <Eye className="w-3.5 h-3.5 text-purple-600" />
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-semibold text-stone-700">
+                        {viewMode === 'admin' ? 'Admin' : 'Usuario'}
+                      </span>
+                      <span className="text-xs text-stone-500">
+                        {viewMode === 'admin' ? 'Todos los datos' : 'Solo tus datos'}
+                      </span>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={viewMode === 'admin'}
+                    onCheckedChange={(checked) => setViewMode(checked ? 'admin' : 'user')}
+                  />
+                </div>
+              </div>
+            )}
 
-                          {/* Exchange Rate */}
-                          {!sidebarCollapsed && (
-                            <div className="mt-5 elegant-card rounded-2xl p-4 shadow-sm luxury-border">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm relative overflow-hidden"
-                                     style={{ background: 'linear-gradient(135deg, var(--nomad-green-light) 0%, var(--nomad-green) 100%)' }}>
-                                  <DollarSign className="w-4 h-4 text-white relative z-10" />
-                                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/20"></div>
-                                </div>
-                                <span className="text-sm font-semibold text-stone-700">USD/MXN BBVA Venta</span>
-                              </div>
-                              {rateLoading ? (
-                                <div className="flex items-center gap-2 py-2">
-                                  <Loader2 className="w-4 h-4 animate-spin text-stone-400" />
-                                  <span className="text-sm text-stone-500 font-medium">Cargando...</span>
-                                </div>
-                              ) : exchangeRate?.sell_rate ? (
-                                <p className="text-3xl font-bold mb-3 text-stone-900">
-                                  ${exchangeRate.sell_rate.toFixed(2)} <span className="text-base font-medium text-stone-500">MXN</span>
-                                </p>
-                              ) : (
-                                <p className="text-sm text-stone-400 py-2">No disponible</p>
-                              )}
-                              <button
-                                onClick={() => setPaymentInfoOpen(true)}
-                                className="mt-2 w-full text-xs font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 text-white shadow-sm hover:shadow-md active:scale-98 relative overflow-hidden luxury-border"
-                                style={{
-                                  background: 'linear-gradient(135deg, var(--nomad-green) 0%, var(--nomad-green-medium) 100%)'
-                                }}
-                              >
-                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/10"></div>
-                                <span className="relative z-10">Info de Pagos</span>
-                              </button>
-                              <button
-                                onClick={() => setCommissionInfoOpen(true)}
-                                className="mt-2 w-full text-xs font-semibold py-2.5 px-4 rounded-xl transition-all duration-200 text-white shadow-sm hover:shadow-md active:scale-98 relative overflow-hidden luxury-border"
-                                style={{
-                                  background: 'linear-gradient(135deg, var(--nomad-green) 0%, var(--nomad-green-medium) 100%)'
-                                }}
-                              >
-                                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 to-white/10"></div>
-                                <span className="relative z-10">Info Pago de Comisiones</span>
-                              </button>
-                            </div>
-                          )}
+            {/* Exchange Rate Widget */}
+            <ExchangeRateWidget
+              collapsed={sidebarCollapsed}
+              onPaymentInfoClick={handlePaymentInfoOpen}
+              onCommissionInfoClick={handleCommissionInfoOpen}
+            />
           </div>
+
+          {/* Search Bar */}
+          {!sidebarCollapsed && (
+            <div className="px-5 pt-4 pb-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar página..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-stone-100/60 border border-stone-200/60 focus:bg-white focus:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-200 transition-all duration-200 text-sm"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Spacer when collapsed */}
           {sidebarCollapsed && (
@@ -422,46 +634,40 @@ export default function Layout({ children, currentPageName }) {
           {/* Navigation */}
           <nav className={cn(
             "flex-1 overflow-y-auto scrollbar-thin",
-            sidebarCollapsed ? "lg:hidden" : "p-5 space-y-1.5"
+            sidebarCollapsed ? "lg:flex lg:flex-col lg:items-stretch lg:px-3 lg:space-y-2" : "p-5 space-y-1.5"
           )}>
-            {navigation.map((item, idx) => {
-                if (item.divider) {
-                  return (
-                    <div key={idx} className="px-3 py-3 mt-2">
-                      <p className="text-sm font-bold text-stone-400 tracking-wide">{item.name}</p>
-                    </div>
-                  );
-                }
-                const isActive = currentPageName === item.page;
-                return (
-                  <Link
-                    key={item.page}
-                    to={createPageUrl(item.page)}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 transition-all duration-200 group relative overflow-hidden rounded-xl px-4 py-3.5",
-                      isActive
-                        ? "bg-stone-100 border-l-4 border-stone-900 text-stone-900"
-                        : "text-stone-600 hover:bg-gradient-to-r hover:from-stone-100/60 hover:to-stone-200/40"
-                    )}
-                  >
-                    <item.icon className={cn(
-                      "w-5 h-5 transition-all duration-200 relative z-10 group-hover:scale-110",
-                      isActive ? "text-stone-900" : "text-stone-500 group-hover:text-stone-700"
-                    )} />
-                    <span className="font-semibold text-base relative z-10">{item.name}</span>
-                  </Link>
-                );
-              })}
+            {(searchQuery ? filteredNavigation : navigation).map((item, idx) => {
+              if (item.divider) {
+                return <NavDivider key={idx} text={item.name} collapsed={sidebarCollapsed} />;
+              }
+
+              const isActive = currentPageName === item.page;
+              return (
+                <SidebarNavItem
+                  key={item.page}
+                  item={item}
+                  isActive={isActive}
+                  collapsed={sidebarCollapsed}
+                  onClick={handleSidebarClose}
+                />
+              );
+            })}
+
+            {searchQuery && filteredNavigation.length === 0 && (
+              <div className="text-center py-8 text-stone-400">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No se encontraron páginas</p>
+              </div>
+            )}
           </nav>
 
-          {/* Footer - User Info */}
+          {/* Footer - User Info - Sticky */}
           <div className={cn(
-            "border-t border-stone-100/80",
+            "border-t border-stone-100/80 sticky bottom-0 bg-white/95 backdrop-blur-sm",
             sidebarCollapsed ? "lg:p-4" : "p-5"
           )}>
             {sidebarCollapsed ? (
-              <div className="hidden lg:flex justify-center">
+              <div className="hidden lg:flex justify-center group relative">
                 <UserButton
                   appearance={{
                     elements: {
@@ -471,6 +677,13 @@ export default function Layout({ children, currentPageName }) {
                     }
                   }}
                 />
+                {/* Tooltip para usuario */}
+                <div className="absolute left-full ml-2 bottom-0 z-[100] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="bg-stone-900 text-white text-sm font-medium px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
+                    {appUser?.full_name || 'Usuario'}
+                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-stone-900" />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="elegant-card rounded-2xl p-4 shadow-sm luxury-border">
@@ -508,19 +721,16 @@ export default function Layout({ children, currentPageName }) {
       </main>
 
       {/* Quick Payment FAB */}
-              <QuickPaymentFAB />
+      <QuickPaymentFAB />
 
-              {/* Error Report Button */}
-              <ErrorReportButton />
+      {/* Error Report Button */}
+      <ErrorReportButton />
 
-              {/* Cheat Sheet Bar */}
-              {/* <CheatSheetBar /> */}
+      {/* Payment Info Modal */}
+      <PaymentInfoModal open={paymentInfoOpen} onClose={handlePaymentInfoClose} />
 
-              {/* Payment Info Modal */}
-                      <PaymentInfoModal open={paymentInfoOpen} onClose={() => setPaymentInfoOpen(false)} />
-
-                      {/* Commission Info Modal */}
-                      <CommissionInfoModal open={commissionInfoOpen} onClose={() => setCommissionInfoOpen(false)} />
-                    </div>
-          );
-        }
+      {/* Commission Info Modal */}
+      <CommissionInfoModal open={commissionInfoOpen} onClose={handleCommissionInfoClose} />
+    </div>
+  );
+}
