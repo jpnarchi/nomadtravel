@@ -82,20 +82,20 @@ const SidebarNavItem = memo(({ item, isActive, collapsed, onClick }) => {
     </Link>
   );
 
-  // En modo collapsed, mostrar tooltip
-  if (collapsed) {
-    return (
-      <div className="hidden lg:block group relative">
-        {ItemContent}
-        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-[100] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <div className="bg-stone-900 text-white text-sm font-medium px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
-            {item.name}
-            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-stone-900" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // // En modo collapsed, mostrar tooltip
+  // if (collapsed) {
+  //   return (
+  //     <div className="hidden lg:block group relative">
+  //       {ItemContent}
+  //       <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-[100] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+  //         <div className="bg-stone-900 text-white text-sm font-medium px-3 py-2 rounded-lg shadow-xl whitespace-nowrap">
+  //           {item.name}
+  //           <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-stone-900" />
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return ItemContent;
 });
