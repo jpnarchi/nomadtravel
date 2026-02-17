@@ -135,6 +135,7 @@ export default function Trips() {
           trip_id: editingTrip.id,
           client_id: data.client_id,
           client_name: data.client_name,
+          trip_name: data.trip_name || null,
           destination: data.destination,
           start_date: data.start_date,
           end_date: data.end_date,
@@ -144,7 +145,11 @@ export default function Trips() {
           total_commission: 0,
           total_paid_by_client: 0,
           currency: 'USD',
-          status: 'confirmed'
+          status: 'confirmed',
+          metadata: {
+            clients: data.metadata?.clients || [{ id: data.client_id, name: data.client_name }],
+            client_ids: data.metadata?.client_ids || [data.client_id]
+          }
         });
       }
       updateMutation.mutate({ id: editingTrip.id, data });
@@ -157,6 +162,7 @@ export default function Trips() {
           trip_id: trip.id,
           client_id: data.client_id,
           client_name: data.client_name,
+          trip_name: data.trip_name || null,
           destination: data.destination,
           start_date: data.start_date,
           end_date: data.end_date,
@@ -166,7 +172,11 @@ export default function Trips() {
           total_commission: 0,
           total_paid_by_client: 0,
           currency: 'USD',
-          status: 'confirmed'
+          status: 'confirmed',
+          metadata: {
+            clients: data.metadata?.clients || [{ id: data.client_id, name: data.client_name }],
+            client_ids: data.metadata?.client_ids || [data.client_id]
+          }
         });
       } else {
         createMutation.mutate(data);
@@ -198,6 +208,7 @@ export default function Trips() {
             trip_id: trip.id,
             client_id: trip.client_id,
             client_name: trip.client_name,
+            trip_name: trip.trip_name || null,
             destination: trip.destination,
             start_date: trip.start_date,
             end_date: trip.end_date,
@@ -207,7 +218,11 @@ export default function Trips() {
             total_commission: 0,
             total_paid_by_client: 0,
             currency: 'USD',
-            status: 'confirmed'
+            status: 'confirmed',
+            metadata: {
+              clients: trip.metadata?.clients || [{ id: trip.client_id, name: trip.client_name }],
+              client_ids: trip.metadata?.client_ids || [trip.client_id]
+            }
           };
           console.log('SoldTrip data:', soldTripData);
 

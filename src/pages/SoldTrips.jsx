@@ -125,7 +125,9 @@ export default function SoldTrips() {
     const searchLower = search.toLowerCase();
     const matchesSearch = (
       trip.client_name?.toLowerCase().includes(searchLower) ||
-      trip.destination?.toLowerCase().includes(searchLower)
+      trip.destination?.toLowerCase().includes(searchLower) ||
+      trip.trip_name?.toLowerCase().includes(searchLower) ||
+      trip.file_number?.toLowerCase().includes(searchLower)
     );
     const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -281,15 +283,27 @@ export default function SoldTrips() {
                             <Plane className="w-6 h-6 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                               <h3 className="font-bold text-lg text-stone-800 truncate">
                                 {trip.client_name}
                               </h3>
+                              {trip.trip_name && (
+                                <span className="text-sm text-stone-500 font-medium truncate">
+                                  — {trip.trip_name}
+                                </span>
+                              )}
                               <Badge className={`${statusConfig.color} font-medium text-xs flex-shrink-0`}>
                                 <StatusIcon className="w-3 h-3 mr-1" />
                                 {statusConfig.label}
                               </Badge>
                             </div>
+                            {trip.file_number && (
+                              <div className="flex items-center gap-1 mb-1">
+                                <span className="text-xs font-mono bg-stone-100 text-stone-500 px-2 py-0.5 rounded-md border border-stone-200">
+                                  {trip.file_number}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-1 text-stone-600 mb-2">
                               <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: '#2E442A' }} />
                               <span className="font-medium truncate">{trip.destination}</span>

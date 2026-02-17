@@ -91,45 +91,62 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
     const element = document.getElementById("invoice-content");
     if (!element) return;
 
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      scrollY: -window.scrollY,
-    });
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (clonedDoc) => {
+          // En el clon, eliminar restricciones de overflow/height en todos los ancestros
+          // para garantizar que se capture el contenido completo
+          const clonedEl = clonedDoc.getElementById("invoice-content");
+          if (clonedEl) {
+            clonedEl.style.maxHeight = 'none';
+            clonedEl.style.overflow = 'visible';
+            let parent = clonedEl.parentElement;
+            while (parent && parent !== clonedDoc.body) {
+              parent.style.overflow = 'visible';
+              parent.style.maxHeight = 'none';
+              parent.style.height = 'auto';
+              parent = parent.parentElement;
+            }
+          }
+        }
+      });
 
-    const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
 
-    const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const printableWidth = pageWidth - margin * 2;
+      const printableHeight = pageHeight - margin * 2;
 
-    // Márgenes
-    const margin = 10;
-    const printableWidth = pageWidth - margin * 2;
-    const printableHeight = pageHeight - margin * 2;
+      const imgWidth = printableWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    // Escala para que fitee al ancho imprimible
-    const imgWidth = printableWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
 
-    let heightLeft = imgHeight;
-    let positionY = margin;
-
-    // Primera página
-    pdf.addImage(imgData, "PNG", margin, positionY, imgWidth, imgHeight);
-    heightLeft -= printableHeight;
-
-    // Páginas siguientes (recortando la misma imagen)
-    while (heightLeft > 0) {
-      pdf.addPage();
-      const offsetY = margin - (imgHeight - heightLeft);
-      pdf.addImage(imgData, "PNG", margin, offsetY, imgWidth, imgHeight);
+      // Primera página
+      pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
       heightLeft -= printableHeight;
-    }
 
-    pdf.save(`Invoice_${soldTrip.client_name}.pdf`);
+      // Páginas siguientes
+      while (heightLeft > 0) {
+        pdf.addPage();
+        const offsetY = margin - (imgHeight - heightLeft);
+        pdf.addImage(imgData, "PNG", margin, offsetY, imgWidth, imgHeight);
+        heightLeft -= printableHeight;
+      }
+
+      pdf.save(`Invoice_${soldTrip.client_name}.pdf`);
+    } catch (err) {
+      console.error("Error generando PDF:", err);
+    }
   };
 
   const renderHotelService = (service, index) => (
@@ -420,7 +437,7 @@ export default function InvoiceView({ open, onClose, soldTrip, services, clientP
           </div>
 
           {/* Footer */}
-          <div className="mt-12 pt-6 border-t border-stone-200 text-center">
+          <div className="mt-8 pt-6 border-t border-stone-200 text-center">
             <p className="text-sm text-stone-500">
               Gracias por confiar en Nomad Travel Society
             </p>

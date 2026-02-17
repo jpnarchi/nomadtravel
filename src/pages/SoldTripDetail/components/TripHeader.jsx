@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
-  ArrowLeft, MapPin, Calendar, Users, Edit2, FileText, Clock
+  ArrowLeft, MapPin, Calendar, Users, Edit2, FileText, Clock, Hash
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,7 +77,27 @@ export default function TripHeader({
               </Button>
             </Link>
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-bold text-stone-900 truncate">{soldTrip.client_name}</h1>
+              {soldTrip.metadata?.clients?.length > 1 ? (
+                <div className="flex flex-wrap gap-1">
+                  {soldTrip.metadata.clients.map((c, i) => (
+                    <span key={c.id || i} className="text-sm font-bold text-stone-900">
+                      {i > 0 && <span className="text-stone-300 mx-1">&</span>}
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <h1 className="text-base font-bold text-stone-900 truncate">{soldTrip.client_name}</h1>
+              )}
+              {soldTrip.trip_name && (
+                <p className="text-xs text-stone-500 truncate">{soldTrip.trip_name}</p>
+              )}
+              {soldTrip.file_number && (
+                <span className="inline-flex items-center gap-1 text-xs font-mono bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded border border-stone-200 mt-0.5">
+                  <Hash className="w-2.5 h-2.5" />
+                  {soldTrip.file_number}
+                </span>
+              )}
             </div>
             <Badge className={`${statusConfig.color} text-xs px-2.5 py-1 font-bold flex-shrink-0 shadow-sm border`}>
               {statusConfig.label}
@@ -99,10 +119,31 @@ export default function TripHeader({
 
               <div className="flex-1 space-y-4 min-w-0">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-2xl md:text-3xl font-bold text-stone-900 tracking-tight truncate">{soldTrip.client_name}</h1>
+                  {/* Múltiples clientes: badges individuales; un solo cliente: título normal */}
+                  {soldTrip.metadata?.clients?.length > 1 ? (
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {soldTrip.metadata.clients.map((c, i) => (
+                        <span key={c.id || i} className={`font-bold text-stone-900 ${i === 0 ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl text-stone-600'}`}>
+                          {i > 0 && <span className="text-stone-300 mr-1.5">&</span>}
+                          {c.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <h1 className="text-2xl md:text-3xl font-bold text-stone-900 tracking-tight truncate">{soldTrip.client_name}</h1>
+                  )}
+                  {soldTrip.trip_name && (
+                    <span className="text-lg text-stone-500 font-medium truncate">— {soldTrip.trip_name}</span>
+                  )}
                   <Badge className={`${statusConfig.color} text-sm px-4 py-1.5 font-bold shadow-md flex-shrink-0 border`}>
                     {statusConfig.label}
                   </Badge>
+                  {soldTrip.file_number && (
+                    <span className="inline-flex items-center gap-1 text-xs font-mono bg-stone-100 text-stone-500 px-2.5 py-1 rounded-lg border border-stone-200 shadow-sm">
+                      <Hash className="w-3 h-3" />
+                      {soldTrip.file_number}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-3 flex-wrap text-sm text-stone-600">

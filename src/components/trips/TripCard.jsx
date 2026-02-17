@@ -68,7 +68,18 @@ export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
         </div>
       </div>
 
-      <h4 className="font-semibold text-stone-800 mb-1 text-sm">{trip.client_name}</h4>
+      {/* Clientes: mostrar todos si hay múltiples, si no el client_name normal */}
+      {trip.metadata?.clients?.length > 1 ? (
+        <div className="mb-1 flex flex-wrap gap-1">
+          {trip.metadata.clients.map((c, i) => (
+            <span key={c.id || i} className="text-xs font-medium bg-stone-100 text-stone-700 px-1.5 py-0.5 rounded-md">
+              {c.name}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <h4 className="font-semibold text-stone-800 mb-1 text-sm">{trip.client_name}</h4>
+      )}
       
       <div className="flex items-center gap-1 text-stone-600 mb-3">
         <MapPin className="w-3.5 h-3.5" style={{ color: '#2E442A' }} />

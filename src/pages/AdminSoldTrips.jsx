@@ -107,7 +107,9 @@ export default function AdminSoldTrips() {
         const searchLower = search.toLowerCase();
         return (
           t.client_name?.toLowerCase().includes(searchLower) ||
-          t.destination?.toLowerCase().includes(searchLower)
+          t.destination?.toLowerCase().includes(searchLower) ||
+          t.trip_name?.toLowerCase().includes(searchLower) ||
+          t.file_number?.toLowerCase().includes(searchLower)
         );
       }),
     [allSoldTrips, selectedAgent, selectedStatus, search]
@@ -243,7 +245,17 @@ export default function AdminSoldTrips() {
                 return (
                   <tr key={trip.id} className="hover:bg-stone-50 transition-colors group">
                     <td className="p-4">
-                      <span className="font-semibold text-stone-900">{trip.client_name}</span>
+                      <div>
+                        <span className="font-semibold text-stone-900">{trip.client_name}</span>
+                        {trip.trip_name && (
+                          <p className="text-xs text-stone-500 mt-0.5 truncate max-w-[180px]">{trip.trip_name}</p>
+                        )}
+                        {trip.file_number && (
+                          <span className="text-xs font-mono bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded border border-stone-200 mt-1 inline-block">
+                            {trip.file_number}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4">
                       <span className="text-stone-600">{trip.destination}</span>
@@ -328,7 +340,15 @@ export default function AdminSoldTrips() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-stone-900 text-sm truncate">{trip.client_name}</h3>
-                      <p className="text-xs text-stone-500 truncate">{trip.destination}</p>
+                      {trip.trip_name && (
+                        <p className="text-xs text-stone-500 truncate">{trip.trip_name}</p>
+                      )}
+                      <p className="text-xs text-stone-400 truncate">{trip.destination}</p>
+                      {trip.file_number && (
+                        <span className="text-xs font-mono bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded border border-stone-200 mt-1 inline-block">
+                          {trip.file_number}
+                        </span>
+                      )}
                     </div>
                     <Badge variant="outline" className={`${statusConfig?.color} border flex-shrink-0`}>
                       {statusConfig?.label}

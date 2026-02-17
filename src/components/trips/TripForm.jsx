@@ -5,11 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, X, ChevronDown } from 'lucide-react';
+import { Loader2, X, ChevronDown, Search, Users } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { supabaseAPI } from '@/api/supabaseClient';
 
 /**
  * Normaliza una fecha a formato YYYY-MM-DD sin conversiones de timezone.
@@ -17,7 +14,6 @@ import { supabaseAPI } from '@/api/supabaseClient';
  */
 function normalizeDateOnly(value) {
   if (!value) return '';
-  // Si viene "2025-12-19" o "2025-12-19T00:00:00.000Z", tomar solo YYYY-MM-DD
   return String(value).slice(0, 10);
 }
 
@@ -30,11 +26,31 @@ const STAGES = [
   { value: 'perdido', label: 'Perdido' }
 ];
 
+// Parsea la lista de clientes desde un trip existente
+function parseExistingClients(trip, clients) {
+  if (!trip) return [];
+  // Si tiene metadata.clients (nuevo formato)
+  if (trip.metadata?.clients?.length) return trip.metadata.clients;
+  // Si tiene metadata.client_ids (formato intermedio)
+  if (trip.metadata?.client_ids?.length) {
+    return trip.metadata.client_ids.map(id => {
+      const c = clients.find(cl => cl.id === id);
+      return c ? { id: c.id, name: `${c.first_name} ${c.last_name}` } : null;
+    }).filter(Boolean);
+  }
+  // Fallback: cliente único
+  if (trip.client_id) {
+    const c = clients.find(cl => cl.id === trip.client_id);
+    const name = c ? `${c.first_name} ${c.last_name}` : trip.client_name || '';
+    return [{ id: trip.client_id, name }];
+  }
+  return [];
+}
+
 export default function TripForm({ open, onClose, trip, clients = [], onSave, isLoading, prefilledClient }) {
   const [formData, setFormData] = useState({
     trip_name: '',
-    client_id: '',
-    client_name: '',
+    selectedClients: [], // [{id, name}]
     destination: '',
     start_date: '',
     end_date: '',
@@ -45,12 +61,17 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
     notes: '',
     lost_reason: ''
   });
-  
+
   const [destinationSearch, setDestinationSearch] = useState('');
   const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
   const [countries, setCountries] = useState([]);
   const [loadingCountries, setLoadingCountries] = useState(true);
   const destinationInputRef = useRef(null);
+
+  // Estado para el buscador de clientes
+  const [clientSearch, setClientSearch] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const clientInputRef = useRef(null);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -59,15 +80,12 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
           setLoadingCountries(true);
           const response = await fetch('https://restcountries.com/v3.1/all?fields=name,region,subregion,cca2');
           const data = await response.json();
-
-          // Formatear al formato que espera el componente
           const formattedCountries = data.map(country => ({
             code: country.cca2,
             name: country.name.common,
             region: country.region || '',
             subregion: country.subregion || ''
           })).sort((a, b) => a.name.localeCompare(b.name, 'es'));
-
           setCountries(formattedCountries);
         } catch (error) {
           console.error('Error loading countries:', error);
@@ -77,7 +95,6 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         }
       }
     };
-
     fetchCountries();
   }, [open]);
 
@@ -85,8 +102,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
     if (trip) {
       setFormData({
         trip_name: trip.trip_name || '',
-        client_id: trip.client_id || '',
-        client_name: trip.client_name || '',
+        selectedClients: parseExistingClients(trip, clients),
         destination: trip.destination || '',
         start_date: normalizeDateOnly(trip.start_date),
         end_date: normalizeDateOnly(trip.end_date),
@@ -98,11 +114,11 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         lost_reason: trip.lost_reason || ''
       });
       setDestinationSearch('');
+      setClientSearch('');
     } else if (prefilledClient) {
       setFormData({
         trip_name: '',
-        client_id: prefilledClient.id || '',
-        client_name: prefilledClient.name || '',
+        selectedClients: [{ id: prefilledClient.id, name: prefilledClient.name || '' }],
         destination: '',
         start_date: '',
         end_date: '',
@@ -114,11 +130,11 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         lost_reason: ''
       });
       setDestinationSearch('');
+      setClientSearch('');
     } else {
       setFormData({
         trip_name: '',
-        client_id: '',
-        client_name: '',
+        selectedClients: [],
         destination: '',
         start_date: '',
         end_date: '',
@@ -130,18 +146,36 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         lost_reason: ''
       });
       setDestinationSearch('');
+      setClientSearch('');
     }
   }, [trip, open, prefilledClient]);
 
-  const handleClientChange = (clientId) => {
-    const selectedClient = clients.find(c => c.id === clientId);
-    setFormData({
-      ...formData,
-      client_id: clientId,
-      client_name: selectedClient ? `${selectedClient.first_name} ${selectedClient.last_name}` : ''
-    });
+  // ── Clientes ─────────────────────────────────────────────────────────────
+  const filteredClients = clients.filter(c => {
+    const fullName = `${c.first_name} ${c.last_name}`.toLowerCase();
+    const search = clientSearch.toLowerCase();
+    return fullName.includes(search) &&
+      !formData.selectedClients.some(sel => sel.id === c.id);
+  });
+
+  const handleAddClient = (client) => {
+    const name = `${client.first_name} ${client.last_name}`;
+    setFormData(prev => ({
+      ...prev,
+      selectedClients: [...prev.selectedClients, { id: client.id, name }]
+    }));
+    setClientSearch('');
+    setShowClientDropdown(false);
   };
 
+  const handleRemoveClient = (clientId) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedClients: prev.selectedClients.filter(c => c.id !== clientId)
+    }));
+  };
+
+  // ── Destinos ──────────────────────────────────────────────────────────────
   const filteredCountries = countries.filter(country =>
     country.name.toLowerCase().includes(destinationSearch.toLowerCase()) ||
     country.region.toLowerCase().includes(destinationSearch.toLowerCase()) ||
@@ -159,16 +193,13 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
   };
 
   const handleDestinationInputChange = (e) => {
-    const value = e.target.value;
-    setDestinationSearch(value);
+    setDestinationSearch(e.target.value);
     setShowDestinationDropdown(true);
   };
 
   const handleDestinationInputBlur = () => {
-    // Delay to allow click on dropdown item
     setTimeout(() => {
       setShowDestinationDropdown(false);
-      // Don't accept free text - clear if not valid
       const validCountry = countries.find(c => c.name.toLowerCase() === destinationSearch.toLowerCase());
       if (destinationSearch && !validCountry) {
         setDestinationSearch('');
@@ -176,12 +207,12 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
     }, 200);
   };
 
+  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Validar campos requeridos
-    if (!formData.client_id) {
-      alert('Por favor selecciona un cliente');
+    if (formData.selectedClients.length === 0) {
+      alert('Por favor selecciona al menos un cliente');
       return;
     }
     if (!formData.destination) {
@@ -193,10 +224,27 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
       return;
     }
 
-    // Limpiar valores vacíos para evitar errores de tipo
+    const primaryClient = formData.selectedClients[0];
+    const clientNames = formData.selectedClients.map(c => c.name).join(', ');
+
     const cleanedData = {
-      ...formData,
-      budget: formData.budget === '' ? null : formData.budget
+      trip_name: formData.trip_name,
+      client_id: primaryClient.id,
+      client_name: clientNames,
+      destination: formData.destination,
+      start_date: formData.start_date,
+      end_date: formData.end_date,
+      travelers: formData.travelers,
+      budget: formData.budget === '' ? null : formData.budget,
+      mood: formData.mood,
+      stage: formData.stage,
+      notes: formData.notes,
+      lost_reason: formData.lost_reason,
+      metadata: {
+        ...(trip?.metadata || {}),
+        clients: formData.selectedClients,
+        client_ids: formData.selectedClients.map(c => c.id)
+      }
     };
 
     onSave(cleanedData);
@@ -212,6 +260,8 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+
+          {/* Nombre del viaje */}
           <div className="space-y-2">
             <Label htmlFor="trip_name">Nombre del Viaje</Label>
             <Input
@@ -223,40 +273,108 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
             />
           </div>
 
+          {/* Clientes (multi-select) */}
           <div className="space-y-2">
-            <Label>Cliente <span className="text-red-500">*</span></Label>
+            <Label>
+              Clientes <span className="text-red-500">*</span>
+              {formData.selectedClients.length > 0 && (
+                <span className="ml-2 text-xs text-stone-400 font-normal">
+                  {formData.selectedClients.length} seleccionado{formData.selectedClients.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </Label>
+
             {prefilledClient ? (
-              <Input
-                value={formData.client_name}
-                disabled
-                className="rounded-xl bg-stone-50"
-              />
+              /* Cliente prefijado: solo mostrar, no editar */
+              <div className="flex flex-wrap gap-1 p-2 border border-stone-200 rounded-xl bg-stone-50">
+                {formData.selectedClients.map(c => (
+                  <Badge key={c.id} variant="secondary" className="text-xs">
+                    {c.name}
+                  </Badge>
+                ))}
+              </div>
             ) : (
-              <Select value={formData.client_id} onValueChange={handleClientChange}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Seleccionar cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.length === 0 ? (
-                    <div className="p-2 text-sm text-stone-500">
-                      No tienes clientes. Crea uno primero.
+              <div className="space-y-2">
+                {/* Badges de clientes seleccionados */}
+                {formData.selectedClients.length > 0 && (
+                  <div className="flex flex-wrap gap-1 p-2 border border-stone-200 rounded-xl bg-stone-50 min-h-[40px]">
+                    {formData.selectedClients.map((c, idx) => (
+                      <Badge key={c.id} variant="secondary" className="text-xs gap-1 pr-1">
+                        {idx === 0 && (
+                          <span className="text-[10px] bg-stone-300 text-stone-600 rounded px-1 mr-0.5">principal</span>
+                        )}
+                        {c.name}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveClient(c.id)}
+                          className="ml-0.5 hover:text-red-500 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                {/* Buscador de clientes */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                  <Input
+                    ref={clientInputRef}
+                    value={clientSearch}
+                    onChange={(e) => { setClientSearch(e.target.value); setShowClientDropdown(true); }}
+                    onFocus={() => setShowClientDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                    placeholder={formData.selectedClients.length === 0 ? "Buscar cliente..." : "Agregar otro cliente..."}
+                    className="rounded-xl pl-9"
+                  />
+
+                  {/* Dropdown clientes */}
+                  {showClientDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-lg max-h-[220px] overflow-y-auto">
+                      {clients.length === 0 ? (
+                        <div className="p-4 text-sm text-stone-500 text-center">
+                          No tienes clientes. Crea uno primero.
+                        </div>
+                      ) : filteredClients.length > 0 ? (
+                        <div className="p-2">
+                          {filteredClients.map((client) => (
+                            <div
+                              key={client.id}
+                              onMouseDown={() => handleAddClient(client)}
+                              className="px-3 py-2 rounded-lg cursor-pointer hover:bg-stone-50 flex items-center gap-2 transition-colors"
+                            >
+                              <div className="w-7 h-7 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0 text-xs font-semibold text-stone-600">
+                                {client.first_name?.[0]}{client.last_name?.[0]}
+                              </div>
+                              <div>
+                                <div className="font-medium text-sm">{client.first_name} {client.last_name}</div>
+                                {client.email && <div className="text-xs text-stone-400">{client.email}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : clientSearch ? (
+                        <div className="p-4 text-sm text-stone-500 text-center">
+                          No se encontraron clientes
+                        </div>
+                      ) : (
+                        <div className="p-4 text-sm text-stone-500 text-center flex items-center justify-center gap-2">
+                          <Users className="w-4 h-4" />
+                          Escribe para buscar clientes
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.first_name} {client.last_name}
-                      </SelectItem>
-                    ))
                   )}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
             )}
           </div>
 
+          {/* Países */}
           <div className="space-y-2">
             <Label>Países <span className="text-red-500">*</span></Label>
-            
-            {/* Selected countries */}
+
             {formData.destination && (
               <div className="flex flex-wrap gap-1 mb-2">
                 {formData.destination.split(', ').map((countryName) => (
@@ -274,7 +392,6 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
               </div>
             )}
 
-            {/* Autocomplete input */}
             <div className="relative">
               <Input
                 ref={destinationInputRef}
@@ -291,8 +408,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
               ) : (
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
               )}
-              
-              {/* Dropdown */}
+
               {showDestinationDropdown && !loadingCountries && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-stone-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
                   {filteredCountries.length > 0 ? (
@@ -304,8 +420,8 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
                             key={country.code}
                             onClick={() => handleCountrySelect(country.name)}
                             className={`px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                              isSelected 
-                                ? 'bg-emerald-50 text-emerald-700' 
+                              isSelected
+                                ? 'bg-emerald-50 text-emerald-700'
                                 : 'hover:bg-stone-50'
                             }`}
                           >
@@ -327,6 +443,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
             </div>
           </div>
 
+          {/* Fechas */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_date">Fecha inicio <span className="text-red-500">*</span></Label>
@@ -351,6 +468,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
             </div>
           </div>
 
+          {/* Personas y presupuesto */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="travelers">Número de personas</Label>
@@ -377,6 +495,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
             </div>
           </div>
 
+          {/* Mood y etapa */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="mood">Mood del viaje</Label>
@@ -405,6 +524,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
             </div>
           </div>
 
+          {/* Notas */}
           <div className="space-y-2">
             <Label htmlFor="notes">Notas</Label>
             <Textarea
@@ -416,6 +536,7 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
             />
           </div>
 
+          {/* Motivo pérdida */}
           {formData.stage === 'perdido' && (
             <div className="space-y-2 p-4 bg-red-50 rounded-xl border border-red-200">
               <Label htmlFor="lost_reason" className="text-red-700">Motivo de pérdida *</Label>
@@ -435,8 +556,8 @@ export default function TripForm({ open, onClose, trip, clients = [], onSave, is
             <Button type="button" variant="outline" onClick={onClose} className="rounded-xl">
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               className="rounded-xl text-white"
               style={{ backgroundColor: '#2E442A' }}

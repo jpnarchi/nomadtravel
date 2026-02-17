@@ -17,7 +17,7 @@ const FinancialCard = memo(({ card, index }) => {
         stiffness: 100
       }}
       whileHover={{ scale: 1.05, y: -5 }}
-      className={`bg-gradient-to-br ${card.gradient} rounded-2xl md:rounded-3xl p-4 md:p-5 shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden group cursor-pointer`}
+      className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-3 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden group cursor-pointer`}
     >
       {/* Animated background decoration */}
       <div className="absolute -right-8 -top-8 w-28 h-28 md:w-32 md:h-32 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-500" />
@@ -39,7 +39,7 @@ const FinancialCard = memo(({ card, index }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: index * 0.08 + 0.2 }}
-          className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight drop-shadow-lg"
+          className="text-lg md:text-xl lg:text-2xl font-black text-white tracking-tight drop-shadow-lg truncate"
         >
           {typeof card.value === 'number' && card.value !== card.progress
             ? card.value < 0
