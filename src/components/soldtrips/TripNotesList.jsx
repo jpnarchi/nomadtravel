@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,10 +71,10 @@ export default function TripNotesList({ notes = [], onCreate, onUpdate, onDelete
                 <div className="flex-1">
                   <div className="flex items-start gap-2 mb-1">
                     <span className="text-xs font-medium text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
-                      {format(parseLocalDate(note.created_date), 'd MMM yyyy', { locale: es })}
+                      {formatDate(note.created_date, 'd MMM yyyy', { locale: es })}
                     </span>
                     <span className="text-xs text-stone-400">
-                      {format(parseLocalDate(note.created_date), 'HH:mm', { locale: es })}
+                      {formatDate(note.created_date, 'HH:mm', { locale: es })}
                     </span>
                   </div>
                   <p className={`text-sm ${note.completed ? 'line-through text-stone-500' : 'text-stone-700'}`}>

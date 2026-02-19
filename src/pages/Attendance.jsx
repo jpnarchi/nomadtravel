@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Plus, Calendar, MapPin, Users, Loader2, Edit2, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -187,7 +186,7 @@ export default function Attendance() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-stone-500">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{format(parseLocalDate(event.event_date), 'd MMMM yyyy', { locale: es })}</span>
+                        <span>{formatDate(event.event_date, 'd MMMM yyyy', { locale: es })}</span>
                         {event.event_time && <span>• {event.event_time}</span>}
                       </div>
                       {event.location && (

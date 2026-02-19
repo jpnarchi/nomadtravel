@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Edit2, Trash2, User, Calendar, Loader2 } from 'lucide-react';
-import { format, differenceInYears } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { differenceInYears } from 'date-fns';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import {
   AlertDialog,
@@ -116,7 +116,7 @@ export default function CompanionsList({ companions = [], onUpdate, isLoading })
                       )}
                       {companion.birth_date && (
                         <p className="text-xs text-stone-400 mt-1">
-                          {format(parseLocalDate(companion.birth_date), 'd MMM yyyy', { locale: es })}
+                          {formatDate(companion.birth_date, 'd MMM yyyy', { locale: es })}
                           {age && ` • ${age} años`}
                         </p>
                       )}

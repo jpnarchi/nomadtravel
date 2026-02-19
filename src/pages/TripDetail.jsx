@@ -3,8 +3,7 @@ import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   ArrowLeft, MapPin, Calendar, Users, DollarSign, 
@@ -153,8 +152,8 @@ export default function TripDetail() {
                 <div>
                   <p className="text-xs text-stone-400">Fechas</p>
                   <p className="text-stone-800">
-                    {trip.start_date && format(parseLocalDate(trip.start_date), 'd MMM', { locale: es })}
-                    {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yyyy', { locale: es })}`}
+                    {trip.start_date && formatDate(trip.start_date, 'd MMM', { locale: es })}
+                    {trip.end_date && ` - ${formatDate(trip.end_date, 'd MMM yyyy', { locale: es })}`}
                   </p>
                 </div>
               </div>

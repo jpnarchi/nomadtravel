@@ -13,7 +13,7 @@ import UpcomingTrips from '@/components/dashboard/UpcomingTrips';
 import TasksList from '@/components/dashboard/TasksList';
 import UpcomingPayments from '@/components/dashboard/UpcomingPayments';
 import ActiveReminders from '@/components/dashboard/ActiveReminders';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { parseLocalDate, formatDate } from '@/components/utils/dateHelpers';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -134,14 +134,18 @@ export default function Dashboard() {
 
   const monthlySales = soldTrips
     .filter(trip => {
+      if (!trip.created_date) return false;
       const created = new Date(trip.created_date);
+      if (isNaN(created.getTime())) return false;
       return isWithinInterval(created, thisMonth);
     })
     .reduce((sum, trip) => sum + (trip.total_price || 0), 0);
 
   const monthlyCommission = soldTrips
     .filter(trip => {
+      if (!trip.created_date) return false;
       const created = new Date(trip.created_date);
+      if (isNaN(created.getTime())) return false;
       return isWithinInterval(created, thisMonth);
     })
     .reduce((sum, trip) => sum + (trip.total_commission || 0), 0);
@@ -380,7 +384,7 @@ export default function Dashboard() {
                         <div>
                           <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
                           <p className="text-emerald-100 text-xs mt-1">
-                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
                           </p>
                           <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>
                         </div>
@@ -410,7 +414,7 @@ export default function Dashboard() {
                         <div>
                           <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
                           <p className="text-emerald-100 text-xs mt-1">
-                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
                           </p>
                           <p className="text-emerald-200 text-xs">{payment.supplier}</p>
                           <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>

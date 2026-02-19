@@ -6,9 +6,8 @@ import { useUser } from '@clerk/clerk-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import {
   Plus, Search, Edit2, Trash2, Mail, Phone,
   Calendar, Loader2, Users, Eye
@@ -200,7 +199,7 @@ export default function Clients() {
                     </td>
                     <td className="p-4">
                       <span className="text-stone-600 text-xs">
-                        {client.birth_date ? format(parseLocalDate(client.birth_date), 'd MMM yyyy', { locale: es }) : '-'}
+                        {formatDate(client.birth_date, 'd MMM yyyy', { locale: es })}
                       </span>
                     </td>
                     <td className="p-4 text-right">

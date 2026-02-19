@@ -6,8 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
 import { useUser } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, differenceInDays, isPast } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { differenceInDays, isPast } from 'date-fns';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import {
   Search, MapPin, Calendar, Users, DollarSign,
@@ -312,8 +312,8 @@ export default function SoldTrips() {
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5" />
                                 <span>
-                                  {format(parseLocalDate(`${trip.start_date}T12:00:00`), 'd MMM yyyy', { locale: es })}
-                                  {trip.end_date && ` - ${format(parseLocalDate(`${trip.end_date}T12:00:00`), 'd MMM', { locale: es })}`}
+                                  {formatDate(`${trip.start_date}T12:00:00`, 'd MMM yyyy', { locale: es })}
+                                  {trip.end_date && ` - ${formatDate(`${trip.end_date}T12:00:00`, 'd MMM', { locale: es })}`}
                                 </span>
                               </div>
                               {trip.travelers && (

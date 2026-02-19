@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   ArrowLeft, MapPin, Calendar, Users, Edit2, FileText, Clock, Hash
@@ -10,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createPageUrl } from '@/utils';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { formatDate } from '@/components/utils/dateHelpers';
 import { STATUS_CONFIG } from '../constants/serviceConstants';
 
 // Memoized Info Pill Component with enhanced styling
@@ -152,7 +151,7 @@ export default function TripHeader({
                   </InfoPill>
 
                   <InfoPill icon={Calendar}>
-                    {format(parseLocalDate(soldTrip.start_date), 'd MMM yyyy', { locale: es })}
+                    {formatDate(soldTrip.start_date, 'd MMM yyyy', { locale: es })}
                   </InfoPill>
 
                   {soldTrip.travelers && (
@@ -211,7 +210,7 @@ export default function TripHeader({
             </InfoPill>
 
             <InfoPill icon={Calendar}>
-              {format(parseLocalDate(soldTrip.start_date), 'd MMM', { locale: es })}
+              {formatDate(soldTrip.start_date, 'd MMM', { locale: es })}
             </InfoPill>
 
             {soldTrip.travelers && (

@@ -1,14 +1,14 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabaseAPI } from '@/api/supabaseClient';
-import { differenceInMonths, differenceInWeeks, differenceInDays, differenceInHours, format } from 'date-fns';
+import { differenceInMonths, differenceInWeeks, differenceInDays, differenceInHours } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Bell, CheckCircle, Loader2, MapPin } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { parseLocalDate, formatDate } from '@/components/utils/dateHelpers';
 
 const getActiveTimeline = (startDate) => {
   const tripDate = parseLocalDate(startDate);
@@ -138,7 +138,7 @@ export default function ActiveReminders({ userEmail, isAdmin }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-stone-800 truncate text-sm">{trip.client_name}</p>
-                  <p className="text-xs text-stone-500">{trip.destination} • {format(parseLocalDate(trip.start_date), 'd MMM', { locale: es })}</p>
+                  <p className="text-xs text-stone-500">{trip.destination} • {formatDate(trip.start_date, 'd MMM', { locale: es })}</p>
                 </div>
                 <Badge className="bg-blue-500 text-white text-xs px-1.5 py-0 flex-shrink-0">
                   {TIMELINE_LABELS[timeline]}

@@ -11,6 +11,7 @@ import Login from '@/components/Login';
 import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
 import AdminRoute from '@/components/AdminRoute';
 import ClientTripForm from '@/pages/ClientTripForm';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -39,6 +40,7 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
+    <ErrorBoundary>
     <Routes>
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
@@ -71,6 +73,7 @@ const AuthenticatedApp = () => {
       })}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </ErrorBoundary>
   );
 };
 

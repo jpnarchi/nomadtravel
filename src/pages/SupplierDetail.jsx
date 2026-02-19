@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -460,7 +459,7 @@ export default function SupplierDetail() {
             {supplier.last_used && (
               <div>
                 <h4 className="font-semibold text-stone-800 mb-1">Última vez usado</h4>
-                <p className="text-sm text-stone-600">{format(parseLocalDate(supplier.last_used), 'd MMMM yyyy', { locale: es })}</p>
+                <p className="text-sm text-stone-600">{formatDate(supplier.last_used, 'd MMMM yyyy', { locale: es })}</p>
               </div>
             )}
           </div>

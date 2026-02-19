@@ -1,12 +1,11 @@
 import React from 'react';
 import { Plus, CreditCard, DollarSign, Edit2, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import EmptyState from '@/components/ui/EmptyState';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { formatDate } from '@/components/utils/dateHelpers';
 
 export default function ClientPaymentsTab({
   clientPayments,
@@ -92,7 +91,7 @@ export default function ClientPaymentsTab({
                   )}
 
                   <div className="flex items-center gap-2 text-sm text-stone-500">
-                    <span>{format(parseLocalDate(payment.date), 'd MMMM yyyy', { locale: es })}</span>
+                    <span>{formatDate(payment.date, 'd MMMM yyyy', { locale: es })}</span>
                     <span>•</span>
                     <Badge variant="outline" className="text-xs capitalize font-medium">
                       {payment.method}

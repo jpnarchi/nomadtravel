@@ -10,8 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import EmptyState from '@/components/ui/EmptyState';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 
 const STAGE_CONFIG = {
@@ -175,7 +174,7 @@ export default function AdminTrips() {
                     </td>
                     <td className="p-3 text-stone-600">{trip.destination}</td>
                     <td className="p-3 text-stone-600">
-                      {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
+                      {formatDate(trip.start_date, 'd MMM yy', { locale: es })}
                     </td>
                     <td className="p-3 text-stone-600">
                       {trip.budget ? `$${trip.budget.toLocaleString()}` : '-'}

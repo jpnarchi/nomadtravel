@@ -1,9 +1,9 @@
 import React from 'react';
-import { format, addMonths, isAfter, isBefore } from 'date-fns';
+import { addMonths, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Plane } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { parseLocalDate, formatDate } from '@/components/utils/dateHelpers';
 
 export default function UpcomingTrips({ soldTrips }) {
   const now = new Date();
@@ -48,7 +48,7 @@ export default function UpcomingTrips({ soldTrips }) {
               {trip.client_name} - {trip.destination}
             </span>
             <span className="text-stone-400 whitespace-nowrap">
-              {format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es })}
+              {formatDate(trip.start_date, 'd MMM yy', { locale: es })}
             </span>
           </div>
         ))}

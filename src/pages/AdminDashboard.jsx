@@ -25,7 +25,7 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 import StatsCard from '@/components/ui/StatsCard';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { parseLocalDate, formatDate } from '@/components/utils/dateHelpers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -583,7 +583,7 @@ export default function AdminDashboard() {
                         <div>
                           <p className="text-white font-medium text-sm">${payment.amount.toLocaleString()}</p>
                           <p className="text-emerald-100 text-xs">
-                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
                           </p>
                         </div>
                         {payment.notes && (
@@ -615,7 +615,7 @@ export default function AdminDashboard() {
                         <div>
                           <p className="text-white font-medium text-sm">${payment.amount.toLocaleString()}</p>
                           <p className="text-emerald-100 text-xs">
-                            {format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}
+                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
                           </p>
                           <p className="text-emerald-200 text-xs">{payment.supplier}</p>
                         </div>

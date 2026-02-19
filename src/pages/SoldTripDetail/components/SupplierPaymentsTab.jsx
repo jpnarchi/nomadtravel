@@ -1,12 +1,11 @@
 import React from 'react';
 import { Plus, Building2, Edit2, Trash2, FileText, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import EmptyState from '@/components/ui/EmptyState';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { formatDate } from '@/components/utils/dateHelpers';
 
 export default function SupplierPaymentsTab({
   supplierPayments,
@@ -79,7 +78,7 @@ export default function SupplierPaymentsTab({
                     ${(payment.amount || 0).toLocaleString()}
                   </span>
                   <span>•</span>
-                  <span>{format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })}</span>
+                  <span>{formatDate(payment.date, 'd MMM yyyy', { locale: es })}</span>
                   <span>•</span>
                   <Badge variant="outline" className="text-xs capitalize font-medium">
                     {payment.method}

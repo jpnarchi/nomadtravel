@@ -1,6 +1,7 @@
 /**
  * Utilidades para manejar fechas sin problemas de zona horaria
  */
+import { format as dateFnsFormat } from 'date-fns';
 
 /**
  * Parsea una fecha YYYY-MM-DD como fecha local sin conversión de timezone.
@@ -36,5 +37,26 @@ export function parseLocalDate(dateString) {
 export function parseISODate(dateString) {
   if (!dateString) return null;
   if (dateString instanceof Date) return dateString;
-  return new Date(dateString);
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Formatea una fecha de forma segura, devolviendo un fallback si la fecha es inválida.
+ * Evita RangeError: Invalid time value cuando parseLocalDate devuelve null.
+ *
+ * @param {Date|string|null|undefined} dateInput - Fecha o string de fecha
+ * @param {string} formatStr - Patrón de formato date-fns (ej. 'd MMM yyyy')
+ * @param {object} options - Opciones pasadas a format() (ej. { locale: es })
+ * @param {string} fallback - Valor a mostrar si la fecha es inválida (default: '-')
+ * @returns {string}
+ */
+export function formatDate(dateInput, formatStr, options = {}, fallback = '-') {
+  try {
+    const d = dateInput instanceof Date ? dateInput : parseLocalDate(dateInput);
+    if (!d || isNaN(d.getTime())) return fallback;
+    return dateFnsFormat(d, formatStr, options);
+  } catch {
+    return fallback;
+  }
 }

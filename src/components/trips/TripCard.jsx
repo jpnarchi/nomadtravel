@@ -2,9 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { MapPin, Calendar, Users, DollarSign, Edit2, Trash2, ArrowRight, XCircle, Eye } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,11 +19,6 @@ const STAGE_CONFIG = {
 
 export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
   const stageConfig = STAGE_CONFIG[trip.stage] || STAGE_CONFIG.nuevo;
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return format(parseLocalDate(dateStr), 'd MMM yyyy', { locale: es });
-  };
 
   return (
     <motion.div
@@ -90,8 +84,8 @@ export default function TripCard({ trip, onEdit, onDelete, onMoveStage }) {
         <div className="flex items-center gap-2">
           <Calendar className="w-3.5 h-3.5" />
           <span>
-            {formatDate(trip.start_date)}
-            {trip.end_date && ` - ${formatDate(trip.end_date)}`}
+            {formatDate(trip.start_date, 'd MMM yyyy', { locale: es })}
+            {trip.end_date && ` - ${formatDate(trip.end_date, 'd MMM yyyy', { locale: es })}`}
           </span>
         </div>
         {trip.travelers && (

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Plus, Calendar, MapPin, Building2, Loader2, Edit2, Trash2, CheckCircle, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -138,8 +137,8 @@ export default function FamTrips() {
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          {format(parseLocalDate(trip.start_date), 'd MMM', { locale: es })}
-                          {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yyyy', { locale: es })}`}
+                          {formatDate(trip.start_date, 'd MMM', { locale: es })}
+                          {trip.end_date && ` - ${formatDate(trip.end_date, 'd MMM yyyy', { locale: es })}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">

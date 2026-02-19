@@ -1,8 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Printer, MapPin, CheckCircle } from 'lucide-react';
 
@@ -51,8 +50,8 @@ export default function AgentCommissionInvoice({ open, onClose, commissions, onM
             </div>
             <div className="text-right">
               <p className="text-sm text-stone-500">Fecha de Emisión</p>
-              <p className="font-medium">{format(parseLocalDate(), 'd MMMM yyyy', { locale: es })}</p>
-              <p className="text-xs text-stone-400 mt-1">Invoice #INV-{format(parseLocalDate(), 'yyyyMMdd')}</p>
+              <p className="font-medium">{formatDate(new Date(), 'd MMMM yyyy', { locale: es })}</p>
+              <p className="text-xs text-stone-400 mt-1">Invoice #INV-{formatDate(new Date(), 'yyyyMMdd')}</p>
             </div>
           </div>
 
@@ -60,7 +59,7 @@ export default function AgentCommissionInvoice({ open, onClose, commissions, onM
           <div className="mb-8 p-4 bg-stone-50 rounded-xl">
             <h3 className="text-sm font-semibold text-stone-500 mb-2">Pago de Comisiones a:</h3>
             <p className="text-xl font-bold text-stone-800">{agentName}</p>
-            <p className="text-sm text-stone-600 mt-1">Período: {format(parseLocalDate(), 'MMMM yyyy', { locale: es })}</p>
+            <p className="text-sm text-stone-600 mt-1">Período: {formatDate(new Date(), 'MMMM yyyy', { locale: es })}</p>
           </div>
 
           {/* Commissions Table */}
@@ -83,7 +82,7 @@ export default function AgentCommissionInvoice({ open, onClose, commissions, onM
                         <span className="font-medium text-stone-800">{commission.sold_trip_name || '-'}</span>
                         {commission.estimated_payment_date && (
                           <p className="text-xs text-stone-400">
-                            {format(parseLocalDate(commission.estimated_payment_date), 'd MMM yy', { locale: es })}
+                            {formatDate(commission.estimated_payment_date, 'd MMM yy', { locale: es })}
                           </p>
                         )}
                       </td>

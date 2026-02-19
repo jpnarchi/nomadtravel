@@ -11,9 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import EmptyState from '@/components/ui/EmptyState';
-import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { parseLocalDate } from '@/components/utils/dateHelpers';
+import { formatDate } from '@/components/utils/dateHelpers';
 
 const STATUS_CONFIG = {
   pendiente: { label: 'Pendiente', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
@@ -262,7 +261,7 @@ export default function AdminSoldTrips() {
                     </td>
                     <td className="p-4">
                       <span className="text-stone-600 text-sm">
-                        {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
+                        {formatDate(trip.start_date, 'd MMM yy', { locale: es })}
                       </span>
                     </td>
                     <td className="p-4 text-right">
@@ -372,7 +371,7 @@ export default function AdminSoldTrips() {
                     <div className="flex items-center justify-between">
                       <span className="text-stone-500 text-xs">Fecha:</span>
                       <span className="text-stone-700 font-medium text-xs">
-                        {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM yyyy', { locale: es }) : '-'}
+                        {formatDate(trip.start_date, 'd MMM yyyy', { locale: es })}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">

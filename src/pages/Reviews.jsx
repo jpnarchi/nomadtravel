@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { 
   Plus, Search, Filter, Star, MapPin, Building2, 
   Loader2, Eye, Edit2, Trash2, X, BookOpen, GraduationCap

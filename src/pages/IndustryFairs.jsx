@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Plus, Calendar, MapPin, DollarSign, Loader2, Edit2, Trash2, Users, ExternalLink, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -160,8 +159,8 @@ export default function IndustryFairs() {
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
                         <span>
-                          {format(parseLocalDate(fair.start_date), 'd MMM', { locale: es })}
-                          {fair.end_date && ` - ${format(parseLocalDate(fair.end_date), 'd MMM yyyy', { locale: es })}`}
+                          {formatDate(fair.start_date, 'd MMM', { locale: es })}
+                          {fair.end_date && ` - ${formatDate(fair.end_date, 'd MMM yyyy', { locale: es })}`}
                         </span>
                       </div>
                       {fair.location && (

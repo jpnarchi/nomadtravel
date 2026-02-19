@@ -4,9 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import {
   ArrowLeft, Mail, Phone, Calendar, Loader2,
   Plane, Plus, Send, Copy, Check, ExternalLink, Settings, Trash2
@@ -238,7 +237,7 @@ export default function ClientDetail() {
               {client.birth_date && (
                 <div className="flex items-center gap-3 text-stone-600">
                   <Calendar className="w-4 h-4 text-stone-400" />
-                  <span>{format(parseLocalDate(client.birth_date), 'd MMMM yyyy', { locale: es })}</span>
+                  <span>{formatDate(client.birth_date, 'd MMMM yyyy', { locale: es })}</span>
                 </div>
               )}
             </div>
@@ -365,8 +364,8 @@ export default function ClientDetail() {
                           {trip.trip_name || trip.destination}
                         </h4>
                         <p className="text-sm text-stone-500">
-                          {trip.start_date && format(parseLocalDate(trip.start_date), 'd MMM')}
-                          {trip.end_date && ` - ${format(parseLocalDate(trip.end_date), 'd MMM yyyy')}`}
+                          {trip.start_date && formatDate(trip.start_date, 'd MMM')}
+                          {trip.end_date && ` - ${formatDate(trip.end_date, 'd MMM yyyy')}`}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -408,12 +407,12 @@ export default function ClientDetail() {
                       <div>
                         <p className="font-medium text-stone-700">{req.destination}</p>
                         <p className="text-stone-500 text-xs">
-                          {req.start_date && format(parseLocalDate(req.start_date), 'd MMM', { locale: es })}
-                          {req.end_date && ` - ${format(parseLocalDate(req.end_date), 'd MMM yyyy', { locale: es })}`}
+                          {req.start_date && formatDate(req.start_date, 'd MMM', { locale: es })}
+                          {req.end_date && ` - ${formatDate(req.end_date, 'd MMM yyyy', { locale: es })}`}
                         </p>
                       </div>
                       <span className="text-xs text-stone-400">
-                        {req.created_date && format(parseLocalDate(req.created_date), 'd MMM yyyy', { locale: es })}
+                        {req.created_date && formatDate(req.created_date, 'd MMM yyyy', { locale: es })}
                       </span>
                     </div>
                   </div>

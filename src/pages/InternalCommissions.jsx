@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import {
   Loader2, Search, DollarSign, Plus,
@@ -546,7 +545,7 @@ export default function InternalCommissions() {
                       <span className="font-medium text-stone-800">{commission.sold_trip_name || '-'}</span>
                       {commission.estimated_payment_date && (
                         <p className="text-xs text-stone-500 mt-0.5">
-                          Pago est: {format(parseLocalDate(commission.estimated_payment_date), 'd MMM yy', { locale: es })}
+                          Pago est: {formatDate(commission.estimated_payment_date, 'd MMM yy', { locale: es })}
                         </p>
                       )}
                     </td>
@@ -707,7 +706,7 @@ export default function InternalCommissions() {
                           <p className="text-sm text-stone-700">{serviceName} • {trip?.destination}</p>
                           {service.paid_to_agency_date && (
                             <p className="text-xs text-stone-500 mt-1">
-                              Marcado: {format(parseLocalDate(service.paid_to_agency_date), 'd MMM yyyy', { locale: es })}
+                              Marcado: {formatDate(service.paid_to_agency_date, 'd MMM yyyy', { locale: es })}
                             </p>
                           )}
                         </div>

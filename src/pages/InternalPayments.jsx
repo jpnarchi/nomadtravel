@@ -1,8 +1,7 @@
 import React, { useState, useMemo, memo } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import {
@@ -574,9 +573,7 @@ export default function InternalPayments() {
                 >
                   <td className="p-4">
                     <span className="font-semibold text-stone-800">
-                      {payment.date
-                        ? format(parseLocalDate(payment.date), 'd MMM yyyy', { locale: es })
-                        : '-'}
+                      {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
                     </span>
                   </td>
                   <td className="p-4">

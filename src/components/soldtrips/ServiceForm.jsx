@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Check, ChevronsUpDown } from 'lucide-react';
-import { differenceInDays, format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { differenceInDays } from 'date-fns';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1617,7 +1617,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
               {formData.quote_exchange_rate && formData.quote_date && (
                 <div className="text-xs text-stone-600 bg-white rounded-lg p-2">
                   <p>Tipo de cambio: <span className="font-semibold">1 {formData.local_currency} = ${formData.quote_exchange_rate?.toFixed(4)} USD</span></p>
-                  <p>Fecha de cotización: <span className="font-semibold">{format(parseLocalDate(formData.quote_date), 'd MMM yyyy', { locale: es })}</span></p>
+                  <p>Fecha de cotización: <span className="font-semibold">{formatDate(formData.quote_date, 'd MMM yyyy', { locale: es })}</span></p>
                   <p className="text-blue-600">Factor de protección 1.01 aplicado</p>
                 </div>
               )}

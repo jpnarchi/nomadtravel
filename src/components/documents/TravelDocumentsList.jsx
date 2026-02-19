@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { format, differenceInDays } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { differenceInDays } from 'date-fns';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -149,7 +149,7 @@ export default function TravelDocumentsList({
                         {doc.expiry_date && (
                           <div className="flex items-center gap-2 text-xs text-stone-500">
                             <span className="font-medium">Vencimiento:</span>
-                            <span>{format(parseLocalDate(doc.expiry_date), 'd MMM yyyy', { locale: es })}</span>
+                            <span>{formatDate(doc.expiry_date, 'd MMM yyyy', { locale: es })}</span>
                           </div>
                         )}
                       </div>

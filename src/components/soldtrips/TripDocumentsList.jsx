@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,7 +103,7 @@ export default function TripDocumentsList({ documents = [], soldTripId, onCreate
                       {docTypeInfo.label}
                     </p>
                     <p className="text-xs text-stone-400 mt-1">
-                      {format(parseLocalDate(doc.created_date), 'd MMM yyyy', { locale: es })}
+                      {formatDate(doc.created_date, 'd MMM yyyy', { locale: es })}
                     </p>
                     {doc.notes && (
                       <p className="text-xs text-stone-500 mt-1 italic">"{doc.notes}"</p>

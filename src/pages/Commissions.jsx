@@ -3,8 +3,7 @@ import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
 import { useUser } from '@clerk/clerk-react';
-import { format } from 'date-fns';
-import { parseLocalDate } from '@/lib/dateUtils';
+import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import {
   Loader2, Search, Filter, DollarSign,
@@ -454,7 +453,7 @@ export default function Commissions() {
                       </Select>
                       {service.paid_to_agency && service.paid_to_agency_date && (
                         <p className="text-xs text-green-600 font-medium">
-                          {format(parseLocalDate(service.paid_to_agency_date), 'd MMM yy', { locale: es })}
+                          {formatDate(service.paid_to_agency_date, 'd MMM yy', { locale: es })}
                         </p>
                       )}
                     </div>
@@ -494,9 +493,7 @@ export default function Commissions() {
                             className={`text-stone-500 block ${canEdit ? 'cursor-pointer hover:text-blue-600' : 'cursor-not-allowed opacity-60'}`}
                             onClick={() => canEdit && startEditing(service)}
                           >
-                            {service.commission_payment_date 
-                              ? format(parseLocalDate(service.commission_payment_date), 'd MMM yy', { locale: es })
-                              : '-'}
+                            {formatDate(service.commission_payment_date, 'd MMM yy', { locale: es })}
                           </span>
                           {service.commission_payment_date && service.payment_type === 'bruto' && (
                             <p className="text-xs text-amber-600">
