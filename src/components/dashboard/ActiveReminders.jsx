@@ -12,6 +12,7 @@ import { parseLocalDate, formatDate } from '@/components/utils/dateHelpers';
 
 const getActiveTimeline = (startDate) => {
   const tripDate = parseLocalDate(startDate);
+  if (!tripDate || isNaN(tripDate.getTime())) return null;
   const now = new Date();
   const daysUntil = differenceInDays(tripDate, now);
 
@@ -81,8 +82,9 @@ export default function ActiveReminders({ userEmail, isAdmin }) {
 
   // Filter upcoming trips
   const upcomingTrips = soldTrips.filter(trip => {
+    if (!trip.start_date) return false;
     const tripDate = parseLocalDate(trip.start_date);
-    return tripDate > new Date();
+    return tripDate && !isNaN(tripDate.getTime()) && tripDate > new Date();
   });
 
   // Get active reminders for each trip

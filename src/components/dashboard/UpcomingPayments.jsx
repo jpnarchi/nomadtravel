@@ -15,7 +15,10 @@ export default function UpcomingPayments({ services, soldTrips }) {
   const upcomingPayments = services
     .filter(service => service.payment_due_date && service.reservation_status !== 'pagado')
     .map(service => {
-      const days = differenceInDays(parseLocalDate(service.payment_due_date), new Date());
+      const dueDateParsed = parseLocalDate(service.payment_due_date);
+      const days = dueDateParsed && !isNaN(dueDateParsed.getTime())
+        ? differenceInDays(dueDateParsed, new Date())
+        : 999;
       const trip = getTripInfo(service.sold_trip_id);
       return { ...service, daysUntilDue: days, tripInfo: trip };
     })

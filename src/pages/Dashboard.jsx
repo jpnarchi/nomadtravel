@@ -188,7 +188,11 @@ export default function Dashboard() {
   // Net Commissions Post-Trip Control
   const today = new Date();
   const myFinishedTripsWithNetCommissions = soldTrips
-    .filter(trip => trip.end_date && isPast(parseLocalDate(trip.end_date)))
+    .filter(trip => {
+      if (!trip.end_date) return false;
+      const endDate = parseLocalDate(trip.end_date);
+      return endDate && !isNaN(endDate.getTime()) && isPast(endDate);
+    })
     .map(trip => {
       const totalPrice = trip.total_price || 0;
       const totalPaidByClient = trip.total_paid_by_client || 0;

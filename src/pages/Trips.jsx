@@ -118,7 +118,7 @@ export default function Trips() {
     },
     onSuccess: (data) => {
       console.log('SoldTrip created successfully:', data);
-      queryClient.invalidateQueries({ queryKey: ['soldTrips'] });
+      queryClient.invalidateQueries({ queryKey: ['soldTrips'], refetchType: 'all' });
     },
     onError: (error) => {
       console.error('Error creating SoldTrip:', error);
@@ -130,49 +130,49 @@ export default function Trips() {
     if (editingTrip) {
       // Check if moving to "vendido" stage
       if (data.stage === 'vendido' && editingTrip.stage !== 'vendido') {
-        // Create sold trip record
         await createSoldTripMutation.mutateAsync({
           trip_id: editingTrip.id,
-          client_id: data.client_id,
-          client_name: data.client_name,
+          client_id: data.client_id || null,
+          client_name: data.client_name || '',
           trip_name: data.trip_name || null,
-          destination: data.destination,
-          start_date: data.start_date,
-          end_date: data.end_date,
+          destination: data.destination || '',
+          start_date: data.start_date || null,
+          end_date: data.end_date || null,
           num_adults: data.travelers || 0,
           num_children: 0,
           total_price: data.budget || 0,
           total_commission: 0,
           total_paid_by_client: 0,
           currency: 'USD',
-          status: 'confirmed',
+          status: 'pendiente',
+          is_deleted: false,
           metadata: {
             clients: data.metadata?.clients || [{ id: data.client_id, name: data.client_name }],
             client_ids: data.metadata?.client_ids || [data.client_id]
           }
         });
       }
-      updateMutation.mutate({ id: editingTrip.id, data });
+      await updateMutation.mutateAsync({ id: editingTrip.id, data });
     } else {
       // Check if creating with "vendido" stage
       if (data.stage === 'vendido') {
         const trip = await createMutation.mutateAsync(data);
-        // Create sold trip record immediately
         await createSoldTripMutation.mutateAsync({
           trip_id: trip.id,
-          client_id: data.client_id,
-          client_name: data.client_name,
+          client_id: data.client_id || null,
+          client_name: data.client_name || '',
           trip_name: data.trip_name || null,
-          destination: data.destination,
-          start_date: data.start_date,
-          end_date: data.end_date,
+          destination: data.destination || '',
+          start_date: data.start_date || null,
+          end_date: data.end_date || null,
           num_adults: data.travelers || 0,
           num_children: 0,
           total_price: data.budget || 0,
           total_commission: 0,
           total_paid_by_client: 0,
           currency: 'USD',
-          status: 'confirmed',
+          status: 'pendiente',
+          is_deleted: false,
           metadata: {
             clients: data.metadata?.clients || [{ id: data.client_id, name: data.client_name }],
             client_ids: data.metadata?.client_ids || [data.client_id]
@@ -203,31 +203,29 @@ export default function Trips() {
         toast.loading('Avanzando etapa...', { id: 'move-stage' });
 
         if (nextStage === 'vendido') {
-          console.log('Creating SoldTrip record...');
           const soldTripData = {
             trip_id: trip.id,
-            client_id: trip.client_id,
-            client_name: trip.client_name,
+            client_id: trip.client_id || null,
+            client_name: trip.client_name || '',
             trip_name: trip.trip_name || null,
-            destination: trip.destination,
-            start_date: trip.start_date,
-            end_date: trip.end_date,
+            destination: trip.destination || '',
+            start_date: trip.start_date || null,
+            end_date: trip.end_date || null,
             num_adults: trip.travelers || 0,
             num_children: 0,
             total_price: trip.budget || 0,
             total_commission: 0,
             total_paid_by_client: 0,
             currency: 'USD',
-            status: 'confirmed',
+            status: 'pendiente',
+            is_deleted: false,
             metadata: {
               clients: trip.metadata?.clients || [{ id: trip.client_id, name: trip.client_name }],
               client_ids: trip.metadata?.client_ids || [trip.client_id]
             }
           };
-          console.log('SoldTrip data:', soldTripData);
 
-          const soldTripResult = await createSoldTripMutation.mutateAsync(soldTripData);
-          console.log('SoldTrip created:', soldTripResult);
+          await createSoldTripMutation.mutateAsync(soldTripData);
         }
 
         console.log('Updating trip stage to:', nextStage);

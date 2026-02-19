@@ -47,7 +47,7 @@ const SEASONS = [
 ];
 
 export default function Statistics() {
-  const { viewMode } = useContext(ViewModeContext);
+  const { viewMode, isActualAdmin } = useContext(ViewModeContext);
   const { user: clerkUser, isLoaded } = useUser();
 
   // Convert Clerk user to app user format
@@ -62,7 +62,7 @@ export default function Statistics() {
   const userLoading = !isLoaded;
 
   const [filters, setFilters] = useState({
-    year: new Date().getFullYear().toString(),
+    year: 'all',
     saleMonth: 'all',
     travelMonth: 'all',
     season: 'all',
@@ -74,7 +74,8 @@ export default function Statistics() {
     agent: 'all'
   });
 
-  const isAdmin = user?.role === 'admin' && viewMode === 'admin';
+  // Usar isActualAdmin del contexto (basado en isAdminEmail) en lugar de publicMetadata.role
+  const isAdmin = isActualAdmin && viewMode === 'admin';
 
   const { data: soldTrips = [], isLoading: tripsLoading } = useQuery({
     queryKey: ['soldTrips', user?.email, isAdmin],
@@ -90,12 +91,13 @@ export default function Statistics() {
     queryKey: ['services', user?.email, isAdmin],
     queryFn: async () => {
       if (!user) return [];
-      const trips = isAdmin 
-        ? await supabaseAPI.entities.SoldTrip.list()
-        : await supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
-      const tripIds = trips.map(t => t.id);
-      const allSvcs = await supabaseAPI.entities.TripService.list();
-      return allSvcs.filter(s => tripIds.includes(s.sold_trip_id));
+      // Reusar soldTrips ya cargados para filtrar servicios en la BD
+      // Usar join directo en Supabase para mayor eficiencia
+      if (isAdmin) {
+        return supabaseAPI.entities.TripService.list();
+      }
+      // Para usuarios, filtrar servicios por email del creador directamente
+      return supabaseAPI.entities.TripService.filter({ created_by: user.email });
     },
     enabled: !!user && !userLoading
   });
@@ -253,7 +255,7 @@ export default function Statistics() {
 
   const clearFilters = () => {
     setFilters({
-      year: new Date().getFullYear().toString(),
+      year: 'all',
       saleMonth: 'all',
       travelMonth: 'all',
       season: 'all',
@@ -266,10 +268,7 @@ export default function Statistics() {
     });
   };
 
-  const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
-    if (key === 'year') return value !== new Date().getFullYear().toString();
-    return value !== 'all';
-  });
+  const hasActiveFilters = Object.entries(filters).some(([, value]) => value !== 'all');
 
   if (isLoading) {
     return (
@@ -290,6 +289,14 @@ export default function Statistics() {
           <p className="text-stone-500 mt-1">
             {isAdmin ? 'Análisis de desempeño y estadísticas por agente' : 'Análisis de ventas, tendencias y desempeño'}
           </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-sm font-semibold text-stone-700">{filteredData.filteredTrips.length} viajes</p>
+            <p className="text-xs text-stone-400">
+              {soldTrips.length > filteredData.filteredTrips.length ? `de ${soldTrips.length} totales` : 'en total'}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -417,6 +424,33 @@ export default function Statistics() {
           </Select>
         </div>
       </div>
+
+      {/* Empty state when no data */}
+      {soldTrips.length === 0 && !isLoading && (
+        <div className="bg-white rounded-2xl p-10 shadow-sm border border-stone-100 text-center">
+          <TrendingUp className="w-14 h-14 mx-auto mb-4 text-stone-200" />
+          <h3 className="text-lg font-semibold text-stone-700 mb-2">Sin datos de ventas</h3>
+          <p className="text-stone-400 text-sm max-w-md mx-auto">
+            {isAdmin
+              ? 'No se encontraron viajes vendidos en el sistema.'
+              : 'Aún no tienes viajes vendidos registrados. Las estadísticas aparecerán aquí una vez que registres ventas.'}
+          </p>
+        </div>
+      )}
+
+      {/* No results with current filters */}
+      {soldTrips.length > 0 && filteredData.filteredTrips.length === 0 && (
+        <div className="bg-amber-50 rounded-2xl p-5 border border-amber-100 flex items-center gap-3">
+          <Filter className="w-5 h-5 text-amber-500 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Sin resultados para los filtros actuales</p>
+            <p className="text-xs text-amber-600 mt-0.5">
+              Hay {soldTrips.length} viajes en total, pero ninguno coincide con los filtros seleccionados.
+              {' '}<button onClick={clearFilters} className="underline font-medium">Limpiar filtros</button>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue={isAdmin ? "agent-comparison" : "general"} className="space-y-6">

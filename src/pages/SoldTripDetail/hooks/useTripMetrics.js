@@ -25,8 +25,9 @@ export function useTripMetrics(soldTrip, services, clientPayments, supplierPayme
     const clientBalance = totalServicesToPay - totalClientPaid;
     const paymentProgress = totalServices > 0 ? Math.round((totalClientPaid / totalServices) * 100) : 0;
 
-    const daysUntilTrip = differenceInDays(parseLocalDate(soldTrip.start_date), new Date());
-    const isTripPast = isPast(parseLocalDate(soldTrip.start_date));
+    const startDate = parseLocalDate(soldTrip.start_date);
+    const daysUntilTrip = startDate && !isNaN(startDate.getTime()) ? differenceInDays(startDate, new Date()) : 0;
+    const isTripPast = startDate && !isNaN(startDate.getTime()) ? isPast(startDate) : false;
 
     // Pending payment alerts
     const today = new Date();

@@ -17,21 +17,21 @@ const FinancialCard = memo(({ card, index }) => {
         stiffness: 100
       }}
       whileHover={{ scale: 1.05, y: -5 }}
-      className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-3 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden group cursor-pointer`}
+      className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-2.5 md:p-3 shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden group cursor-pointer min-w-0`}
     >
       {/* Animated background decoration */}
       <div className="absolute -right-8 -top-8 w-28 h-28 md:w-32 md:h-32 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-500" />
       <div className="absolute -left-4 -bottom-4 w-20 h-20 md:w-24 md:h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all duration-500" />
 
       <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2 md:mb-3">
-          <p className="text-xs md:text-sm font-bold text-white/95 uppercase tracking-wider">{card.label}</p>
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] md:text-xs font-bold text-white/95 uppercase tracking-wider truncate">{card.label}</p>
           <motion.div
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.6 }}
-            className={`w-9 h-9 md:w-10 md:h-10 ${card.iconBg} rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300`}
+            className={`w-7 h-7 md:w-8 md:h-8 flex-shrink-0 ${card.iconBg} rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-2xl transition-all duration-300`}
           >
-            <Icon className={`w-4 h-4 md:w-5 md:h-5 ${card.iconColor}`} />
+            <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${card.iconColor}`} />
           </motion.div>
         </div>
 
@@ -39,7 +39,7 @@ const FinancialCard = memo(({ card, index }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: index * 0.08 + 0.2 }}
-          className="text-lg md:text-xl lg:text-2xl font-black text-white tracking-tight drop-shadow-lg truncate"
+          className="text-base md:text-lg xl:text-xl font-black text-white tracking-tight drop-shadow-lg leading-tight break-all"
         >
           {typeof card.value === 'number' && card.value !== card.progress
             ? card.value < 0
@@ -49,8 +49,8 @@ const FinancialCard = memo(({ card, index }) => {
         </motion.p>
 
         {card.showProgress && (
-          <div className="mt-3 md:mt-4 space-y-1.5">
-            <div className="h-2 md:h-2.5 bg-white/25 rounded-full overflow-hidden backdrop-blur-sm">
+          <div className="mt-1.5">
+            <div className="h-1.5 bg-white/25 rounded-full overflow-hidden backdrop-blur-sm">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${card.progress}%` }}
@@ -64,7 +64,6 @@ const FinancialCard = memo(({ card, index }) => {
                 />
               </motion.div>
             </div>
-            <p className="text-xs text-white/80 font-semibold">Progreso de pagos del cliente</p>
           </div>
         )}
 
@@ -164,7 +163,7 @@ export default function FinancialSummary({ metrics }) {
       </motion.div>
 
       {/* Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2 md:gap-3 items-start">
         {cards.map((card, index) => (
           <FinancialCard key={card.label} card={card} index={index} />
         ))}

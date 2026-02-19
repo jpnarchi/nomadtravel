@@ -77,10 +77,12 @@ export default function SoldTrips() {
     queryFn: async () => {
       if (!user) return [];
       if (isAdmin) return supabaseAPI.entities.SoldTrip.list('-created_date');
-      return supabaseAPI.entities.SoldTrip.filter({ created_by: user.email }, '-created_date');
+      return supabaseAPI.entities.SoldTrip.filter({ created_by: user.email });
     },
     enabled: !!user,
-    refetchOnWindowFocus: true
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   const updateMutation = useMutation({
