@@ -22,7 +22,7 @@ export function useTripMetrics(soldTrip, services, clientPayments, supplierPayme
       return sum + (s.total_price || s.price || 0);
     }, 0);
 
-    const clientBalance = totalServicesToPay - totalClientPaid;
+    const clientBalance = Math.max(0, totalServicesToPay - totalClientPaid - totalSupplierPaid);
     const paymentProgress = totalServices > 0 ? Math.round((totalClientPaid / totalServices) * 100) : 0;
 
     const startDate = parseLocalDate(soldTrip.start_date);
@@ -38,6 +38,16 @@ export function useTripMetrics(soldTrip, services, clientPayments, supplierPayme
       // Check reservation_status in both direct field and metadata
       const reservationStatus = service.reservation_status || service.metadata?.reservation_status;
       if (reservationStatus === 'pagado') return false;
+
+      // Exclude services that already have supplier payments covering the full amount
+      const serviceSupplierPayments = supplierPayments.filter(p => p.trip_service_id === service.id);
+      if (serviceSupplierPayments.length > 0) {
+        const totalPaidToSupplier = serviceSupplierPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+        const costToPay = service.payment_type === 'neto'
+          ? (service.total_price || 0) - (service.commission || 0)
+          : (service.total_price || 0);
+        if (totalPaidToSupplier >= costToPay) return false;
+      }
 
       const dueDate = parseLocalDate(paymentDueDate);
       const daysUntilDue = differenceInDays(dueDate, today);
