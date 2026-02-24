@@ -122,7 +122,7 @@ export default function FinancialSummary({ metrics }) {
     },
     {
       label: 'Por Cobrar',
-      value: clientBalance,
+      value: totalServices-totalClientPaid,
       icon: clientBalance > 0 ? TrendingDown : TrendingUp,
       gradient: clientBalance > 0
         ? 'from-orange-500 via-orange-600 to-red-500'

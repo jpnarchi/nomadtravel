@@ -120,9 +120,9 @@ export default function InternalCommissions() {
         const agent = users.find(u => u.email === agentEmail);
 
         let status = 'pendiente';
-        if (s.commission_paid && s.paid_to_agent) {
+        if (s.paid_to_agent) {
           status = 'pagada_agente';
-        } else if (s.paid_to_agency && !s.commission_paid) {
+        } else if (s.paid_to_agency || s.commission_paid) {
           status = 'pagado_a_agencia_interno';
         }
 
@@ -241,7 +241,10 @@ export default function InternalCommissions() {
     if (commission.source === 'tripService') {
       await updateTripServiceMutation.mutateAsync({
         id: commission.service_id,
-        data: { paid_to_agent: isPaid }
+        data: {
+          paid_to_agent: isPaid,
+          commission_paid: isPaid ? true : commission.received_amount ? true : false
+        }
       });
     } else {
       updateMutation.mutate({
@@ -305,7 +308,7 @@ export default function InternalCommissions() {
       } else if (newStatus === 'pagado_a_agencia_interno') {
         updateData = {
           paid_to_agency: true,
-          commission_paid: false,
+          commission_paid: true,
           paid_to_agent: false
         };
       } else if (newStatus === 'pagada_agente') {
@@ -444,7 +447,8 @@ export default function InternalCommissions() {
     tripServices.filter(s =>
       s.paid_to_agency === true &&
       s.commission > 0 &&
-      !s.commission_paid
+      !s.commission_paid &&
+      !s.paid_to_agent
     ),
     [tripServices]
   );
