@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { supabaseAPI } from '@/api/supabaseClient';
+import { supabase } from '@/api/supabaseClient';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, FileText, User as UserIcon } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 
-export default function AgentInvoiceGenerator({ open, onClose, services, soldTrips }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [needsProfile, setNeedsProfile] = useState(false);
+export default function AgentInvoiceGenerator({ open, onClose, services, soldTrips, currentUser }) {
   const [profileData, setProfileData] = useState({
     full_name: '',
     business_name: '',
@@ -32,254 +29,307 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
     description: 'Commission payment for trip referenced above per agreed split.'
   });
   const [autoInvoiceNumber, setAutoInvoiceNumber] = useState('');
+  const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (open) {
-      fetchUser();
+    if (open && currentUser) {
+      fetchUserProfile();
     }
-  }, [open]);
+  }, [open, currentUser]);
 
-  const fetchUser = async () => {
-    try {
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      
-      // Check if user has required profile data
-      const hasProfile = currentUser.rfc && currentUser.address && currentUser.phone && 
-                        currentUser.bank_name && currentUser.clabe;
-      
-      if (!hasProfile) {
-        setNeedsProfile(true);
-        setProfileData({
-          full_name: currentUser.full_name || '',
-          business_name: currentUser.business_name || '',
-          address: currentUser.address || '',
-          email: currentUser.email || '',
-          phone: currentUser.phone || '',
-          rfc: currentUser.rfc || '',
-          bank_name: currentUser.bank_name || '',
-          account_holder: currentUser.account_holder || currentUser.full_name || '',
-          clabe: currentUser.clabe || ''
-        });
-      } else {
-        setProfileData({
-          full_name: currentUser.full_name,
-          business_name: currentUser.business_name || '',
-          address: currentUser.address,
-          email: currentUser.email,
-          phone: currentUser.phone,
-          rfc: currentUser.rfc,
-          bank_name: currentUser.bank_name,
-          account_holder: currentUser.account_holder || currentUser.full_name,
-          clabe: currentUser.clabe
-        });
-        
-        // Generate auto invoice number
-        const year = new Date().getFullYear();
-        const nextNumber = (currentUser.last_invoice_number || 0) + 1;
-        const autoNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`;
-        setAutoInvoiceNumber(autoNumber);
-        setInvoiceData(prev => ({ ...prev, invoice_number: autoNumber }));
-      }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      toast.error('Error al cargar el perfil');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveProfile = async () => {
+  const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      await base44.auth.updateMe({
-        business_name: profileData.business_name,
-        address: profileData.address,
-        phone: profileData.phone,
-        rfc: profileData.rfc,
-        bank_name: profileData.bank_name,
-        account_holder: profileData.account_holder,
-        clabe: profileData.clabe
+      if (!currentUser?.email) {
+        setLoading(false);
+        return;
+      }
+      // Fetch full profile from users table using Clerk email
+      const { data: profile } = await supabase.from('users').select('*').eq('email', currentUser.email).single();
+      const fullUser = profile || currentUser;
+
+      setProfileData({
+        full_name: fullUser.full_name || '',
+        business_name: fullUser.business_name || '',
+        address: fullUser.address || '',
+        email: fullUser.email || '',
+        phone: fullUser.phone || '',
+        rfc: fullUser.rfc || '',
+        bank_name: fullUser.bank_name || '',
+        account_holder: fullUser.account_holder || fullUser.full_name || '',
+        clabe: fullUser.clabe || ''
       });
-      setNeedsProfile(false);
-      toast.success('Perfil actualizado');
+
+      // Generate auto invoice number
+      const year = new Date().getFullYear();
+      const nextNumber = (fullUser.last_invoice_number || 0) + 1;
+      const autoNumber = `INV-${year}-${String(nextNumber).padStart(3, '0')}`;
+      setAutoInvoiceNumber(autoNumber);
+      setInvoiceData(prev => ({ ...prev, invoice_number: autoNumber }));
     } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Error al guardar el perfil');
+      console.error('Error fetching user profile:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const generatePDF = async () => {
-    if (!invoiceData.invoice_number || !invoiceData.due_date || !invoiceData.travel_reference) {
-      toast.error('Por favor completa todos los campos obligatorios');
+    const newErrors = {};
+    if (!invoiceData.invoice_number.trim()) newErrors.invoice_number = true;
+    if (!invoiceData.due_date) newErrors.due_date = true;
+    if (!invoiceData.travel_reference.trim()) newErrors.travel_reference = true;
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error('Por favor completa los campos marcados en rojo');
       return;
     }
 
+    setErrors({});
     setGenerating(true);
 
     try {
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
       let yPos = 20;
 
-      // Header
-      doc.setFontSize(22);
-      doc.setFont(undefined, 'bold');
-      doc.text('INVOICE', 105, yPos, { align: 'center' });
-      yPos += 15;
+      // Colors
+      const brandGreen = [46, 68, 42];
+      const lightGreen = [234, 244, 232];
+      const darkText = [33, 33, 33];
+      const grayText = [120, 120, 120];
+      const borderGray = [200, 200, 200];
+      const zebraGray = [248, 248, 248];
 
-      // Freelance Advisor Information
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('Freelance Advisor / Sender Information', 20, yPos);
-      yPos += 7;
-      
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Name: ${profileData.full_name}`, 20, yPos);
-      yPos += 5;
-      if (profileData.business_name) {
-        doc.text(`Business Name: ${profileData.business_name}`, 20, yPos);
-        yPos += 5;
-      }
-      doc.text(`Address: ${profileData.address}`, 20, yPos);
-      yPos += 5;
-      doc.text(`Email: ${profileData.email}`, 20, yPos);
-      yPos += 5;
-      doc.text(`Phone: ${profileData.phone}`, 20, yPos);
-      yPos += 5;
-      doc.text(`RFC: ${profileData.rfc}`, 20, yPos);
-      yPos += 10;
-
-      // Bill To
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('Bill To:', 20, yPos);
-      yPos += 7;
-      
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text('Nomad Travel LLC', 20, yPos);
-      yPos += 5;
-      doc.text('3702 San Efrain Street', 20, yPos);
-      yPos += 5;
-      doc.text('Mission, TX 78572', 20, yPos);
-      yPos += 5;
-      doc.text('USA', 20, yPos);
-      yPos += 5;
-      doc.text('Email: info@nomadtravel.mx', 20, yPos);
-      yPos += 5;
-      doc.text('Tax ID: 99-0692205', 20, yPos);
-      yPos += 10;
-
-      // Invoice Details
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('Invoice Details', 20, yPos);
-      yPos += 7;
-      
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Invoice Number: ${invoiceData.invoice_number}`, 20, yPos);
-      yPos += 5;
-      doc.text(`Invoice Date: ${invoiceData.invoice_date}`, 20, yPos);
-      yPos += 5;
-      doc.text(`Due Date: ${invoiceData.due_date}`, 20, yPos);
-      yPos += 5;
-      doc.text(`Travel Reference / Client Name: ${invoiceData.travel_reference}`, 20, yPos);
-      yPos += 10;
-
-      // Description
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('Description of Services / Commission Payment:', 20, yPos);
-      yPos += 7;
-      
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      const descLines = doc.splitTextToSize(invoiceData.description, 170);
-      doc.text(descLines, 20, yPos);
-      yPos += (descLines.length * 5) + 5;
-
-      // Commission Breakdown Table
-      doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
-      doc.text('Commission Breakdown', 20, yPos);
-      yPos += 7;
-
-      // Table Header
-      doc.setFillColor(46, 68, 42);
-      doc.rect(20, yPos, 170, 8, 'F');
+      // ── Header bar ──
+      doc.setFillColor(...brandGreen);
+      doc.rect(0, 0, pageWidth, 36, 'F');
       doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont(undefined, 'bold');
+      doc.text('INVOICE', margin, 24);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`#${invoiceData.invoice_number}`, pageWidth - margin, 16, { align: 'right' });
+      doc.text(`Date: ${invoiceData.invoice_date}`, pageWidth - margin, 23, { align: 'right' });
+      doc.text(`Due: ${invoiceData.due_date}`, pageWidth - margin, 30, { align: 'right' });
+      yPos = 48;
+
+      // ── From / To side by side ──
+      doc.setTextColor(...darkText);
+      const colWidth = (contentWidth - 10) / 2;
+
+      // FROM
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...grayText);
+      doc.text('FROM', margin, yPos);
+      yPos += 5;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...darkText);
+      doc.text(profileData.full_name || 'Agent Name', margin, yPos);
+      yPos += 5;
+      doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
-      doc.text('Item / Trip Component', 22, yPos + 5);
-      doc.text('Amount Received', 90, yPos + 5);
-      doc.text('Split %', 135, yPos + 5);
-      doc.text('Amount Owed', 160, yPos + 5);
+      doc.setTextColor(...grayText);
+      if (profileData.business_name) {
+        doc.text(profileData.business_name, margin, yPos);
+        yPos += 4;
+      }
+      if (profileData.address) {
+        const addrLines = doc.splitTextToSize(profileData.address, colWidth);
+        doc.text(addrLines, margin, yPos);
+        yPos += addrLines.length * 4;
+      }
+      if (profileData.email) {
+        doc.text(profileData.email, margin, yPos);
+        yPos += 4;
+      }
+      if (profileData.phone) {
+        doc.text(`Tel: ${profileData.phone}`, margin, yPos);
+        yPos += 4;
+      }
+      if (profileData.rfc) {
+        doc.text(`RFC: ${profileData.rfc}`, margin, yPos);
+        yPos += 4;
+      }
+
+      // TO (right column, reset yPos to same start)
+      const toStartY = 48;
+      const rightCol = margin + colWidth + 10;
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...grayText);
+      doc.text('BILL TO', rightCol, toStartY);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...darkText);
+      doc.text('Nomad Travel LLC', rightCol, toStartY + 5);
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(...grayText);
+      doc.text('3702 San Efrain Street', rightCol, toStartY + 10);
+      doc.text('Mission, TX 78572, USA', rightCol, toStartY + 14);
+      doc.text('info@nomadtravel.mx', rightCol, toStartY + 18);
+      doc.text('Tax ID: 99-0692205', rightCol, toStartY + 22);
+
+      // Ensure yPos accounts for both columns
+      yPos = Math.max(yPos, toStartY + 28) + 6;
+
+      // ── Travel Reference & Description ──
+      if (invoiceData.travel_reference) {
+        doc.setFillColor(...lightGreen);
+        doc.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'F');
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...brandGreen);
+        doc.text(`Travel Reference: ${invoiceData.travel_reference}`, margin + 4, yPos + 7.5);
+        yPos += 16;
+      }
+
+      if (invoiceData.description) {
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(...grayText);
+        const descLines = doc.splitTextToSize(invoiceData.description, contentWidth);
+        doc.text(descLines, margin, yPos);
+        yPos += descLines.length * 4 + 4;
+      }
+
+      // ── Divider line ──
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.3);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 6;
+
+      // ── Commission Breakdown Table ──
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...darkText);
+      doc.text('Commission Breakdown', margin, yPos);
       yPos += 8;
 
+      // Table column positions
+      const col1X = margin;        // Item name
+      const col2X = 110;           // Commission
+      const col3X = 145;           // Split %
+      const col4X = pageWidth - margin; // Amount (right-aligned)
+      const rowHeight = 8;
+
+      // Table Header
+      doc.setFillColor(...brandGreen);
+      doc.roundedRect(margin, yPos, contentWidth, rowHeight, 1, 1, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont(undefined, 'bold');
+      doc.text('ITEM / TRIP COMPONENT', col1X + 3, yPos + 5.5);
+      doc.text('COMMISSION', col2X, yPos + 5.5);
+      doc.text('SPLIT', col3X, yPos + 5.5);
+      doc.text('AMOUNT OWED', col4X - 3, yPos + 5.5, { align: 'right' });
+      yPos += rowHeight;
+
       // Table Rows
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
       let totalOwed = 0;
 
       services.forEach((service, index) => {
-        const trip = soldTrips.find(t => t.id === service.sold_trip_id);
         const serviceName = getServiceName(service);
         const amountReceived = service.commission || 0;
         const agentSplit = 50;
         const amountOwed = amountReceived * 0.5;
         totalOwed += amountOwed;
 
-        // Alternate row colors
+        // Zebra striping
         if (index % 2 === 0) {
-          doc.setFillColor(245, 245, 244);
-          doc.rect(20, yPos - 4, 170, 6, 'F');
+          doc.setFillColor(...zebraGray);
+          doc.rect(margin, yPos, contentWidth, rowHeight, 'F');
         }
 
-        doc.text(serviceName.substring(0, 30), 22, yPos);
-        doc.text(`$${amountReceived.toLocaleString()}`, 90, yPos);
-        doc.text(`${agentSplit}%`, 135, yPos);
-        doc.text(`$${amountOwed.toLocaleString()}`, 160, yPos);
-        yPos += 6;
+        // Bottom border for each row
+        doc.setDrawColor(...borderGray);
+        doc.setLineWidth(0.1);
+        doc.line(margin, yPos + rowHeight, pageWidth - margin, yPos + rowHeight);
+
+        doc.setTextColor(...darkText);
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+
+        // Truncate service name to fit column
+        const maxNameWidth = col2X - col1X - 6;
+        let displayName = serviceName;
+        while (doc.getTextWidth(displayName) > maxNameWidth && displayName.length > 3) {
+          displayName = displayName.slice(0, -4) + '...';
+        }
+
+        doc.text(displayName, col1X + 3, yPos + 5.5);
+        doc.text(`$${amountReceived.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, col2X, yPos + 5.5);
+        doc.text(`${agentSplit}%`, col3X, yPos + 5.5);
+        doc.setFont(undefined, 'bold');
+        doc.text(`$${amountOwed.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, col4X - 3, yPos + 5.5, { align: 'right' });
+        yPos += rowHeight;
       });
 
-      // Total
+      // ── Total Row ──
       yPos += 2;
-      doc.setFont(undefined, 'bold');
-      doc.setFillColor(46, 68, 42);
-      doc.rect(20, yPos - 4, 170, 8, 'F');
+      doc.setFillColor(...brandGreen);
+      doc.roundedRect(margin, yPos, contentWidth, 10, 1, 1, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.text('Total Commission Owed:', 22, yPos);
-      doc.text(`$${totalOwed.toLocaleString()}`, 160, yPos);
-      yPos += 10;
-
-      // Payment Instructions
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(12);
-      doc.text('Payment Instructions (Agent\'s bank info)', 20, yPos);
-      yPos += 7;
-      
       doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('TOTAL COMMISSION OWED', col1X + 3, yPos + 7);
+      doc.setFontSize(12);
+      doc.text(`$${totalOwed.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, col4X - 3, yPos + 7, { align: 'right' });
+      yPos += 18;
+
+      // ── Payment Instructions ──
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.3);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 6;
+
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...darkText);
+      doc.text('Payment Instructions', margin, yPos);
+      yPos += 7;
+
+      doc.setFontSize(9);
       doc.setFont(undefined, 'normal');
-      doc.text(`Bank Name: ${profileData.bank_name}`, 20, yPos);
-      yPos += 5;
-      doc.text(`Account Holder: ${profileData.account_holder}`, 20, yPos);
-      yPos += 5;
-      doc.text(`CLABE: ${profileData.clabe}`, 20, yPos);
+      doc.setTextColor(...grayText);
+
+      const paymentFields = [
+        ['Bank', profileData.bank_name],
+        ['Account Holder', profileData.account_holder],
+        ['CLABE', profileData.clabe]
+      ].filter(([, val]) => val);
+
+      paymentFields.forEach(([label, value]) => {
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...darkText);
+        doc.text(`${label}:`, margin, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(...grayText);
+        doc.text(value, margin + 32, yPos);
+        yPos += 5;
+      });
+
+      // ── Footer ──
+      const footerY = doc.internal.pageSize.getHeight() - 12;
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.2);
+      doc.line(margin, footerY - 4, pageWidth - margin, footerY - 4);
+      doc.setFontSize(7);
+      doc.setTextColor(...grayText);
+      doc.text('Thank you for your business.', margin, footerY);
+      doc.text(`Generated on ${new Date().toLocaleDateString('en-US')}`, pageWidth - margin, footerY, { align: 'right' });
 
       // Save PDF
       doc.save(`Invoice_${invoiceData.invoice_number}_${profileData.full_name.replace(/\s+/g, '_')}.pdf`);
-      
-      // Update last invoice number
-      const invoiceMatch = invoiceData.invoice_number.match(/\d+$/);
-      if (invoiceMatch) {
-        const lastNumber = parseInt(invoiceMatch[0]);
-        await base44.auth.updateMe({ last_invoice_number: lastNumber });
-      }
-      
+
       toast.success('Factura generada exitosamente');
       onClose();
     } catch (error) {
@@ -304,7 +354,10 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
   if (loading) {
     return (
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>Cargando...</DialogTitle>
+          </DialogHeader>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#2E442A' }} />
           </div>
@@ -313,139 +366,9 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
     );
   }
 
-  if (needsProfile) {
-    return (
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserIcon className="w-5 h-5" />
-              Completa tu perfil de facturación
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-              Para generar facturas, necesitamos tu información fiscal y bancaria. Esta información se guardará en tu perfil.
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nombre completo</Label>
-                <Input
-                  value={profileData.full_name}
-                  disabled
-                  className="bg-stone-100"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Nombre del negocio (opcional)</Label>
-                <Input
-                  value={profileData.business_name}
-                  onChange={(e) => setProfileData({ ...profileData, business_name: e.target.value })}
-                  placeholder="Ej: Mi Agencia de Viajes"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Dirección completa <span className="text-red-500">*</span></Label>
-              <Textarea
-                value={profileData.address}
-                onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                placeholder="Calle, número, colonia, ciudad, estado, código postal"
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  value={profileData.email}
-                  disabled
-                  className="bg-stone-100"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Teléfono <span className="text-red-500">*</span></Label>
-                <Input
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                  placeholder="+52 123 456 7890"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>RFC <span className="text-red-500">*</span></Label>
-              <Input
-                value={profileData.rfc}
-                onChange={(e) => setProfileData({ ...profileData, rfc: e.target.value.toUpperCase() })}
-                placeholder="ABCD123456XYZ"
-              />
-            </div>
-
-            <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold mb-3">Información Bancaria</h3>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Nombre del banco <span className="text-red-500">*</span></Label>
-                  <Input
-                    value={profileData.bank_name}
-                    onChange={(e) => setProfileData({ ...profileData, bank_name: e.target.value })}
-                    placeholder="Ej: BBVA, Santander, etc."
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Titular de la cuenta <span className="text-red-500">*</span></Label>
-                  <Input
-                    value={profileData.account_holder}
-                    onChange={(e) => setProfileData({ ...profileData, account_holder: e.target.value })}
-                    placeholder="Nombre completo del titular"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>CLABE <span className="text-red-500">*</span></Label>
-                  <Input
-                    value={profileData.clabe}
-                    onChange={(e) => setProfileData({ ...profileData, clabe: e.target.value })}
-                    placeholder="18 dígitos"
-                    maxLength={18}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={saveProfile}
-                disabled={loading || !profileData.address || !profileData.phone || 
-                         !profileData.rfc || !profileData.bank_name || !profileData.clabe}
-                className="text-white"
-                style={{ backgroundColor: '#2E442A' }}
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Guardar y continuar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -463,10 +386,15 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
               <Label>Número de factura <span className="text-red-500">*</span></Label>
               <Input
                 value={invoiceData.invoice_number}
-                onChange={(e) => setInvoiceData({ ...invoiceData, invoice_number: e.target.value })}
+                onChange={(e) => {
+                  setInvoiceData({ ...invoiceData, invoice_number: e.target.value });
+                  if (errors.invoice_number && e.target.value.trim()) setErrors(prev => ({ ...prev, invoice_number: false }));
+                }}
                 placeholder="Ej: INV-2025-001"
+                className={errors.invoice_number ? 'border-red-500 ring-1 ring-red-500' : ''}
               />
-              {autoInvoiceNumber && (
+              {errors.invoice_number && <p className="text-xs text-red-500">Este campo es obligatorio</p>}
+              {!errors.invoice_number && autoInvoiceNumber && (
                 <p className="text-xs text-stone-500">Sugerido: {autoInvoiceNumber}</p>
               )}
             </div>
@@ -486,17 +414,27 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
             <Input
               type="date"
               value={invoiceData.due_date}
-              onChange={(e) => setInvoiceData({ ...invoiceData, due_date: e.target.value })}
+              onChange={(e) => {
+                setInvoiceData({ ...invoiceData, due_date: e.target.value });
+                if (errors.due_date && e.target.value) setErrors(prev => ({ ...prev, due_date: false }));
+              }}
+              className={errors.due_date ? 'border-red-500 ring-1 ring-red-500' : ''}
             />
+            {errors.due_date && <p className="text-xs text-red-500">Este campo es obligatorio</p>}
           </div>
 
           <div className="space-y-2">
             <Label>Referencia del viaje / Nombre del cliente <span className="text-red-500">*</span></Label>
             <Input
               value={invoiceData.travel_reference}
-              onChange={(e) => setInvoiceData({ ...invoiceData, travel_reference: e.target.value })}
+              onChange={(e) => {
+                setInvoiceData({ ...invoiceData, travel_reference: e.target.value });
+                if (errors.travel_reference && e.target.value.trim()) setErrors(prev => ({ ...prev, travel_reference: false }));
+              }}
               placeholder="Ej: Japan Trip – Gonzalez Family"
+              className={errors.travel_reference ? 'border-red-500 ring-1 ring-red-500' : ''}
             />
+            {errors.travel_reference && <p className="text-xs text-red-500">Este campo es obligatorio</p>}
           </div>
 
           <div className="space-y-2">
@@ -512,10 +450,9 @@ export default function AgentInvoiceGenerator({ open, onClose, services, soldTri
             <h3 className="font-semibold mb-2">Servicios a facturar:</h3>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {services.map((service, index) => {
-                const trip = soldTrips.find(t => t.id === service.sold_trip_id);
                 const serviceName = getServiceName(service);
                 const amountOwed = (service.commission || 0) * 0.5;
-                
+
                 return (
                   <div key={index} className="flex justify-between items-center bg-stone-50 p-2 rounded text-sm">
                     <span className="flex-1">{serviceName}</span>

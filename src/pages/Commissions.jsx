@@ -576,6 +576,7 @@ export default function Commissions() {
         onClose={() => setInvoiceDialogOpen(false)}
         services={filteredServices.filter(s => selectedServices.includes(s.id))}
         soldTrips={soldTrips}
+        currentUser={user}
       />
 
       {/* Delete Confirmation */}
