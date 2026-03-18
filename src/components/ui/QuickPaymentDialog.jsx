@@ -281,8 +281,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
       if (formData.currency === 'USD') {
         amount_usd_fixed = amount;
         fx_rate = null;
-      } else {
-        // MXN
+      } else if (formData.currency === 'MXN') {
         const rate = parseFloat(formData.fx_rate);
         if (!rate || rate <= 0) {
           toast.error('Debes ingresar un tipo de cambio válido para pagos en MXN');
@@ -290,6 +289,14 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         }
         fx_rate = rate;
         amount_usd_fixed = amount / rate;
+      } else if (formData.currency === 'GBP') {
+        const rate = parseFloat(formData.fx_rate);
+        if (!rate || rate <= 0) {
+          toast.error('Debes ingresar un tipo de cambio válido para pagos en GBP');
+          return;
+        }
+        fx_rate = rate;
+        amount_usd_fixed = amount * rate;
       }
       
       const paymentData = {
@@ -482,6 +489,7 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
                 <SelectContent>
                   <SelectItem value="USD">USD (Dólares)</SelectItem>
                   <SelectItem value="MXN">MXN (Pesos Mexicanos)</SelectItem>
+                  <SelectItem value="GBP">GBP (Libras Esterlinas)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -514,23 +522,28 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
             </div>
           </div>
 
-          {/* Exchange Rate (only for MXN client payments) */}
-          {type === 'client' && formData.currency === 'MXN' && (
+          {/* Exchange Rate (only for MXN or GBP client payments) */}
+          {type === 'client' && (formData.currency === 'MXN' || formData.currency === 'GBP') && (
             <div className="space-y-2">
-              <Label>Tipo de Cambio (USD/MXN) *</Label>
+              <Label>
+                {formData.currency === 'MXN' ? 'Tipo de Cambio (USD/MXN) *' : 'Tipo de Cambio (GBP/USD) *'}
+              </Label>
               <Input
                 type="number"
                 min="0.0001"
                 step="0.0001"
                 value={formData.fx_rate}
                 onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
-                placeholder="17.87"
+                placeholder={formData.currency === 'MXN' ? '17.87' : '1.27'}
                 className="rounded-xl"
                 required
               />
               {formData.amount_original && formData.fx_rate && parseFloat(formData.amount_original) > 0 && parseFloat(formData.fx_rate) > 0 && (
                 <p className="text-xs text-green-600 font-medium">
-                  = ${(parseFloat(formData.amount_original) / parseFloat(formData.fx_rate)).toFixed(2)} USD
+                  = ${(formData.currency === 'MXN'
+                    ? parseFloat(formData.amount_original) / parseFloat(formData.fx_rate)
+                    : parseFloat(formData.amount_original) * parseFloat(formData.fx_rate)
+                  ).toFixed(2)} USD
                 </p>
               )}
             </div>
