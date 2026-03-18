@@ -223,7 +223,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
                 <SelectItem value="none">Sin asociar</SelectItem>
                 {services.map((service) => (
                   <SelectItem key={service.id} value={service.id}>
-                    {getServiceLabel(service)} - ${service.total_price.toLocaleString()}
+                    {getServiceLabel(service)} - ${(service.total_price ?? 0).toLocaleString()}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -432,7 +432,7 @@ export default function SupplierPaymentForm({ open, onClose, soldTripId, service
                   <SelectItem value="none">Sin asociar</SelectItem>
                   {services.map((service) => (
                     <SelectItem key={service.id} value={service.id}>
-                      {getServiceLabel(service)} - ${service.total_price.toLocaleString()}
+                      {getServiceLabel(service)} - ${(service.total_price ?? 0).toLocaleString()}
                     </SelectItem>
                   ))}
                 </SelectContent>

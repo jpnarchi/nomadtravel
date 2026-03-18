@@ -304,7 +304,8 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         status: 'reportado',
         bank: formData.bank || undefined,
         notes: formData.notes,
-        receipt_url: formData.receipt_url || undefined
+        receipt_url: formData.receipt_url || undefined,
+        created_by: currentUser?.email || currentUser?.id || 'unknown'
       };
 
       clientPaymentMutation.mutate(paymentData);
@@ -320,7 +321,8 @@ export default function QuickPaymentDialog({ open, onClose, type }) {
         notes: formData.notes,
         receipt_url: formData.receipt_url || undefined,
         supplier: formData.supplier || 'Proveedor',
-        confirmed: formData.confirmed
+        confirmed: formData.confirmed,
+        created_by: currentUser?.email || currentUser?.id || 'unknown'
       };
       supplierPaymentMutation.mutate(paymentData);
     }
