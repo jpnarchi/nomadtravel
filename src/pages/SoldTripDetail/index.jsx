@@ -109,10 +109,11 @@ export default function SoldTripDetail() {
 
   // Handlers
   const handleSaveService = (data) => {
+    const onSuccess = () => { setServiceFormOpen(false); setEditingService(null); };
     if (editingService) {
-      mutations.updateServiceMutation.mutate({ id: editingService.id, data });
+      mutations.updateServiceMutation.mutate({ id: editingService.id, data }, { onSuccess });
     } else {
-      mutations.createServiceMutation.mutate(data);
+      mutations.createServiceMutation.mutate(data, { onSuccess });
     }
   };
 
