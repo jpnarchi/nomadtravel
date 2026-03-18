@@ -12,6 +12,7 @@ import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/c
 import AdminRoute from '@/components/AdminRoute';
 import ClientTripForm from '@/pages/ClientTripForm';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { SpoofProvider } from '@/contexts/SpoofContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -40,6 +41,7 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
+    <SpoofProvider>
     <ErrorBoundary>
     <Routes>
       <Route path="/" element={
@@ -74,6 +76,7 @@ const AuthenticatedApp = () => {
       <Route path="*" element={<PageNotFound />} />
     </Routes>
     </ErrorBoundary>
+    </SpoofProvider>
   );
 };
 

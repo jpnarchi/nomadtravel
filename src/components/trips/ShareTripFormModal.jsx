@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Copy, Check, Share2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabaseAPI } from '@/api/supabaseClient';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 
 export default function ShareTripFormModal({ open, onClose }) {
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
   const [shareLink, setShareLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);

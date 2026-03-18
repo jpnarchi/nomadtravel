@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useContext } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 import { format, getMonth, getYear, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -48,7 +48,7 @@ const SEASONS = [
 
 export default function Statistics() {
   const { viewMode, isActualAdmin } = useContext(ViewModeContext);
-  const { user: clerkUser, isLoaded } = useUser();
+  const { user: clerkUser, isLoaded } = useSpoofableUser();
 
   // Convert Clerk user to app user format
   const user = clerkUser ? {

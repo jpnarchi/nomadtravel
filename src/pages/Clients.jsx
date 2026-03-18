@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,7 +29,7 @@ import EmptyState from '@/components/ui/EmptyState';
 
 export default function Clients() {
   const { viewMode } = useContext(ViewModeContext);
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
 
   // Convert Clerk user to app user format
   const user = clerkUser ? {

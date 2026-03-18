@@ -5,7 +5,7 @@ import { ViewModeContext } from '@/Layout';
 import { AnimatePresence } from 'framer-motion';
 import { Plus, Loader2, Plane, Share2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +35,7 @@ const STAGE_ORDER = ['nuevo', 'cotizando', 'propuesta_enviada', 'aceptado', 'ven
 
 export default function Trips() {
   const { viewMode } = useContext(ViewModeContext);
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
 
   // Convert Clerk user to app user format
   const user = clerkUser ? {

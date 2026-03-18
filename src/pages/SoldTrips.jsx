@@ -4,7 +4,7 @@ import { createPageUrl } from '@/utils';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { differenceInDays, isPast } from 'date-fns';
 import { formatDate } from '@/lib/dateUtils';
@@ -50,7 +50,7 @@ const STATUS_CONFIG = {
 
 export default function SoldTrips() {
   const { viewMode } = useContext(ViewModeContext);
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
 
   // Convert Clerk user to app user format
   const user = clerkUser ? {

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 import { supabaseAPI } from '@/api/supabaseClient';
 import {
   updateSoldTripAndPaymentPlanTotals,
@@ -9,7 +9,7 @@ import {
 
 export function useTripMutations(tripId, services, clientPayments, supplierPayments) {
   const queryClient = useQueryClient();
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
 
   // Service Mutations
   const createServiceMutation = useMutation({

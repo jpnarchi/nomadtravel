@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import IndustryFairForm from '@/components/control/IndustryFairForm';
 import { toast } from 'sonner';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 
 export default function IndustryFairs() {
   const [formOpen, setFormOpen] = useState(false);
@@ -27,7 +27,7 @@ export default function IndustryFairs() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const queryClient = useQueryClient();
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
 
   // Convert Clerk user to app user format
   const user = clerkUser ? {

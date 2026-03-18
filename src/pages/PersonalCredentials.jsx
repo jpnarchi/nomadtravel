@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 import { 
   Plus, Search, Key, Eye, EyeOff, Copy, Edit2, Trash2, 
   Loader2, ExternalLink, Filter, Lock
@@ -46,7 +46,7 @@ export default function PersonalCredentials() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [visiblePasswords, setVisiblePasswords] = useState({});
 
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
   const queryClient = useQueryClient();
 
   // Convert Clerk user to app user format

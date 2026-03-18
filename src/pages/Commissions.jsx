@@ -2,7 +2,7 @@ import React, { useState, useRef, useContext } from 'react';
 import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
-import { useUser } from '@clerk/clerk-react';
+import { useSpoofableUser } from '@/contexts/SpoofContext';
 import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import {
@@ -64,7 +64,7 @@ const CRUISE_PROVIDER_LABELS = {
 
 export default function Commissions() {
   const { viewMode } = useContext(ViewModeContext);
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser } = useSpoofableUser();
 
   // Convert Clerk user to app user format
   const user = clerkUser ? {

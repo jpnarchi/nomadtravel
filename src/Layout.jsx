@@ -24,7 +24,8 @@ import {
                           ChevronLeft,
                           ChevronRight,
                           Database,
-                          Search
+                          Search,
+                          UserCheck
                         } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
@@ -37,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { base44 } from '@/api/base44Client';
 import { useUser, useClerk, UserButton } from '@clerk/clerk-react';
 import { isAdminEmail } from '@/config/adminEmails';
+import { useSpoof } from '@/contexts/SpoofContext';
 
 export const ViewModeContext = createContext({ viewMode: 'admin', isActualAdmin: false });
 
@@ -215,15 +217,30 @@ ExchangeRateWidget.displayName = 'ExchangeRateWidget';
 export default function Layout({ children, currentPageName }) {
   const { user, isLoaded: userLoaded } = useUser();
   const { signOut } = useClerk();
+  const { spoofedUser, isSpoofing, stopSpoof } = useSpoof();
 
   // Convert Clerk user to app user format
-  const appUser = useMemo(() => user ? {
+  const realAppUser = useMemo(() => user ? {
     id: user.id,
     email: user.primaryEmailAddress?.emailAddress,
     full_name: user.fullName || user.username,
     role: user.publicMetadata?.role || 'user',
     custom_role: user.publicMetadata?.custom_role
   } : null, [user]);
+
+  // When spoofing, override the app user with the spoofed identity
+  const appUser = useMemo(() => {
+    if (isSpoofing && spoofedUser) {
+      return {
+        id: spoofedUser.id,
+        email: spoofedUser.email,
+        full_name: spoofedUser.full_name,
+        role: 'user',
+        custom_role: null
+      };
+    }
+    return realAppUser;
+  }, [isSpoofing, spoofedUser, realAppUser]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -249,10 +266,12 @@ export default function Layout({ children, currentPageName }) {
     }
   }, [sidebarCollapsed]);
 
-  // Verificar si el correo del usuario está en la lista de administradores permitidos
-  const isActualAdmin = useMemo(() => isAdminEmail(appUser?.email), [appUser?.email]);
+  // Verificar si el correo REAL del usuario está en la lista de administradores
+  // (use realAppUser so admin status is not affected by spoofing)
+  const isActualAdmin = useMemo(() => isAdminEmail(realAppUser?.email), [realAppUser?.email]);
   const isSupervisor = useMemo(() => appUser?.custom_role === 'supervisor', [appUser?.custom_role]);
-  const isAdmin = isActualAdmin && viewMode === 'admin';
+  // When spoofing, force user viewMode so spoofed user sees their own data
+  const isAdmin = isSpoofing ? false : (isActualAdmin && viewMode === 'admin');
 
   const adminNavigation = useMemo(() => [
     { name: 'Dashboard Global', page: 'AdminDashboard', icon: LayoutDashboard },
@@ -270,6 +289,8 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Asistencia', page: 'Attendance', icon: Users },
     { name: 'FAM Trips', page: 'FamTrips', icon: Plane },
     { name: 'Ferias', page: 'IndustryFairs', icon: LayoutDashboard },
+    { name: '--- Herramientas Admin ---', divider: true },
+    { name: 'Spoof de Usuarios', page: 'AdminSpoof', icon: UserCheck },
   ], []);
 
   const userNavigation = useMemo(() => [
@@ -545,8 +566,8 @@ export default function Layout({ children, currentPageName }) {
               </div>
             )}
 
-            {/* Admin View Mode Switch - Compacto */}
-            {isActualAdmin && !sidebarCollapsed && (
+            {/* Admin View Mode Switch - Compacto (hidden during spoof) */}
+            {isActualAdmin && !sidebarCollapsed && !isSpoofing && (
               <div className="mt-4 p-3 rounded-xl shadow-sm relative overflow-hidden "
                    style={{
                      background: viewMode === 'admin'
@@ -698,8 +719,39 @@ export default function Layout({ children, currentPageName }) {
         "pt-16 lg:pt-0 min-h-screen transition-all duration-300",
         sidebarCollapsed ? "lg:pl-20" : "lg:pl-80"
       )}>
+        {/* Spoof Banner */}
+        {isSpoofing && spoofedUser && (
+          <div className="sticky top-0 z-40 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 shadow-lg">
+            <div className="flex items-center justify-between max-w-7xl mx-auto">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                  <Eye className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">
+                    Modo Spoof Activo
+                  </p>
+                  <p className="text-xs text-red-100">
+                    Viendo como: <span className="font-bold text-white">{spoofedUser.full_name}</span> ({spoofedUser.email})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={stopSpoof}
+                className="px-4 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Salir del Spoof
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="p-4 lg:p-8">
-          <ViewModeContext.Provider value={{ viewMode: isActualAdmin ? viewMode : 'user', isActualAdmin }}>
+          <ViewModeContext.Provider value={{
+            viewMode: isSpoofing ? 'user' : (isActualAdmin ? viewMode : 'user'),
+            isActualAdmin: isSpoofing ? false : isActualAdmin
+          }}>
             {children}
           </ViewModeContext.Provider>
         </div>
