@@ -94,6 +94,20 @@ export default function SoldTrips() {
     }
   });
 
+  const soldTripIds = soldTrips.filter(t => !t.is_deleted).map(t => t.id);
+
+  const { data: allServices = [] } = useQuery({
+    queryKey: ['allServices'],
+    queryFn: () => supabaseAPI.entities.TripService.list(),
+    enabled: soldTripIds.length > 0
+  });
+
+  const { data: allClientPayments = [] } = useQuery({
+    queryKey: ['clientPayments'],
+    queryFn: () => supabaseAPI.entities.ClientPayment.list(),
+    enabled: soldTripIds.length > 0
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => supabaseAPI.entities.SoldTrip.delete(id),
     onSuccess: () => {
@@ -256,7 +270,13 @@ export default function SoldTrips() {
             {filteredTrips.map((trip, index) => {
               const statusConfig = STATUS_CONFIG[trip.status] || STATUS_CONFIG.pendiente;
               const StatusIcon = statusConfig.icon;
-              const balance = (trip.total_price || 0) - (trip.total_paid_by_client || 0);
+              const tripServices = allServices.filter(s => s.sold_trip_id === trip.id);
+              const totalServices = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
+              const totalClientPaid = allClientPayments
+                .filter(p => p.sold_trip_id === trip.id)
+                .reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
+              const rawBalance = totalServices - totalClientPaid;
+              const balance = Math.abs(rawBalance) < 2 ? 0 : rawBalance;
               const paymentProgress = trip.total_price > 0 
                 ? Math.round((trip.total_paid_by_client || 0) / trip.total_price * 100) 
                 : 0;

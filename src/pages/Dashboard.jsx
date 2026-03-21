@@ -154,24 +154,18 @@ export default function Dashboard() {
   const myClientsWithNegativeBalance = soldTrips.map(trip => {
     const clientPayments = allClientPayments
       .filter(p => p.sold_trip_id === trip.id)
-      .reduce((sum, p) => sum + (p.amount || 0), 0);
+      .reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
 
     const supplierPayments = allSupplierPayments
       .filter(p => p.sold_trip_id === trip.id)
       .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Calcular el total de servicios que el cliente debe pagar
-    // Excluyendo los servicios marcados como "pagado" (pagados directamente al proveedor)
     const tripServices = services.filter(s => s.sold_trip_id === trip.id);
-    const totalServicesToPay = tripServices.reduce((sum, s) => {
-      // Check reservation_status in both direct field and metadata
-      const reservationStatus = s.reservation_status || s.metadata?.reservation_status;
-      if (reservationStatus === 'pagado') return sum;
-      return sum + (s.total_price || s.price || 0);
-    }, 0);
+    const totalServices = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
 
-    // Balance = totalServicesToPay - clientPayments (same as "Por Cobrar")
-    const balance = totalServicesToPay - clientPayments;
+    // Balance = totalServices - totalClientPaid (same as FinancialSummary "Por Cobrar")
+    const rawBalance = totalServices - clientPayments;
+    const balance = Math.abs(rawBalance) < 2 ? 0 : rawBalance;
 
     if (balance > 0) {
       return {
@@ -179,7 +173,7 @@ export default function Dashboard() {
         balance,
         clientPayments,
         supplierPayments,
-        totalServicesToPay
+        totalServices
       };
     }
     return null;
@@ -477,7 +471,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-red-600">
+                        <p className={`text-lg font-bold ${trip.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                           ${trip.balance.toLocaleString()}
                         </p>
                         <p className="text-xs text-stone-500">por cobrar</p>

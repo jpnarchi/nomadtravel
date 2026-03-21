@@ -410,16 +410,13 @@ export default function AdminDashboard() {
       .map(trip => {
         const clientPayments = allClientPayments
           .filter(p => p.sold_trip_id === trip.id)
-          .reduce((sum, p) => sum + (p.amount || 0), 0);
+          .reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
 
         const tripServices = allServices.filter(s => s.sold_trip_id === trip.id);
-        const totalServicesToPay = tripServices.reduce((sum, s) => {
-          const reservationStatus = s.reservation_status || s.metadata?.reservation_status;
-          if (reservationStatus === 'pagado') return sum;
-          return sum + (s.total_price || s.price || 0);
-        }, 0);
+        const totalServices = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
 
-        const balance = totalServicesToPay - clientPayments;
+        const rawBalance = totalServices - clientPayments;
+        const balance = Math.abs(rawBalance) < 2 ? 0 : rawBalance;
 
         if (balance > 0) {
           const agent = allUsers.find(u => u.email === trip.created_by);
@@ -427,7 +424,7 @@ export default function AdminDashboard() {
             ...trip,
             balance,
             clientPayments,
-            totalServicesToPay,
+            totalServices,
             agentName: agent?.full_name || 'Sin asignar'
           };
         }
@@ -659,7 +656,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-base md:text-lg font-bold text-red-600">
+                    <p className={`text-base md:text-lg font-bold ${trip.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                       ${trip.balance.toLocaleString()}
                     </p>
                     <p className="text-xs text-stone-500 whitespace-nowrap">por cobrar</p>
