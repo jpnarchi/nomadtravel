@@ -143,7 +143,7 @@ export default function Commissions() {
   const togglePaid = (service, newValue) => {
     updateServiceMutation.mutate({
       id: service.id,
-      data: { commission_paid: newValue }
+      data: { paid_to_agent: newValue }
     });
   };
 
@@ -211,11 +211,11 @@ export default function Commissions() {
   // Filter by tab (pendientes/confirmadas/pagadas)
   const filteredServices = allFilteredServices.filter(s => {
     if (activeTab === 'pendientes') {
-      return !s.paid_to_agency && !s.commission_paid;
+      return !s.paid_to_agency;
     } else if (activeTab === 'confirmadas') {
-      return s.paid_to_agency && !s.commission_paid;
+      return s.paid_to_agency && !s.paid_to_agent;
     } else if (activeTab === 'pagadas') {
-      return s.commission_paid;
+      return s.paid_to_agent;
     }
     return true;
   });
@@ -224,9 +224,9 @@ export default function Commissions() {
   const totalCommissionsFull = allFilteredServices.reduce((sum, s) => sum + (s.commission || 0), 0); // 100% comisiones totales
   const agentCommissionRate = 0.5; // 50% para el agente
   const agentCommissionTotal = totalCommissionsFull * agentCommissionRate; // Comisión a pagar al agente
-  const paidCommissions = allFilteredServices.filter(s => s.commission_paid).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
-  const confirmedCommissions = allFilteredServices.filter(s => s.paid_to_agency && !s.commission_paid).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
-  const pendingCommissions = allFilteredServices.filter(s => !s.paid_to_agency && !s.commission_paid).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
+  const paidCommissions = allFilteredServices.filter(s => s.paid_to_agent).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
+  const confirmedCommissions = allFilteredServices.filter(s => s.paid_to_agency && !s.paid_to_agent).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
+  const pendingCommissions = allFilteredServices.filter(s => !s.paid_to_agency).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
 
   const getServiceName = (service) => {
     switch (service.service_type) {
@@ -352,13 +352,13 @@ export default function Commissions() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="pendientes">
-            Pendientes ({allFilteredServices.filter(s => !s.paid_to_agency && !s.commission_paid).length})
+            Pendientes ({allFilteredServices.filter(s => !s.paid_to_agency).length})
           </TabsTrigger>
           <TabsTrigger value="confirmadas">
-            Confirmadas por Admin ({allFilteredServices.filter(s => s.paid_to_agency && !s.commission_paid).length})
+            Pagado a agencia ({allFilteredServices.filter(s => s.paid_to_agency && !s.paid_to_agent).length})
           </TabsTrigger>
           <TabsTrigger value="pagadas">
-            Pagadas a agente ({allFilteredServices.filter(s => s.commission_paid).length})
+            Pagadas a agente ({allFilteredServices.filter(s => s.paid_to_agent).length})
           </TabsTrigger>
         </TabsList>
 
@@ -397,7 +397,7 @@ export default function Commissions() {
               {filteredServices.map((service) => {
               const trip = tripsMap[service.sold_trip_id];
               const isEditing = editingService === service.id;
-              const isPaid = service.commission_paid || false;
+              const isPaid = service.paid_to_agent || false;
               const canEdit = isAdmin || !isPaid;
               
               return (
@@ -515,7 +515,7 @@ export default function Commissions() {
                         />
                       ) : (
                         <span 
-                          className={`font-semibold ${service.commission_paid ? 'text-green-600' : 'text-stone-800'} ${canEdit ? 'cursor-pointer hover:text-blue-600' : 'cursor-not-allowed opacity-60'}`}
+                          className={`font-semibold ${service.paid_to_agent ? 'text-green-600' : 'text-stone-800'} ${canEdit ? 'cursor-pointer hover:text-blue-600' : 'cursor-not-allowed opacity-60'}`}
                           onClick={() => canEdit && startEditing(service)}
                         >
                           ${(service.commission || 0).toLocaleString()}
