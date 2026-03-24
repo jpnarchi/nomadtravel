@@ -178,10 +178,14 @@ export default function Statistics() {
   const filteredData = useMemo(() => {
     let filteredTrips = [...soldTrips];
     let filteredServices = [...services];
+    let filteredClients = [...clients];
+    let filteredRawTrips = [...trips];
 
     // Filter by agent (only for admin)
     if (isAdmin && filters.agent !== 'all') {
       filteredTrips = filteredTrips.filter(t => t.created_by === filters.agent);
+      filteredClients = filteredClients.filter(c => c.created_by === filters.agent);
+      filteredRawTrips = filteredRawTrips.filter(t => t.created_by === filters.agent);
     }
 
     // Filter by year
@@ -226,7 +230,7 @@ export default function Statistics() {
 
     // Filter by destination
     if (filters.destination !== 'all') {
-      filteredTrips = filteredTrips.filter(t => 
+      filteredTrips = filteredTrips.filter(t =>
         t.destination?.includes(filters.destination)
       );
     }
@@ -250,8 +254,8 @@ export default function Statistics() {
       filteredServices = filteredServices.filter(s => s.hotel_chain === filters.hotelChain);
     }
 
-    return { filteredTrips, filteredServices };
-  }, [soldTrips, services, filters, isAdmin]);
+    return { filteredTrips, filteredServices, filteredClients, filteredRawTrips };
+  }, [soldTrips, services, clients, trips, filters, isAdmin]);
 
   const clearFilters = () => {
     setFilters({
@@ -453,7 +457,7 @@ export default function Statistics() {
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue={isAdmin ? "agent-comparison" : "general"} className="space-y-6">
+      <Tabs defaultValue="general" className="space-y-6">
         <TabsList className="bg-white border border-stone-200 p-1 rounded-xl flex-wrap h-auto">
           {isAdmin && (
             <TabsTrigger value="agent-comparison" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
@@ -496,43 +500,43 @@ export default function Statistics() {
         )}
 
         <TabsContent value="general">
-          <GeneralStats 
-            soldTrips={filteredData.filteredTrips} 
+          <GeneralStats
+            soldTrips={filteredData.filteredTrips}
             services={filteredData.filteredServices}
-            clients={clients}
-            allSoldTrips={soldTrips}
+            clients={filteredData.filteredClients}
+            allSoldTrips={filteredData.filteredTrips}
           />
         </TabsContent>
 
         <TabsContent value="sold-trips">
-          <SoldTripsStats 
-            soldTrips={filteredData.filteredTrips} 
+          <SoldTripsStats
+            soldTrips={filteredData.filteredTrips}
             services={filteredData.filteredServices}
           />
         </TabsContent>
 
         <TabsContent value="pending-trips">
-          <PendingTripsStats trips={trips} />
+          <PendingTripsStats trips={filteredData.filteredRawTrips} />
         </TabsContent>
 
         <TabsContent value="destinations">
-          <DestinationsChart 
+          <DestinationsChart
             soldTrips={filteredData.filteredTrips}
             services={filteredData.filteredServices}
           />
         </TabsContent>
 
         <TabsContent value="seasonality">
-          <SeasonalityChart 
+          <SeasonalityChart
             soldTrips={filteredData.filteredTrips}
-            allSoldTrips={soldTrips}
+            allSoldTrips={filteredData.filteredTrips}
           />
         </TabsContent>
 
         <TabsContent value="trip-types">
-          <TripTypesChart 
+          <TripTypesChart
             soldTrips={filteredData.filteredTrips}
-            trips={trips}
+            trips={filteredData.filteredRawTrips}
           />
         </TabsContent>
 
