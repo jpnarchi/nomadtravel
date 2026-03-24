@@ -757,6 +757,9 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </main>
 
+      {/* Cheat Sheet Bar (hover top of screen) */}
+      <CheatSheetBar />
+
       {/* Quick Payment FAB */}
       <QuickPaymentFAB />
 
