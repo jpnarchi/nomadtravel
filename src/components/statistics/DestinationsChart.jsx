@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Plane } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['#2E442A', '#3d5a37', '#4a7c59', '#5d9b6f', '#78b086', '#94c69e', '#b1dbb7', '#cff0d1'];
@@ -52,6 +52,18 @@ export default function DestinationsChart({ soldTrips, services }) {
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
   }, [soldTrips]);
+
+  // Count airlines
+  const airlineCounts = useMemo(() => {
+    const counts = {};
+    services.filter(s => s.service_type === 'vuelo' && s.airline).forEach(s => {
+      const airline = s.airline;
+      if (!counts[airline]) counts[airline] = { name: airline, count: 0, total: 0 };
+      counts[airline].count += 1;
+      counts[airline].total += s.total_price || 0;
+    });
+    return Object.values(counts).sort((a, b) => b.count - a.count);
+  }, [services]);
 
   if (destinationCounts.length === 0) {
     return (
@@ -113,6 +125,53 @@ export default function DestinationsChart({ soldTrips, services }) {
           </div>
         </div>
       </div>
+
+      {/* Airlines */}
+      {airlineCounts.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+            <div className="flex items-center gap-2 mb-4">
+              <Plane className="w-4 h-4 text-stone-500" />
+              <h3 className="font-semibold text-stone-800">Aerolíneas Más Usadas</h3>
+            </div>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={airlineCounts.slice(0, 8)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <XAxis type="number" tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={120} />
+                  <Tooltip
+                    formatter={(value) => [value, 'Vuelos']}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e7e5e4' }}
+                  />
+                  <Bar dataKey="count" fill="#2E442A" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
+            <div className="flex items-center gap-2 mb-4">
+              <Plane className="w-4 h-4 text-stone-500" />
+              <h3 className="font-semibold text-stone-800">Ventas por Aerolínea (USD)</h3>
+            </div>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[...airlineCounts].sort((a, b) => b.total - a.total).slice(0, 8)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={120} />
+                  <Tooltip
+                    formatter={(value) => [`$${value.toLocaleString()}`, 'Ventas']}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e7e5e4' }}
+                  />
+                  <Bar dataKey="total" fill="#4a7c59" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Destinations Table */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
