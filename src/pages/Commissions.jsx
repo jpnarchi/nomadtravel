@@ -229,15 +229,29 @@ export default function Commissions() {
   const pendingCommissions = allFilteredServices.filter(s => !s.paid_to_agency).reduce((sum, s) => sum + ((s.commission || 0) * agentCommissionRate), 0);
 
   const getServiceName = (service) => {
+    const m = service.metadata || {};
     switch (service.service_type) {
-      case 'hotel': return service.hotel_name || 'Hotel';
-      case 'vuelo': return `${service.airline || 'Vuelo'} ${service.route || ''}`;
-      case 'traslado': return `${service.transfer_origin || ''} → ${service.transfer_destination || ''}`;
-      case 'tour': return service.tour_name || 'Tour';
-      case 'crucero': return `${service.cruise_ship || 'Crucero'} - ${service.cruise_itinerary || ''}`;
-      case 'tren': return service.train_operator || service.train_route || 'Tren';
-      case 'dmc': return service.dmc_name || service.dmc_services || service.dmc_destination || 'DMC';
-      default: return service.other_name || 'Servicio';
+      case 'hotel':
+        return service.hotel_name || m.hotel_name || service.service_name || service.hotel_chain || m.hotel_chain || 'Hotel';
+      case 'vuelo':
+        return service.airline || m.airline || service.service_name || 'Vuelo';
+      case 'traslado': {
+        const origin = service.transfer_origin || m.transfer_origin || '';
+        const dest = service.transfer_destination || m.transfer_destination || '';
+        return (origin || dest) ? `${origin} → ${dest}` : (service.service_name || 'Traslado');
+      }
+      case 'tour':
+        return service.tour_name || m.tour_name || service.service_name || 'Tour';
+      case 'crucero':
+        return service.cruise_ship || m.cruise_ship || service.cruise_line || m.cruise_line || service.service_name || 'Crucero';
+      case 'tren':
+        return `${service.train_operator || m.train_operator || 'Tren'} ${service.train_number || m.train_number || ''}`.trim() || service.service_name || 'Tren';
+      case 'dmc':
+        return service.dmc_name || m.dmc_name || service.service_name || 'DMC';
+      case 'otro':
+        return service.other_name || m.other_name || service.other_description || m.other_description || service.service_name || 'Servicio';
+      default:
+        return service.service_name || 'Servicio';
     }
   };
 
