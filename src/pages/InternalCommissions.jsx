@@ -413,15 +413,15 @@ export default function InternalCommissions() {
   // Calculate agent totals
   const calculateAgentTotals = (agentCommissions) => {
     const pending = agentCommissions.filter(c => c.status === 'pendiente');
-    const received = agentCommissions.filter(c => c.status === 'recibida' || c.status === 'pagada_agente');
+    const received = agentCommissions.filter(c => c.status === 'recibida' || c.status === 'pagada_agente' || c.status === 'pagado_a_agencia_interno');
 
     return {
       pendingCount: pending.length,
       pendingAmount: pending.reduce((sum, c) => sum + (c.estimated_amount || 0), 0),
       receivedCount: received.length,
       receivedAmount: received.reduce((sum, c) => sum + (c.received_amount || 0), 0),
-      totalAgentCommission: received.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
-      totalNomadCommission: received.reduce((sum, c) => sum + (c.nomad_commission || 0), 0)
+      totalAgentCommission: agentCommissions.reduce((sum, c) => sum + (c.agent_commission || 0), 0),
+      totalNomadCommission: agentCommissions.reduce((sum, c) => sum + (c.nomad_commission || 0), 0)
     };
   };
 
