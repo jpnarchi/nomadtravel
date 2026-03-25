@@ -277,8 +277,8 @@ export default function SoldTrips() {
                 .reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
               const rawBalance = totalServices - totalClientPaid;
               const balance = Math.abs(rawBalance) < 2 ? 0 : rawBalance;
-              const paymentProgress = trip.total_price > 0 
-                ? Math.round((trip.total_paid_by_client || 0) / trip.total_price * 100) 
+              const paymentProgress = totalServices > 0
+                ? Math.round((totalClientPaid) / totalServices * 100)
                 : 0;
               
               const daysUntilTrip = differenceInDays(new Date(trip.start_date), new Date());
@@ -363,7 +363,7 @@ export default function SoldTrips() {
                           <div>
                             <p className="text-xs text-stone-400">Total</p>
                             <p className="font-bold text-sm" style={{ color: '#2E442A' }}>
-                              ${(trip.total_price || 0).toLocaleString()}
+                              ${totalServices.toLocaleString()}
                             </p>
                           </div>
                           <div>
