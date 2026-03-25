@@ -73,25 +73,29 @@ export default function InternalCommissions() {
 
   // Helper to get service provider name
   function getServiceProviderName(service) {
+    const m = service.metadata || {};
     switch (service.service_type) {
       case 'hotel':
-        return service.hotel_name || service.hotel_chain || 'Hotel';
+        return service.hotel_name || m.hotel_name || service.service_name || service.hotel_chain || m.hotel_chain || 'Hotel';
       case 'vuelo':
-        return service.airline || 'Vuelo';
-      case 'traslado':
-        return `Traslado ${service.transfer_origin || ''} - ${service.transfer_destination || ''}`;
+        return service.airline || m.airline || service.service_name || 'Vuelo';
+      case 'traslado': {
+        const origin = service.transfer_origin || m.transfer_origin || '';
+        const dest = service.transfer_destination || m.transfer_destination || '';
+        return (origin || dest) ? `Traslado ${origin} - ${dest}` : (service.service_name || 'Traslado');
+      }
       case 'tour':
-        return service.tour_name || 'Tour';
+        return service.tour_name || m.tour_name || service.service_name || 'Tour';
       case 'crucero':
-        return service.cruise_ship || service.cruise_line || 'Crucero';
+        return service.cruise_ship || m.cruise_ship || service.cruise_line || m.cruise_line || service.service_name || 'Crucero';
       case 'tren':
-        return `${service.train_operator || 'Tren'} ${service.train_number || ''}`.trim();
+        return `${service.train_operator || m.train_operator || 'Tren'} ${service.train_number || m.train_number || ''}`.trim() || service.service_name || 'Tren';
       case 'dmc':
-        return service.dmc_name || 'DMC';
+        return service.dmc_name || m.dmc_name || service.service_name || 'DMC';
       case 'otro':
-        return service.other_name || service.other_description || 'Servicio';
+        return service.other_name || m.other_name || service.other_description || m.other_description || service.service_name || 'Servicio';
       default:
-        return 'Servicio';
+        return service.service_name || 'Servicio';
     }
   }
 
@@ -685,15 +689,16 @@ export default function InternalCommissions() {
                 {commissionsToValidate.map(service => {
                   const trip = soldTrips.find(t => t.id === service.sold_trip_id);
                   const agent = users.find(u => u.email === trip?.created_by);
+                  const sm = service.metadata || {};
                   const serviceName = (() => {
                     switch (service.service_type) {
-                      case 'hotel': return service.hotel_name || 'Hotel';
-                      case 'vuelo': return service.airline || 'Vuelo';
-                      case 'dmc': return service.dmc_name || 'DMC';
-                      case 'crucero': return service.cruise_ship || 'Crucero';
-                      case 'tour': return service.tour_name || 'Tour';
-                      case 'tren': return service.train_operator || 'Tren';
-                      default: return service.other_name || 'Servicio';
+                      case 'hotel': return service.hotel_name || sm.hotel_name || 'Hotel';
+                      case 'vuelo': return service.airline || sm.airline || 'Vuelo';
+                      case 'dmc': return service.dmc_name || sm.dmc_name || 'DMC';
+                      case 'crucero': return service.cruise_ship || sm.cruise_ship || 'Crucero';
+                      case 'tour': return service.tour_name || sm.tour_name || 'Tour';
+                      case 'tren': return service.train_operator || sm.train_operator || 'Tren';
+                      default: return service.other_name || sm.other_name || 'Servicio';
                     }
                   })();
 
