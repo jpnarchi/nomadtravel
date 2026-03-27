@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import FinancialSummary from './SoldTripDetail/components/FinancialSummary';
 
 // Skeleton Loading Component
 const DashboardSkeleton = memo(() => (
@@ -241,6 +242,7 @@ export default function AdminDashboard() {
   );
 
   // Filter by trip if selected
+  // When a specific trip is selected, use ALL payments (same as useTripMetrics/FinancialSummary)
   const { filteredClientPayments, filteredSupplierPayments, selectedTripData } = useMemo(() => {
     if (selectedTrip === 'all') {
       return {
@@ -251,22 +253,50 @@ export default function AdminDashboard() {
     }
 
     return {
-      filteredClientPayments: confirmedClientPayments.filter(p => p.sold_trip_id === selectedTrip),
-      filteredSupplierPayments: confirmedSupplierPayments.filter(p => p.sold_trip_id === selectedTrip),
+      filteredClientPayments: allClientPayments.filter(p => p.sold_trip_id === selectedTrip),
+      filteredSupplierPayments: allSupplierPayments.filter(p => p.sold_trip_id === selectedTrip),
       selectedTripData: allSoldTrips.find(t => t.id === selectedTrip)
     };
-  }, [selectedTrip, confirmedClientPayments, confirmedSupplierPayments, allSoldTrips]);
+  }, [selectedTrip, confirmedClientPayments, confirmedSupplierPayments, allClientPayments, allSupplierPayments, allSoldTrips]);
 
-  // Account balance calculations
-  const { totalIncome, totalExpenses, accountBalance } = useMemo(() => {
-    const income = filteredClientPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  // Account balance calculations (matches useTripMetrics when trip is selected)
+  const { totalIncome, totalExpenses, accountBalance, tripMetrics } = useMemo(() => {
+    const income = filteredClientPayments.reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
     const expenses = filteredSupplierPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    // When a trip is selected, compute FinancialSummary metrics
+    let metrics = null;
+    if (selectedTrip !== 'all') {
+      const tripServices = allServices.filter(s => s.sold_trip_id === selectedTrip);
+      const totalServices = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
+      const totalCommissions = tripServices.reduce((sum, s) => sum + (s.commission || 0), 0);
+
+      const totalServicesToPay = tripServices.reduce((sum, s) => {
+        const reservationStatus = s.reservation_status || s.metadata?.reservation_status;
+        if (reservationStatus === 'pagado') return sum;
+        return sum + (s.price || 0);
+      }, 0);
+
+      const clientBalance = Math.max(0, totalServicesToPay - income - expenses);
+      const paymentProgress = totalServices > 0 ? Math.round((income / totalServices) * 100) : 0;
+
+      metrics = {
+        totalServices,
+        totalCommissions,
+        totalClientPaid: income,
+        totalSupplierPaid: expenses,
+        clientBalance,
+        paymentProgress
+      };
+    }
+
     return {
       totalIncome: income,
       totalExpenses: expenses,
-      accountBalance: income - expenses
+      accountBalance: income - expenses,
+      tripMetrics: metrics
     };
-  }, [filteredClientPayments, filteredSupplierPayments]);
+  }, [filteredClientPayments, filteredSupplierPayments, selectedTrip, allServices]);
 
   // Trips for selector
   const tripsForSelector = useMemo(() =>
@@ -404,18 +434,33 @@ export default function AdminDashboard() {
     [allTrips, allUsers]
   );
 
-  // Clients with negative balance
+  // Clients with negative balance (same logic as useTripMetrics / FinancialSummary)
   const clientsWithNegativeBalance = useMemo(() =>
     allSoldTrips
       .map(trip => {
-        const clientPayments = allClientPayments
+        const tripClientPayments = allClientPayments
           .filter(p => p.sold_trip_id === trip.id)
           .reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
+
+        const tripSupplierPayments = allSupplierPayments
+          .filter(p => p.sold_trip_id === trip.id)
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
 
         const tripServices = allServices.filter(s => s.sold_trip_id === trip.id);
         const totalServices = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
 
-        const rawBalance = totalServices - clientPayments;
+        // Exclude services marked as "pagado" (paid directly to supplier)
+        const totalServicesToPay = tripServices.reduce((sum, s) => {
+          const reservationStatus = s.reservation_status || s.metadata?.reservation_status;
+          if (reservationStatus === 'pagado') return sum;
+          return sum + (s.price || 0);
+        }, 0);
+
+        const totalCommissions = tripServices.reduce((sum, s) => sum + (s.commission || 0), 0);
+        const paymentProgress = totalServices > 0 ? Math.round((tripClientPayments / totalServices) * 100) : 0;
+
+        // Balance = totalServicesToPay - clientPaid - supplierPaid (matches useTripMetrics)
+        const rawBalance = Math.max(0, totalServicesToPay - tripClientPayments - tripSupplierPayments);
         const balance = Math.abs(rawBalance) < 2 ? 0 : rawBalance;
 
         if (balance > 0) {
@@ -423,8 +468,12 @@ export default function AdminDashboard() {
           return {
             ...trip,
             balance,
-            clientPayments,
+            clientPayments: tripClientPayments,
+            supplierPayments: tripSupplierPayments,
             totalServices,
+            totalServicesToPay,
+            totalCommissions,
+            paymentProgress,
             agentName: agent?.full_name || 'Sin asignar'
           };
         }
@@ -432,7 +481,7 @@ export default function AdminDashboard() {
       })
       .filter(Boolean)
       .sort((a, b) => b.balance - a.balance),
-    [allSoldTrips, allClientPayments, allServices, allUsers]
+    [allSoldTrips, allClientPayments, allSupplierPayments, allServices, allUsers]
   );
 
   // Top performers
@@ -504,127 +553,77 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Account Balance - Compact Card */}
-      <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl md:rounded-2xl shadow-xl p-4 md:p-6 text-white">
-        <div className="flex flex-col gap-4 md:gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 md:gap-3 mb-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <DollarSign className="w-5 h-5 md:w-6 md:h-6" />
+      {/* Account Balance / Trip Financial Summary */}
+      <div className="space-y-4">
+        {/* Trip Selector */}
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl md:rounded-2xl shadow-xl p-4 md:p-6 text-white">
+          <div className="flex flex-col gap-4 md:gap-6">
+            {selectedTrip === 'all' ? (
+              <div className="flex-1">
+                <div className="flex items-center gap-2 md:gap-3 mb-3">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <h2 className="text-base md:text-lg font-semibold opacity-90">Saldo en Cuenta</h2>
+                </div>
+                <div className="mb-3 md:mb-4">
+                  <p className="text-3xl md:text-4xl lg:text-5xl font-bold mb-1">
+                    ${accountBalance.toLocaleString()}
+                  </p>
+                  <p className="text-emerald-100 text-xs md:text-sm">Balance total de la agencia</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-2.5 md:p-3">
+                    <p className="text-emerald-100 text-xs mb-1">Total Cobrado</p>
+                    <p className="text-lg md:text-xl font-bold">${totalIncome.toLocaleString()}</p>
+                    <p className="text-xs text-emerald-100 mt-0.5">{filteredClientPayments.length} pagos</p>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-2.5 md:p-3">
+                    <p className="text-emerald-100 text-xs mb-1">Total Pagado</p>
+                    <p className="text-lg md:text-xl font-bold">${totalExpenses.toLocaleString()}</p>
+                    <p className="text-xs text-emerald-100 mt-0.5">{filteredSupplierPayments.length} pagos</p>
+                  </div>
+                </div>
               </div>
-              <h2 className="text-base md:text-lg font-semibold opacity-90">Saldo en Cuenta</h2>
-            </div>
-            <div className="mb-3 md:mb-4">
-              <p className="text-3xl md:text-4xl lg:text-5xl font-bold mb-1">
-                ${accountBalance.toLocaleString()}
-              </p>
-              <p className="text-emerald-100 text-xs md:text-sm">
-                {selectedTrip === 'all'
-                  ? 'Balance total de la agencia'
-                  : selectedTripData
-                    ? `${selectedTripData.client_name} - ${selectedTripData.destination}`
-                    : 'Balance del viaje seleccionado'
-                }
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 md:gap-3">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-2.5 md:p-3">
-                <p className="text-emerald-100 text-xs mb-1">Total Cobrado</p>
-                <p className="text-lg md:text-xl font-bold">${totalIncome.toLocaleString()}</p>
-                <p className="text-xs text-emerald-100 mt-0.5">{filteredClientPayments.length} pagos</p>
+            ) : (
+              <div className="flex-1">
+                <div className="flex items-center gap-2 md:gap-3 mb-1">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 md:w-6 md:h-6" />
+                  </div>
+                  <h2 className="text-base md:text-lg font-semibold opacity-90">Resumen del Viaje</h2>
+                </div>
+                {selectedTripData && (
+                  <p className="text-emerald-100 text-xs md:text-sm mb-2">
+                    {selectedTripData.client_name} - {selectedTripData.destination}
+                  </p>
+                )}
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-2.5 md:p-3">
-                <p className="text-emerald-100 text-xs mb-1">Total Pagado</p>
-                <p className="text-lg md:text-xl font-bold">${totalExpenses.toLocaleString()}</p>
-                <p className="text-xs text-emerald-100 mt-0.5">{filteredSupplierPayments.length} pagos</p>
-              </div>
+            )}
+            <div className="w-full">
+              <label className="block text-sm font-medium text-emerald-100 mb-2">
+                Filtrar por Viaje
+              </label>
+              <Select value={selectedTrip} onValueChange={setSelectedTrip}>
+                <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-white h-11 rounded-xl w-full">
+                  <SelectValue placeholder="Todos los viajes" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[400px]">
+                  <SelectItem value="all">Todos los viajes</SelectItem>
+                  {tripsForSelector.map(trip => (
+                    <SelectItem key={trip.id} value={trip.id}>
+                      {trip.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-          <div className="w-full">
-            <label className="block text-sm font-medium text-emerald-100 mb-2">
-              Filtrar por Viaje
-            </label>
-            <Select value={selectedTrip} onValueChange={setSelectedTrip}>
-              <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-white h-11 rounded-xl w-full">
-                <SelectValue placeholder="Todos los viajes" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px]">
-                <SelectItem value="all">Todos los viajes</SelectItem>
-                {tripsForSelector.map(trip => (
-                  <SelectItem key={trip.id} value={trip.id}>
-                    {trip.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
-        {/* Payment Details - When trip is selected */}
-        {selectedTrip !== 'all' && (
-          <div className="mt-3 md:mt-4 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-            {/* Client Payments */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-3">
-              <h4 className="text-white font-semibold mb-2 flex items-center gap-2 text-xs md:text-sm">
-                <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Pagos del Cliente
-              </h4>
-              <div className="space-y-1.5 md:space-y-2 max-h-40 md:max-h-48 overflow-y-auto">
-                {filteredClientPayments.length > 0 ? (
-                  filteredClientPayments
-                    .filter(p => p.date)
-                    .sort((a, b) => new Date(b.date) - new Date(a.date))
-                    .map(payment => (
-                    <div key={payment.id} className="bg-white/20 rounded-lg p-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-white font-medium text-sm">${payment.amount.toLocaleString()}</p>
-                          <p className="text-emerald-100 text-xs">
-                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
-                          </p>
-                        </div>
-                        {payment.notes && (
-                          <p className="text-emerald-100 text-xs max-w-[150px]">{payment.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
-                )}
-              </div>
-            </div>
-
-            {/* Supplier Payments */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-3">
-              <h4 className="text-white font-semibold mb-2 flex items-center gap-2 text-xs md:text-sm">
-                <DollarSign className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                Pagos a Proveedores
-              </h4>
-              <div className="space-y-1.5 md:space-y-2 max-h-40 md:max-h-48 overflow-y-auto">
-                {filteredSupplierPayments.length > 0 ? (
-                  filteredSupplierPayments
-                    .filter(p => p.date)
-                    .sort((a, b) => new Date(b.date) - new Date(a.date))
-                    .map(payment => (
-                    <div key={payment.id} className="bg-white/20 rounded-lg p-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-white font-medium text-sm">${payment.amount.toLocaleString()}</p>
-                          <p className="text-emerald-100 text-xs">
-                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
-                          </p>
-                          <p className="text-emerald-200 text-xs">{payment.supplier}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
-                )}
-              </div>
-            </div>
-          </div>
+        {/* FinancialSummary cards - When trip is selected (same as SoldTripDetail) */}
+        {selectedTrip !== 'all' && tripMetrics && (
+          <FinancialSummary metrics={tripMetrics} />
         )}
       </div>
 
@@ -651,7 +650,7 @@ export default function AdminDashboard() {
                     </div>
                     <p className="text-xs text-stone-600 mb-1.5 truncate">{trip.destination}</p>
                     <div className="flex flex-col sm:flex-row sm:gap-3 gap-1 text-xs">
-                      <span className="text-blue-600 font-medium">Total: ${(trip.total_price || 0).toLocaleString()}</span>
+                      <span className="text-blue-600 font-medium">Total: ${(trip.totalServices || 0).toLocaleString()}</span>
                       <span className="text-green-600 font-medium">Recibido: ${trip.clientPayments.toLocaleString()}</span>
                     </div>
                   </div>

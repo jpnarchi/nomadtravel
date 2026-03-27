@@ -165,7 +165,8 @@ const CURRENCIES = [
   { value: 'AED', label: 'AED – Dubai Dólar' },
   { value: 'SAR', label: 'SAR – Saudi Zar' },
   { value: 'CAD', label: 'CAD – Dólar Canadiense' },
-  { value: 'ISK', label: 'ISK – Icelandic Krona' }
+  { value: 'ISK', label: 'ISK – Icelandic Krona' },
+  { value: 'GBP', label: 'GBP – Libra Esterlina' }
 ];
 
 const CABIN_TYPES = [
