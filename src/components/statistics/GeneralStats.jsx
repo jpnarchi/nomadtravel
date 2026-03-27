@@ -1,41 +1,55 @@
 import React, { useMemo } from 'react';
 import { format, getMonth, getYear, parseISO } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { TrendingUp, Users, Plane, DollarSign, Calendar, Hotel } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 const COLORS = ['#2E442A', '#3d5a37', '#4a7c59', '#5d9b6f', '#78b086', '#94c69e', '#b1dbb7', '#cff0d1'];
 
-export default function GeneralStats({ soldTrips, services, clients, allSoldTrips }) {
+export default function GeneralStats({ soldTrips, services, clients, allSoldTrips, clientPayments = [] }) {
   // Total trips sold
   const totalTrips = soldTrips.length;
 
-  // Total sold
-  const totalSold = soldTrips.reduce((sum, t) => sum + (t.total_price || 0), 0);
+  // Total sold - computed from services (same as SoldTrips.jsx)
+  const totalSold = useMemo(() => {
+    const tripIds = new Set(soldTrips.map(t => t.id));
+    return services
+      .filter(s => tripIds.has(s.sold_trip_id))
+      .reduce((sum, s) => sum + (s.price || 0), 0);
+  }, [soldTrips, services]);
 
-  // Total commission
-  const totalCommission = soldTrips.reduce((sum, t) => sum + (t.total_commission || 0), 0);
+  // Total commission - computed from services
+  const totalCommission = useMemo(() => {
+    const tripIds = new Set(soldTrips.map(t => t.id));
+    return services
+      .filter(s => tripIds.has(s.sold_trip_id))
+      .reduce((sum, s) => sum + (s.commission || 0), 0);
+  }, [soldTrips, services]);
 
   // Average ticket
   const avgTicket = totalTrips > 0 ? totalSold / totalTrips : 0;
 
-  // Sales by month
+  // Sales by month - using start_date (travel date) and services total
   const salesByMonth = useMemo(() => {
     const months = {};
     soldTrips.forEach(t => {
-      if (t.created_date) {
-        const date = parseISO(t.created_date);
+      if (t.start_date) {
+        const date = parseLocalDate(t.start_date);
+        if (!date) return;
         const key = format(date, 'MMM yy', { locale: es });
         const monthNum = getMonth(date) + getYear(date) * 12;
         if (!months[key]) {
           months[key] = { name: key, total: 0, trips: 0, monthNum };
         }
-        months[key].total += t.total_price || 0;
+        const tripServices = services.filter(s => s.sold_trip_id === t.id);
+        const tripTotal = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
+        months[key].total += tripTotal;
         months[key].trips += 1;
       }
     });
     return Object.values(months).sort((a, b) => a.monthNum - b.monthNum);
-  }, [soldTrips]);
+  }, [soldTrips, services]);
 
   // New clients by month
   const clientsByMonth = useMemo(() => {
@@ -54,21 +68,25 @@ export default function GeneralStats({ soldTrips, services, clients, allSoldTrip
     return Object.values(months).sort((a, b) => a.monthNum - b.monthNum);
   }, [clients]);
 
-  // Sales by year
+  // Sales by year - using start_date (travel date) and services total
   const salesByYear = useMemo(() => {
     const years = {};
     allSoldTrips.forEach(t => {
-      if (t.created_date) {
-        const year = getYear(parseISO(t.created_date));
+      if (t.start_date) {
+        const date = parseLocalDate(t.start_date);
+        if (!date) return;
+        const year = getYear(date);
         if (!years[year]) {
           years[year] = { name: year.toString(), total: 0, trips: 0 };
         }
-        years[year].total += t.total_price || 0;
+        const tripServices = services.filter(s => s.sold_trip_id === t.id);
+        const tripTotal = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
+        years[year].total += tripTotal;
         years[year].trips += 1;
       }
     });
     return Object.values(years).sort((a, b) => parseInt(a.name) - parseInt(b.name));
-  }, [allSoldTrips]);
+  }, [allSoldTrips, services]);
 
   // Hotel chains most sold
   const hotelChainCounts = useMemo(() => {
@@ -77,7 +95,7 @@ export default function GeneralStats({ soldTrips, services, clients, allSoldTrip
       const chain = s.hotel_chain;
       if (!counts[chain]) counts[chain] = { name: chain, count: 0, total: 0 };
       counts[chain].count += 1;
-      counts[chain].total += s.total_price || 0;
+      counts[chain].total += s.price || 0;
     });
     return Object.values(counts).sort((a, b) => b.count - a.count);
   }, [services]);

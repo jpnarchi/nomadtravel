@@ -17,7 +17,7 @@ const TRIP_TYPES = [
 
 const COLORS = ['#ec4899', '#f59e0b', '#3b82f6', '#8b5cf6', '#22c55e', '#f97316', '#6366f1', '#64748b', '#e11d48', '#14b8a6'];
 
-export default function TripTypesChart({ soldTrips, trips }) {
+export default function TripTypesChart({ soldTrips, trips, services = [] }) {
   // Classify trips by type based on mood/name
   const tripTypeCounts = useMemo(() => {
     const counts = {};
@@ -37,12 +37,13 @@ export default function TripTypesChart({ soldTrips, trips }) {
 
     soldTrips.forEach(st => {
       const mood = tripMoods[st.trip_id] || '';
+      const tripTotal = services.filter(s => s.sold_trip_id === st.id).reduce((sum, s) => sum + (s.price || 0), 0);
       let classified = false;
 
       for (const type of TRIP_TYPES) {
         if (type.keywords.some(k => mood.includes(k))) {
           counts[type.value].count += 1;
-          counts[type.value].total += st.total_price || 0;
+          counts[type.value].total += tripTotal;
           classified = true;
           break;
         }
@@ -50,12 +51,12 @@ export default function TripTypesChart({ soldTrips, trips }) {
 
       if (!classified) {
         counts['other'].count += 1;
-        counts['other'].total += st.total_price || 0;
+        counts['other'].total += tripTotal;
       }
     });
 
     return Object.values(counts).filter(c => c.count > 0).sort((a, b) => b.count - a.count);
-  }, [soldTrips, trips]);
+  }, [soldTrips, trips, services]);
 
   if (tripTypeCounts.length === 0) {
     return (

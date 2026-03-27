@@ -40,7 +40,7 @@ export default function ProvidersChart({ services }) {
         };
       }
       counts[provider].count += 1;
-      counts[provider].total += s.total_price || 0;
+      counts[provider].total += s.price || 0;
       counts[provider].commission += s.commission || 0;
     });
 
@@ -62,7 +62,7 @@ export default function ProvidersChart({ services }) {
         };
       }
       counts[consolidator].count += 1;
-      counts[consolidator].total += s.total_price || 0;
+      counts[consolidator].total += s.price || 0;
     });
 
     return Object.values(counts).sort((a, b) => b.count - a.count);
@@ -83,7 +83,7 @@ export default function ProvidersChart({ services }) {
         };
       }
       counts[bookedBy].count += 1;
-      counts[bookedBy].total += s.total_price || 0;
+      counts[bookedBy].total += s.price || 0;
     });
 
     return Object.values(counts).sort((a, b) => b.count - a.count);
@@ -112,7 +112,7 @@ export default function ProvidersChart({ services }) {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
           <p className="text-2xl font-bold text-stone-800">
-            ${services.reduce((sum, s) => sum + (s.total_price || 0), 0).toLocaleString()}
+            ${services.reduce((sum, s) => sum + (s.price || 0), 0).toLocaleString()}
           </p>
           <p className="text-xs text-stone-500">Total servicios (USD)</p>
         </div>

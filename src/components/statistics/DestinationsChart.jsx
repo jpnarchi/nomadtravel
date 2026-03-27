@@ -37,21 +37,26 @@ export default function DestinationsChart({ soldTrips, services }) {
       .slice(0, 10);
   }, [services]);
 
-  // Revenue by destination
+  // Revenue by destination - computed from services
   const revenueByDestination = useMemo(() => {
     const revenue = {};
     soldTrips.forEach(t => {
-      if (t.destination && t.total_price) {
-        t.destination.split(', ').forEach(d => {
-          revenue[d] = (revenue[d] || 0) + t.total_price;
-        });
+      if (t.destination) {
+        const tripTotal = services
+          .filter(s => s.sold_trip_id === t.id)
+          .reduce((sum, s) => sum + (s.price || 0), 0);
+        if (tripTotal > 0) {
+          t.destination.split(', ').forEach(d => {
+            revenue[d] = (revenue[d] || 0) + tripTotal;
+          });
+        }
       }
     });
     return Object.entries(revenue)
       .map(([name, total]) => ({ name, total }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
-  }, [soldTrips]);
+  }, [soldTrips, services]);
 
   // Count airlines
   const airlineCounts = useMemo(() => {
@@ -60,7 +65,7 @@ export default function DestinationsChart({ soldTrips, services }) {
       const airline = s.airline;
       if (!counts[airline]) counts[airline] = { name: airline, count: 0, total: 0 };
       counts[airline].count += 1;
-      counts[airline].total += s.total_price || 0;
+      counts[airline].total += s.price || 0;
     });
     return Object.values(counts).sort((a, b) => b.count - a.count);
   }, [services]);

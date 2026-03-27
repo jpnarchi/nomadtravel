@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { formatDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
-import { 
-  CheckCircle, DollarSign, Users, MapPin, Calendar, 
+import {
+  CheckCircle, DollarSign, Users, MapPin, Calendar,
   Hotel, Plane, Ship, Car, Compass
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +14,22 @@ const STATUS_CONFIG = {
   completado: { label: 'Completado', color: 'bg-purple-100 text-purple-800' }
 };
 
-export default function SoldTripsStats({ soldTrips, services }) {
-  // Calculate stats
-  const totalRevenue = soldTrips.reduce((sum, t) => sum + (t.total_price || 0), 0);
-  const totalCommission = soldTrips.reduce((sum, t) => sum + (t.total_commission || 0), 0);
-  const totalCollected = soldTrips.reduce((sum, t) => sum + (t.total_paid_by_client || 0), 0);
+export default function SoldTripsStats({ soldTrips, services, clientPayments = [] }) {
+  // Calculate stats from services and payments (same as SoldTrips.jsx)
+  const { totalRevenue, totalCommission, totalCollected } = useMemo(() => {
+    const tripIds = new Set(soldTrips.map(t => t.id));
+    const revenue = services
+      .filter(s => tripIds.has(s.sold_trip_id))
+      .reduce((sum, s) => sum + (s.price || 0), 0);
+    const commission = services
+      .filter(s => tripIds.has(s.sold_trip_id))
+      .reduce((sum, s) => sum + (s.commission || 0), 0);
+    const collected = clientPayments
+      .filter(p => tripIds.has(p.sold_trip_id))
+      .reduce((sum, p) => sum + (p.amount_usd_fixed || p.amount || 0), 0);
+    return { totalRevenue: revenue, totalCommission: commission, totalCollected: collected };
+  }, [soldTrips, services, clientPayments]);
+
   const totalTravelers = soldTrips.reduce((sum, t) => sum + (t.travelers || 0), 0);
 
   // Count services by type
@@ -118,7 +129,11 @@ export default function SoldTripsStats({ soldTrips, services }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {soldTrips.map((trip) => (
+              {soldTrips.map((trip) => {
+                const tripServices = services.filter(s => s.sold_trip_id === trip.id);
+                const totalServices = tripServices.reduce((sum, s) => sum + (s.price || 0), 0);
+                const tripCommission = tripServices.reduce((sum, s) => sum + (s.commission || 0), 0);
+                return (
                 <tr key={trip.id} className="hover:bg-stone-50 transition-colors">
                   <td className="p-3">
                     <span className="font-medium text-stone-800">{trip.client_name || '-'}</span>
@@ -132,8 +147,8 @@ export default function SoldTripsStats({ soldTrips, services }) {
                   <td className="p-3">
                     <div className="flex items-center gap-2 text-stone-600 text-xs">
                       <Calendar className="w-3 h-3" />
-                      {formatDate(trip.start_date, 'd MMM', { locale: es })}
-                      {trip.end_date && ` - ${formatDate(trip.end_date, 'd MMM yy', { locale: es })}`}
+                      {trip.start_date ? formatDate(`${trip.start_date}T12:00:00`, 'd MMM', { locale: es }) : '-'}
+                      {trip.end_date && ` - ${formatDate(`${trip.end_date}T12:00:00`, 'd MMM yy', { locale: es })}`}
                     </div>
                   </td>
                   <td className="p-3 text-center">
@@ -141,12 +156,12 @@ export default function SoldTripsStats({ soldTrips, services }) {
                   </td>
                   <td className="p-3 text-right">
                     <span className="font-semibold" style={{ color: '#2E442A' }}>
-                      ${(trip.total_price || 0).toLocaleString()}
+                      ${totalServices.toLocaleString()}
                     </span>
                   </td>
                   <td className="p-3 text-right">
                     <span className="text-purple-600 font-medium">
-                      ${(trip.total_commission || 0).toLocaleString()}
+                      ${tripCommission.toLocaleString()}
                     </span>
                   </td>
                   <td className="p-3 text-center">
@@ -155,7 +170,8 @@ export default function SoldTripsStats({ soldTrips, services }) {
                     </Badge>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

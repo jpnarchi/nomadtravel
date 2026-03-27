@@ -35,7 +35,7 @@ export default function HotelChainsChart({ services }) {
         counts[chain] = { name: chain, count: 0, total: 0, commission: 0 };
       }
       counts[chain].count += 1;
-      counts[chain].total += s.total_price || 0;
+      counts[chain].total += s.price || 0;
       counts[chain].commission += s.commission || 0;
     });
 
@@ -52,7 +52,7 @@ export default function HotelChainsChart({ services }) {
         counts[brand] = { name: brand, count: 0, total: 0 };
       }
       counts[brand].count += 1;
-      counts[brand].total += s.total_price || 0;
+      counts[brand].total += s.price || 0;
     });
 
     return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 15);
@@ -68,7 +68,7 @@ export default function HotelChainsChart({ services }) {
         counts[name] = { name, count: 0, total: 0, chain: s.hotel_chain || '-' };
       }
       counts[name].count += 1;
-      counts[name].total += s.total_price || 0;
+      counts[name].total += s.price || 0;
     });
 
     return Object.values(counts).sort((a, b) => b.count - a.count);
@@ -97,7 +97,7 @@ export default function HotelChainsChart({ services }) {
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-stone-100">
           <p className="text-2xl font-bold text-stone-800">
-            ${hotelServices.reduce((sum, s) => sum + (s.total_price || 0), 0).toLocaleString()}
+            ${hotelServices.reduce((sum, s) => sum + (s.price || 0), 0).toLocaleString()}
           </p>
           <p className="text-xs text-stone-500">Total vendido (USD)</p>
         </div>

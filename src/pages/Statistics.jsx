@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ViewModeContext } from '@/Layout';
 import { useSpoofableUser } from '@/contexts/SpoofContext';
 import { format, getMonth, getYear, parseISO, startOfYear, endOfYear, isWithinInterval } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { 
   Loader2, TrendingUp, Users, Plane, DollarSign, 
@@ -102,6 +103,12 @@ export default function Statistics() {
     enabled: !!user && !userLoading
   });
 
+  const { data: clientPayments = [] } = useQuery({
+    queryKey: ['clientPayments'],
+    queryFn: () => supabaseAPI.entities.ClientPayment.list(),
+    enabled: !!user && !userLoading
+  });
+
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients', user?.email, isAdmin],
     queryFn: async () => {
@@ -138,7 +145,8 @@ export default function Statistics() {
     const years = new Set();
     soldTrips.forEach(t => {
       if (t.created_date) years.add(getYear(parseISO(t.created_date)));
-      if (t.start_date) years.add(getYear(parseISO(t.start_date)));
+      const sd = parseLocalDate(t.start_date);
+      if (sd) years.add(getYear(sd));
     });
     const currentYear = new Date().getFullYear();
     years.add(currentYear);
@@ -193,7 +201,8 @@ export default function Statistics() {
       const year = parseInt(filters.year);
       filteredTrips = filteredTrips.filter(t => {
         const saleYear = t.created_date ? getYear(parseISO(t.created_date)) : null;
-        const travelYear = t.start_date ? getYear(parseISO(t.start_date)) : null;
+        const sd = parseLocalDate(t.start_date);
+        const travelYear = sd ? getYear(sd) : null;
         return saleYear === year || travelYear === year;
       });
     }
@@ -211,8 +220,9 @@ export default function Statistics() {
     if (filters.travelMonth !== 'all') {
       const month = parseInt(filters.travelMonth);
       filteredTrips = filteredTrips.filter(t => {
-        if (!t.start_date) return false;
-        return getMonth(parseISO(t.start_date)) === month;
+        const sd = parseLocalDate(t.start_date);
+        if (!sd) return false;
+        return getMonth(sd) === month;
       });
     }
 
@@ -221,9 +231,9 @@ export default function Statistics() {
       const season = SEASONS.find(s => s.value === filters.season);
       if (season) {
         filteredTrips = filteredTrips.filter(t => {
-          if (!t.start_date) return false;
-          const month = getMonth(parseISO(t.start_date));
-          return season.months.includes(month);
+          const sd = parseLocalDate(t.start_date);
+          if (!sd) return false;
+          return season.months.includes(getMonth(sd));
         });
       }
     }
@@ -492,9 +502,10 @@ export default function Statistics() {
 
         {isAdmin && (
           <TabsContent value="agent-comparison">
-            <AgentComparisonStats 
+            <AgentComparisonStats
               soldTrips={filteredData.filteredTrips}
               allUsers={allUsers}
+              services={filteredData.filteredServices}
             />
           </TabsContent>
         )}
@@ -505,6 +516,7 @@ export default function Statistics() {
             services={filteredData.filteredServices}
             clients={filteredData.filteredClients}
             allSoldTrips={filteredData.filteredTrips}
+            clientPayments={clientPayments}
           />
         </TabsContent>
 
@@ -512,6 +524,7 @@ export default function Statistics() {
           <SoldTripsStats
             soldTrips={filteredData.filteredTrips}
             services={filteredData.filteredServices}
+            clientPayments={clientPayments}
           />
         </TabsContent>
 
@@ -530,6 +543,7 @@ export default function Statistics() {
           <SeasonalityChart
             soldTrips={filteredData.filteredTrips}
             allSoldTrips={filteredData.filteredTrips}
+            services={filteredData.filteredServices}
           />
         </TabsContent>
 
@@ -537,6 +551,7 @@ export default function Statistics() {
           <TripTypesChart
             soldTrips={filteredData.filteredTrips}
             trips={filteredData.filteredRawTrips}
+            services={filteredData.filteredServices}
           />
         </TabsContent>
 

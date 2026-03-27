@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { format, getMonth, parseISO } from 'date-fns';
+import { parseLocalDate } from '@/lib/dateUtils';
 import { es } from 'date-fns/locale';
 import { Calendar, Sun, Snowflake, Flower2, Leaf } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
@@ -15,74 +16,80 @@ const SEASONS = [
 const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const COLORS = ['#f59e0b', '#ef4444', '#3b82f6', '#22c55e', '#8b5cf6', '#ec4899'];
 
-export default function SeasonalityChart({ soldTrips, allSoldTrips }) {
+export default function SeasonalityChart({ soldTrips, allSoldTrips, services = [] }) {
+  // Helper: get trip total from services
+  const getTripTotal = (tripId) => {
+    return services.filter(s => s.sold_trip_id === tripId).reduce((sum, s) => sum + (s.price || 0), 0);
+  };
+
   // Sales by travel month
   const salesByTravelMonth = useMemo(() => {
-    const months = Array(12).fill(null).map((_, i) => ({ 
-      name: MONTH_NAMES[i], 
+    const months = Array(12).fill(null).map((_, i) => ({
+      name: MONTH_NAMES[i],
       month: i,
-      trips: 0, 
-      total: 0 
+      trips: 0,
+      total: 0
     }));
-    
+
     soldTrips.forEach(t => {
       if (t.start_date) {
-        const month = getMonth(parseISO(t.start_date));
+        const month = getMonth(parseLocalDate(t.start_date));
         months[month].trips += 1;
-        months[month].total += t.total_price || 0;
+        months[month].total += getTripTotal(t.id);
       }
     });
-    
+
     return months;
-  }, [soldTrips]);
+  }, [soldTrips, services]);
 
   // Sales by sale month
   const salesBySaleMonth = useMemo(() => {
-    const months = Array(12).fill(null).map((_, i) => ({ 
-      name: MONTH_NAMES[i], 
+    const months = Array(12).fill(null).map((_, i) => ({
+      name: MONTH_NAMES[i],
       month: i,
-      trips: 0, 
-      total: 0 
+      trips: 0,
+      total: 0
     }));
-    
+
     soldTrips.forEach(t => {
       if (t.created_date) {
         const month = getMonth(parseISO(t.created_date));
         months[month].trips += 1;
-        months[month].total += t.total_price || 0;
+        months[month].total += getTripTotal(t.id);
       }
     });
-    
+
     return months;
-  }, [soldTrips]);
+  }, [soldTrips, services]);
 
   // Season counts
   const seasonCounts = useMemo(() => {
     const counts = SEASONS.map(s => ({ ...s, trips: 0, total: 0 }));
     const otherCount = { value: 'otro', label: 'Otras fechas', trips: 0, total: 0, color: '#6b7280' };
-    
+
     soldTrips.forEach(t => {
       if (t.start_date) {
-        const month = getMonth(parseISO(t.start_date));
+        const month = getMonth(parseLocalDate(t.start_date));
+        const tripTotal = getTripTotal(t.id);
         let assigned = false;
-        
+
         counts.forEach(season => {
           if (season.months.includes(month)) {
             season.trips += 1;
-            season.total += t.total_price || 0;
+            season.total += tripTotal;
             assigned = true;
           }
         });
-        
+
         if (!assigned) {
           otherCount.trips += 1;
-          otherCount.total += t.total_price || 0;
+          otherCount.total += tripTotal;
         }
       }
     });
-    
+
     return [...counts, otherCount].filter(s => s.trips > 0);
-  }, [soldTrips]);
+  }, [soldTrips, services]);
 
   // Detailed trip list by season
   const tripsBySeason = useMemo(() => {
@@ -92,7 +99,7 @@ export default function SeasonalityChart({ soldTrips, allSoldTrips }) {
     
     soldTrips.forEach(t => {
       if (t.start_date) {
-        const month = getMonth(parseISO(t.start_date));
+        const month = getMonth(parseLocalDate(t.start_date));
         let assigned = false;
         
         SEASONS.forEach(season => {
@@ -254,10 +261,10 @@ export default function SeasonalityChart({ soldTrips, allSoldTrips }) {
                       {trip.created_date ? format(parseISO(trip.created_date), 'd MMM yy', { locale: es }) : '-'}
                     </td>
                     <td className="p-3 text-stone-500">
-                      {trip.start_date ? format(parseISO(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
+                      {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
                     </td>
                     <td className="p-3 text-right font-medium text-stone-800">
-                      ${(trip.total_price || 0).toLocaleString()}
+                      ${getTripTotal(trip.id).toLocaleString()}
                     </td>
                   </tr>
                 ))
@@ -273,10 +280,10 @@ export default function SeasonalityChart({ soldTrips, allSoldTrips }) {
                     {trip.created_date ? format(parseISO(trip.created_date), 'd MMM yy', { locale: es }) : '-'}
                   </td>
                   <td className="p-3 text-stone-500">
-                    {trip.start_date ? format(parseISO(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
+                    {trip.start_date ? format(parseLocalDate(trip.start_date), 'd MMM yy', { locale: es }) : '-'}
                   </td>
                   <td className="p-3 text-right font-medium text-stone-800">
-                    ${(trip.total_price || 0).toLocaleString()}
+                    ${getTripTotal(trip.id).toLocaleString()}
                   </td>
                 </tr>
               ))}

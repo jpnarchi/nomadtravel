@@ -3,14 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Award, TrendingUp, Users, Plane, DollarSign } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function AgentComparisonStats({ soldTrips, allUsers }) {
+export default function AgentComparisonStats({ soldTrips, allUsers, services = [] }) {
   const agents = allUsers.filter(u => u.role === 'user');
 
   const agentStats = useMemo(() => {
     return agents.map(agent => {
       const agentTrips = soldTrips.filter(t => t.created_by === agent.email);
-      const totalSales = agentTrips.reduce((sum, t) => sum + (t.total_price || 0), 0);
-      const totalCommission = agentTrips.reduce((sum, t) => sum + (t.total_commission || 0), 0);
+      const agentTripIds = new Set(agentTrips.map(t => t.id));
+      const agentServices = services.filter(s => agentTripIds.has(s.sold_trip_id));
+      const totalSales = agentServices.reduce((sum, s) => sum + (s.price || 0), 0);
+      const totalCommission = agentServices.reduce((sum, s) => sum + (s.commission || 0), 0);
       const avgTicket = agentTrips.length > 0 ? totalSales / agentTrips.length : 0;
 
       return {
@@ -22,7 +24,7 @@ export default function AgentComparisonStats({ soldTrips, allUsers }) {
         avgTicket: avgTicket
       };
     }).sort((a, b) => b.sales - a.sales);
-  }, [agents, soldTrips]);
+  }, [agents, soldTrips, services]);
 
   const topPerformers = agentStats.slice(0, 5);
   const chartData = agentStats.map(a => ({
