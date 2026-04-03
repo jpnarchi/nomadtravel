@@ -126,7 +126,7 @@ export default function InternalCommissions() {
         let status = 'pendiente';
         if (s.paid_to_agent) {
           status = 'pagada_agente';
-        } else if (s.paid_to_agency || s.commission_paid) {
+        } else if (s.commission_paid) {
           status = 'pagado_a_agencia_interno';
         }
 
