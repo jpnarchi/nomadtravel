@@ -16,7 +16,7 @@ export default function InternalCommissionForm({ open, onClose, commission, user
     service_provider: '',
     estimated_amount: '',
     estimated_payment_date: '',
-    iata_used: 'nomad',
+    iata_used: 'iata_nomad',
     status: 'pendiente',
     received_date: '',
     received_amount: '',
@@ -33,7 +33,7 @@ export default function InternalCommissionForm({ open, onClose, commission, user
         service_provider: commission.service_provider || '',
         estimated_amount: commission.estimated_amount || '',
         estimated_payment_date: commission.estimated_payment_date || '',
-        iata_used: commission.iata_used || 'nomad',
+        iata_used: commission.iata_used === 'nomad' ? 'iata_nomad' : (commission.iata_used || 'iata_nomad'),
         status: commission.status || 'pendiente',
         received_date: commission.received_date || '',
         received_amount: commission.received_amount || '',
@@ -48,7 +48,7 @@ export default function InternalCommissionForm({ open, onClose, commission, user
         service_provider: '',
         estimated_amount: '',
         estimated_payment_date: '',
-        iata_used: 'nomad',
+        iata_used: 'iata_nomad',
         status: 'pendiente',
         received_date: '',
         received_amount: '',
@@ -189,7 +189,7 @@ export default function InternalCommissionForm({ open, onClose, commission, user
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="montecito">IATA Montecito</SelectItem>
-                  <SelectItem value="nomad">IATA Nomad</SelectItem>
+                  <SelectItem value="iata_nomad">IATA Nomad</SelectItem>
                 </SelectContent>
               </Select>
             </div>

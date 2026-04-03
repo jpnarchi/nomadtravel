@@ -30,8 +30,9 @@ import AgentCommissionInvoice from '@/components/commissions/AgentCommissionInvo
 import { updateSoldTripTotalsFromServices } from '@/components/utils/soldTripRecalculations';
 
 const IATA_LABELS = {
-  montecito: 'IATA Montecito',
-  nomad: 'IATA Nomad'
+  montecito: 'Montecito',
+  iata_nomad: 'IATA Nomad',
+  nomad: 'IATA Nomad' // legacy fallback
 };
 
 export default function InternalCommissions() {
@@ -140,13 +141,13 @@ export default function InternalCommissions() {
           service_provider: getServiceProviderName(s),
           estimated_amount: s.commission || 0,
           estimated_payment_date: s.commission_payment_date || null,
-          iata_used: s.booked_by === 'montecito' ? 'montecito' : 'nomad',
+          iata_used: s.booked_by || s.metadata?.booked_by || 'iata_nomad',
           status: status,
           paid_to_agent: s.paid_to_agent || false,
           received_date: s.commission_paid ? s.commission_payment_date : null,
           received_amount: s.commission_paid ? s.commission : null,
-          agent_commission: calculateAgentCut(s.commission, s.booked_by),
-          nomad_commission: calculateNomadCut(s.commission, s.booked_by),
+          agent_commission: calculateAgentCut(s.commission, s.booked_by || s.metadata?.booked_by),
+          nomad_commission: calculateNomadCut(s.commission, s.booked_by || s.metadata?.booked_by),
           source: 'tripService'
         };
       });
@@ -343,7 +344,7 @@ export default function InternalCommissions() {
       if (data.iata_used === 'montecito') {
         agentCommission = data.received_amount * 0.50;
         nomadCommission = data.received_amount * 0.35;
-      } else if (data.iata_used === 'nomad') {
+      } else {
         agentCommission = data.received_amount * 0.50;
         nomadCommission = data.received_amount * 0.50;
       }

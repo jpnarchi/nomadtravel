@@ -72,8 +72,8 @@ export default function ProvidersChart({ services }) {
   const bookedByCounts = useMemo(() => {
     const counts = {};
     
-    services.filter(s => s.booked_by).forEach(s => {
-      const bookedBy = s.booked_by;
+    services.filter(s => s.booked_by || s.metadata?.booked_by).forEach(s => {
+      const bookedBy = s.booked_by || s.metadata?.booked_by;
       if (!counts[bookedBy]) {
         counts[bookedBy] = { 
           name: bookedBy === 'montecito' ? 'Montecito' : 'IATA Nomad', 

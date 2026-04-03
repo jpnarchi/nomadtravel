@@ -105,7 +105,7 @@ export default function ServiceCard({
         {/* Info Pills */}
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline" className="text-xs font-medium bg-stone-50">
-            {service.booked_by === 'montecito' ? 'Montecito' : 'Nomad'}
+            {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
           </Badge>
           {provider !== 'preferred_partner' && (
             <Badge variant="outline" className="text-xs font-medium bg-purple-50 text-purple-700 border-purple-200">
@@ -176,7 +176,7 @@ export default function ServiceCard({
 
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="text-xs font-medium bg-stone-50">
-              {service.booked_by === 'montecito' ? 'Montecito' : 'Nomad'}
+              {service.booked_by === 'montecito' ? 'Montecito' : 'IATA Nomad'}
             </Badge>
             {provider !== 'preferred_partner' && (
               <Badge variant="outline" className="text-xs font-medium bg-purple-50 text-purple-700 border-purple-200">

@@ -199,7 +199,7 @@ export default function Commissions() {
       const matchesSearch = clientName.toLowerCase().includes(search.toLowerCase()) ||
                            (s.hotel_name || '').toLowerCase().includes(search.toLowerCase()) ||
                            (s.airline || '').toLowerCase().includes(search.toLowerCase());
-      const matchesBookedBy = filterBookedBy === 'all' || s.booked_by === filterBookedBy;
+      const matchesBookedBy = filterBookedBy === 'all' || (s.booked_by || s.metadata?.booked_by) === filterBookedBy;
       return matchesSearch && matchesBookedBy;
     })
     .sort((a, b) => {
@@ -485,7 +485,7 @@ export default function Commissions() {
                     </td>
                     <td className="p-3">
                       <span className="text-stone-600">
-                        {BOOKED_BY_LABELS[service.booked_by] || '-'}
+                        {BOOKED_BY_LABELS[service.booked_by || service.metadata?.booked_by] || '-'}
                       </span>
                     </td>
                     <td className="p-3">
