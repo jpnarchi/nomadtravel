@@ -25,7 +25,8 @@ import {
                           ChevronRight,
                           Database,
                           Search,
-                          UserCheck
+                          UserCheck,
+                          ListChecks
                         } from 'lucide-react';
 import QuickPaymentFAB from '@/components/ui/QuickPaymentFAB';
 import PaymentInfoModal from '@/components/ui/PaymentInfoModal';
@@ -291,6 +292,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Ferias', page: 'IndustryFairs', icon: LayoutDashboard },
     { name: '--- Herramientas Admin ---', divider: true },
     { name: 'Spoof de Usuarios', page: 'AdminSpoof', icon: UserCheck },
+    { name: 'Opciones de Servicios', page: 'AdminServiceOptions', icon: ListChecks },
   ], []);
 
   const userNavigation = useMemo(() => [

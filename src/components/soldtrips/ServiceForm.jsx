@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { es } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useServiceDropdownOptions } from '@/hooks/useServiceDropdownOptions';
 
 const SERVICE_TYPES = [
   { value: 'hotel', label: 'Hotel' },
@@ -287,7 +288,63 @@ const HOTEL_BRANDS = {
   ]
 };
 
+// Merge static options with custom dynamic options from Supabase.
+// Dynamic options are appended after static ones, deduplicating by value.
+function mergeOptions(staticList, dynamicList, mapFn = (o) => ({ value: o.value, label: o.label })) {
+  const staticValues = new Set(staticList.map(o => (typeof o === 'string' ? o : o.value)));
+  const extras = dynamicList
+    .filter(o => o.is_active && !staticValues.has(o.value))
+    .map(mapFn);
+  return [...staticList, ...extras];
+}
+
 export default function ServiceForm({ open, onClose, service, soldTripId, onSave, isLoading }) {
+  const { data: customOptions = [] } = useServiceDropdownOptions();
+
+  // Build merged lists (static + custom) — memoized so render functions below stay stable
+  const mergedAirlines = useMemo(() => {
+    const customAirlines = customOptions.filter(o => o.category === 'airline');
+    const extras = customAirlines
+      .filter(o => o.is_active && !AIRLINES.includes(o.label))
+      .map(o => o.label);
+    return [...AIRLINES, ...extras];
+  }, [customOptions]);
+
+  const mergedHotelChains = useMemo(() => {
+    const custom = customOptions.filter(o => o.category === 'hotel_chain');
+    return mergeOptions(HOTEL_CHAINS, custom);
+  }, [customOptions]);
+
+  const mergedReservedBy = useMemo(() => {
+    const custom = customOptions.filter(o => o.category === 'hotel_reserved_by');
+    return mergeOptions(RESERVED_BY, custom);
+  }, [customOptions]);
+
+  const mergedCruiseLines = useMemo(() => {
+    const custom = customOptions.filter(o => o.category === 'cruise_line');
+    return mergeOptions(CRUISE_LINES, custom);
+  }, [customOptions]);
+
+  const mergedCruiseProviders = useMemo(() => {
+    const custom = customOptions.filter(o => o.category === 'cruise_provider');
+    return mergeOptions(CRUISE_PROVIDERS, custom);
+  }, [customOptions]);
+
+  const mergedTrainProviders = useMemo(() => {
+    const custom = customOptions.filter(o => o.category === 'train_provider');
+    return mergeOptions(TRAIN_PROVIDERS, custom);
+  }, [customOptions]);
+
+  const mergedFlightConsolidatorsNomad = useMemo(() => {
+    const custom = customOptions.filter(o => o.category === 'flight_consolidator_nomad');
+    return mergeOptions(FLIGHT_CONSOLIDATORS.iata_nomad, custom);
+  }, [customOptions]);
+
+  const mergedFlightConsolidators = useMemo(() => ({
+    ...FLIGHT_CONSOLIDATORS,
+    iata_nomad: mergedFlightConsolidatorsNomad,
+  }), [mergedFlightConsolidatorsNomad]);
+
   const [formData, setFormData] = useState({
     service_type: 'hotel',
     total_price: 0,
@@ -483,7 +540,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 aria-expanded={hotelChainOpen}
                 className="w-full justify-between rounded-xl font-normal"
               >
-                {HOTEL_CHAINS.find(c => c.value === formData.hotel_chain)?.label || "Seleccionar cadena"}
+                {mergedHotelChains.find(c => c.value === formData.hotel_chain)?.label || "Seleccionar cadena"}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -493,7 +550,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 <CommandList>
                   <CommandEmpty>No se encontró.</CommandEmpty>
                   <CommandGroup className="max-h-[200px] overflow-y-auto">
-                    {HOTEL_CHAINS.map((chain) => (
+                    {mergedHotelChains.map((chain) => (
                       <CommandItem
                         key={chain.value}
                         value={chain.label}
@@ -737,7 +794,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 <CommandList>
                   <CommandEmpty>No se encontró aerolínea.</CommandEmpty>
                   <CommandGroup className="max-h-[200px] overflow-y-auto">
-                    {AIRLINES.map((airline) => (
+                    {mergedAirlines.map((airline) => (
                       <CommandItem
                         key={airline}
                         value={airline}
@@ -1081,7 +1138,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 aria-expanded={cruiseLineOpen}
                 className="w-full justify-between rounded-xl font-normal"
               >
-                {CRUISE_LINES.find(c => c.value === formData.cruise_line)?.label || "Seleccionar línea"}
+                {mergedCruiseLines.find(c => c.value === formData.cruise_line)?.label || "Seleccionar línea"}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -1091,7 +1148,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                 <CommandList>
                   <CommandEmpty>No se encontró.</CommandEmpty>
                   <CommandGroup className="max-h-[200px] overflow-y-auto">
-                    {CRUISE_LINES.map((line) => (
+                    {mergedCruiseLines.map((line) => (
                       <CommandItem
                         key={line.value}
                         value={line.label}
@@ -1693,7 +1750,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                   <Select value={formData.reserved_by || ''} onValueChange={(v) => updateField('reserved_by', v)}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
-                      {RESERVED_BY.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                      {mergedReservedBy.map(r => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1708,7 +1765,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                   >
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
-                      {(FLIGHT_CONSOLIDATORS[formData.booked_by] || []).map(c => (
+                      {(mergedFlightConsolidators[formData.booked_by] || []).map(c => (
                         <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1726,7 +1783,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                   <Select value={formData.cruise_provider || ''} onValueChange={(v) => updateField('cruise_provider', v)}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
-                      {CRUISE_PROVIDERS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                      {mergedCruiseProviders.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1737,7 +1794,7 @@ export default function ServiceForm({ open, onClose, service, soldTripId, onSave
                   <Select value={formData.train_provider || ''} onValueChange={(v) => updateField('train_provider', v)}>
                     <SelectTrigger className="rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                     <SelectContent>
-                      {TRAIN_PROVIDERS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                      {mergedTrainProviders.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
