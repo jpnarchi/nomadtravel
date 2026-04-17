@@ -88,25 +88,40 @@ export default function Statistics() {
     enabled: !!user && !userLoading
   });
 
+  // Servicios: para usuarios no-admin, traemos TODOS los servicios de SUS SoldTrips,
+  // independientemente de quién los haya creado (p.ej. un admin que ayudó a registrar un hotel).
+  // Filtrar por `created_by` del servicio dejaría fuera esos servicios "ajenos" del propio viaje.
+  const userSoldTripIds = useMemo(
+    () => (soldTrips || []).map(t => t.id),
+    [soldTrips]
+  );
+
   const { data: services = [], isLoading: servicesLoading } = useQuery({
-    queryKey: ['services', user?.email, isAdmin],
+    queryKey: ['services', user?.email, isAdmin, userSoldTripIds.length],
     queryFn: async () => {
       if (!user) return [];
-      // Reusar soldTrips ya cargados para filtrar servicios en la BD
-      // Usar join directo en Supabase para mayor eficiencia
-      if (isAdmin) {
-        return supabaseAPI.entities.TripService.list();
-      }
-      // Para usuarios, filtrar servicios por email del creador directamente
-      return supabaseAPI.entities.TripService.filter({ created_by: user.email });
+      if (isAdmin) return supabaseAPI.entities.TripService.list();
+      if (userSoldTripIds.length === 0) return [];
+      const all = await supabaseAPI.entities.TripService.list();
+      const idSet = new Set(userSoldTripIds);
+      return all.filter(s => idSet.has(s.sold_trip_id));
     },
-    enabled: !!user && !userLoading
+    enabled: !!user && !userLoading && (isAdmin || !tripsLoading)
   });
 
+  // Igual que con services: pagos los queremos de los SoldTrips del usuario,
+  // no por `created_by` del pago (admin podría haber registrado un pago por él).
   const { data: clientPayments = [] } = useQuery({
-    queryKey: ['clientPayments'],
-    queryFn: () => supabaseAPI.entities.ClientPayment.list(),
-    enabled: !!user && !userLoading
+    queryKey: ['clientPayments', user?.email, isAdmin, userSoldTripIds.length],
+    queryFn: async () => {
+      if (!user) return [];
+      if (isAdmin) return supabaseAPI.entities.ClientPayment.list();
+      if (userSoldTripIds.length === 0) return [];
+      const all = await supabaseAPI.entities.ClientPayment.list();
+      const idSet = new Set(userSoldTripIds);
+      return all.filter(p => idSet.has(p.sold_trip_id));
+    },
+    enabled: !!user && !userLoading && (isAdmin || !tripsLoading)
   });
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
@@ -164,22 +179,28 @@ export default function Statistics() {
     return Array.from(dests).sort();
   }, [soldTrips]);
 
-  // Get unique hotel chains
+  // Get unique hotel chains (normalizadas: trim, evitar duplicados por mayúsculas/espacios)
   const uniqueHotelChains = useMemo(() => {
-    const chains = new Set();
+    const byKey = new Map();
     services.forEach(s => {
-      if (s.hotel_chain) chains.add(s.hotel_chain);
+      const raw = s.hotel_chain?.trim();
+      if (!raw) return;
+      const key = raw.toLowerCase();
+      if (!byKey.has(key)) byKey.set(key, raw);
     });
-    return Array.from(chains).sort();
+    return Array.from(byKey.values()).sort((a, b) => a.localeCompare(b));
   }, [services]);
 
-  // Get unique providers
+  // Get unique providers (normalizados)
   const uniqueProviders = useMemo(() => {
-    const providers = new Set();
+    const byKey = new Map();
     services.forEach(s => {
-      if (s.reserved_by) providers.add(s.reserved_by);
+      const raw = s.reserved_by?.trim();
+      if (!raw) return;
+      const key = raw.toLowerCase();
+      if (!byKey.has(key)) byKey.set(key, raw);
     });
-    return Array.from(providers);
+    return Array.from(byKey.values()).sort((a, b) => a.localeCompare(b));
   }, [services]);
 
   // Filter data
@@ -238,10 +259,11 @@ export default function Statistics() {
       }
     }
 
-    // Filter by destination
+    // Filter by destination (case-insensitive)
     if (filters.destination !== 'all') {
+      const needle = filters.destination.toLowerCase();
       filteredTrips = filteredTrips.filter(t =>
-        t.destination?.includes(filters.destination)
+        t.destination?.toLowerCase().includes(needle)
       );
     }
 
@@ -254,14 +276,20 @@ export default function Statistics() {
     const tripIds = new Set(filteredTrips.map(t => t.id));
     filteredServices = filteredServices.filter(s => tripIds.has(s.sold_trip_id));
 
-    // Filter services by provider
+    // Filter services by provider (normalizado)
     if (filters.provider !== 'all') {
-      filteredServices = filteredServices.filter(s => s.reserved_by === filters.provider);
+      const needle = filters.provider.trim().toLowerCase();
+      filteredServices = filteredServices.filter(
+        s => s.reserved_by?.trim().toLowerCase() === needle
+      );
     }
 
-    // Filter services by hotel chain
+    // Filter services by hotel chain (normalizado)
     if (filters.hotelChain !== 'all') {
-      filteredServices = filteredServices.filter(s => s.hotel_chain === filters.hotelChain);
+      const needle = filters.hotelChain.trim().toLowerCase();
+      filteredServices = filteredServices.filter(
+        s => s.hotel_chain?.trim().toLowerCase() === needle
+      );
     }
 
     return { filteredTrips, filteredServices, filteredClients, filteredRawTrips };

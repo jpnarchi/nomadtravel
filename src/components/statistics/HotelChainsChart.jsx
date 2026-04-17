@@ -22,56 +22,57 @@ const HOTEL_CHAIN_GROUPS = {
 };
 
 export default function HotelChainsChart({ services }) {
-  // Filter hotel services
-  const hotelServices = services.filter(s => s.service_type === 'hotel');
+  // Filter hotel services (normalizando service_type por si viene "Hotel" o con espacios)
+  const hotelServices = services.filter(
+    s => s.service_type?.trim().toLowerCase() === 'hotel'
+  );
+
+  // Helper: agrupa por versión normalizada pero conserva la primera forma "bonita" encontrada
+  const groupNormalized = (items, getField) => {
+    const buckets = new Map();
+    items.forEach(s => {
+      const raw = getField(s)?.trim();
+      const display = raw && raw.length > 0 ? raw : 'Sin especificar';
+      const key = display.toLowerCase();
+      if (!buckets.has(key)) buckets.set(key, { name: display, count: 0, total: 0, commission: 0 });
+      const bucket = buckets.get(key);
+      bucket.count += 1;
+      bucket.total += s.price || 0;
+      bucket.commission += s.commission || 0;
+    });
+    return Array.from(buckets.values());
+  };
 
   // Count by chain
-  const chainCounts = useMemo(() => {
-    const counts = {};
-    
-    hotelServices.forEach(s => {
-      const chain = s.hotel_chain || 'Sin especificar';
-      if (!counts[chain]) {
-        counts[chain] = { name: chain, count: 0, total: 0, commission: 0 };
-      }
-      counts[chain].count += 1;
-      counts[chain].total += s.price || 0;
-      counts[chain].commission += s.commission || 0;
-    });
-
-    return Object.values(counts).sort((a, b) => b.count - a.count);
-  }, [hotelServices]);
+  const chainCounts = useMemo(
+    () => groupNormalized(hotelServices, s => s.hotel_chain).sort((a, b) => b.count - a.count),
+    [hotelServices]
+  );
 
   // Count by brand (sub-brands)
-  const brandCounts = useMemo(() => {
-    const counts = {};
-    
-    hotelServices.forEach(s => {
-      const brand = s.hotel_brand || s.hotel_chain || 'Sin especificar';
-      if (!counts[brand]) {
-        counts[brand] = { name: brand, count: 0, total: 0 };
-      }
-      counts[brand].count += 1;
-      counts[brand].total += s.price || 0;
-    });
+  const brandCounts = useMemo(
+    () =>
+      groupNormalized(hotelServices, s => s.hotel_brand || s.hotel_chain)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 15),
+    [hotelServices]
+  );
 
-    return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 15);
-  }, [hotelServices]);
-
-  // Count by hotel name
+  // Count by hotel name — mantiene la cadena asociada (primera encontrada con ese nombre)
   const hotelCounts = useMemo(() => {
-    const counts = {};
-    
+    const buckets = new Map();
     hotelServices.forEach(s => {
-      const name = s.hotel_name || 'Sin especificar';
-      if (!counts[name]) {
-        counts[name] = { name, count: 0, total: 0, chain: s.hotel_chain || '-' };
+      const raw = s.hotel_name?.trim();
+      const display = raw && raw.length > 0 ? raw : 'Sin especificar';
+      const key = display.toLowerCase();
+      if (!buckets.has(key)) {
+        buckets.set(key, { name: display, count: 0, total: 0, chain: s.hotel_chain?.trim() || '-' });
       }
-      counts[name].count += 1;
-      counts[name].total += s.price || 0;
+      const bucket = buckets.get(key);
+      bucket.count += 1;
+      bucket.total += s.price || 0;
     });
-
-    return Object.values(counts).sort((a, b) => b.count - a.count);
+    return Array.from(buckets.values()).sort((a, b) => b.count - a.count);
   }, [hotelServices]);
 
   if (hotelServices.length === 0) {

@@ -196,7 +196,7 @@ export default function DestinationsChart({ soldTrips, services }) {
                   <td className="p-3 font-medium text-stone-800">{dest.name}</td>
                   <td className="p-3 text-right text-stone-600">{dest.count}</td>
                   <td className="p-3 text-right text-stone-500">
-                    {((dest.count / soldTrips.length) * 100).toFixed(1)}%
+                    {soldTrips.length > 0 ? ((dest.count / soldTrips.length) * 100).toFixed(1) : '0.0'}%
                   </td>
                 </tr>
               ))}
