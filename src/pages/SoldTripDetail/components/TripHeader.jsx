@@ -1,253 +1,173 @@
 import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { es } from 'date-fns/locale';
-import {
-  ArrowLeft, MapPin, Calendar, Users, Edit2, FileText, Clock, Hash
-} from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Edit2, FileText, Clock, Hash } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createPageUrl } from '@/utils';
 import { formatDate } from '@/components/utils/dateHelpers';
 import { STATUS_CONFIG } from '../constants/serviceConstants';
 
-// Memoized Info Pill Component with enhanced styling
-const InfoPill = memo(({ icon: Icon, children, highlight = false, className = "" }) => (
-  <div className={`flex items-center gap-1.5 md:gap-2 ${
-    highlight
-      ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200'
-      : 'bg-white/80 border border-stone-200'
-  } px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg shadow-sm hover:shadow-md transition-all ${className}`}>
-    <Icon className={`w-3.5 h-3.5 md:w-4 md:h-4 ${highlight ? 'text-emerald-600' : 'text-stone-500'}`} />
-    <span className={`text-xs md:text-sm font-semibold ${highlight ? 'text-emerald-900' : 'text-stone-700'}`}>{children}</span>
+const STATUS_LUXURY = {
+  pendiente: { label: 'Pendiente',   bg: '#FEF3C7', color: '#92400E', dot: '#F59E0B' },
+  parcial:   { label: 'Parcial',     bg: '#EFF6FF', color: '#1E40AF', dot: '#3B82F6' },
+  pagado:    { label: 'Pagado',      bg: '#F0FDF4', color: '#166534', dot: '#22C55E' },
+  completado:{ label: 'Completado',  bg: '#F5F3FF', color: '#5B21B6', dot: '#8B5CF6' },
+};
+
+const Pill = memo(({ icon: Icon, children, green }) => (
+  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+       style={{
+         background: green ? 'rgba(45,70,41,0.07)' : '#F5F5F7',
+         color: green ? '#2D4629' : '#3C3C43',
+         border: green ? '1px solid rgba(45,70,41,0.15)' : '1px solid rgba(0,0,0,0.06)',
+       }}>
+    <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+    {children}
   </div>
 ));
+Pill.displayName = 'Pill';
 
-InfoPill.displayName = 'InfoPill';
+const StatusBadge = memo(({ status }) => {
+  const s = STATUS_LUXURY[status] || STATUS_LUXURY.pendiente;
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+          style={{ background: s.bg, color: s.color }}>
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: s.dot }} />
+      {s.label}
+    </span>
+  );
+});
+StatusBadge.displayName = 'StatusBadge';
 
-// Memoized Action Button with enhanced styling
-const ActionButton = memo(({ icon: Icon, children, onClick, variant = "outline", className = "" }) => (
-  <Button
-    size="sm"
-    variant={variant}
-    onClick={onClick}
-    className={`h-9 md:h-10 px-4 md:px-5 text-xs md:text-sm rounded-xl border-stone-300 hover:border-emerald-400 hover:bg-emerald-50 transition-all shadow-sm hover:shadow-md font-semibold ${className}`}
-  >
-    <Icon className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2" />
-    {children}
-  </Button>
-));
-
-ActionButton.displayName = 'ActionButton';
+const DaysUntilBadge = memo(({ days }) => {
+  const urgent = days <= 7;
+  const soon = days <= 30;
+  return (
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
+          style={{
+            background: urgent ? '#FEF2F2' : soon ? '#FFF7ED' : '#EFF6FF',
+            color: urgent ? '#991B1B' : soon ? '#9A3412' : '#1E40AF',
+          }}>
+      <Clock className="w-3 h-3 flex-shrink-0" />
+      {days === 0 ? '¡Hoy!' : `En ${days}d`}
+    </span>
+  );
+});
+DaysUntilBadge.displayName = 'DaysUntilBadge';
 
 export default function TripHeader({
-  soldTrip,
-  paymentPlan,
-  daysUntilTrip,
-  isTripPast,
-  onEditTrip,
-  onCreatePaymentPlan,
-  onOpenInvoice,
-  onUpdateStatus
+  soldTrip, paymentPlan, daysUntilTrip, isTripPast,
+  onEditTrip, onCreatePaymentPlan, onOpenInvoice, onUpdateStatus
 }) {
-  const statusConfig = STATUS_CONFIG[soldTrip.status] || STATUS_CONFIG.pendiente;
-
-  const getDaysUntilBadgeColor = (days) => {
-    if (days === 0) return 'border-purple-300 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800';
-    if (days <= 7) return 'border-red-300 bg-gradient-to-r from-red-100 to-orange-100 text-red-700';
-    if (days <= 30) return 'border-orange-300 bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700';
-    return 'border-blue-300 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700';
-  };
+  const clientNames = soldTrip.metadata?.clients?.length > 1
+    ? soldTrip.metadata.clients.map(c => c.name).join(' & ')
+    : soldTrip.client_name;
 
   return (
-    <Card className="bg-gradient-to-br from-white via-stone-50/50 to-emerald-50/30 rounded-2xl md:rounded-3xl shadow-xl border-2 border-stone-200/50 overflow-hidden backdrop-blur-sm">
-      <div className="p-4 md:p-6">
-        <div className="flex flex-col gap-4 md:gap-5">
-          {/* Mobile Header */}
-          <div className="flex items-center gap-3 md:hidden">
-            <Link to={createPageUrl('SoldTrips')}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl hover:bg-white/90 hover:shadow-md transition-all"
-              >
+    <div className="bg-white rounded-2xl overflow-hidden"
+         style={{ border: '1px solid rgba(0,0,0,0.055)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)' }}>
+
+      {/* Gold top rule */}
+      <div className="h-px w-full" style={{ background: 'linear-gradient(90deg, transparent, #C9A84C, transparent)', opacity: 0.5 }} />
+
+      <div className="p-5 md:p-6">
+        {/* Top row */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            {/* Back button */}
+            <Link to={createPageUrl('SoldTrips')} className="flex-shrink-0 mt-0.5">
+              <button className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ background: '#F5F5F7', color: '#6B6B6F' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#EBEBED'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#F5F5F7'}>
                 <ArrowLeft className="w-4 h-4" />
-              </Button>
+              </button>
             </Link>
+
+            {/* Title block */}
             <div className="flex-1 min-w-0">
-              {soldTrip.metadata?.clients?.length > 1 ? (
-                <div className="flex flex-wrap gap-1">
-                  {soldTrip.metadata.clients.map((c, i) => (
-                    <span key={c.id || i} className="text-sm font-bold text-stone-900">
-                      {i > 0 && <span className="text-stone-300 mx-1">&</span>}
-                      {c.name}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <h1 className="text-base font-bold text-stone-900 truncate">{soldTrip.client_name}</h1>
-              )}
+              <div className="flex items-center gap-2.5 flex-wrap mb-2">
+                <h1 style={{
+                  fontFamily: 'Playfair Display, Georgia, serif',
+                  fontSize: 'clamp(18px, 3vw, 24px)',
+                  fontWeight: 600,
+                  color: '#1C1C1E',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.2
+                }}>
+                  {clientNames}
+                </h1>
+                <StatusBadge status={soldTrip.status} />
+                {soldTrip.file_number && (
+                  <span className="inline-flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-md"
+                        style={{ background: '#F5F5F7', color: '#AEAEB2', border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <Hash className="w-2.5 h-2.5" />
+                    {soldTrip.file_number}
+                  </span>
+                )}
+              </div>
+
               {soldTrip.trip_name && (
-                <p className="text-xs text-stone-500 truncate">{soldTrip.trip_name}</p>
+                <p className="text-sm mb-3" style={{ color: '#6B6B6F' }}>{soldTrip.trip_name}</p>
               )}
-              {soldTrip.file_number && (
-                <span className="inline-flex items-center gap-1 text-xs font-mono bg-stone-100 text-stone-400 px-1.5 py-0.5 rounded border border-stone-200 mt-0.5">
-                  <Hash className="w-2.5 h-2.5" />
-                  {soldTrip.file_number}
-                </span>
-              )}
-            </div>
-            <Badge className={`${statusConfig.color} text-xs px-2.5 py-1 font-bold flex-shrink-0 shadow-sm border`}>
-              {statusConfig.label}
-            </Badge>
-          </div>
 
-          {/* Desktop Header */}
-          <div className="hidden md:flex items-start justify-between gap-5">
-            <div className="flex items-start gap-4 flex-1 min-w-0">
-              <Link to={createPageUrl('SoldTrips')}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-12 w-12 rounded-2xl hover:bg-white/90 transition-all duration-200 shadow-md hover:shadow-lg border border-stone-200"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
-
-              <div className="flex-1 space-y-4 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  {/* Múltiples clientes: badges individuales; un solo cliente: título normal */}
-                  {soldTrip.metadata?.clients?.length > 1 ? (
-                    <div className="flex flex-wrap gap-1.5 items-center">
-                      {soldTrip.metadata.clients.map((c, i) => (
-                        <span key={c.id || i} className={`font-bold text-stone-900 ${i === 0 ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl text-stone-600'}`}>
-                          {i > 0 && <span className="text-stone-300 mr-1.5">&</span>}
-                          {c.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <h1 className="text-2xl md:text-3xl font-bold text-stone-900 tracking-tight truncate">{soldTrip.client_name}</h1>
-                  )}
-                  {soldTrip.trip_name && (
-                    <span className="text-lg text-stone-500 font-medium truncate">— {soldTrip.trip_name}</span>
-                  )}
-                  <Badge className={`${statusConfig.color} text-sm px-4 py-1.5 font-bold shadow-md flex-shrink-0 border`}>
-                    {statusConfig.label}
-                  </Badge>
-                  {soldTrip.file_number && (
-                    <span className="inline-flex items-center gap-1 text-xs font-mono bg-stone-100 text-stone-500 px-2.5 py-1 rounded-lg border border-stone-200 shadow-sm">
-                      <Hash className="w-3 h-3" />
-                      {soldTrip.file_number}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 md:gap-3 flex-wrap text-sm text-stone-600">
-                  <InfoPill icon={MapPin} highlight>
-                    {soldTrip.destination}
-                  </InfoPill>
-
-                  <InfoPill icon={Calendar}>
-                    {formatDate(soldTrip.start_date, 'd MMM yyyy', { locale: es })}
-                  </InfoPill>
-
-                  {soldTrip.travelers && (
-                    <InfoPill icon={Users}>
-                      {soldTrip.travelers} viajero{soldTrip.travelers !== 1 ? 's' : ''}
-                    </InfoPill>
-                  )}
-
-                  {!isTripPast && daysUntilTrip >= 0 && (
-                    <Badge
-                      variant="outline"
-                      className={`${getDaysUntilBadgeColor(daysUntilTrip)} text-xs md:text-sm px-3 md:px-4 py-1.5 font-bold shadow-md border-2 animate-pulse`}
-                    >
-                      <Clock className="w-3.5 h-3.5 mr-1.5" />
-                      {daysUntilTrip === 0 ? '¡Hoy!' : `En ${daysUntilTrip} día${daysUntilTrip !== 1 ? 's' : ''}`}
-                    </Badge>
-                  )}
-                </div>
+              {/* Info pills */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Pill icon={MapPin} green>{soldTrip.destination}</Pill>
+                <Pill icon={Calendar}>
+                  {formatDate(soldTrip.start_date, 'd MMM yyyy', { locale: es })}
+                </Pill>
+                {soldTrip.travelers && (
+                  <Pill icon={Users}>
+                    {soldTrip.travelers} viajero{soldTrip.travelers !== 1 ? 's' : ''}
+                  </Pill>
+                )}
+                {!isTripPast && daysUntilTrip >= 0 && (
+                  <DaysUntilBadge days={daysUntilTrip} />
+                )}
               </div>
             </div>
-
-            {/* Desktop Actions */}
-            <div className="flex gap-2 flex-wrap flex-shrink-0">
-              <ActionButton icon={Edit2} onClick={onEditTrip}>
-                Editar
-              </ActionButton>
-
-              {paymentPlan.length === 0 && (
-                <ActionButton icon={Calendar} onClick={onCreatePaymentPlan}>
-                  Plan
-                </ActionButton>
-              )}
-
-              <ActionButton icon={FileText} onClick={onOpenInvoice}>
-                Invoice
-              </ActionButton>
-
-              <Select value={soldTrip.status} onValueChange={onUpdateStatus}>
-                <SelectTrigger className="h-10 w-40 text-sm rounded-xl border-2 border-stone-300 shadow-sm hover:border-emerald-400 hover:shadow-md transition-all font-semibold">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="parcial">Parcial</SelectItem>
-                  <SelectItem value="pagado">Pagado</SelectItem>
-                  <SelectItem value="completado">Completado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
-          {/* Mobile Info Pills */}
-          <div className="flex items-center gap-2 flex-wrap text-xs md:hidden">
-            <InfoPill icon={MapPin} highlight>
-              {soldTrip.destination}
-            </InfoPill>
-
-            <InfoPill icon={Calendar}>
-              {formatDate(soldTrip.start_date, 'd MMM', { locale: es })}
-            </InfoPill>
-
-            {soldTrip.travelers && (
-              <InfoPill icon={Users}>
-                {soldTrip.travelers}p
-              </InfoPill>
-            )}
-
-            {!isTripPast && daysUntilTrip >= 0 && (
-              <Badge
-                variant="outline"
-                className={`${getDaysUntilBadgeColor(daysUntilTrip)} text-xs px-2.5 py-1 font-bold shadow-md border-2`}
-              >
-                <Clock className="w-3 h-3 mr-1" />
-                {daysUntilTrip === 0 ? '¡Hoy!' : `${daysUntilTrip}d`}
-              </Badge>
-            )}
-          </div>
-
-          {/* Mobile Actions */}
-          <div className="grid grid-cols-2 gap-2 md:hidden">
-            <ActionButton icon={Edit2} onClick={onEditTrip} className="w-full">
-              Editar
-            </ActionButton>
-
-            <ActionButton icon={FileText} onClick={onOpenInvoice} className="w-full">
-              Invoice
-            </ActionButton>
+          {/* Actions — desktop */}
+          <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={onEditTrip}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+              style={{ background: '#F5F5F7', color: '#3C3C43', border: '1px solid rgba(0,0,0,0.06)' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#EBEBED'}
+              onMouseLeave={e => e.currentTarget.style.background = '#F5F5F7'}
+            >
+              <Edit2 className="w-3.5 h-3.5" /> Editar
+            </button>
 
             {paymentPlan.length === 0 && (
-              <ActionButton icon={Calendar} onClick={onCreatePaymentPlan} className="w-full col-span-2">
-                Crear Plan de Pagos
-              </ActionButton>
+              <button
+                onClick={onCreatePaymentPlan}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                style={{ background: '#F5F5F7', color: '#3C3C43', border: '1px solid rgba(0,0,0,0.06)' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#EBEBED'}
+                onMouseLeave={e => e.currentTarget.style.background = '#F5F5F7'}
+              >
+                <Calendar className="w-3.5 h-3.5" /> Plan de pagos
+              </button>
             )}
 
+            <button
+              onClick={onOpenInvoice}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+              style={{ background: '#F5F5F7', color: '#3C3C43', border: '1px solid rgba(0,0,0,0.06)' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#EBEBED'}
+              onMouseLeave={e => e.currentTarget.style.background = '#F5F5F7'}
+            >
+              <FileText className="w-3.5 h-3.5" /> Invoice
+            </button>
+
             <Select value={soldTrip.status} onValueChange={onUpdateStatus}>
-              <SelectTrigger className="h-9 text-xs rounded-xl border-2 border-stone-300 shadow-sm col-span-2 font-semibold">
+              <SelectTrigger className="h-8 w-36 text-xs rounded-lg"
+                             style={{ border: '1px solid rgba(0,0,0,0.1)', background: '#FAFAFA' }}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -259,7 +179,37 @@ export default function TripHeader({
             </Select>
           </div>
         </div>
+
+        {/* Actions — mobile */}
+        <div className="flex md:hidden gap-2 mt-4 flex-wrap">
+          <button
+            onClick={onEditTrip}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
+            style={{ background: '#F5F5F7', color: '#3C3C43', border: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <Edit2 className="w-3.5 h-3.5" /> Editar
+          </button>
+          <button
+            onClick={onOpenInvoice}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium"
+            style={{ background: '#F5F5F7', color: '#3C3C43', border: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <FileText className="w-3.5 h-3.5" /> Invoice
+          </button>
+          <Select value={soldTrip.status} onValueChange={onUpdateStatus}>
+            <SelectTrigger className="flex-1 h-8 text-xs rounded-lg"
+                           style={{ border: '1px solid rgba(0,0,0,0.1)', background: '#FAFAFA' }}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pendiente">Pendiente</SelectItem>
+              <SelectItem value="parcial">Parcial</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="completado">Completado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }

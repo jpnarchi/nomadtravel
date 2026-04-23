@@ -5,7 +5,7 @@ import { supabaseAPI } from '@/api/supabaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, startOfMonth, endOfMonth, isWithinInterval, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { DollarSign, Plane, Users, TrendingUp, Loader2, AlertCircle, CheckCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, Plane, Users, TrendingUp, Loader2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { ViewModeContext } from '@/Layout';
 import StatsCard from '@/components/ui/StatsCard';
 import FunnelChart from '@/components/dashboard/FunnelChart';
@@ -14,9 +14,6 @@ import TasksList from '@/components/dashboard/TasksList';
 import UpcomingPayments from '@/components/dashboard/UpcomingPayments';
 import ActiveReminders from '@/components/dashboard/ActiveReminders';
 import { parseLocalDate, formatDate } from '@/components/utils/dateHelpers';
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSpoofableUser } from '@/contexts/SpoofContext';
 
@@ -271,210 +268,181 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header - Compact */}
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-stone-800">Dashboard</h1>
-        <p className="text-sm text-stone-500 mt-0.5">Vista general de tu actividad</p>
+    <div className="space-y-5">
+
+      {/* Header */}
+      <div>
+        <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 26, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          Dashboard
+        </h1>
+        <p className="text-sm mt-1" style={{ color: '#AEAEB2' }}>Vista general de tu actividad</p>
       </div>
 
-      {/* Stats Grid - Compact */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatsCard
-          title="Ventas del Mes"
-          value={`$${monthlySales.toLocaleString()}`}
-          subtitle="USD"
-          icon={DollarSign}
-        />
-        <StatsCard
-          title="Comisiones"
-          value={`$${monthlyCommission.toLocaleString()}`}
-          subtitle="Este mes"
-          icon={TrendingUp}
-        />
-        <StatsCard
-          title="Viajes"
-          value={trips.length}
-          subtitle="En proceso"
-          icon={Plane}
-        />
-        <StatsCard
-          title="Clientes"
-          value={clients.length}
-          subtitle="Totales"
-          icon={Users}
-        />
+        <StatsCard title="Ventas del Mes" value={`$${monthlySales.toLocaleString()}`} subtitle="USD" icon={DollarSign} />
+        <StatsCard title="Comisiones" value={`$${monthlyCommission.toLocaleString()}`} subtitle="Este mes" icon={TrendingUp} />
+        <StatsCard title="Viajes" value={trips.length} subtitle="En proceso" icon={Plane} />
+        <StatsCard title="Clientes" value={clients.length} subtitle="Totales" icon={Users} />
       </div>
 
       {/* Account Balance Panel */}
-      <div className="bg-gradient-to-br from-[#2D4629] to-teal-600 rounded-3xl shadow-2xl p-6 text-white">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <DollarSign className="w-8 h-8" />
-              <h2 className="text-xl font-semibold opacity-90">Mi Saldo en Cuenta</h2>
-            </div>
-            <div className="mb-6">
-              <p className="text-5xl lg:text-6xl font-bold mb-2">
+      <div className="bg-white rounded-2xl overflow-hidden"
+           style={{ border: '1px solid rgba(0,0,0,0.055)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #2D4629, #C9A84C)' }} />
+        <div className="p-5">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-5">
+            {/* Balance info */}
+            <div className="flex-1">
+              <p className="text-xs font-medium uppercase tracking-wide mb-1"
+                 style={{ color: '#AEAEB2', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>
+                Mi Saldo en Cuenta
+              </p>
+              {selectedTrip !== 'all' && selectedTripData && (
+                <p className="text-xs mb-2" style={{ color: '#6B6B6F' }}>
+                  {selectedTripData.client_name} — {selectedTripData.destination}
+                </p>
+              )}
+              <p className="text-4xl font-bold mb-4"
+                 style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.03em' }}>
                 ${accountBalance.toLocaleString()}
               </p>
-              <p className="text-emerald-100 text-sm">
-                {selectedTrip === 'all' 
-                  ? 'Balance total de mis clientes' 
-                  : selectedTripData 
-                    ? `Balance de ${selectedTripData.client_name} - ${selectedTripData.destination}`
-                    : 'Balance del viaje seleccionado'
-                }
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                <p className="text-emerald-100 text-sm mb-1">Total Cobrado</p>
-                <p className="text-2xl font-bold">${totalIncome.toLocaleString()}</p>
-                <p className="text-xs text-emerald-100 mt-1">{filteredClientPaymentsForBalance.length} pagos confirmados</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                <p className="text-emerald-100 text-sm mb-1">Total Pagado</p>
-                <p className="text-2xl font-bold">${totalExpenses.toLocaleString()}</p>
-                <p className="text-xs text-emerald-100 mt-1">{filteredSupplierPaymentsForBalance.length} pagos confirmados</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl p-3" style={{ background: 'rgba(22,163,74,0.07)', border: '1px solid rgba(22,163,74,0.12)' }}>
+                  <p className="text-[10px] font-medium uppercase tracking-wide mb-1" style={{ color: '#16A34A', letterSpacing: '0.06em' }}>Total Cobrado</p>
+                  <p className="text-lg font-bold" style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>
+                    ${totalIncome.toLocaleString()}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: '#AEAEB2' }}>{filteredClientPaymentsForBalance.length} pagos</p>
+                </div>
+                <div className="rounded-xl p-3" style={{ background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.1)' }}>
+                  <p className="text-[10px] font-medium uppercase tracking-wide mb-1" style={{ color: '#DC2626', letterSpacing: '0.06em' }}>Total Pagado</p>
+                  <p className="text-lg font-bold" style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>
+                    ${totalExpenses.toLocaleString()}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: '#AEAEB2' }}>{filteredSupplierPaymentsForBalance.length} pagos</p>
+                </div>
               </div>
             </div>
+            {/* Trip selector */}
+            <div className="lg:w-64">
+              <p className="text-xs font-medium mb-1.5" style={{ color: '#6B6B6F' }}>Filtrar por viaje</p>
+              <Select value={selectedTrip} onValueChange={setSelectedTrip}>
+                <SelectTrigger className="w-full h-9 text-xs rounded-xl" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
+                  <SelectValue placeholder="Todos mis viajes" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[400px]">
+                  <SelectItem value="all">Todos mis viajes</SelectItem>
+                  {tripsForSelector.map(trip => (
+                    <SelectItem key={trip.id} value={trip.id}>{trip.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedTrip !== 'all' && (
+                <p className="text-xs mt-1.5" style={{ color: '#AEAEB2' }}>Solo pagos confirmados de este viaje</p>
+              )}
+            </div>
           </div>
-          <div className="lg:w-80">
-            <label className="block text-sm font-medium text-emerald-100 mb-2">
-              Filtrar por Viaje
-            </label>
-            <Select value={selectedTrip} onValueChange={setSelectedTrip}>
-              <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-white h-12 rounded-xl">
-                <SelectValue placeholder="Todos mis viajes" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px]">
-                <SelectItem value="all">Todos mis viajes</SelectItem>
-                {tripsForSelector.map(trip => (
-                  <SelectItem key={trip.id} value={trip.id}>
-                    {trip.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedTrip !== 'all' && (
-              <p className="text-xs text-emerald-100 mt-2">
-                Solo mostrando pagos confirmados de este viaje
-              </p>
-            )}
-          </div>
+
+          {/* Payment detail rows when trip selected */}
+          {selectedTrip !== 'all' && (
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.055)' }}>
+                <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.055)', background: '#FAFAFA' }}>
+                  <DollarSign className="w-3.5 h-3.5" style={{ color: '#16A34A' }} />
+                  <p className="text-xs font-semibold" style={{ color: '#1C1C1E' }}>Pagos del Cliente</p>
+                </div>
+                <div className="divide-y max-h-52 overflow-y-auto" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
+                  {filteredClientPaymentsForBalance.length > 0
+                    ? [...filteredClientPaymentsForBalance].sort((a, b) => new Date(b.date) - new Date(a.date)).map(p => (
+                        <div key={p.id} className="px-4 py-2.5 flex justify-between items-start">
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: '#16A34A' }}>${(p.amount || 0).toLocaleString()}</p>
+                            <p className="text-xs mt-0.5" style={{ color: '#AEAEB2' }}>{formatDate(p.date, 'd MMM yyyy', { locale: es })}</p>
+                            {p.method && <p className="text-xs capitalize" style={{ color: '#6B6B6F' }}>{p.method}</p>}
+                          </div>
+                          {p.notes && <p className="text-xs max-w-[140px] text-right" style={{ color: '#AEAEB2' }}>{p.notes}</p>}
+                        </div>
+                      ))
+                    : <p className="px-4 py-3 text-xs" style={{ color: '#AEAEB2' }}>Sin pagos registrados</p>}
+                </div>
+              </div>
+              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.055)' }}>
+                <div className="px-4 py-2.5 flex items-center gap-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.055)', background: '#FAFAFA' }}>
+                  <DollarSign className="w-3.5 h-3.5" style={{ color: '#C9A84C' }} />
+                  <p className="text-xs font-semibold" style={{ color: '#1C1C1E' }}>Pagos a Proveedores</p>
+                </div>
+                <div className="divide-y max-h-52 overflow-y-auto" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
+                  {filteredSupplierPaymentsForBalance.length > 0
+                    ? [...filteredSupplierPaymentsForBalance].sort((a, b) => new Date(b.date) - new Date(a.date)).map(p => (
+                        <div key={p.id} className="px-4 py-2.5 flex justify-between items-start">
+                          <div>
+                            <p className="text-sm font-semibold" style={{ color: '#C9A84C' }}>${(p.amount || 0).toLocaleString()}</p>
+                            <p className="text-xs mt-0.5" style={{ color: '#AEAEB2' }}>{formatDate(p.date, 'd MMM yyyy', { locale: es })}</p>
+                            {p.supplier && <p className="text-xs" style={{ color: '#6B6B6F' }}>{p.supplier}</p>}
+                          </div>
+                          {p.notes && <p className="text-xs max-w-[140px] text-right" style={{ color: '#AEAEB2' }}>{p.notes}</p>}
+                        </div>
+                      ))
+                    : <p className="px-4 py-3 text-xs" style={{ color: '#AEAEB2' }}>Sin pagos registrados</p>}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {/* Payment Details - When trip is selected */}
-        {selectedTrip !== 'all' && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Client Payments */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Pagos del Cliente
-              </h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {filteredClientPaymentsForBalance.length > 0 ? (
-                  filteredClientPaymentsForBalance.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
-                    <div key={payment.id} className="bg-white/20 rounded-lg p-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
-                          <p className="text-emerald-100 text-xs mt-1">
-                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
-                          </p>
-                          <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>
-                        </div>
-                        {payment.notes && (
-                          <p className="text-emerald-100 text-xs max-w-[150px]">{payment.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
-                )}
-              </div>
-            </div>
-
-            {/* Supplier Payments */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-                <DollarSign className="w-4 h-4" />
-                Pagos a Proveedores
-              </h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {filteredSupplierPaymentsForBalance.length > 0 ? (
-                  filteredSupplierPaymentsForBalance.sort((a, b) => new Date(b.date) - new Date(a.date)).map(payment => (
-                    <div key={payment.id} className="bg-white/20 rounded-lg p-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-white font-medium">${payment.amount.toLocaleString()}</p>
-                          <p className="text-emerald-100 text-xs mt-1">
-                            {formatDate(payment.date, 'd MMM yyyy', { locale: es })}
-                          </p>
-                          <p className="text-emerald-200 text-xs">{payment.supplier}</p>
-                          <p className="text-emerald-200 text-xs capitalize">{payment.method}</p>
-                        </div>
-                        {payment.notes && (
-                          <p className="text-emerald-100 text-xs max-w-[150px]">{payment.notes}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-emerald-100 text-sm">Sin pagos registrados</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Pending Collection Alert */}
       {myClientsWithNegativeBalance.length > 0 && (
-        <div className="bg-red-50 border-2 border-red-200 rounded-2xl overflow-hidden">
+        <div className="bg-white rounded-2xl overflow-hidden"
+             style={{ border: '1px solid rgba(220,38,38,0.18)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           <button
             onClick={() => setShowPendingCollection(!showPendingCollection)}
-            className="w-full p-4 flex items-center justify-between hover:bg-red-100 transition-colors"
+            className="w-full px-5 py-3.5 flex items-center justify-between transition-colors"
+            style={{ background: showPendingCollection ? 'rgba(220,38,38,0.05)' : 'transparent' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(220,38,38,0.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = showPendingCollection ? 'rgba(220,38,38,0.05)' : 'transparent'; }}
           >
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
-              <div className="text-left">
-                <h3 className="font-bold text-red-900">
-                  💰 Clientes con Saldo Por Cobrar
-                </h3>
-                <p className="text-sm text-red-800">
-                  {myClientsWithNegativeBalance.length} {myClientsWithNegativeBalance.length === 1 ? 'viaje tiene' : 'viajes tienen'} pagos pendientes de cobro
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                   style={{ background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.15)' }}>
+                <AlertCircle className="w-4 h-4" style={{ color: '#DC2626' }} />
+              </div>
+              <div className="text-left flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-sm font-semibold" style={{ color: '#1C1C1E' }}>Clientes con Saldo Por Cobrar</p>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white flex-shrink-0"
+                        style={{ background: '#DC2626' }}>
+                    {myClientsWithNegativeBalance.length}
+                  </span>
+                </div>
+                <p className="text-xs" style={{ color: '#AEAEB2' }}>
+                  {myClientsWithNegativeBalance.length === 1 ? 'viaje tiene' : 'viajes tienen'} pagos pendientes de cobro
                 </p>
               </div>
             </div>
-            {showPendingCollection ? (
-              <ChevronUp className="w-5 h-5 text-red-600 flex-shrink-0" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-red-600 flex-shrink-0" />
-            )}
+            {showPendingCollection
+              ? <ChevronUp className="w-4 h-4 flex-shrink-0 ml-3" style={{ color: '#DC2626' }} />
+              : <ChevronDown className="w-4 h-4 flex-shrink-0 ml-3" style={{ color: '#AEAEB2' }} />}
           </button>
           {showPendingCollection && (
-            <div className="p-4 pt-0">
+            <div className="px-5 pb-5">
               <div className="space-y-2">
                 {myClientsWithNegativeBalance.map(trip => (
-                  <div key={trip.id} className="bg-white rounded-lg p-3 border border-red-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold text-stone-800">{trip.client_name || 'Sin cliente'}</p>
-                        <p className="text-sm text-stone-600">{trip.destination}</p>
-                        <div className="flex gap-3 mt-2 text-xs">
-                          <span className="text-blue-600">Total: ${(trip.total_price || 0).toLocaleString()}</span>
-                          <span className="text-green-600">Recibido: ${trip.clientPayments.toLocaleString()}</span>
+                  <div key={trip.id} className="rounded-xl p-3"
+                       style={{ background: '#FAFAFA', border: '1px solid rgba(220,38,38,0.1)' }}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: '#1C1C1E' }}>{trip.client_name || 'Sin cliente'}</p>
+                        <p className="text-xs truncate mb-1" style={{ color: '#AEAEB2' }}>{trip.destination}</p>
+                        <div className="flex gap-3 text-xs">
+                          <span style={{ color: '#1D4ED8' }}>Total: ${(trip.total_price || 0).toLocaleString()}</span>
+                          <span style={{ color: '#16A34A' }}>Recibido: ${trip.clientPayments.toLocaleString()}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className={`text-lg font-bold ${trip.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                          ${trip.balance.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-stone-500">por cobrar</p>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-base font-bold" style={{ color: '#DC2626' }}>${trip.balance.toLocaleString()}</p>
+                        <p className="text-xs" style={{ color: '#AEAEB2' }}>por cobrar</p>
                       </div>
                     </div>
                   </div>
@@ -485,33 +453,20 @@ export default function Dashboard() {
         </div>
       )}
 
-
-
-      {/* Main Content - Two Column Layout */}
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Left Column - Priority Content */}
         <div className="lg:col-span-2 space-y-3">
-          {/* Active Reminders - Top Priority */}
           <ActiveReminders userEmail={user?.email} isAdmin={isAdmin} />
-          
-          {/* Two Column Sub-Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <UpcomingTrips soldTrips={soldTrips} />
             <FunnelChart trips={trips} />
           </div>
-          
-          {/* Payments */}
           <UpcomingPayments services={services} soldTrips={soldTrips} />
         </div>
-
-        {/* Right Sidebar - Tasks */}
         <div className="lg:col-span-1">
           <TasksList
             tasks={tasks}
-            onToggle={(task) => updateTaskMutation.mutate({ 
-              id: task.id, 
-              data: { completed: !task.completed } 
-            })}
+            onToggle={(task) => updateTaskMutation.mutate({ id: task.id, data: { completed: !task.completed } })}
             onDelete={(task) => deleteTaskMutation.mutate(task.id)}
             onCreate={(data) => createTaskMutation.mutate(data)}
           />

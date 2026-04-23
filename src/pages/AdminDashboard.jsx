@@ -27,9 +27,6 @@ import {
 import StatsCard from '@/components/ui/StatsCard';
 import { parseLocalDate, formatDate } from '@/components/utils/dateHelpers';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import FinancialSummary from './SoldTripDetail/components/FinancialSummary';
 
 // Skeleton Loading Component
@@ -48,118 +45,95 @@ const DashboardSkeleton = memo(() => (
 
 DashboardSkeleton.displayName = 'DashboardSkeleton';
 
-// Compact Stats Card
-const CompactStatCard = memo(({ title, value, subtitle, icon: Icon, trend, trendValue, color = "emerald" }) => {
-  const colorClasses = {
-    emerald: "from-emerald-500 to-teal-600",
-    blue: "from-blue-500 to-indigo-600",
-    amber: "from-amber-500 to-orange-600",
-    purple: "from-purple-500 to-pink-600",
-    slate: "from-slate-500 to-stone-600"
-  };
+const ACCENT = {
+  emerald: '#2D4629',
+  blue:    '#1D4ED8',
+  amber:   '#C9A84C',
+  purple:  '#7C3AED',
+  slate:   '#475569',
+};
 
+const CompactStatCard = memo(({ title, value, subtitle, icon: Icon, trend, trendValue, color = "emerald" }) => {
+  const accent = ACCENT[color] || ACCENT.emerald;
   return (
-    <Card className="relative overflow-hidden group hover:shadow-lg transition-all duration-300">
-      <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[color]} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
-      <div className="p-3 md:p-5 relative">
-        <div className="flex items-start justify-between mb-2 md:mb-3">
-          <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center shadow-lg`}>
-            <Icon className="w-4 h-4 md:w-5 md:h-5 text-white" />
-          </div>
+    <div className="bg-white rounded-2xl p-5"
+         style={{ border: '1px solid rgba(0,0,0,0.055)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-xs font-medium uppercase tracking-wide"
+           style={{ color: '#AEAEB2', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>
+          {title}
+        </p>
+        <div className="flex items-center gap-2 flex-shrink-0">
           {trend !== undefined && (
-            <div className={`flex items-center gap-1 text-xs font-semibold ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className="text-xs font-semibold flex items-center gap-0.5"
+                  style={{ color: trend >= 0 ? '#16A34A' : '#DC2626' }}>
               {trend >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {Math.abs(trend)}%
-            </div>
+            </span>
           )}
-        </div>
-        <div>
-          <p className="text-xs md:text-sm text-stone-500 font-medium mb-1">{title}</p>
-          <p className="text-xl md:text-2xl font-bold text-stone-900 mb-0.5">{value}</p>
-          {subtitle && <p className="text-xs text-stone-400 line-clamp-2">{subtitle}</p>}
-          {trendValue && <p className="text-xs text-stone-500 mt-1 line-clamp-1">{trendValue}</p>}
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+               style={{ background: `${accent}18` }}>
+            <Icon className="w-4 h-4" style={{ color: accent }} />
+          </div>
         </div>
       </div>
-    </Card>
+      <p className="text-2xl font-bold leading-tight"
+         style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>
+        {value}
+      </p>
+      {subtitle && <p className="text-xs mt-1" style={{ color: '#AEAEB2' }}>{subtitle}</p>}
+      {trendValue && <p className="text-xs mt-0.5" style={{ color: '#AEAEB2' }}>{trendValue}</p>}
+    </div>
   );
 });
 
 CompactStatCard.displayName = 'CompactStatCard';
 
-// Alert Card Component
-const AlertCard = memo(({
-  title,
-  description,
-  items,
-  color = "red",
-  icon: Icon,
-  isExpanded,
-  onToggle,
-  renderItem
-}) => {
-  const colorClasses = {
-    red: {
-      bg: "bg-red-50",
-      border: "border-red-200",
-      text: "text-red-900",
-      subtext: "text-red-700",
-      icon: "text-red-600",
-      hover: "hover:bg-red-100",
-      badge: "bg-red-600 text-white"
-    },
-    amber: {
-      bg: "bg-amber-50",
-      border: "border-amber-200",
-      text: "text-amber-900",
-      subtext: "text-amber-700",
-      icon: "text-amber-600",
-      hover: "hover:bg-amber-100",
-      badge: "bg-amber-600 text-white"
-    },
-    blue: {
-      bg: "bg-blue-50",
-      border: "border-blue-200",
-      text: "text-blue-900",
-      subtext: "text-blue-700",
-      icon: "text-blue-600",
-      hover: "hover:bg-blue-100",
-      badge: "bg-blue-600 text-white"
-    }
-  };
+const ALERT_ACCENT = {
+  red:   { border: 'rgba(220,38,38,0.18)',  bg: 'rgba(220,38,38,0.06)',  iconColor: '#DC2626', badgeBg: '#DC2626' },
+  amber: { border: 'rgba(201,168,76,0.25)', bg: 'rgba(201,168,76,0.07)', iconColor: '#C9A84C', badgeBg: '#C9A84C' },
+  blue:  { border: 'rgba(29,78,216,0.18)',  bg: 'rgba(29,78,216,0.06)',  iconColor: '#1D4ED8', badgeBg: '#1D4ED8' },
+};
 
-  const colors = colorClasses[color];
-
+const AlertCard = memo(({ title, description, items, color = "red", icon: Icon, isExpanded, onToggle, renderItem }) => {
+  const a = ALERT_ACCENT[color] || ALERT_ACCENT.red;
   return (
-    <div className={`${colors.bg} border ${colors.border} rounded-lg md:rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200`}>
+    <div className="bg-white rounded-2xl overflow-hidden"
+         style={{ border: `1px solid ${a.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
       <button
         onClick={onToggle}
-        className={`w-full p-3 md:p-4 flex items-center justify-between ${colors.hover} transition-colors group`}
+        className="w-full px-5 py-3.5 flex items-center justify-between transition-colors"
+        style={{ background: isExpanded ? a.bg : 'transparent' }}
+        onMouseEnter={e => { e.currentTarget.style.background = a.bg; }}
+        onMouseLeave={e => { e.currentTarget.style.background = isExpanded ? a.bg : 'transparent'; }}
       >
-        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
-          <div className={`w-8 h-8 md:w-9 md:h-9 rounded-lg ${colors.bg} border ${colors.border} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-            <Icon className={`w-4 h-4 md:w-4.5 md:h-4.5 ${colors.icon}`} />
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+               style={{ background: a.bg, border: `1px solid ${a.border}` }}>
+            <Icon className="w-4 h-4" style={{ color: a.iconColor }} />
           </div>
           <div className="text-left flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <h3 className={`font-bold ${colors.text} text-xs md:text-sm truncate`}>{title}</h3>
-              <span className={`${colors.badge} text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0`}>
+              <p className="text-sm font-semibold truncate" style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif' }}>
+                {title}
+              </p>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white flex-shrink-0"
+                    style={{ background: a.badgeBg }}>
                 {items.length}
               </span>
             </div>
-            <p className={`text-xs ${colors.subtext} truncate md:whitespace-normal`}>{description}</p>
+            <p className="text-xs truncate" style={{ color: '#AEAEB2' }}>{description}</p>
           </div>
         </div>
-        <div className="ml-2 flex-shrink-0">
-          {isExpanded ? (
-            <ChevronUp className={`w-4 h-4 ${colors.icon} transition-transform group-hover:scale-110`} />
-          ) : (
-            <ChevronDown className={`w-4 h-4 ${colors.icon} transition-transform group-hover:scale-110`} />
-          )}
+        <div className="ml-3 flex-shrink-0">
+          {isExpanded
+            ? <ChevronUp className="w-4 h-4" style={{ color: a.iconColor }} />
+            : <ChevronDown className="w-4 h-4" style={{ color: '#AEAEB2' }} />}
         </div>
       </button>
       {isExpanded && (
-        <div className="px-3 pb-3 md:px-4 md:pb-4">
-          <div className="space-y-2 max-h-[60vh] md:max-h-96 overflow-y-auto pr-1">
+        <div className="px-5 pb-5">
+          <div className="space-y-2 max-h-96 overflow-y-auto">
             {items.map(renderItem)}
           </div>
         </div>
@@ -510,17 +484,22 @@ export default function AdminDashboard() {
     return <DashboardSkeleton />;
   }
 
+  const RANK_COLORS = ['#C9A84C', '#9CA3AF', '#CD7F32', '#2D4629', '#475569'];
+
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-5">
+
       {/* Header */}
-      <div className="flex flex-col gap-3 md:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-stone-800">Dashboard Global</h1>
-          <p className="text-sm md:text-base text-stone-500 mt-1">Vista consolidada de toda la agencia</p>
+          <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 26, fontWeight: 700, color: '#1C1C1E', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Dashboard Global
+          </h1>
+          <p className="text-sm mt-1" style={{ color: '#AEAEB2' }}>Vista consolidada de toda la agencia</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-full sm:w-40">
+            <SelectTrigger className="w-full sm:w-40 h-9 text-xs rounded-xl" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -538,7 +517,7 @@ export default function AdminDashboard() {
             </SelectContent>
           </Select>
           <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-            <SelectTrigger className="w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-48 h-9 text-xs rounded-xl" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
               <SelectValue placeholder="Todos los agentes" />
             </SelectTrigger>
             <SelectContent>
@@ -553,85 +532,73 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Account Balance / Trip Financial Summary */}
-      <div className="space-y-4">
-        {/* Trip Selector */}
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl md:rounded-2xl shadow-xl p-4 md:p-6 text-white">
-          <div className="flex flex-col gap-4 md:gap-6">
-            {selectedTrip === 'all' ? (
-              <div className="flex-1">
-                <div className="flex items-center gap-2 md:gap-3 mb-3">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                  <h2 className="text-base md:text-lg font-semibold opacity-90">Saldo en Cuenta</h2>
-                </div>
-                <div className="mb-3 md:mb-4">
-                  <p className="text-3xl md:text-4xl lg:text-5xl font-bold mb-1">
-                    ${accountBalance.toLocaleString()}
+      {/* Account Balance Panel */}
+      <div className="bg-white rounded-2xl overflow-hidden"
+           style={{ border: '1px solid rgba(0,0,0,0.055)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #2D4629, #C9A84C)' }} />
+        <div className="p-5">
+          <div className="flex flex-col lg:flex-row lg:items-start gap-5">
+            {/* Balance info */}
+            <div className="flex-1">
+              <p className="text-xs font-medium uppercase tracking-wide mb-1"
+                 style={{ color: '#AEAEB2', letterSpacing: '0.06em', fontFamily: 'Inter, sans-serif' }}>
+                {selectedTrip === 'all' ? 'Saldo en Cuenta' : 'Resumen del Viaje'}
+              </p>
+              {selectedTrip !== 'all' && selectedTripData && (
+                <p className="text-xs mb-2" style={{ color: '#6B6B6F' }}>
+                  {selectedTripData.client_name} — {selectedTripData.destination}
+                </p>
+              )}
+              <p className="text-4xl font-bold mb-4"
+                 style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.03em' }}>
+                ${accountBalance.toLocaleString()}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl p-3" style={{ background: 'rgba(22,163,74,0.07)', border: '1px solid rgba(22,163,74,0.12)' }}>
+                  <p className="text-[10px] font-medium uppercase tracking-wide mb-1" style={{ color: '#16A34A', letterSpacing: '0.06em' }}>Total Cobrado</p>
+                  <p className="text-lg font-bold" style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>
+                    ${totalIncome.toLocaleString()}
                   </p>
-                  <p className="text-emerald-100 text-xs md:text-sm">Balance total de la agencia</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#AEAEB2' }}>{filteredClientPayments.length} pagos</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2 md:gap-3">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-2.5 md:p-3">
-                    <p className="text-emerald-100 text-xs mb-1">Total Cobrado</p>
-                    <p className="text-lg md:text-xl font-bold">${totalIncome.toLocaleString()}</p>
-                    <p className="text-xs text-emerald-100 mt-0.5">{filteredClientPayments.length} pagos</p>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-sm rounded-lg md:rounded-xl p-2.5 md:p-3">
-                    <p className="text-emerald-100 text-xs mb-1">Total Pagado</p>
-                    <p className="text-lg md:text-xl font-bold">${totalExpenses.toLocaleString()}</p>
-                    <p className="text-xs text-emerald-100 mt-0.5">{filteredSupplierPayments.length} pagos</p>
-                  </div>
+                <div className="rounded-xl p-3" style={{ background: 'rgba(220,38,38,0.05)', border: '1px solid rgba(220,38,38,0.1)' }}>
+                  <p className="text-[10px] font-medium uppercase tracking-wide mb-1" style={{ color: '#DC2626', letterSpacing: '0.06em' }}>Total Pagado</p>
+                  <p className="text-lg font-bold" style={{ color: '#1C1C1E', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>
+                    ${totalExpenses.toLocaleString()}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: '#AEAEB2' }}>{filteredSupplierPayments.length} pagos</p>
                 </div>
               </div>
-            ) : (
-              <div className="flex-1">
-                <div className="flex items-center gap-2 md:gap-3 mb-1">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
-                  <h2 className="text-base md:text-lg font-semibold opacity-90">Resumen del Viaje</h2>
-                </div>
-                {selectedTripData && (
-                  <p className="text-emerald-100 text-xs md:text-sm mb-2">
-                    {selectedTripData.client_name} - {selectedTripData.destination}
-                  </p>
-                )}
-              </div>
-            )}
-            <div className="w-full">
-              <label className="block text-sm font-medium text-emerald-100 mb-2">
-                Filtrar por Viaje
-              </label>
+            </div>
+            {/* Trip selector */}
+            <div className="lg:w-64">
+              <p className="text-xs font-medium mb-1.5" style={{ color: '#6B6B6F' }}>Filtrar por viaje</p>
               <Select value={selectedTrip} onValueChange={setSelectedTrip}>
-                <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-white h-11 rounded-xl w-full">
+                <SelectTrigger className="w-full h-9 text-xs rounded-xl" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
                   <SelectValue placeholder="Todos los viajes" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[400px]">
                   <SelectItem value="all">Todos los viajes</SelectItem>
                   {tripsForSelector.map(trip => (
-                    <SelectItem key={trip.id} value={trip.id}>
-                      {trip.label}
-                    </SelectItem>
+                    <SelectItem key={trip.id} value={trip.id}>{trip.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
         </div>
-
-        {/* FinancialSummary cards - When trip is selected (same as SoldTripDetail) */}
-        {selectedTrip !== 'all' && tripMetrics && (
-          <FinancialSummary metrics={tripMetrics} />
-        )}
       </div>
 
+      {/* FinancialSummary when trip selected */}
+      {selectedTrip !== 'all' && tripMetrics && (
+        <FinancialSummary metrics={tripMetrics} />
+      )}
+
       {/* Alerts */}
-      <div className="space-y-2 md:space-y-3">
+      <div className="space-y-2">
         {clientsWithNegativeBalance.length > 0 && (
           <AlertCard
-            title="💰 Clientes con Saldo Por Cobrar"
+            title="Clientes con Saldo Por Cobrar"
             description={`${clientsWithNegativeBalance.length} ${clientsWithNegativeBalance.length === 1 ? 'viaje tiene' : 'viajes tienen'} pagos pendientes`}
             items={clientsWithNegativeBalance}
             color="red"
@@ -639,26 +606,27 @@ export default function AdminDashboard() {
             isExpanded={showPendingCollection}
             onToggle={() => setShowPendingCollection(!showPendingCollection)}
             renderItem={(trip) => (
-              <div key={trip.id} className="bg-white rounded-lg p-2.5 md:p-3 border border-red-100 hover:border-red-300 hover:shadow-sm transition-all duration-200">
-                <div className="flex items-start justify-between gap-2">
+              <div key={trip.id} className="rounded-xl p-3 transition-colors"
+                   style={{ background: '#FAFAFA', border: '1px solid rgba(220,38,38,0.1)' }}
+                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.25)'; }}
+                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(220,38,38,0.1)'; }}>
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                      <p className="font-semibold text-stone-800 text-xs md:text-sm truncate">{trip.client_name || 'Sin cliente'}</p>
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <p className="text-sm font-semibold truncate" style={{ color: '#1C1C1E' }}>{trip.client_name || 'Sin cliente'}</p>
+                      <span className="text-xs px-1.5 py-0.5 rounded-md" style={{ background: '#F5F5F7', color: '#6B6B6F' }}>
                         {trip.agentName}
-                      </Badge>
+                      </span>
                     </div>
-                    <p className="text-xs text-stone-600 mb-1.5 truncate">{trip.destination}</p>
-                    <div className="flex flex-col sm:flex-row sm:gap-3 gap-1 text-xs">
-                      <span className="text-blue-600 font-medium">Total: ${(trip.totalServices || 0).toLocaleString()}</span>
-                      <span className="text-green-600 font-medium">Recibido: ${trip.clientPayments.toLocaleString()}</span>
+                    <p className="text-xs truncate mb-1" style={{ color: '#AEAEB2' }}>{trip.destination}</p>
+                    <div className="flex gap-3 text-xs">
+                      <span style={{ color: '#1D4ED8' }}>Total: ${(trip.totalServices || 0).toLocaleString()}</span>
+                      <span style={{ color: '#16A34A' }}>Recibido: ${trip.clientPayments.toLocaleString()}</span>
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className={`text-base md:text-lg font-bold ${trip.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                      ${trip.balance.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-stone-500 whitespace-nowrap">por cobrar</p>
+                    <p className="text-base font-bold" style={{ color: '#DC2626' }}>${trip.balance.toLocaleString()}</p>
+                    <p className="text-xs" style={{ color: '#AEAEB2' }}>por cobrar</p>
                   </div>
                 </div>
               </div>
@@ -668,7 +636,7 @@ export default function AdminDashboard() {
 
         {highValueTrips.length > 0 && (
           <AlertCard
-            title="⚡ Oportunidades de Alto Valor"
+            title="Oportunidades de Alto Valor"
             description={`${highValueTrips.length} ${highValueTrips.length === 1 ? 'cotización' : 'cotizaciones'} mayores a $20,000 USD`}
             items={highValueTrips}
             color="amber"
@@ -676,22 +644,23 @@ export default function AdminDashboard() {
             isExpanded={showHighValueTrips}
             onToggle={() => setShowHighValueTrips(!showHighValueTrips)}
             renderItem={(trip) => (
-              <div key={trip.id} className="bg-white rounded-lg p-2.5 md:p-3 border border-amber-100 hover:border-amber-300 hover:shadow-sm transition-all duration-200">
-                <div className="flex items-start justify-between gap-2">
+              <div key={trip.id} className="rounded-xl p-3 transition-colors"
+                   style={{ background: '#FAFAFA', border: '1px solid rgba(201,168,76,0.15)' }}
+                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.35)'; }}
+                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(201,168,76,0.15)'; }}>
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                      <p className="font-semibold text-stone-800 text-xs md:text-sm truncate">{trip.client_name || 'Sin cliente'}</p>
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <p className="text-sm font-semibold truncate" style={{ color: '#1C1C1E' }}>{trip.client_name || 'Sin cliente'}</p>
+                      <span className="text-xs px-1.5 py-0.5 rounded-md" style={{ background: '#F5F5F7', color: '#6B6B6F' }}>
                         {trip.agentName}
-                      </Badge>
+                      </span>
                     </div>
-                    <p className="text-xs text-stone-600 truncate">{trip.destination}</p>
+                    <p className="text-xs truncate" style={{ color: '#AEAEB2' }}>{trip.destination}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-base md:text-lg font-bold text-amber-600">
-                      ${(trip.budget || 0).toLocaleString()}
-                    </p>
-                    <p className="text-xs text-stone-500 whitespace-nowrap">presupuesto</p>
+                    <p className="text-base font-bold" style={{ color: '#C9A84C' }}>${(trip.budget || 0).toLocaleString()}</p>
+                    <p className="text-xs" style={{ color: '#AEAEB2' }}>presupuesto</p>
                   </div>
                 </div>
               </div>
@@ -701,114 +670,78 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <CompactStatCard
-          title="Ventas del Mes"
-          value={`$${monthlyStats.sales.toLocaleString()}`}
-          subtitle="USD"
-          icon={DollarSign}
-          trend={monthlyStats.salesTrend}
-          trendValue={`vs mes anterior: $${monthlyStats.prevSales.toLocaleString()}`}
-          color="emerald"
-        />
-        <CompactStatCard
-          title="Comisiones del Mes"
-          value={`$${monthlyStats.commission.toLocaleString()}`}
-          subtitle="USD"
-          icon={TrendingUp}
-          trend={monthlyStats.commissionTrend}
-          trendValue={`vs mes anterior: $${monthlyStats.prevCommission.toLocaleString()}`}
-          color="blue"
-        />
-        <CompactStatCard
-          title="Viajes Activos"
-          value={trips.length}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <CompactStatCard title="Ventas del Mes" value={`$${monthlyStats.sales.toLocaleString()}`} subtitle="USD"
+          icon={DollarSign} trend={monthlyStats.salesTrend}
+          trendValue={`vs mes anterior: $${monthlyStats.prevSales.toLocaleString()}`} color="emerald" />
+        <CompactStatCard title="Comisiones del Mes" value={`$${monthlyStats.commission.toLocaleString()}`} subtitle="USD"
+          icon={TrendingUp} trend={monthlyStats.commissionTrend}
+          trendValue={`vs mes anterior: $${monthlyStats.prevCommission.toLocaleString()}`} color="blue" />
+        <CompactStatCard title="Viajes Activos" value={trips.length}
           subtitle={`${additionalMetrics.activeQuotations} cotizando, ${additionalMetrics.inNegotiation} en negociación`}
-          icon={Plane}
-          color="purple"
-        />
-        <CompactStatCard
-          title="Clientes Totales"
-          value={clients.length}
-          subtitle="Registrados en el sistema"
-          icon={Users}
-          color="slate"
-        />
+          icon={Plane} color="purple" />
+        <CompactStatCard title="Clientes Totales" value={clients.length}
+          subtitle="Registrados en el sistema" icon={Users} color="slate" />
       </div>
 
       {/* Additional Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
-        <CompactStatCard
-          title="Tasa de Conversión"
-          value={`${additionalMetrics.conversionRate}%`}
-          subtitle={`${soldTrips.length} vendidos de ${trips.length} totales`}
-          icon={Percent}
-          color="emerald"
-        />
-        <CompactStatCard
-          title="Ticket Promedio"
-          value={`$${additionalMetrics.averageTicket.toLocaleString()}`}
-          subtitle="USD por viaje vendido"
-          icon={DollarSign}
-          color="blue"
-        />
-        <CompactStatCard
-          title="Viajes Vendidos"
-          value={soldTrips.length}
-          subtitle="Total histórico"
-          icon={CheckCircle}
-          color="amber"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <CompactStatCard title="Tasa de Conversión" value={`${additionalMetrics.conversionRate}%`}
+          subtitle={`${soldTrips.length} vendidos de ${trips.length} totales`} icon={Percent} color="emerald" />
+        <CompactStatCard title="Ticket Promedio" value={`$${additionalMetrics.averageTicket.toLocaleString()}`}
+          subtitle="USD por viaje vendido" icon={DollarSign} color="blue" />
+        <CompactStatCard title="Viajes Vendidos" value={soldTrips.length}
+          subtitle="Total histórico" icon={CheckCircle} color="amber" />
       </div>
 
       {/* Top Performers */}
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Award className="w-5 h-5 text-emerald-600" />
-          <h3 className="text-lg font-bold text-stone-800">Top Performers</h3>
-          <Badge variant="outline" className="ml-auto">Total Histórico</Badge>
+      <div className="bg-white rounded-2xl overflow-hidden"
+           style={{ border: '1px solid rgba(0,0,0,0.055)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="px-5 py-4 flex items-center justify-between"
+             style={{ borderBottom: '1px solid rgba(0,0,0,0.055)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                 style={{ background: 'rgba(201,168,76,0.12)' }}>
+              <Award className="w-4 h-4" style={{ color: '#C9A84C' }} />
+            </div>
+            <h3 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 16, fontWeight: 600, color: '#1C1C1E', letterSpacing: '-0.01em' }}>
+              Top Performers
+            </h3>
+          </div>
+          <span className="text-xs px-2 py-1 rounded-lg" style={{ background: '#F5F5F7', color: '#6B6B6F' }}>
+            Total Histórico
+          </span>
         </div>
+
         {agentStats.length > 0 ? (
-          <div className="space-y-2">
+          <div className="divide-y" style={{ borderColor: 'rgba(0,0,0,0.04)' }}>
             {agentStats.slice(0, 5).map((agent, index) => (
-              <div key={agent.email} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl hover:bg-stone-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-md"
-                    style={{
-                      background: index === 0
-                        ? 'linear-gradient(135deg, #FFD700, #FFA500)'
-                        : index === 1
-                        ? 'linear-gradient(135deg, #C0C0C0, #808080)'
-                        : index === 2
-                        ? 'linear-gradient(135deg, #CD7F32, #8B4513)'
-                        : 'linear-gradient(135deg, #2E442A, #1a2817)'
-                    }}
-                  >
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-stone-800">{agent.name}</p>
-                    <p className="text-xs text-stone-500">
-                      {agent.trips} viajes • ${Math.round(agent.avgTicket).toLocaleString()} ticket promedio
-                    </p>
-                  </div>
+              <div key={agent.email} className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-stone-50">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
+                     style={{ background: RANK_COLORS[index] || '#475569' }}>
+                  {index + 1}
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg text-emerald-600">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: '#1C1C1E' }}>{agent.name}</p>
+                  <p className="text-xs" style={{ color: '#AEAEB2' }}>
+                    {agent.trips} viajes · ${Math.round(agent.avgTicket).toLocaleString()} ticket promedio
+                  </p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-base font-bold" style={{ color: '#2D4629', fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em' }}>
                     ${agent.sales.toLocaleString()}
                   </p>
-                  <p className="text-xs text-stone-500">en ventas</p>
+                  <p className="text-xs" style={{ color: '#AEAEB2' }}>en ventas</p>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-stone-500">No hay datos de agentes disponibles</p>
+          <div className="py-12 text-center">
+            <p className="text-sm" style={{ color: '#AEAEB2' }}>No hay datos de agentes disponibles</p>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }
