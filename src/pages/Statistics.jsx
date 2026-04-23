@@ -180,10 +180,11 @@ export default function Statistics() {
   }, [soldTrips]);
 
   // Get unique hotel chains (normalizadas: trim, evitar duplicados por mayúsculas/espacios)
+  // hotel_chain está en metadata; se hace fallback al top-level para registros legacy
   const uniqueHotelChains = useMemo(() => {
     const byKey = new Map();
     services.forEach(s => {
-      const raw = s.hotel_chain?.trim();
+      const raw = (s.metadata?.hotel_chain || s.hotel_chain)?.trim();
       if (!raw) return;
       const key = raw.toLowerCase();
       if (!byKey.has(key)) byKey.set(key, raw);
@@ -192,10 +193,11 @@ export default function Statistics() {
   }, [services]);
 
   // Get unique providers (normalizados)
+  // reserved_by está en metadata; se hace fallback al top-level para registros legacy
   const uniqueProviders = useMemo(() => {
     const byKey = new Map();
     services.forEach(s => {
-      const raw = s.reserved_by?.trim();
+      const raw = (s.metadata?.reserved_by || s.reserved_by)?.trim();
       if (!raw) return;
       const key = raw.toLowerCase();
       if (!byKey.has(key)) byKey.set(key, raw);
@@ -276,20 +278,22 @@ export default function Statistics() {
     const tripIds = new Set(filteredTrips.map(t => t.id));
     filteredServices = filteredServices.filter(s => tripIds.has(s.sold_trip_id));
 
-    // Filter services by provider (normalizado)
+    // Filter services by provider (normalizado; reserved_by puede estar en metadata)
     if (filters.provider !== 'all') {
       const needle = filters.provider.trim().toLowerCase();
-      filteredServices = filteredServices.filter(
-        s => s.reserved_by?.trim().toLowerCase() === needle
-      );
+      filteredServices = filteredServices.filter(s => {
+        const v = (s.metadata?.reserved_by || s.reserved_by)?.trim().toLowerCase();
+        return v === needle;
+      });
     }
 
-    // Filter services by hotel chain (normalizado)
+    // Filter services by hotel chain (normalizado; hotel_chain puede estar en metadata)
     if (filters.hotelChain !== 'all') {
       const needle = filters.hotelChain.trim().toLowerCase();
-      filteredServices = filteredServices.filter(
-        s => s.hotel_chain?.trim().toLowerCase() === needle
-      );
+      filteredServices = filteredServices.filter(s => {
+        const v = (s.metadata?.hotel_chain || s.hotel_chain)?.trim().toLowerCase();
+        return v === needle;
+      });
     }
 
     return { filteredTrips, filteredServices, filteredClients, filteredRawTrips };
@@ -505,6 +509,9 @@ export default function Statistics() {
           <TabsTrigger value="general" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
             General
           </TabsTrigger>
+          <TabsTrigger value="hotels" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
+            Hoteles
+          </TabsTrigger>
           <TabsTrigger value="sold-trips" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
             Viajes Vendidos
           </TabsTrigger>
@@ -519,9 +526,6 @@ export default function Statistics() {
           </TabsTrigger>
           <TabsTrigger value="trip-types" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
             Tipos de Viaje
-          </TabsTrigger>
-          <TabsTrigger value="hotels" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
-            Hoteles
           </TabsTrigger>
           <TabsTrigger value="providers" className="rounded-lg text-xs data-[state=active]:bg-[#2E442A] data-[state=active]:text-white">
             Proveedores
