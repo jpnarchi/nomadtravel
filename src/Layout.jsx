@@ -210,6 +210,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Herramientas Admin', divider: true },
     { name: 'Spoof de Usuarios', page: 'AdminSpoof', icon: UserCheck },
     { name: 'Opciones de Servicios', page: 'AdminServiceOptions', icon: ListChecks },
+    { name: 'Exportar Datos', page: 'AdminExport', icon: Database },
   ], []);
 
   const userNavigation = useMemo(() => [

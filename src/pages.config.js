@@ -1,5 +1,6 @@
 import AdminClients from './pages/AdminClients';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminExport from './pages/AdminExport';
 import AdminSoldTrips from './pages/AdminSoldTrips';
 import AdminServiceOptions from './pages/AdminServiceOptions';
 import AdminSpoof from './pages/AdminSpoof';
@@ -11,7 +12,6 @@ import Commissions from './pages/Commissions';
 import Credentials from './pages/Credentials';
 import Dashboard from './pages/Dashboard';
 import DateAudit from './pages/DateAudit';
-import DescargarDatos from './pages/DescargarDatos';
 import ErrorReports from './pages/ErrorReports';
 import FamTrips from './pages/FamTrips';
 import Home from './pages/Home';
@@ -36,6 +36,7 @@ export const PAGES = {
     "AdminClients": AdminClients,
     "AdminServiceOptions": AdminServiceOptions,
     "AdminDashboard": AdminDashboard,
+    "AdminExport": AdminExport,
     "AdminSoldTrips": AdminSoldTrips,
     "AdminSpoof": AdminSpoof,
     "AdminTrips": AdminTrips,
@@ -46,7 +47,6 @@ export const PAGES = {
     "Credentials": Credentials,
     "Dashboard": Dashboard,
     "DateAudit": DateAudit,
-    "DescargarDatos": DescargarDatos,
     "ErrorReports": ErrorReports,
     "FamTrips": FamTrips,
     "Home": Home,
